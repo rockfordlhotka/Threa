@@ -49,7 +49,6 @@ namespace GameMechanics
     [RunLocal]
     private void Create(string name)
     {
-      Id = -1;
       Name = name;
       BusinessRules.CheckRules();
     }
