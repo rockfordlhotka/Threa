@@ -8,4 +8,8 @@
     <PackageReference Include="Csla" Version="5.2.0-R20042401" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Threa.Dal\Threa.Dal.csproj" />
+  </ItemGroup>
+
 </Project>

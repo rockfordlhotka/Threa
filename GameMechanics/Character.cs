@@ -10,14 +10,14 @@ namespace GameMechanics
     public string Id
     {
       get => GetProperty(IdProperty);
-      private set => LoadProperty(IdProperty, value);
+      set => SetProperty(IdProperty, value);
     }
 
     public static readonly PropertyInfo<string> PlayerIdProperty = RegisterProperty<string>(nameof(PlayerId));
     public string PlayerId
     {
       get => GetProperty(PlayerIdProperty);
-      private set => LoadProperty(PlayerIdProperty, value);
+      set => SetProperty(PlayerIdProperty, value);
     }
 
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
@@ -45,49 +45,49 @@ namespace GameMechanics
     public int Strength
     {
       get => GetProperty(StrengthProperty);
-      private set => LoadProperty(StrengthProperty, value);
+      set => SetProperty(StrengthProperty, value);
     }
 
     public static readonly PropertyInfo<int> DexterityProperty = RegisterProperty<int>(nameof(Dexterity));
     public int Dexterity
     {
       get => GetProperty(DexterityProperty);
-      private set => LoadProperty(DexterityProperty, value);
+      set => SetProperty(DexterityProperty, value);
     }
 
     public static readonly PropertyInfo<int> EnduranceProperty = RegisterProperty<int>(nameof(Endurance));
     public int Endurance
     {
       get => GetProperty(EnduranceProperty);
-      private set => LoadProperty(EnduranceProperty, value);
+      set => SetProperty(EnduranceProperty, value);
     }
 
     public static readonly PropertyInfo<int> IntelligenceProperty = RegisterProperty<int>(nameof(Intelligence));
     public int Intelligence
     {
       get => GetProperty(IntelligenceProperty);
-      private set => LoadProperty(IntelligenceProperty, value);
+      set => SetProperty(IntelligenceProperty, value);
     }
 
     public static readonly PropertyInfo<int> IntuitionProperty = RegisterProperty<int>(nameof(Intuition));
     public int Intuition
     {
       get => GetProperty(IntuitionProperty);
-      private set => LoadProperty(IntuitionProperty, value);
+      set => SetProperty(IntuitionProperty, value);
     }
 
     public static readonly PropertyInfo<int> WillpowerProperty = RegisterProperty<int>(nameof(Willpower));
     public int Willpower
     {
       get => GetProperty(WillpowerProperty);
-      private set => LoadProperty(WillpowerProperty, value);
+      set => SetProperty(WillpowerProperty, value);
     }
 
     public static readonly PropertyInfo<int> SocialStandingProperty = RegisterProperty<int>(nameof(SocialStanding));
     public int SocialStanding
     {
       get => GetProperty(SocialStandingProperty);
-      private set => LoadProperty(SocialStandingProperty, value);
+      set => SetProperty(SocialStandingProperty, value);
     }
 
     public static readonly PropertyInfo<int> PhysicalBeautyProperty = RegisterProperty<int>(nameof(PhysicalBeauty));
@@ -108,7 +108,7 @@ namespace GameMechanics
     public int FatigueBase
     {
       get => GetProperty(FatigueBaseProperty);
-      private set => LoadProperty(FatigueBaseProperty, value);
+      set => SetProperty(FatigueBaseProperty, value);
     }
 
     public static readonly PropertyInfo<int> VitalityProperty = RegisterProperty<int>(nameof(Vitality));
@@ -122,14 +122,71 @@ namespace GameMechanics
     public int VitalityBase
     {
       get => GetProperty(VitalityBaseProperty);
-      private set => LoadProperty(VitalityBaseProperty, value);
+      set => SetProperty(VitalityBaseProperty, value);
     }
 
     public static readonly PropertyInfo<Skills> SkillsProperty = RegisterProperty<Skills>(nameof(Skills));
     public Skills Skills
     {
       get => GetProperty(SkillsProperty);
-      private set => LoadProperty(SkillsProperty, value);
+      set => SetProperty(SkillsProperty, value);
+    }
+
+    public int GetAttribute(string attributeName)
+    {
+      switch (attributeName)
+      {
+        case "STR":
+        case "STT":
+          return Strength;
+        case "DEX":
+          return Dexterity;
+        case "END":
+          return Endurance;
+        case "WIL":
+          return Willpower;
+        case "INT":
+          return Intelligence;
+        case "ITT":
+          return Intuition;
+        case "PHY":
+          return PhysicalBeauty;
+        case "SOC":
+          return SocialStanding;
+        default:
+          throw new ArgumentException(nameof(attributeName));
+      }
+    }
+
+    private static int CalcFat(int end, int wil)
+    {
+      return (end + wil) / 2 + 14;
+    }
+
+    private static int CalcVit(int str)
+    {
+      return (str * 2) / 2 + 14;
+    }
+
+    [Create]
+    private void Create()
+    {
+      using (BypassPropertyChecks)
+      {
+        Skills = DataPortal.CreateChild<Skills>();
+        Strength = 5;
+        Dexterity = 5;
+        Endurance = 5;
+        Intelligence = 5;
+        Intuition = 5;
+        Willpower = 5;
+        PhysicalBeauty = 5;
+        SocialStanding = 5;
+        FatigueBase = CalcFat(Endurance, Willpower);
+        Fatigue = FatigueBase;
+        VitalityBase = CalcVit(Strength);
+        Vitality = VitalityBase;
+      }
     }
   }
 }
