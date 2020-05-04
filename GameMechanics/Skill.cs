@@ -85,7 +85,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(Threa.Dal.CharacterSkill skill)
+    private void Fetch(Threa.Dal.ICharacterSkill skill)
     {
       using (BypassPropertyChecks)
       {

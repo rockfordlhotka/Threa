@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Threa.Dal
 {
   public interface IPlayerDal
   {
-    Player GetPlayer(string id);
-    void SavePlayer(Player player);
-    void DeletePlayer(string id);
-    List<Character> GetCharacters(string playerId);
+    Task<IPlayer> GetPlayer(string id);
+    Task<IPlayer> SavePlayer(IPlayer obj);
+    Task DeletePlayer(string id);
+    Task<IEnumerable<ICharacter>> GetCharacters(string playerId);
   }
 }

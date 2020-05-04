@@ -1,6 +1,6 @@
-﻿namespace Threa.Dal
+﻿namespace Threa.Dal.MongoDb
 {
-  public class Skill
+  public class Skill : ISkill
   {
     public string Id { get; set; }
     public string Category { get; set; }

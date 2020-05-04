@@ -1,7 +1,7 @@
-﻿using System;
-using Csla;
+﻿using Csla;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Threa.Dal;
+using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test
 {

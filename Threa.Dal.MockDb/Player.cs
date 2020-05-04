@@ -1,6 +1,6 @@
-﻿namespace Threa.Dal
+﻿namespace Threa.Dal.MockDb
 {
-  public class Player
+  public class Player : IPlayer
   {
     public string Id { get; set; }
     public string Name { get; set; }
