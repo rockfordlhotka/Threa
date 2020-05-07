@@ -1,15 +1,45 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using Csla;
 using Csla.Core;
+using GameMechanics.Reference;
 
 namespace GameMechanics
 {
   [Serializable]
-  public class Skills : BusinessListBase<Skills, Skill>
+  public class SkillList : BusinessListBase<SkillList, Skill>
   {
+    public Reference.ResultValue SkillCheck(string skillName, int targetValue)
+    {
+      var skill = this.Where(r => r.Name == skillName).FirstOrDefault();
+      if (skill == null)
+      {
+        var skillTemplate = Reference.SkillList.GetList().Where(r=>r.Name == skillName).FirstOrDefault();
+        if (skillTemplate == null)
+        {
+          return ResultValues.GetResult(-10);
+        }
+        else
+        {
+          var baseAS = Skill.GetAttributeBase((Character)Parent, skillTemplate.PrimaryAttribute);
+          return ResultValues.GetResult(Dice.Roll4dFWithBonus() + baseAS);
+        }
+      }
+      else
+      {
+        return skill.SkillCheck();
+      }
+    }
+
+    [CreateChild]
+    private void Create()
+    {
+      var std = Reference.SkillList.GetList().Where(r => r.IsStandard);
+      foreach (var item in std)
+      {
+        Add(DataPortal.CreateChild<Skill>(item));
+      }
+    }
   }
 
   [Serializable]
@@ -50,6 +80,11 @@ namespace GameMechanics
       internal set => SetProperty(XPBankedProperty, value);
     }
 
+    public ResultValue SkillCheck()
+    {
+      return ResultValues.GetResult(Dice.Roll4dFWithBonus() + AbilityScore);
+    }
+
     public int Bonus
     {
       get => SkillCost.GetBonus(Level);
@@ -57,31 +92,39 @@ namespace GameMechanics
 
     public int AbilityScore
     {
-      get => GetAbilityScore();
+      get => Bonus + GetAttributeBase((Character)((IParent)Parent).Parent, PrimaryAttribute);
     }
 
-    private int GetAbilityScore()
+    public static int GetAttributeBase(Character character, string primaryAttribute)
     {
-      var bonus = Bonus;
-      var attributeBase = GetAttributeBase();
-      return bonus + attributeBase;
-    }
-
-    private int GetAttributeBase()
-    {
-      var attributes = PrimaryAttribute.Split('/');
+      var attributes = primaryAttribute.Split('/');
       int sum = 0;
       foreach (var item in attributes)
       {
-        sum += ((Character)((IParent)Parent).Parent).GetAttribute(item);
+        sum += character.GetAttribute(item);
       }
-      return sum / attributes.Length;
+      var result = sum / attributes.Length;
+      if (character.Fatigue.Value < 1)
+        result = 0;
+      else if (character.Fatigue.Value < 2)
+        result -= 4;
+      else if (character.Fatigue.Value < 4)
+        result -= 2;
+      else if (character.Fatigue.Value < 6)
+        result -= 1;
+      if (character.Vitality.Value < 4)
+        result -= 6;
+      else if (character.Fatigue.Value < 6)
+        result -= 4;
+      return result;
     }
 
     [CreateChild]
-    private void Create(double xp)
+    private void Create(Reference.SkillInfo std)
     {
-      XPBanked = xp;
+      Id = std.Id;
+      Name = std.Name;
+      PrimaryAttribute = std.PrimaryAttribute;
     }
 
     [FetchChild]

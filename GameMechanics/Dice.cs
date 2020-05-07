@@ -15,40 +15,50 @@ namespace GameMechanics
     {
       int result = 0;
       for (int i = 0; i < count; i++)
-      {
-        var r = Roll(size);
-        result = result + r;
-      }
+        result += Roll(size);
+      return result;
+    }
 
-      if (count == 4 && size == 3)
-      {
-        if (result == 4)
-          result += Roll4d3Bonus();
-        else if (result == -4)
-          result -= Roll4d3Bonus();
-      }
+    public static int Roll(int count, string type)
+    {
+      if (type.ToUpper() != "F")
+        throw new ArgumentException(nameof(type));
+      int result = 0;
+      for (int i = 0; i < count; i++)
+        result += RollF();
       return result;
     }
 
     private static int Roll(int size)
     {
-      if (size == 3)
-        return _rnd.Next(-1, 2);
-      else
-        return _rnd.Next(1, size + 1);
+      return _rnd.Next(1, size + 1);
     }
 
-    public static int Roll4d3Bonus()
+    private static int RollF()
     {
-      int result = 0;
+      return _rnd.Next(-1, 2);
+    }
 
-      for (int i = 0; i < 4; i++)
-        if (Roll(3) > 0)
-          result++;
+    public static int Roll4dFWithBonus()
+    {
+      int result = Roll(4, "F");
 
       if (result == 4)
-        result += Roll4d3Bonus();
+        result += Get4dFBonus();
+      else if (result == -4)
+        result -= Get4dFBonus();
 
+      return result;
+    }
+
+    private static int Get4dFBonus()
+    {
+      var result = 0;
+      for (int i = 0; i < 4; i++)
+        if (RollF() > 0)
+          result++;
+      if (result == 4)
+        result += Get4dFBonus();
       return result;
     }
   }

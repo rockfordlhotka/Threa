@@ -20,8 +20,7 @@ namespace GameMechanics
       private set => LoadProperty(BaseValueProperty, value);
     }
 
-    [Create]
-    [RunLocal]
+    [CreateChild]
     private void Create()
     {
       Value = 5;

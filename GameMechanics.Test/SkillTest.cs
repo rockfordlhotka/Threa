@@ -11,8 +11,8 @@ namespace GameMechanics.Test
     [TestMethod]
     public void SingleAttributeBonus()
     {
-      var c = DataPortal.Create<Character>();
-      c.Strength = 7;
+      var c = DataPortal.Create<Character>("");
+      c.Strength.Value = 7;
       var cs = new CharacterSkill
       {
         PrimarySkill = "STR",
@@ -29,8 +29,8 @@ namespace GameMechanics.Test
     [TestMethod]
     public void MultiAttributeBonus()
     {
-      var c = DataPortal.Create<Character>();
-      c.Strength = 7;
+      var c = DataPortal.Create<Character>("");
+      c.Strength.Value = 7;
       var cs = new CharacterSkill
       {
         PrimarySkill = "STR/END",
@@ -42,6 +42,13 @@ namespace GameMechanics.Test
       Assert.AreEqual(3, s.Level);
       Assert.AreEqual(-2, s.Bonus);
       Assert.AreEqual(4, s.AbilityScore);
+    }
+
+    [TestMethod]
+    public void StandardSkills()
+    {
+      var c = DataPortal.Create<Character>("");
+      Assert.AreEqual(8, c.Skills.Count);
     }
   }
 }

@@ -11,6 +11,7 @@ namespace GameMechanics.Test
   public class PlayerTest
   {
     [TestMethod]
+    [Ignore]
     public async Task InsertPlayer()
     {
       var player = new Threa.Dal.MongoDb.Player();
@@ -19,7 +20,7 @@ namespace GameMechanics.Test
       var config = new Threa.Dal.MongoDb.ThreaDbSettings();
       var context = new Threa.Dal.MongoDb.ThreaDbContext(config);
       var dal = new Threa.Dal.MongoDb.PlayerDal(context);
-      var result = await dal.SavePlayer(player);
+      var result = await dal.SavePlayerAsync(player);
       Assert.AreEqual(player.Name, result.Name);
     }
   }
