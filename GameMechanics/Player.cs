@@ -1,6 +1,8 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using Csla;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -54,11 +56,22 @@ namespace GameMechanics
     }
 
     [Fetch]
-    private void Fetch(int id)
+    private async Task Fetch(string email, [Inject] IPlayerDal dal)
     {
-      using (BypassPropertyChecks)
+      var data = await dal.GetPlayerByEmailAsync(email);
+      if (data == null)
       {
-
+        Email = email;
+        MarkNew();
+      }
+      else
+      {
+        using (BypassPropertyChecks)
+        {
+          Id = data.Id;
+          Name = data.Name;
+          Email = data.Email;
+        }
       }
       BusinessRules.CheckRules();
     }

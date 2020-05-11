@@ -1,6 +1,9 @@
 ﻿using Csla;
 using GameMechanics.Reference;
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -14,14 +17,16 @@ namespace GameMechanics
       private set => LoadProperty(IdProperty, value);
     }
 
-    public static readonly PropertyInfo<string> PlayerIdProperty = RegisterProperty<string>(nameof(PlayerId));
-    public string PlayerId
+    public static readonly PropertyInfo<string> PlayerEmailProperty = RegisterProperty<string>(nameof(PlayerEmail));
+    [Required]
+    public string PlayerEmail
     {
-      get => GetProperty(PlayerIdProperty);
-      private set => LoadProperty(PlayerIdProperty, value);
+      get => GetProperty(PlayerEmailProperty);
+      private set => LoadProperty(PlayerEmailProperty, value);
     }
 
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
+    [Required]
     public string Name
     {
       get => GetProperty(NameProperty);
@@ -259,11 +264,12 @@ namespace GameMechanics
     }
 
     [Create]
-    private void Create(string playerId)
+    [RunLocal]
+    private void Create(string playerEmail)
     {
       using (BypassPropertyChecks)
       {
-        PlayerId = playerId;
+        PlayerEmail = playerEmail;
         DamageClass = 1;
         Strength = DataPortal.CreateChild<Attribute>();
         Dexterity = DataPortal.CreateChild<Attribute>();
@@ -279,6 +285,34 @@ namespace GameMechanics
         Skills = DataPortal.CreateChild<SkillList>();
         ActionPoints = DataPortal.CreateChild<ActionPoints>(this);
       }
+      BusinessRules.CheckRules();
+    }
+
+    [Fetch]
+    private async Task Fetch(string id, [Inject] ICharacterDal dal)
+    {
+      var existing = await dal.GetCharacter(id);
+      using (BypassPropertyChecks)
+      {
+        Id = existing.Id;
+        Name = existing.Name;
+        PlayerEmail = existing.PlayerEmail;
+        DamageClass = 1;
+        Strength = DataPortal.CreateChild<Attribute>();
+        Dexterity = DataPortal.CreateChild<Attribute>();
+        Endurance = DataPortal.CreateChild<Attribute>();
+        Intelligence = DataPortal.CreateChild<Attribute>();
+        Intuition = DataPortal.CreateChild<Attribute>();
+        Willpower = DataPortal.CreateChild<Attribute>();
+        PhysicalBeauty = DataPortal.CreateChild<Attribute>();
+        SocialStanding = DataPortal.CreateChild<Attribute>();
+        Fatigue = DataPortal.CreateChild<Fatigue>(this);
+        Vitality = DataPortal.CreateChild<Vitality>(this);
+        Wounds = DataPortal.CreateChild<WoundList>();
+        Skills = DataPortal.CreateChild<SkillList>();
+        ActionPoints = DataPortal.CreateChild<ActionPoints>(this);
+      }
+      BusinessRules.CheckRules();
     }
   }
 }

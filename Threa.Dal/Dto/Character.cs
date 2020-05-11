@@ -1,15 +1,11 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Threa.Dal.MongoDb
+namespace Threa.Dal.Dto
 {
   public class Character : ICharacter
   {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
     public string PlayerEmail { get; set; }
+    public string Id { get; set; }
     public string Name { get; set; }
     public int DamageClass { get; set; }
     public IAttribute Strength { get; set; }

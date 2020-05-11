@@ -1,4 +1,4 @@
-﻿namespace Threa.Dal.MongoDb
+﻿namespace Threa.Dal.Dto
 {
   public class Skill : ISkill
   {

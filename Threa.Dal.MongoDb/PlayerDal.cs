@@ -21,10 +21,10 @@ namespace Threa.Dal.MongoDb
         throw new NotFoundException($"{nameof(Player)}: {id}");
     }
 
-    public async Task<IEnumerable<ICharacter>> GetCharactersAsync(string playerId)
+    public async Task<IEnumerable<ICharacter>> GetCharactersAsync(string playerEmail)
     {
       var data = db.GetCollection<Character>();
-      var result = await data.Find(i => i.PlayerId == playerId).ToListAsync();
+      var result = await data.Find(i => i.PlayerEmail == playerEmail).ToListAsync();
       return result;
     }
 

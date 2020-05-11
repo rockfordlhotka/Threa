@@ -9,9 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameMechanics.Test", "GameM
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal", "Threa.Dal\Threa.Dal.csproj", "{5E3436FA-DF41-4B81-89D5-F7B851FB793E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Dal.MongoDb", "Threa.Dal.MongoDb\Threa.Dal.MongoDb.csproj", "{887C32B3-6D13-45AD-82F7-37706B87F6E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal.MongoDb", "Threa.Dal.MongoDb\Threa.Dal.MongoDb.csproj", "{887C32B3-6D13-45AD-82F7-37706B87F6E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Dal.MockDb", "Threa.Dal.MockDb\Threa.Dal.MockDb.csproj", "{C6DDDE74-9301-4CF3-A7DA-1941C29363A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal.MockDb", "Threa.Dal.MockDb\Threa.Dal.MockDb.csproj", "{C6DDDE74-9301-4CF3-A7DA-1941C29363A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa", "Threa\Threa.csproj", "{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +85,18 @@ Global
 		{C6DDDE74-9301-4CF3-A7DA-1941C29363A2}.Release|x64.Build.0 = Release|Any CPU
 		{C6DDDE74-9301-4CF3-A7DA-1941C29363A2}.Release|x86.ActiveCfg = Release|Any CPU
 		{C6DDDE74-9301-4CF3-A7DA-1941C29363A2}.Release|x86.Build.0 = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|x64.Build.0 = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Debug|x86.Build.0 = Debug|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|x64.ActiveCfg = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|x64.Build.0 = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|x86.ActiveCfg = Release|Any CPU
+		{9E0D2218-58E9-41F3-BD1F-EC9DA02F23CB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

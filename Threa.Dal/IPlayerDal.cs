@@ -9,6 +9,6 @@ namespace Threa.Dal
     Task<IPlayer> GetPlayerByEmailAsync(string email);
     Task<IPlayer> SavePlayerAsync(IPlayer obj);
     Task DeletePlayerAsync(string id);
-    Task<IEnumerable<ICharacter>> GetCharactersAsync(string playerId);
+    Task<IEnumerable<ICharacter>> GetCharactersAsync(string playerEmail);
   }
 }

@@ -23,8 +23,7 @@ namespace GameMechanics
     [CreateChild]
     private void Create()
     {
-      Value = 5;
-      BaseValue = 5;
+      Value = BaseValue = 10 + Dice.Roll(4, "F");
     }
   }
 }

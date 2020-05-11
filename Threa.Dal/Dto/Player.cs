@@ -1,4 +1,4 @@
-﻿namespace Threa.Dal.MockDb
+﻿namespace Threa.Dal.Dto
 {
   public class Player : IPlayer
   {

@@ -1,7 +1,6 @@
 ﻿using Csla;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Threa.Dal;
-using Threa.Dal.MockDb;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Test
 {
@@ -30,7 +29,8 @@ namespace GameMechanics.Test
     public void MultiAttributeBonus()
     {
       var c = DataPortal.Create<Character>("");
-      c.Strength.Value = 7;
+      c.Strength.Value = 12;
+      c.Endurance.Value = 10;
       var cs = new CharacterSkill
       {
         PrimarySkill = "STR/END",
@@ -41,7 +41,7 @@ namespace GameMechanics.Test
       Assert.AreEqual("STR/END", s.PrimaryAttribute);
       Assert.AreEqual(3, s.Level);
       Assert.AreEqual(-2, s.Bonus);
-      Assert.AreEqual(4, s.AbilityScore);
+      Assert.AreEqual(9, s.AbilityScore);
     }
 
     [TestMethod]
