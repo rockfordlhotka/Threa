@@ -1,5 +1,6 @@
 ﻿using System;
 using Csla;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -24,6 +25,12 @@ namespace GameMechanics
     private void Create()
     {
       Value = BaseValue = 10 + Dice.Roll(4, "F");
+    }
+
+    [FetchChild]
+    private void Fetch(IAttribute attribute)
+    {
+
     }
   }
 }

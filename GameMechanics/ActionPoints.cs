@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -101,6 +102,18 @@ namespace GameMechanics
       Recovery = character.Fatigue.BaseValue / 4;
       Max = (int)character.XPTotal / 10;
       Available = Max;
+    }
+
+    [FetchChild]
+    private void Fetch(IActionPoints actionPoints)
+    {
+      if (actionPoints == null) return;
+      using (BypassPropertyChecks)
+      {
+        Recovery = actionPoints.Recovery;
+        Max = actionPoints.Max;
+        Available = actionPoints.Available;
+      }
     }
   }
 }

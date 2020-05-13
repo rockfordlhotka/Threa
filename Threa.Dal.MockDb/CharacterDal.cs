@@ -2,11 +2,17 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Threa.Dal.Dto;
 
 namespace Threa.Dal.MockDb
 {
   public class CharacterDal : ICharacterDal
   {
+    public ICharacter GetBlank()
+    {
+      return new Character();
+    }
+
     public Task DeleteCharacter(string id)
     {
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
@@ -16,7 +22,7 @@ namespace Threa.Dal.MockDb
       return Task.CompletedTask;
     }
 
-    public Task<ICharacter> GetCharacter(string id)
+    public Task<ICharacter> GetCharacterAsync(string id)
     {
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
       if (character == null)
@@ -24,7 +30,7 @@ namespace Threa.Dal.MockDb
       return Task.FromResult(character);
     }
 
-    public Task<List<ICharacter>> GetCharacters(string playerEmail)
+    public Task<List<ICharacter>> GetCharactersAsync(string playerEmail)
     {
       var character = MockDb.Characters.Where(r => r.PlayerEmail == playerEmail);
       return Task.FromResult(character.ToList());

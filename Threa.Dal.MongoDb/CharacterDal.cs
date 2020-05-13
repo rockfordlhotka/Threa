@@ -7,17 +7,22 @@ namespace Threa.Dal.MongoDb
 {
   public class CharacterDal : ICharacterDal
   {
+    public ICharacter GetBlank()
+    {
+      return new Character();
+    }
+
     public Task DeleteCharacter(string id)
     {
       throw new NotImplementedException();
     }
 
-    public Task<ICharacter> GetCharacter(string id)
+    public Task<ICharacter> GetCharacterAsync(string id)
     {
       throw new NotImplementedException();
     }
 
-    public Task<List<ICharacter>> GetCharacters(string playerEmail)
+    public Task<List<ICharacter>> GetCharactersAsync(string playerEmail)
     {
       throw new NotImplementedException();
     }

@@ -1,0 +1,44 @@
+﻿@page "/characters"
+
+@inject ViewModel<CharacterList> vm
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+<h3>Your Characters</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+<p><a href="character">Add character</a></p>
+
+@if (vm.Model == null)
+{
+  <p>Loading...</p>
+}
+else
+{
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Species</th><th></th></tr>
+    </thead>
+    <tbody>
+      @foreach (var item in vm.Model)
+      {
+      <tr>
+        <td>@item.Name</td>
+        <td>(@item.Species)</td>
+        <td><a href="character/@item.Id">Details</a></td>
+      </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  protected override async Task OnParametersSetAsync()
+  {
+    await vm.RefreshAsync(() =>
+      DataPortal.FetchAsync<CharacterList>(Csla.ApplicationContext.User.Identity.Name));
+    StateHasChanged();
+  }
+}

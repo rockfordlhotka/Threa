@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -118,6 +119,15 @@ namespace GameMechanics
     {
       Location = location;
       MaxWounds = max;
+    }
+
+    [FetchChild]
+    private void Fetch(IWound wound)
+    {
+      using (BypassPropertyChecks)
+      {
+        Csla.Data.DataMapper.Map(wound, this);
+      }
     }
   }
 }

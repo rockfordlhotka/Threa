@@ -1,6 +1,7 @@
 ﻿using Csla;
 using GameMechanics.Reference;
 using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Threa.Dal;
@@ -19,6 +20,7 @@ namespace GameMechanics
 
     public static readonly PropertyInfo<string> PlayerEmailProperty = RegisterProperty<string>(nameof(PlayerEmail));
     [Required]
+    [Display(Name = "Player email")]
     public string PlayerEmail
     {
       get => GetProperty(PlayerEmailProperty);
@@ -27,6 +29,7 @@ namespace GameMechanics
 
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
     [Required]
+    [Display(Name = "Character name")]
     public string Name
     {
       get => GetProperty(NameProperty);
@@ -41,6 +44,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<string> TrueNameProperty = RegisterProperty<string>(nameof(TrueName));
+    [Display(Name = "True name")]
     public string TrueName
     {
       get => GetProperty(TrueNameProperty);
@@ -55,6 +59,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<string> SkinDescriptionProperty = RegisterProperty<string>(nameof(SkinDescription));
+    [Display(Name = "Skin")]
     public string SkinDescription
     {
       get => GetProperty(SkinDescriptionProperty);
@@ -62,6 +67,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<string> HairDescriptionProperty = RegisterProperty<string>(nameof(HairDescription));
+    [Display(Name = "Hair")]
     public string HairDescription
     {
       get => GetProperty(HairDescriptionProperty);
@@ -83,6 +89,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<double> BirthdateProperty = RegisterProperty<double>(nameof(Birthdate));
+    [Display(Name = "Birth date")]
     public double Birthdate
     {
       get => GetProperty(BirthdateProperty);
@@ -188,6 +195,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
+    [Display(Name = "Is passed out")]
     public bool IsPassedOut
     {
       get => GetProperty(IsPassedOutProperty);
@@ -195,6 +203,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<ActionPoints> ActionPointsProperty = RegisterProperty<ActionPoints>(nameof(ActionPoints));
+    [Display(Name = "Action points")]
     public ActionPoints ActionPoints
     {
       get => GetProperty(ActionPointsProperty);
@@ -202,6 +211,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<double> XPTotalProperty = RegisterProperty<double>(nameof(XPTotal));
+    [Display(Name = "Total XP")]
     public double XPTotal
     {
       get => GetProperty(XPTotalProperty);
@@ -209,6 +219,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<double> XPBankedProperty = RegisterProperty<double>(nameof(XPBanked));
+    [Display(Name = "Banked XP")]
     public double XPBanked
     {
       get => GetProperty(XPBankedProperty);
@@ -216,6 +227,7 @@ namespace GameMechanics
     }
 
     public static readonly PropertyInfo<int> DamageClassProperty = RegisterProperty<int>(nameof(DamageClass));
+    [Display(Name = "Damage class")]
     public int DamageClass
     {
       get => GetProperty(DamageClassProperty);
@@ -265,6 +277,13 @@ namespace GameMechanics
 
     [Create]
     [RunLocal]
+    private void Create()
+    {
+      Create(Csla.ApplicationContext.User.Identity.Name);
+    }
+
+    [Create]
+    [RunLocal]
     private void Create(string playerEmail)
     {
       using (BypassPropertyChecks)
@@ -288,31 +307,59 @@ namespace GameMechanics
       BusinessRules.CheckRules();
     }
 
+    private static readonly string[] mapIgnore = new string[]
+      {
+        nameof(Strength),
+        nameof(Dexterity),
+        nameof(Endurance),
+        nameof(Intelligence),
+        nameof(Intuition),
+        nameof(Willpower),
+        nameof(PhysicalBeauty),
+        nameof(SocialStanding),
+        nameof(Fatigue),
+        nameof(Vitality),
+        nameof(Wounds),
+        nameof(Skills),
+        nameof(ActionPoints),
+      };
+
     [Fetch]
     private async Task Fetch(string id, [Inject] ICharacterDal dal)
     {
-      var existing = await dal.GetCharacter(id);
+      var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
-        Id = existing.Id;
-        Name = existing.Name;
-        PlayerEmail = existing.PlayerEmail;
-        DamageClass = 1;
-        Strength = DataPortal.CreateChild<Attribute>();
-        Dexterity = DataPortal.CreateChild<Attribute>();
-        Endurance = DataPortal.CreateChild<Attribute>();
-        Intelligence = DataPortal.CreateChild<Attribute>();
-        Intuition = DataPortal.CreateChild<Attribute>();
-        Willpower = DataPortal.CreateChild<Attribute>();
-        PhysicalBeauty = DataPortal.CreateChild<Attribute>();
-        SocialStanding = DataPortal.CreateChild<Attribute>();
-        Fatigue = DataPortal.CreateChild<Fatigue>(this);
-        Vitality = DataPortal.CreateChild<Vitality>(this);
-        Wounds = DataPortal.CreateChild<WoundList>();
-        Skills = DataPortal.CreateChild<SkillList>();
-        ActionPoints = DataPortal.CreateChild<ActionPoints>(this);
+        Csla.Data.DataMapper.Map(existing, this, mapIgnore);
+        Strength = DataPortal.FetchChild<Attribute>(existing.Strength);
+        Dexterity = DataPortal.FetchChild<Attribute>(existing.Dexterity);
+        Endurance = DataPortal.FetchChild<Attribute>(existing.Endurance);
+        Intelligence = DataPortal.FetchChild<Attribute>(existing.Intelligence);
+        Intuition = DataPortal.FetchChild<Attribute>(existing.Intuition);
+        Willpower = DataPortal.FetchChild<Attribute>(existing.Willpower);
+        PhysicalBeauty = DataPortal.FetchChild<Attribute>(existing.PhysicalBeauty);
+        SocialStanding = DataPortal.FetchChild<Attribute>(existing.SocialStanding);
+        Fatigue = DataPortal.FetchChild<Fatigue>(existing.Fatigue);
+        Vitality = DataPortal.FetchChild<Vitality>(existing.Vitality);
+        Wounds = DataPortal.FetchChild<WoundList>(existing.Wounds);
+        Skills = DataPortal.FetchChild<SkillList>(existing.Skills);
+        ActionPoints = DataPortal.FetchChild<ActionPoints>(existing.ActionPoints);
       }
       BusinessRules.CheckRules();
+    }
+
+    [Insert]
+    [Update]
+    private async Task InsertUpdate([Inject] ICharacterDal dal)
+    {
+      var toSave = dal.GetBlank();
+      using (BypassPropertyChecks)
+      {
+        Csla.Data.DataMapper.Map(this, toSave, mapIgnore);
+        FieldManager.UpdateChildren();
+      }
+      var result = await dal.SaveCharacter(toSave);
+      Id = result.Id;
     }
   }
 }

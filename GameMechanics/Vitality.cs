@@ -2,6 +2,7 @@
 using Csla.Rules;
 using GameMechanics.Reference;
 using System;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -68,6 +69,12 @@ namespace GameMechanics
     private void Create(Character character)
     {
       Value = BaseValue = Calculate.GetValue(character.Strength.Value);
+    }
+
+    [FetchChild]
+    private void Fetch(IAttribute attribute)
+    {
+
     }
 
     private class Calculate : BusinessRule

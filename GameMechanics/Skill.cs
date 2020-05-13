@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Csla;
 using Csla.Core;
 using GameMechanics.Reference;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -14,7 +16,7 @@ namespace GameMechanics
       var skill = this.Where(r => r.Name == skillName).FirstOrDefault();
       if (skill == null)
       {
-        var skillTemplate = Reference.SkillList.GetList().Where(r=>r.Name == skillName).FirstOrDefault();
+        var skillTemplate = Reference.SkillList.GetList().Where(r => r.Name == skillName).FirstOrDefault();
         if (skillTemplate == null)
         {
           return ResultValues.GetResult(-10);
@@ -36,8 +38,17 @@ namespace GameMechanics
     {
       var std = Reference.SkillList.GetList().Where(r => r.IsStandard);
       foreach (var item in std)
-      {
         Add(DataPortal.CreateChild<Skill>(item));
+    }
+
+    [FetchChild]
+    private void Fetch(List<ICharacterSkill> skills)
+    {
+      if (skills == null) return;
+      using (LoadListMode)
+      {
+        foreach (var item in skills)
+          Add(DataPortal.FetchChild<Skill>(item));
       }
     }
   }

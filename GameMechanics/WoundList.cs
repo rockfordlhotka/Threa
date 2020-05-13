@@ -1,7 +1,9 @@
 ﻿using Csla;
 using GameMechanics.Reference;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Threa.Dal;
 
 namespace GameMechanics
 {
@@ -86,6 +88,17 @@ namespace GameMechanics
         Add(DataPortal.CreateChild<WoundRecord>("RightArm", 2));
         Add(DataPortal.CreateChild<WoundRecord>("LeftArm", 2));
         Add(DataPortal.CreateChild<WoundRecord>("Torso", 4));
+      }
+    }
+
+    [FetchChild]
+    private void Fetch(List<IWound> wounds)
+    {
+      if (wounds == null) return;
+      using (LoadListMode)
+      {
+        foreach (var item in wounds)
+          Add(DataPortal.FetchChild<WoundRecord>(item));
       }
     }
   }

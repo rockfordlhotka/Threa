@@ -1,0 +1,60 @@
+﻿@page "/character"
+@page "/character/{id}"
+
+@inject ViewModel<GameMechanics.Character> vm
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+<h3>Character Details</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+  <p>Loading...</p>
+}
+else
+{
+  <table>
+    <thead>
+      <tr><th></th><th></th></tr>
+    </thead>
+    <tbody>
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+      <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PlayerEmail)" />
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
+      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
+      @*<TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Height)" />
+        <TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Weight)" />*@
+      <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+      <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
+    </tbody>
+  </table>
+  <button @onclick="vm.SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
+}
+
+@code {
+  [Parameter]
+  public string Id { get; set; }
+
+  protected override void OnInitialized()
+  {
+    vm.Saved += () => NavigationManager.NavigateTo("/");
+    vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+    vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+  }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if (string.IsNullOrWhiteSpace(Id))
+      await vm.RefreshAsync(() =>
+        DataPortal.CreateAsync<GameMechanics.Character>());
+    else
+      await vm.RefreshAsync(() =>
+        DataPortal.FetchAsync<GameMechanics.Character>(Id));
+  }
+}
