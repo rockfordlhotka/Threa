@@ -7,6 +7,13 @@ namespace GameMechanics
   [Serializable]
   public class Attribute : BusinessBase<Attribute>
   {
+    public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
+    public string Name
+    {
+      get => GetProperty(NameProperty);
+      private set => LoadProperty(NameProperty, value);
+    }
+
     public static readonly PropertyInfo<int> ValueProperty = RegisterProperty<int>(nameof(Value));
     public int Value
     {
@@ -22,15 +29,21 @@ namespace GameMechanics
     }
 
     [CreateChild]
-    private void Create()
+    private void Create(string name)
     {
+      Name = name;
       Value = BaseValue = 10 + Dice.Roll(4, "F");
     }
 
     [FetchChild]
     private void Fetch(IAttribute attribute)
     {
-
+      using (BypassPropertyChecks)
+      {
+        Name = attribute.Name;
+        Value = attribute.Value;
+        BaseValue = attribute.BaseValue;
+      }
     }
   }
 }

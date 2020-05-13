@@ -23,16 +23,8 @@ namespace Threa.Dal
     bool IsPassedOut { get; set; }
     double XPTotal { get; set; }
     double XPBanked { get; set; }
-    IAttribute Strength { get; set; }
-    IAttribute Dexterity { get; set; }
-    IAttribute Endurance { get; set; }
-    IAttribute Intelligence { get; set; }
-    IAttribute Intuition { get; set; }
-    IAttribute Willpower { get; set; }
-    IAttribute PhysicalBeauty { get; set; }
-    IAttribute SocialStanding { get; set; }
-    IAttribute Fatigue { get; set; }
-    IAttribute Vitality { get; set; }
+    List<IAttribute> AttributeList { get; set; }
+    List<IDamage> DamageList { get; set; }
     List<IWound> Wounds { get; set; }
     List<ICharacterSkill> Skills { get; set; }
     IActionPoints ActionPoints { get; set; }

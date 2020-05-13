@@ -1,5 +1,6 @@
 ﻿using Csla;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Test
@@ -11,7 +12,7 @@ namespace GameMechanics.Test
     public void SingleAttributeBonus()
     {
       var c = DataPortal.Create<Character>("");
-      c.Strength.Value = 7;
+      c.AttributeList.Where(r => r.Name == "STR").First().Value = 7;
       var cs = new CharacterSkill
       {
         PrimarySkill = "STR",
@@ -29,8 +30,8 @@ namespace GameMechanics.Test
     public void MultiAttributeBonus()
     {
       var c = DataPortal.Create<Character>("");
-      c.Strength.Value = 12;
-      c.Endurance.Value = 10;
+      c.AttributeList.Where(r => r.Name == "STR").First().Value = 12;
+      c.AttributeList.Where(r => r.Name == "END").First().Value = 10;
       var cs = new CharacterSkill
       {
         PrimarySkill = "STR/END",

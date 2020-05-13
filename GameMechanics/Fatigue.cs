@@ -89,13 +89,20 @@ namespace GameMechanics
 
     private void Create(Character character)
     {
-      Value = BaseValue = Calculate.GetValue(character.Endurance.Value, character.Willpower.Value);
+      Value = BaseValue = Calculate.GetValue(character.GetAttribute("END"), character.GetAttribute("WIL"));
     }
 
     [FetchChild]
     private void Fetch(IAttribute attribute)
     {
+      if (attribute == null)
+      {
 
+      }
+      else
+      {
+
+      }
     }
 
     private class Calculate : BusinessRule
@@ -106,7 +113,7 @@ namespace GameMechanics
       {
         var target = (Fatigue)context.Target;
         var character = target.Character;
-        target.BaseValue = GetValue(character.Endurance.Value, character.Willpower.Value);
+        target.BaseValue = GetValue(character.GetAttribute("END"), character.GetAttribute("WIL"));
       }
 
       public static int GetValue(int endurance, int willpower)

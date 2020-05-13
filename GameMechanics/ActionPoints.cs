@@ -96,23 +96,41 @@ namespace GameMechanics
       Spent += 2;
     }
 
+    public static int CalculateRecovery(int fatigue)
+    {
+      return fatigue / 4;
+    }
+
+    public static int CalculateMax(double xpTotal)
+    {
+      return (int)xpTotal / 10;
+    }
+
     [CreateChild]
     private void Create(Character character)
     {
-      Recovery = character.Fatigue.BaseValue / 4;
-      Max = (int)character.XPTotal / 10;
+      Recovery = CalculateRecovery(character.Fatigue.BaseValue);
+      Max = CalculateMax(character.XPTotal);
       Available = Max;
     }
 
     [FetchChild]
     private void Fetch(IActionPoints actionPoints)
     {
-      if (actionPoints == null) return;
-      using (BypassPropertyChecks)
+      if (actionPoints == null)
       {
-        Recovery = actionPoints.Recovery;
-        Max = actionPoints.Max;
-        Available = actionPoints.Available;
+        Recovery = CalculateRecovery(14);
+        Max = CalculateMax(45);
+        Available = Max;
+      }
+      else
+      {
+        using (BypassPropertyChecks)
+        {
+          Recovery = actionPoints.Recovery;
+          Max = actionPoints.Max;
+          Available = actionPoints.Available;
+        }
       }
     }
   }

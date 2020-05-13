@@ -68,7 +68,7 @@ namespace GameMechanics
 
     private void Create(Character character)
     {
-      Value = BaseValue = Calculate.GetValue(character.Strength.Value);
+      Value = BaseValue = Calculate.GetValue(character.GetAttribute("STR"));
     }
 
     [FetchChild]
@@ -85,7 +85,7 @@ namespace GameMechanics
       {
         var target = (Vitality)context.Target;
         var character = target.Character;
-        target.BaseValue = GetValue(character.Strength.Value);
+        target.BaseValue = GetValue(character.GetAttribute("STR"));
       }
 
       public static int GetValue(int strength)

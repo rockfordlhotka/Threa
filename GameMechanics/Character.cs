@@ -1,8 +1,10 @@
 ﻿using Csla;
 using GameMechanics.Reference;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
 
@@ -110,74 +112,28 @@ namespace GameMechanics
       set => SetProperty(NotesProperty, value);
     }
 
-    public static readonly PropertyInfo<Attribute> StrengthProperty = RegisterProperty<Attribute>(nameof(Strength));
-    public Attribute Strength
+    public static readonly PropertyInfo<AttributeList> AttributeListProperty = RegisterProperty<AttributeList>(nameof(AttributeList));
+    public AttributeList AttributeList
     {
-      get => GetProperty(StrengthProperty);
-      private set => LoadProperty(StrengthProperty, value);
+      get => GetProperty(AttributeListProperty);
+      private set => LoadProperty(AttributeListProperty, value);
     }
 
-    public static readonly PropertyInfo<Attribute> DexterityProperty = RegisterProperty<Attribute>(nameof(Dexterity));
-    public Attribute Dexterity
+    public static readonly PropertyInfo<DamageList> DamageListProperty = RegisterProperty<DamageList>(nameof(DamageList));
+    public DamageList DamageList
     {
-      get => GetProperty(DexterityProperty);
-      private set => LoadProperty(DexterityProperty, value);
+      get => GetProperty(DamageListProperty);
+      private set => LoadProperty(DamageListProperty, value);
     }
 
-    public static readonly PropertyInfo<Attribute> EnduranceProperty = RegisterProperty<Attribute>(nameof(Endurance));
-    public Attribute Endurance
+    public Damage Fatigue
     {
-      get => GetProperty(EnduranceProperty);
-      private set => LoadProperty(EnduranceProperty, value);
+      get => DamageList.Where(r => r.Name == "FAT").First();
     }
 
-    public static readonly PropertyInfo<Attribute> WillpowerProperty = RegisterProperty<Attribute>(nameof(Willpower));
-    public Attribute Willpower
+    public Damage Vitality
     {
-      get => GetProperty(WillpowerProperty);
-      private set => LoadProperty(WillpowerProperty, value);
-    }
-
-    public static readonly PropertyInfo<Attribute> IntelligenceProperty = RegisterProperty<Attribute>(nameof(Intelligence));
-    public Attribute Intelligence
-    {
-      get => GetProperty(IntelligenceProperty);
-      private set => LoadProperty(IntelligenceProperty, value);
-    }
-
-    public static readonly PropertyInfo<Attribute> IntuitionProperty = RegisterProperty<Attribute>(nameof(Intuition));
-    public Attribute Intuition
-    {
-      get => GetProperty(IntuitionProperty);
-      private set => LoadProperty(IntuitionProperty, value);
-    }
-
-    public static readonly PropertyInfo<Attribute> SocialStandingProperty = RegisterProperty<Attribute>(nameof(SocialStanding));
-    public Attribute SocialStanding
-    {
-      get => GetProperty(SocialStandingProperty);
-      private set => LoadProperty(SocialStandingProperty, value);
-    }
-
-    public static readonly PropertyInfo<Attribute> PhysicalBeautyProperty = RegisterProperty<Attribute>(nameof(PhysicalBeauty));
-    public Attribute PhysicalBeauty
-    {
-      get => GetProperty(PhysicalBeautyProperty);
-      private set => LoadProperty(PhysicalBeautyProperty, value);
-    }
-
-    public static readonly PropertyInfo<Fatigue> FatigueProperty = RegisterProperty<Fatigue>(nameof(Fatigue));
-    public Fatigue Fatigue
-    {
-      get => GetProperty(FatigueProperty);
-      set => SetProperty(FatigueProperty, value);
-    }
-
-    public static readonly PropertyInfo<Vitality> VitalityProperty = RegisterProperty<Vitality>(nameof(Vitality));
-    public Vitality Vitality
-    {
-      get => GetProperty(VitalityProperty);
-      set => SetProperty(VitalityProperty, value);
+      get => DamageList.Where(r => r.Name == "VIT").First();
     }
 
     public static readonly PropertyInfo<SkillList> SkillsProperty = RegisterProperty<SkillList>(nameof(Skills));
@@ -236,28 +192,7 @@ namespace GameMechanics
 
     public int GetAttribute(string attributeName)
     {
-      switch (attributeName)
-      {
-        case "STR":
-        case "STT":
-          return Strength.Value;
-        case "DEX":
-          return Dexterity.Value;
-        case "END":
-          return Endurance.Value;
-        case "WIL":
-          return Willpower.Value;
-        case "INT":
-          return Intelligence.Value;
-        case "ITT":
-          return Intuition.Value;
-        case "PHY":
-          return PhysicalBeauty.Value;
-        case "SOC":
-          return SocialStanding.Value;
-        default:
-          throw new ArgumentException(nameof(attributeName));
-      }
+      return AttributeList.Where(r => r.Name == attributeName).First().Value;
     }
 
     public void EndOfRound()
@@ -290,16 +225,8 @@ namespace GameMechanics
       {
         PlayerEmail = playerEmail;
         DamageClass = 1;
-        Strength = DataPortal.CreateChild<Attribute>();
-        Dexterity = DataPortal.CreateChild<Attribute>();
-        Endurance = DataPortal.CreateChild<Attribute>();
-        Intelligence = DataPortal.CreateChild<Attribute>();
-        Intuition = DataPortal.CreateChild<Attribute>();
-        Willpower = DataPortal.CreateChild<Attribute>();
-        PhysicalBeauty = DataPortal.CreateChild<Attribute>();
-        SocialStanding = DataPortal.CreateChild<Attribute>();
-        Fatigue = DataPortal.CreateChild<Fatigue>(this);
-        Vitality = DataPortal.CreateChild<Vitality>(this);
+        AttributeList = DataPortal.CreateChild<AttributeList>();
+        DamageList = DataPortal.CreateChild<DamageList>(this);
         Wounds = DataPortal.CreateChild<WoundList>();
         Skills = DataPortal.CreateChild<SkillList>();
         ActionPoints = DataPortal.CreateChild<ActionPoints>(this);
@@ -309,14 +236,7 @@ namespace GameMechanics
 
     private static readonly string[] mapIgnore = new string[]
       {
-        nameof(Strength),
-        nameof(Dexterity),
-        nameof(Endurance),
-        nameof(Intelligence),
-        nameof(Intuition),
-        nameof(Willpower),
-        nameof(PhysicalBeauty),
-        nameof(SocialStanding),
+        nameof(AttributeList),
         nameof(Fatigue),
         nameof(Vitality),
         nameof(Wounds),
@@ -331,16 +251,8 @@ namespace GameMechanics
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
-        Strength = DataPortal.FetchChild<Attribute>(existing.Strength);
-        Dexterity = DataPortal.FetchChild<Attribute>(existing.Dexterity);
-        Endurance = DataPortal.FetchChild<Attribute>(existing.Endurance);
-        Intelligence = DataPortal.FetchChild<Attribute>(existing.Intelligence);
-        Intuition = DataPortal.FetchChild<Attribute>(existing.Intuition);
-        Willpower = DataPortal.FetchChild<Attribute>(existing.Willpower);
-        PhysicalBeauty = DataPortal.FetchChild<Attribute>(existing.PhysicalBeauty);
-        SocialStanding = DataPortal.FetchChild<Attribute>(existing.SocialStanding);
-        Fatigue = DataPortal.FetchChild<Fatigue>(existing.Fatigue);
-        Vitality = DataPortal.FetchChild<Vitality>(existing.Vitality);
+        AttributeList = DataPortal.FetchChild<AttributeList>(existing.AttributeList);
+        DamageList = DataPortal.FetchChild<DamageList>(existing.DamageList);
         Wounds = DataPortal.FetchChild<WoundList>(existing.Wounds);
         Skills = DataPortal.FetchChild<SkillList>(existing.Skills);
         ActionPoints = DataPortal.FetchChild<ActionPoints>(existing.ActionPoints);
