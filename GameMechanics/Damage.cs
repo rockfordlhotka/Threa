@@ -61,18 +61,22 @@ namespace GameMechanics
 
     private void EndOfRoundFat()
     {
-      if (PendingDamage > 0 || PendingHealing > 0)
+      if (Value < BaseValue || PendingDamage > 0)
       {
         // recover fatigue
         var vit = Character.Vitality.Value;
         if (vit > 7)
-          PendingDamage += 1;
+          PendingHealing += 1;
         // heal
         int heal = PendingHealing / 2;
+        if (PendingHealing == 1)
+          heal = 1;
         PendingHealing -= heal;
         Value += heal;
         // take damage
         int damage = PendingDamage / 2;
+        if (PendingDamage == 1)
+          damage = 1;
         PendingDamage -= damage;
         Value -= damage;
         // cascade overflow
@@ -88,14 +92,18 @@ namespace GameMechanics
 
     private void EndOfRoundVit()
     {
-      if (PendingDamage > 0 || PendingHealing > 0)
+      if (Value < BaseValue || PendingDamage > 0)
       {
         // heal
         int heal = PendingHealing / 2;
+        if (PendingHealing == 1)
+          heal = 1;
         PendingHealing -= heal;
         Value += heal;
         // take damage
         int damage = PendingDamage / 2;
+        if (PendingDamage == 1)
+          damage = 1;
         PendingDamage -= damage;
         Value -= damage;
         // cascade overflow

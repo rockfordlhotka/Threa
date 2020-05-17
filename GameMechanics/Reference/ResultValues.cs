@@ -38,6 +38,11 @@ namespace GameMechanics.Reference
       new ResultValue(18, "Superb", 4, 4, 14, 1024)
     };
 
+    /// <summary>
+    /// Gets a result value descriptor for an RV value
+    /// </summary>
+    /// <param name="resultValue">RV value</param>
+    /// <returns></returns>
     public static ResultValue GetResult(int resultValue)
     {
       if (resultValue < -10)
@@ -47,24 +52,51 @@ namespace GameMechanics.Reference
 
       return resultValues.Where(r => r.RV == resultValue).First();
     }
-
-    public static DamageValue GetSuccessValue(ResultValue result, int svBase, int damageClass)
-    {
-      return new DamageValue(result, svBase, damageClass);
-    }
   }
 
   public class ResultValue
   {
-    public int RV { get; set; }
-    public string RVr { get; set; }
-    public int RVs { get; set; }
-    public int RVa { get; set; }
-    public int RVe { get; set; }
-    public int RVx { get; set; }
+    /// <summary>
+    /// Gets the RV value
+    /// </summary>
+    public int RV { get; private set; }
+    /// <summary>
+    /// Gets the RVr (text description) value
+    /// </summary>
+    public string RVr { get; private set; }
+    /// <summary>
+    /// Gets the RVs (damage SV) value
+    /// </summary>
+    public int RVs { get; private set; }
+    /// <summary>
+    /// Gets the RVa (armor adjustment) value
+    /// </summary>
+    public int RVa { get; private set; }
+    /// <summary>
+    /// Gets the RVe (energy) value
+    /// </summary>
+    public int RVe { get; private set; }
+    /// <summary>
+    /// gets the RVx (exponential) value
+    /// </summary>
+    public int RVx { get; private set; }
+    /// <summary>
+    /// Gets a value indicating whether the result is successful
+    /// </summary>
     public bool Success { get => RV >= 0; }
 
-    public ResultValue(int rv, string rvr, int rvs, int rva, int rve, int rvx)
+    /// <summary>
+    /// Gets a damage value for this result
+    /// </summary>
+    /// <param name="weaponSVBase">Base SV for weapon</param>
+    /// <param name="damageClass">Damage class for weapon</param>
+    /// <returns></returns>
+    public DamageValue CalculateDamageValue(int weaponSVBase, int damageClass)
+    {
+      return new DamageValue(this, weaponSVBase, damageClass);
+    }
+
+    internal ResultValue(int rv, string rvr, int rvs, int rva, int rve, int rvx)
     {
       RV = rv;
       RVr = rvr;
@@ -75,12 +107,33 @@ namespace GameMechanics.Reference
     }
   }
 
+  /// <summary>
+  /// Represents a calculated damage value for
+  /// an attack
+  /// </summary>
   public class DamageValue
   {
-    public int SV { get; set; }
-    public int Damage { get; set; }
-    public int Class { get; set; }
+    /// <summary>
+    /// Calculated success value including
+    /// weapon base
+    /// </summary>
+    public int SV { get; private set; }
+    /// <summary>
+    /// Randomized damage value ready to
+    /// be applied to damage table
+    /// </summary>
+    public int Damage { get; private set; }
+    /// <summary>
+    /// Damage class
+    /// </summary>
+    public int Class { get; private set; }
 
+    /// <summary>
+    /// Gets a new damage value modified for
+    /// the target's damage class
+    /// </summary>
+    /// <param name="targetClass">Target's damage class</param>
+    /// <returns></returns>
     public int GetModifiedDamage(int targetClass)
     {
       if (Class == targetClass)
@@ -91,10 +144,16 @@ namespace GameMechanics.Reference
         return Damage / ((targetClass - Class) * 10);
     }
 
-    public DamageValue(ResultValue resultValue, int svBase, int damageClass)
+    /// <summary>
+    /// Calculates SV and randomized damage value
+    /// </summary>
+    /// <param name="resultValue">AV - TV</param>
+    /// <param name="weaponSVBase">Weapon base SV</param>
+    /// <param name="weaponClass">Weapon damage class</param>
+    internal DamageValue(ResultValue resultValue, int weaponSVBase, int weaponClass)
     {
-      Class = damageClass;
-      SV = resultValue.RVs + svBase;
+      Class = weaponClass;
+      SV = resultValue.RVs + weaponSVBase;
       if (SV > 20)
         SV = 20;
       switch (SV)
