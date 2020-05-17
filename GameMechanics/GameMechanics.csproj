@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Csla" Version="5.2.0-R20050802" />
+    <PackageReference Include="Csla" Version="5.2.0-R20051501" />
   </ItemGroup>
 
   <ItemGroup>
