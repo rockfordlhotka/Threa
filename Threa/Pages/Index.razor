@@ -1,5 +1,42 @@
 ﻿@page "/"
+@inject Services.ChatService chat
 
 <h1>Threa, Helicon V, and More!</h1>
 
 <p>This app allows you to create and manage RPG characters for Threa, Helicon V, and other games using the Threa Gaming System.</p>
+
+<p>
+  <textarea rows="20" cols="80">@messageList</textarea>
+</p>
+<br />
+<input type="text" @bind-value="messageText" />
+<input type="button" @onclick="SendMessage" value="Send" />
+
+
+@code {
+  private string messageList;
+  private string messageText;
+
+  protected override void OnParametersSet()
+  {
+    chat.NewMessages += async () => await InvokeAsync(ShowMessages);
+  }
+
+  private void ShowMessages()
+  {
+    var sb = new System.Text.StringBuilder();
+    List<string> items = chat.GetMessages();
+    foreach (var item in items)
+    {
+      sb.Append(item);
+      sb.Append(Environment.NewLine);
+    }
+    messageList = sb.ToString();
+    StateHasChanged();
+  }
+
+  private void SendMessage()
+  {
+    chat.SendMessage(messageText);
+  }
+}

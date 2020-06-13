@@ -18,6 +18,8 @@ using Threa.Data;
 using Csla.Configuration;
 using Threa.Dal.MockDb;
 using System.IO;
+using Microsoft.AspNetCore.Components.Server.Circuits;
+using Threa.Services;
 
 namespace Threa
 {
@@ -41,6 +43,9 @@ namespace Threa
           .AddEntityFrameworkStores<ApplicationDbContext>();
       services.AddRazorPages();
       services.AddServerSideBlazor();
+      services.AddSingleton<ChatHub>();
+      services.AddTransient<ChatService>();
+      services.AddScoped<CircuitHandler, CircuitSessionService>();
       services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
       services.AddSingleton<WeatherForecastService>();
       services.AddMockDb();
