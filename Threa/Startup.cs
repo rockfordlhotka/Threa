@@ -44,6 +44,7 @@ namespace Threa
       services.AddRazorPages();
       services.AddServerSideBlazor();
       services.AddSingleton<ChatHub>();
+      services.AddSingleton<SessionList>();
       services.AddTransient<ChatService>();
       services.AddScoped<CircuitHandler, CircuitSessionService>();
       services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();

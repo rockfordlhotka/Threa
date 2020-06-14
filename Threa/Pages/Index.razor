@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject Services.ChatService chat
+@inject Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler circuit
 
 <h1>Threa, Helicon V, and More!</h1>
 
@@ -11,32 +12,48 @@
 <br />
 <input type="text" @bind-value="messageText" />
 <input type="button" @onclick="SendMessage" value="Send" />
+<p>
+  Active users:
+  <ul>
+    @foreach (var item in activeUsers)
+    {
+      <li>@item</li>
+    }
+  </ul>
+</p>
 
 
 @code {
   private string messageList;
   private string messageText;
+  private List<string> activeUsers = new List<string>();
 
   protected override void OnParametersSet()
   {
-    chat.NewMessages += async () => await InvokeAsync(ShowMessages);
+    chat.NewMessage += async (text) =>
+    {
+      await InvokeAsync(() =>
+      {
+        messageList += text;
+        messageList += Environment.NewLine;
+        StateHasChanged();
+      });
+    };
+    var myCircuit = (Threa.Services.CircuitSessionService)circuit;
+    myCircuit.SessionCountChanged += async () => await InvokeAsync(ShowActiveUsers);
+    ShowActiveUsers();
   }
 
-  private void ShowMessages()
+  private void ShowActiveUsers()
   {
-    var sb = new System.Text.StringBuilder();
-    List<string> items = chat.GetMessages();
-    foreach (var item in items)
-    {
-      sb.Append(item);
-      sb.Append(Environment.NewLine);
-    }
-    messageList = sb.ToString();
+    var myCircuit = (Threa.Services.CircuitSessionService)circuit;
+    activeUsers = myCircuit.ActiveUsers;
     StateHasChanged();
   }
 
   private void SendMessage()
   {
     chat.SendMessage(messageText);
+    messageText = string.Empty;
   }
 }

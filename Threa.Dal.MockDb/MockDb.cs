@@ -8,7 +8,7 @@ namespace Threa.Dal.MockDb
   {
     public static readonly List<IPlayer> Players = new List<IPlayer>
     { 
-      new Player { Id = Guid.NewGuid().ToString(), Name = "Rocky", Email = "rocky@lhotka.net" }
+      new Player { Id = Guid.NewGuid().ToString(), Name = "Rocky", Email = "illiante@yahoo.com" }
     };
 
     public static readonly List<ICharacter> Characters = new List<ICharacter>
@@ -16,7 +16,7 @@ namespace Threa.Dal.MockDb
       new Character
       {
         Id = Guid.NewGuid().ToString(),
-        PlayerEmail = "rocky@lhotka.net",
+        PlayerEmail = "illiante@yahoo.com",
         Name = "Illiante",
         Species = "Human"
       }

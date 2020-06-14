@@ -1,4 +1,4 @@
-﻿@page "/characters"
+﻿@page "/player/characters"
 
 @inject ViewModel<CharacterList> vm
 @inject NavigationManager NavigationManager
@@ -9,7 +9,7 @@
 
 <div class="alert-danger">@vm.ViewModelErrorText</div>
 
-<p><a href="character">Add character</a></p>
+<p><a href="player/character">Add character</a></p>
 
 @if (vm.Model == null)
 {
@@ -27,7 +27,7 @@ else
       <tr>
         <td>@item.Name</td>
         <td>(@item.Species)</td>
-        <td><a href="character/@item.Id">Details</a></td>
+        <td><a href="player/character/@item.Id">Details</a></td>
       </tr>
       }
     </tbody>

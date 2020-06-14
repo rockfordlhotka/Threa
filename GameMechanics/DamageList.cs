@@ -18,6 +18,7 @@ namespace GameMechanics
     [FetchChild]
     private void Fetch(List<IDamage> list)
     {
+      if (list == null) return;
       using (LoadListMode)
       {
         foreach (var item in list)

@@ -1,43 +1,41 @@
 ﻿using Microsoft.AspNetCore.Components.Server.Circuits;
 using System;
-using System.Collections.Generic;
-using System.Timers;
 
 namespace Threa.Services
 {
   public class ChatService
   {
-    public event Action NewMessages;
+    public event Action<string> NewMessage;
 
-    private Timer timer;
-    private ChatHub hub;
+    private readonly ChatHub hub;
+    public bool IsActive { get; private set; }
 
     public ChatService(CircuitHandler circuit, ChatHub chatHub)
     {
       hub = chatHub;
-      hub.NewMessages += App_NewMessages;
       var myCircuit = ((CircuitSessionService)circuit);
       myCircuit.CircuitActive += (id, active) =>
       {
-        if (active)
+        if (active && !string.IsNullOrWhiteSpace(id))
         {
-          if (!string.IsNullOrWhiteSpace(id))
-          {
-            timer?.Stop();
-            timer = new Timer(3000)
-            {
-              AutoReset = true,
-              Enabled = true
-            };
-          }
+          ActivateService();
         }
         else
         {
-          hub.NewMessages -= App_NewMessages;
-          timer?.Stop();
-          timer = null;
+          active = false;
+          hub.NewMessage -= App_NewMessage;
         }
       };
+      ActivateService();
+    }
+
+    private void ActivateService()
+    {
+      if (!IsActive)
+      {
+        hub.NewMessage += App_NewMessage;
+      }
+      IsActive = true;
     }
 
     public void SendMessage(string message)
@@ -45,14 +43,9 @@ namespace Threa.Services
       hub.SendMessage(message);
     }
 
-    public List<string> GetMessages()
+    private void App_NewMessage(string message)
     {
-      return hub.GetMessages();
-    }
-
-    private void App_NewMessages()
-    {
-      NewMessages?.Invoke();
+      NewMessage?.Invoke(message);
     }
   }
 }

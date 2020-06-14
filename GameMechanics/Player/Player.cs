@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Csla;
 using Threa.Dal;
 
-namespace GameMechanics
+namespace GameMechanics.Player
 {
   [Serializable]
   public class Player : BusinessBase<Player>
