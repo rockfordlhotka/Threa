@@ -15,7 +15,7 @@ namespace GameMechanics.Test
       c.AttributeList.Where(r => r.Name == "STR").First().Value = 7;
       var cs = new CharacterSkill
       {
-        PrimarySkill = "STR",
+        PrimaryAttribute = "STR",
         Level = 3
       };
       var s = DataPortal.FetchChild<Skill>(cs);
@@ -34,7 +34,7 @@ namespace GameMechanics.Test
       c.AttributeList.Where(r => r.Name == "END").First().Value = 10;
       var cs = new CharacterSkill
       {
-        PrimarySkill = "STR/END",
+        PrimaryAttribute = "STR/END",
         Level = 3
       };
       var s = DataPortal.FetchChild<Skill>(cs);

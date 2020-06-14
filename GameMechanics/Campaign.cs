@@ -14,7 +14,5 @@ namespace GameMechanics
       get => GetProperty(IdProperty);
       private set => LoadProperty(IdProperty, value);
     }
-
-
   }
 }

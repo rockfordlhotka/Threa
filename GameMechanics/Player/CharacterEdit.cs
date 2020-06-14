@@ -116,21 +116,18 @@ namespace GameMechanics.Player
       private set => LoadProperty(AttributeListProperty, value);
     }
 
-    public static readonly PropertyInfo<DamageList> DamageListProperty = RegisterProperty<DamageList>(nameof(DamageList));
-    public DamageList DamageList
+    public static readonly PropertyInfo<int> FatigueProperty = RegisterProperty<int>(nameof(Fatigue));
+    public int Fatigue
     {
-      get => GetProperty(DamageListProperty);
-      private set => LoadProperty(DamageListProperty, value);
+      get => GetProperty(FatigueProperty);
+      private set => LoadProperty(FatigueProperty, value);
     }
 
-    public Damage Fatigue
+    public static readonly PropertyInfo<int> VitalityProperty = RegisterProperty<int>(nameof(Vitality));
+    public int Vitality
     {
-      get => DamageList.Where(r => r.Name == "FAT").First();
-    }
-
-    public Damage Vitality
-    {
-      get => DamageList.Where(r => r.Name == "VIT").First();
+      get => GetProperty(VitalityProperty);
+      private set => LoadProperty(VitalityProperty, value);
     }
 
     public static readonly PropertyInfo<SkillList> SkillsProperty = RegisterProperty<SkillList>(nameof(Skills));
@@ -138,29 +135,6 @@ namespace GameMechanics.Player
     {
       get => GetProperty(SkillsProperty);
       set => SetProperty(SkillsProperty, value);
-    }
-
-    public static readonly PropertyInfo<WoundList> WoundsProperty = RegisterProperty<WoundList>(nameof(Wounds));
-    public WoundList Wounds
-    {
-      get => GetProperty(WoundsProperty);
-      private set => LoadProperty(WoundsProperty, value);
-    }
-
-    public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
-    [Display(Name = "Is passed out")]
-    public bool IsPassedOut
-    {
-      get => GetProperty(IsPassedOutProperty);
-      set => SetProperty(IsPassedOutProperty, value);
-    }
-
-    public static readonly PropertyInfo<ActionPoints> ActionPointsProperty = RegisterProperty<ActionPoints>(nameof(ActionPoints));
-    [Display(Name = "Action points")]
-    public ActionPoints ActionPoints
-    {
-      get => GetProperty(ActionPointsProperty);
-      set => SetProperty(ActionPointsProperty, value);
     }
 
     public static readonly PropertyInfo<double> XPTotalProperty = RegisterProperty<double>(nameof(XPTotal));
@@ -208,10 +182,7 @@ namespace GameMechanics.Player
         PlayerEmail = playerEmail;
         DamageClass = 1;
         AttributeList = DataPortal.CreateChild<AttributeList>();
-        DamageList = DataPortal.CreateChild<DamageList>(this);
-        Wounds = DataPortal.CreateChild<WoundList>();
         Skills = DataPortal.CreateChild<SkillList>();
-        ActionPoints = DataPortal.CreateChild<ActionPoints>(this);
       }
       BusinessRules.CheckRules();
     }
@@ -219,41 +190,68 @@ namespace GameMechanics.Player
     private static readonly string[] mapIgnore = new string[]
       {
         nameof(AttributeList),
+        nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
-        nameof(Wounds),
-        nameof(Skills),
-        nameof(ActionPoints),
+        nameof(Threa.Dal.Dto.Character.ActionPoints),
+        nameof(Threa.Dal.Dto.Character.DamageList),
+        nameof(Threa.Dal.Dto.Character.IsPassedOut),
+        nameof(Threa.Dal.Dto.Character.Wounds),
       };
 
     [Fetch]
-    private async Task Fetch(string id, [Inject] ICharacterDal dal)
+    private async Task FetchAsync(string id, [Inject] ICharacterDal dal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
+        if (existing.DamageList != null)
+        {
+          Fatigue = existing.DamageList.Where(r => r.Name == "FAT").First().BaseValue;
+          Vitality = existing.DamageList.Where(r => r.Name == "VIT").First().BaseValue;
+        }
         AttributeList = DataPortal.FetchChild<AttributeList>(existing.AttributeList);
-        DamageList = DataPortal.FetchChild<DamageList>(existing.DamageList);
-        Wounds = DataPortal.FetchChild<WoundList>(existing.Wounds);
         Skills = DataPortal.FetchChild<SkillList>(existing.Skills);
-        ActionPoints = DataPortal.FetchChild<ActionPoints>(existing.ActionPoints);
       }
       BusinessRules.CheckRules();
     }
 
     [Insert]
-    [Update]
-    private async Task InsertUpdate([Inject] ICharacterDal dal)
+    private async Task InsertAsync([Inject] ICharacterDal dal)
     {
       var toSave = dal.GetBlank();
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(this, toSave, mapIgnore);
-        FieldManager.UpdateChildren();
+        toSave.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "FAT", BaseValue = Fatigue, Value = Fatigue });
+        toSave.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "VIT", BaseValue = Vitality, Value = Vitality });
+        DataPortal.UpdateChild(AttributeList, toSave.AttributeList);
+        DataPortal.UpdateChild(Skills, toSave.Skills);
       }
       var result = await dal.SaveCharacter(toSave);
       Id = result.Id;
+    }
+
+    [Update]
+    private async Task UpdateAsync([Inject] ICharacterDal dal)
+    {
+      using (BypassPropertyChecks)
+      {
+        var existing = await dal.GetCharacterAsync(Id);
+        Csla.Data.DataMapper.Map(this, existing, mapIgnore);
+        existing.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "FAT", BaseValue = Fatigue, Value = Fatigue });
+        existing.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "VIT", BaseValue = Vitality, Value = Vitality });
+        DataPortal.UpdateChild(AttributeList, existing.AttributeList);
+        DataPortal.UpdateChild(Skills, existing.Skills);
+        await dal.SaveCharacter(existing);
+      }
+    }
+
+    [Delete]
+    private async Task DeleteAsync([Inject] ICharacterDal dal)
+    {
+      await dal.DeleteCharacter(Id);
     }
   }
 }

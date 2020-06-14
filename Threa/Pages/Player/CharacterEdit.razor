@@ -1,7 +1,7 @@
 ﻿@page "/player/character"
 @page "/player/character/{id}"
 
-@inject ViewModel<GameMechanics.Character> vm
+@inject ViewModel<GameMechanics.Player.CharacterEdit> vm
 @inject NavigationManager NavigationManager
 
 @attribute [Authorize]
@@ -9,6 +9,10 @@
 <h3>Character Details</h3>
 
 <div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (vm.Exception != null)
+{
+  <div class="alert-danger">@vm.Exception.ToString()</div>
+}
 
 @if (vm.Model == null)
 {
@@ -52,9 +56,9 @@ else
   {
     if (string.IsNullOrWhiteSpace(Id))
       await vm.RefreshAsync(() =>
-        DataPortal.CreateAsync<GameMechanics.Character>());
+        DataPortal.CreateAsync<GameMechanics.Player.CharacterEdit>());
     else
       await vm.RefreshAsync(() =>
-        DataPortal.FetchAsync<GameMechanics.Character>(Id));
+        DataPortal.FetchAsync<GameMechanics.Player.CharacterEdit>(Id));
   }
 }

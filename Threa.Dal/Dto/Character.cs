@@ -22,8 +22,8 @@ namespace Threa.Dal.Dto
     public bool IsPassedOut { get; set; }
     public double XPTotal { get; set; }
     public double XPBanked { get; set; }
-    public List<IAttribute> AttributeList { get; set; }
-    public List<IDamage> DamageList { get; set; }
+    public List<IAttribute> AttributeList { get; set; } = new List<IAttribute>();
+    public List<IDamage> DamageList { get; set; } = new List<IDamage>();
     public List<IWound> Wounds { get; set; } = new WoundList();
     public List<ICharacterSkill> Skills { get; set; } = new CharacterSkillList();
     public IActionPoints ActionPoints { get; set; } = new ActionPoints();

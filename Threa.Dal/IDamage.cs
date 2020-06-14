@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Threa.Dal
+﻿namespace Threa.Dal
 {
   public interface IDamage
   {
+    string Name { get; set; }
     int Value { get; set; }
     int BaseValue { get; set; }
     int PendingHealing { get; set; }

@@ -2,37 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Csla;
-using Csla.Core;
-using GameMechanics.Reference;
 using Threa.Dal;
 
-namespace GameMechanics
+namespace GameMechanics.Player
 {
   [Serializable]
   public class SkillList : BusinessListBase<SkillList, Skill>
   {
-    public Reference.ResultValue SkillCheck(string skillName, int targetValue)
-    {
-      var skill = this.Where(r => r.Name == skillName).FirstOrDefault();
-      if (skill == null)
-      {
-        var skillTemplate = Reference.SkillList.GetList().Where(r => r.Name == skillName).FirstOrDefault();
-        if (skillTemplate == null)
-        {
-          return ResultValues.GetResult(-10);
-        }
-        else
-        {
-          var baseAS = Skill.GetAttributeBase((Character)Parent, skillTemplate.PrimaryAttribute);
-          return ResultValues.GetResult(Dice.Roll4dFWithBonus() + baseAS);
-        }
-      }
-      else
-      {
-        return skill.SkillCheck();
-      }
-    }
-
     [CreateChild]
     private void Create()
     {
@@ -74,7 +50,7 @@ namespace GameMechanics
     public int Level
     {
       get => GetProperty(LevelProperty);
-      private set => LoadProperty(LevelProperty, value);
+      set => SetProperty(LevelProperty, value);
     }
 
     public static readonly PropertyInfo<string> PrimaryAttributeProperty = RegisterProperty<string>(nameof(PrimaryAttribute));
@@ -88,46 +64,7 @@ namespace GameMechanics
     public double XPBanked
     {
       get => GetProperty(XPBankedProperty);
-      internal set => SetProperty(XPBankedProperty, value);
-    }
-
-    public ResultValue SkillCheck()
-    {
-      return ResultValues.GetResult(Dice.Roll4dFWithBonus() + AbilityScore);
-    }
-
-    public int Bonus
-    {
-      get => SkillCost.GetBonus(Level);
-    }
-
-    public int AbilityScore
-    {
-      get => Bonus + GetAttributeBase((Character)((IParent)Parent).Parent, PrimaryAttribute);
-    }
-
-    public static int GetAttributeBase(Character character, string primaryAttribute)
-    {
-      var attributes = primaryAttribute.Split('/');
-      int sum = 0;
-      foreach (var item in attributes)
-      {
-        sum += character.GetAttribute(item);
-      }
-      var result = sum / attributes.Length;
-      if (character.Fatigue.Value < 1)
-        result = 0;
-      else if (character.Fatigue.Value < 2)
-        result -= 4;
-      else if (character.Fatigue.Value < 4)
-        result -= 2;
-      else if (character.Fatigue.Value < 6)
-        result -= 1;
-      if (character.Vitality.Value < 4)
-        result -= 6;
-      else if (character.Fatigue.Value < 6)
-        result -= 4;
-      return result;
+      set => SetProperty(XPBankedProperty, value);
     }
 
     [CreateChild]
@@ -139,7 +76,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(Threa.Dal.ICharacterSkill skill)
+    private void Fetch(ICharacterSkill skill)
     {
       using (BypassPropertyChecks)
       {
@@ -149,6 +86,38 @@ namespace GameMechanics
         XPBanked = skill.XPBanked;
         PrimaryAttribute = skill.PrimaryAttribute;
       }
+    }
+
+    [InsertChild]
+    [UpdateChild]
+    private void InsertUpdate(List<ICharacterSkill> skills)
+    {
+      using (BypassPropertyChecks)
+      {
+        ICharacterSkill skill;
+        if (IsNew)
+        {
+          skill = new Threa.Dal.Dto.CharacterSkill();
+          skills.Add(skill);
+        }
+        else
+        {
+          skill = skills.Where(r => r.Name == Name).First();
+        }
+
+        skill.Id = Id;
+        skill.Name = Name;
+        skill.Level = Level;
+        skill.XPBanked = XPBanked;
+        skill.PrimaryAttribute = PrimaryAttribute;
+      }
+    }
+
+    [DeleteSelfChild]
+    private void Delete(List<ICharacterSkill> skills)
+    {
+      if (IsNew) return;
+      skills.Remove(skills.Where(r => r.Name == Name).First());
     }
   }
 }

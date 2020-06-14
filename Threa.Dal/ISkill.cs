@@ -11,7 +11,7 @@
     bool IsPsionic { get; set; }
     int Untrained { get; set; }
     int Trained { get; set; }
-    string PrimarySkill { get; set; }
+    string PrimaryAttribute { get; set; }
     string SecondarySkill { get; set; }
     string TertiarySkill { get; set; }
   }
