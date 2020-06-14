@@ -20,24 +20,34 @@
 }
 else
 {
-  <table>
-    <thead>
-      <tr><th></th><th></th></tr>
-    </thead>
-    <tbody>
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
-      <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PlayerEmail)" />
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
-      <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
-      @*<TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Height)" />
-        <TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Weight)" />*@
-      <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
-      <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
-    </tbody>
-  </table>
+  <RadzenTabs>
+    <Tabs>
+      <RadzenTabsItem Text="Info">
+        <table>
+          <thead>
+            <tr><th></th><th></th></tr>
+          </thead>
+          <tbody>
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+            <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PlayerEmail)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
+            @*<TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Height)" />
+          <TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.Weight)" />*@
+            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
+          </tbody>
+        </table>
+      </RadzenTabsItem>
+      <RadzenTabsItem Text="Attributes">
+      </RadzenTabsItem>
+      <RadzenTabsItem Text="Skills">
+      </RadzenTabsItem>
+    </Tabs>
+  </RadzenTabs>
   <button @onclick="vm.SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
 }
 

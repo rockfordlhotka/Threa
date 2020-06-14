@@ -20,6 +20,7 @@ using Threa.Dal.MockDb;
 using System.IO;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Threa.Services;
+using Radzen;
 
 namespace Threa
 {
@@ -49,6 +50,8 @@ namespace Threa
       services.AddScoped<CircuitHandler, CircuitSessionService>();
       services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
       services.AddSingleton<WeatherForecastService>();
+      services.AddScoped<DialogService>();
+      services.AddScoped<NotificationService>();
       services.AddMockDb();
       services.AddCsla().WithBlazorServerSupport();
     }
