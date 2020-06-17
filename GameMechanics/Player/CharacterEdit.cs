@@ -1,4 +1,6 @@
 ﻿using Csla;
+using Csla.Core;
+using Csla.Rules;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -10,6 +12,22 @@ namespace GameMechanics.Player
   [Serializable]
   public class CharacterEdit : BusinessBase<CharacterEdit>
   {
+    public CharacterEdit()
+    {
+      this.ChildChanged += CharacterEdit_ChildChanged;
+    }
+
+    public bool IsBeingSaved { get; set; }
+
+    private void CharacterEdit_ChildChanged(object sender, Csla.Core.ChildChangedEventArgs e)
+    {
+      if (!IsBeingSaved && e.ChildObject is AttributeEdit)
+      {
+        BusinessRules.CheckRules(FatigueProperty);
+        BusinessRules.CheckRules(VitalityProperty);
+      }
+    }
+
     public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
     public string Id
     {
@@ -73,23 +91,23 @@ namespace GameMechanics.Player
       set => SetProperty(HairDescriptionProperty, value);
     }
 
-    public static readonly PropertyInfo<double> HeightProperty = RegisterProperty<double>(nameof(Height));
-    public double Height
+    public static readonly PropertyInfo<string> HeightProperty = RegisterProperty<string>(nameof(Height));
+    public string Height
     {
       get => GetProperty(HeightProperty);
       set => SetProperty(HeightProperty, value);
     }
 
-    public static readonly PropertyInfo<double> WeightProperty = RegisterProperty<double>(nameof(Weight));
-    public double Weight
+    public static readonly PropertyInfo<string> WeightProperty = RegisterProperty<string>(nameof(Weight));
+    public string Weight
     {
       get => GetProperty(WeightProperty);
       set => SetProperty(WeightProperty, value);
     }
 
-    public static readonly PropertyInfo<double> BirthdateProperty = RegisterProperty<double>(nameof(Birthdate));
+    public static readonly PropertyInfo<long> BirthdateProperty = RegisterProperty<long>(nameof(Birthdate));
     [Display(Name = "Birth date")]
-    public double Birthdate
+    public long Birthdate
     {
       get => GetProperty(BirthdateProperty);
       set => SetProperty(BirthdateProperty, value);
@@ -109,8 +127,15 @@ namespace GameMechanics.Player
       set => SetProperty(NotesProperty, value);
     }
 
-    public static readonly PropertyInfo<AttributeList> AttributeListProperty = RegisterProperty<AttributeList>(nameof(AttributeList));
-    public AttributeList AttributeList
+    public static readonly PropertyInfo<bool> PlayableProperty = RegisterProperty<bool>(nameof(Playable));
+    public bool Playable
+    {
+      get => GetProperty(PlayableProperty);
+      set => SetProperty(PlayableProperty, value);
+    }
+
+    public static readonly PropertyInfo<AttributeEditList> AttributeListProperty = RegisterProperty<AttributeEditList>(nameof(AttributeList));
+    public AttributeEditList AttributeList
     {
       get => GetProperty(AttributeListProperty);
       private set => LoadProperty(AttributeListProperty, value);
@@ -130,8 +155,8 @@ namespace GameMechanics.Player
       private set => LoadProperty(VitalityProperty, value);
     }
 
-    public static readonly PropertyInfo<SkillList> SkillsProperty = RegisterProperty<SkillList>(nameof(Skills));
-    public SkillList Skills
+    public static readonly PropertyInfo<SkillEditList> SkillsProperty = RegisterProperty<SkillEditList>(nameof(Skills));
+    public SkillEditList Skills
     {
       get => GetProperty(SkillsProperty);
       set => SetProperty(SkillsProperty, value);
@@ -166,6 +191,53 @@ namespace GameMechanics.Player
       return AttributeList.Where(r => r.Name == attributeName).First().Value;
     }
 
+    protected override void AddBusinessRules()
+    {
+      base.AddBusinessRules();
+      BusinessRules.AddRule(new CalculateFatigue { PrimaryProperty = FatigueProperty });
+      BusinessRules.AddRule(new CalculateVitality { PrimaryProperty = VitalityProperty });
+      BusinessRules.AddRule(new LockCharacter(PlayableProperty));
+      BusinessRules.AddRule(new LockCharacter(DamageClassProperty));
+      BusinessRules.AddRule(new LockCharacter(BirthdateProperty));
+    }
+
+    public class CalculateFatigue : BusinessRule
+    {
+      protected override void Execute(IRuleContext context)
+      {
+        var character = (CharacterEdit)context.Target;
+        var end = character.GetAttribute("END");
+        var wil = character.GetAttribute("WIL");
+        context.AddOutValue(end + wil - 5);
+      }
+    }
+
+    public class CalculateVitality : BusinessRule
+    {
+      protected override void Execute(IRuleContext context)
+      {
+        var character = (CharacterEdit)context.Target;
+        var str = character.GetAttribute("STR");
+        context.AddOutValue(str * 2 - 5);
+      }
+    }
+
+    public class LockCharacter : AuthorizationRule
+    {
+      public LockCharacter(IPropertyInfo property)
+        : base(AuthorizationActions.WriteProperty, property)
+      {
+        CacheResult = false;
+      }
+
+      protected override void Execute(IAuthorizationContext context)
+      {
+        var character = (CharacterEdit)context.Target;
+        var locked = character.Playable;
+        context.HasPermission = !locked;
+      }
+    }
+
     [Create]
     [RunLocal]
     private void Create()
@@ -181,8 +253,8 @@ namespace GameMechanics.Player
       {
         PlayerEmail = playerEmail;
         DamageClass = 1;
-        AttributeList = DataPortal.CreateChild<AttributeList>();
-        Skills = DataPortal.CreateChild<SkillList>();
+        AttributeList = DataPortal.CreateChild<AttributeEditList>();
+        Skills = DataPortal.CreateChild<SkillEditList>();
       }
       BusinessRules.CheckRules();
     }
@@ -193,6 +265,7 @@ namespace GameMechanics.Player
         nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
+        nameof(IsBeingSaved),
         nameof(Threa.Dal.Dto.Character.ActionPoints),
         nameof(Threa.Dal.Dto.Character.DamageList),
         nameof(Threa.Dal.Dto.Character.IsPassedOut),
@@ -211,8 +284,8 @@ namespace GameMechanics.Player
           Fatigue = existing.DamageList.Where(r => r.Name == "FAT").First().BaseValue;
           Vitality = existing.DamageList.Where(r => r.Name == "VIT").First().BaseValue;
         }
-        AttributeList = DataPortal.FetchChild<AttributeList>(existing.AttributeList);
-        Skills = DataPortal.FetchChild<SkillList>(existing.Skills);
+        AttributeList = DataPortal.FetchChild<AttributeEditList>(existing.AttributeList);
+        Skills = DataPortal.FetchChild<SkillEditList>(existing.Skills);
       }
       BusinessRules.CheckRules();
     }

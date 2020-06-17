@@ -7,7 +7,7 @@ using Threa.Dal;
 namespace GameMechanics.Player
 {
   [Serializable]
-  public class Attribute : BusinessBase<Attribute>
+  public class AttributeEdit : BusinessBase<AttributeEdit>
   {
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
     public string Name
@@ -46,20 +46,16 @@ namespace GameMechanics.Player
     {
       using (BypassPropertyChecks)
       {
-        IAttribute attribute;
-        if (IsNew)
+        var item = attributes.Where(r => r.Name == Name).FirstOrDefault();
+        if (item == null)
         {
-          attribute = new Threa.Dal.Dto.CharacterAttribute();
-          attributes.Add(attribute);
+          item = new Threa.Dal.Dto.CharacterAttribute
+          {
+            Name = Name
+          };
+          attributes.Add(item);
         }
-        else
-        {
-          attribute = attributes.Where(r => r.Name == Name).First();
-        }
-
-        attribute.Name = Name;
-        attribute.BaseValue = Value;
-        attribute.Value = Value;
+        item.BaseValue = Value;
       }
     }
 

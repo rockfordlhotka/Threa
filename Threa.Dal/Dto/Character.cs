@@ -12,16 +12,17 @@ namespace Threa.Dal.Dto
     public string Aliases { get; set; }
     public string Species { get; set; }
     public int DamageClass { get; set; }
-    public double Height { get; set; }
-    public double Weight { get; set; }
+    public string Height { get; set; }
+    public string Weight { get; set; }
     public string Notes { get; set; }
     public string SkinDescription { get; set; }
     public string HairDescription { get; set; }
     public string Description { get; set; }
-    public double Birthdate { get; set; }
+    public long Birthdate { get; set; }
     public bool IsPassedOut { get; set; }
     public double XPTotal { get; set; }
     public double XPBanked { get; set; }
+    public bool Playable { get; set; }
     public List<IAttribute> AttributeList { get; set; } = new List<IAttribute>();
     public List<IDamage> DamageList { get; set; } = new List<IDamage>();
     public List<IWound> Wounds { get; set; } = new WoundList();

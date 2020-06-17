@@ -13,16 +13,17 @@ namespace Threa.Dal
     string Aliases { get; set; }
     string Species { get; set; }
     int DamageClass { get; set; }
-    double Height { get; set; }
-    double Weight { get; set; }
+    string Height { get; set; }
+    string Weight { get; set; }
     string Notes { get; set; }
     string SkinDescription { get; set; }
     string HairDescription { get; set; }
     string Description { get; set; }
-    double Birthdate { get; set; }
+    long Birthdate { get; set; }
     bool IsPassedOut { get; set; }
     double XPTotal { get; set; }
     double XPBanked { get; set; }
+    bool Playable { get; set; }
     List<IAttribute> AttributeList { get; set; }
     List<IDamage> DamageList { get; set; }
     List<IWound> Wounds { get; set; }

@@ -7,30 +7,7 @@ using Threa.Dal;
 namespace GameMechanics.Player
 {
   [Serializable]
-  public class SkillList : BusinessListBase<SkillList, Skill>
-  {
-    [CreateChild]
-    private void Create()
-    {
-      var std = Reference.SkillList.GetList().Where(r => r.IsStandard);
-      foreach (var item in std)
-        Add(DataPortal.CreateChild<Skill>(item));
-    }
-
-    [FetchChild]
-    private void Fetch(List<ICharacterSkill> skills)
-    {
-      if (skills == null) return;
-      using (LoadListMode)
-      {
-        foreach (var item in skills)
-          Add(DataPortal.FetchChild<Skill>(item));
-      }
-    }
-  }
-
-  [Serializable]
-  public class Skill : BusinessBase<Skill>
+  public class SkillEdit : BusinessBase<SkillEdit>
   {
     public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
     public string Id

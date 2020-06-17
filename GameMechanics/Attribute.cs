@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Csla;
 using Threa.Dal;
 
@@ -43,6 +45,24 @@ namespace GameMechanics
         Name = attribute.Name;
         Value = attribute.Value;
         BaseValue = attribute.BaseValue;
+      }
+    }
+
+    [InsertChild]
+    [UpdateChild]
+    private void InsertUpdate(List<IAttribute> attributes)
+    {
+      using (BypassPropertyChecks)
+      {
+        var item = attributes.Where(r => r.Name == Name).FirstOrDefault();
+        if (item == null)
+        {
+          item = new Threa.Dal.Dto.CharacterAttribute();
+          attributes.Add(item);
+        }
+        item.Name = Name;
+        item.BaseValue = BaseValue;
+        item.Value = Value;
       }
     }
   }

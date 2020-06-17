@@ -23,7 +23,6 @@
   <ItemGroup>
     <ProjectReference Include="..\GameMechanics\GameMechanics.csproj" />
     <ProjectReference Include="..\Threa.Dal.MockDb\Threa.Dal.MockDb.csproj" />
-    <ProjectReference Include="..\Threa.Dal.MongoDb\Threa.Dal.MongoDb.csproj" />
     <ProjectReference Include="..\Threa.Dal\Threa.Dal.csproj" />
   </ItemGroup>
 
