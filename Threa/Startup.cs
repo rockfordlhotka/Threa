@@ -37,7 +37,6 @@ namespace Threa
 
       services.AddRazorPages();
       services.AddServerSideBlazor();
-      services.AddSingleton<WeatherForecastService>();
 
       services.AddSingleton<ChatHub>();
       services.AddSingleton<SessionList>();
