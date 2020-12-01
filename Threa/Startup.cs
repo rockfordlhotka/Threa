@@ -1,26 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Csla.Configuration;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Threa.Areas.Identity;
-using Threa.Data;
-using Csla.Configuration;
-using Threa.Dal.MockDb;
-using System.IO;
-using Microsoft.AspNetCore.Components.Server.Circuits;
-using Threa.Services;
 using Radzen;
+using Threa.Areas.Identity;
+using Threa.Dal.MockDb;
+using Threa.Data;
+using Threa.Services;
 
 namespace Threa
 {
@@ -42,14 +34,16 @@ namespace Threa
               Configuration.GetConnectionString("DefaultConnection")));
       services.AddDefaultIdentity<IdentityUser>()
           .AddEntityFrameworkStores<ApplicationDbContext>();
+
       services.AddRazorPages();
       services.AddServerSideBlazor();
+      services.AddSingleton<WeatherForecastService>();
+
       services.AddSingleton<ChatHub>();
       services.AddSingleton<SessionList>();
       services.AddTransient<ChatService>();
       services.AddScoped<CircuitHandler, CircuitSessionService>();
       services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
-      services.AddSingleton<WeatherForecastService>();
       services.AddScoped<DialogService>();
       services.AddScoped<NotificationService>();
       services.AddMockDb();
@@ -62,18 +56,14 @@ namespace Threa
       if (env.IsDevelopment())
       {
         app.UseDeveloperExceptionPage();
-        app.UseDatabaseErrorPage();
       }
       else
       {
         app.UseExceptionHandler("/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
       }
 
       Csla.ApplicationContext.LocalContext.Add("ContentRootPath", env.ContentRootPath);
 
-      app.UseHttpsRedirection();
       app.UseStaticFiles();
 
       app.UseRouting();
@@ -83,7 +73,6 @@ namespace Threa
 
       app.UseEndpoints(endpoints =>
       {
-        endpoints.MapControllers();
         endpoints.MapBlazorHub();
         endpoints.MapFallbackToPage("/_Host");
       });
