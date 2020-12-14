@@ -1,6 +1,5 @@
 ﻿using Csla;
 using System;
-using System.Collections.Generic;
 using Threa.Dal;
 
 namespace GameMechanics
@@ -16,13 +15,12 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(List<IDamage> list)
+    private void Fetch(ICharacter character)
     {
-      if (list == null) return;
       using (LoadListMode)
       {
-        foreach (var item in list)
-          Add(DataPortal.FetchChild<Damage>(item));
+        Add(DataPortal.FetchChild<Damage>("FAT", character));
+        Add(DataPortal.FetchChild<Damage>("VIT", character));
       }
     }
   }

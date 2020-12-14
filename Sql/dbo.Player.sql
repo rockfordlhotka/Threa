@@ -1,0 +1,8 @@
+CREATE TABLE [dbo].[Player]
+(
+  [Id] INT NOT NULL PRIMARY KEY IDENTITY, 
+    [Email] VARCHAR(MAX) NOT NULL, 
+    [Name] VARCHAR(MAX) NOT NULL, 
+    [LastUsed] DATETIME,
+    [ImageUrl] VARCHAR(MAX) NOT NULL
+)

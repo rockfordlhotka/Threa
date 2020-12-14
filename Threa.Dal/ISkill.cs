@@ -14,5 +14,6 @@
     string PrimaryAttribute { get; set; }
     string SecondarySkill { get; set; }
     string TertiarySkill { get; set; }
+    string ImageUrl { get; set; }
   }
 }

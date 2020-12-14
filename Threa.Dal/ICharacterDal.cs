@@ -6,9 +6,9 @@ namespace Threa.Dal
   public interface ICharacterDal
   {
     ICharacter GetBlank();
-    Task<List<ICharacter>> GetCharactersAsync(string playerEmail);
-    Task<ICharacter> GetCharacterAsync(string id);
+    Task<List<ICharacter>> GetCharactersAsync(int playerId);
+    Task<ICharacter> GetCharacterAsync(int id);
     Task<ICharacter> SaveCharacter(ICharacter character);
-    Task DeleteCharacter(string id);
+    Task DeleteCharacterAsync(int id);
   }
 }

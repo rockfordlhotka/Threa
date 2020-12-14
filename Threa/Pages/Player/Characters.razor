@@ -39,8 +39,11 @@ else
 @code {
   protected override async Task OnParametersSetAsync()
   {
+    var player = await DataPortal.FetchAsync<Player>(Csla.ApplicationContext.User.Identity.Name);
+    var ci = (System.Security.Claims.ClaimsIdentity)Csla.ApplicationContext.User.Identity;
+    ci.AddClaim(new System.Security.Claims.Claim("playerId", player.Id.ToString()));
     await vm.RefreshAsync(() =>
-      DataPortal.FetchAsync<CharacterList>(Csla.ApplicationContext.User.Identity.Name));
+      DataPortal.FetchAsync<CharacterList>(player.Id));
     StateHasChanged();
   }
 }

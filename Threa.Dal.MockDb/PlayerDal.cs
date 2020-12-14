@@ -8,7 +8,7 @@ namespace Threa.Dal.MockDb
 {
   public class PlayerDal : IPlayerDal
   {
-    public Task DeletePlayerAsync(string id)
+    public Task DeletePlayerAsync(int id)
     {
       var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
       if (player == null)
@@ -17,12 +17,7 @@ namespace Threa.Dal.MockDb
       return Task.CompletedTask;
     }
 
-    public Task<IEnumerable<ICharacter>> GetCharactersAsync(string playerEmail)
-    {
-      throw new NotImplementedException();
-    }
-
-    public Task<IPlayer> GetPlayerAsync(string id)
+    public Task<IPlayer> GetPlayerAsync(int id)
     {
       var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
       return Task.FromResult(player);
@@ -41,7 +36,7 @@ namespace Threa.Dal.MockDb
       {
         player = new Player
         {
-          Id = Guid.NewGuid().ToString(),
+          Id = MockDb.Players.Max(r => r.Id),
           Name = obj.Name,
           Email = obj.Email
         };

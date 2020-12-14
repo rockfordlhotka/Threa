@@ -13,7 +13,7 @@ namespace Threa.Dal.MockDb
       return new Character();
     }
 
-    public Task DeleteCharacter(string id)
+    public Task DeleteCharacterAsync(int id)
     {
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
       if (character == null)
@@ -22,7 +22,7 @@ namespace Threa.Dal.MockDb
       return Task.CompletedTask;
     }
 
-    public Task<ICharacter> GetCharacterAsync(string id)
+    public Task<ICharacter> GetCharacterAsync(int id)
     {
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
       if (character == null)
@@ -30,17 +30,17 @@ namespace Threa.Dal.MockDb
       return Task.FromResult(character);
     }
 
-    public Task<List<ICharacter>> GetCharactersAsync(string playerEmail)
+    public Task<List<ICharacter>> GetCharactersAsync(int playerId)
     {
-      var character = MockDb.Characters.Where(r => r.PlayerEmail == playerEmail);
+      var character = MockDb.Characters.Where(r => r.PlayerId == playerId);
       return Task.FromResult(character.ToList());
     }
 
     public Task<ICharacter> SaveCharacter(ICharacter character)
     {
-      if (string.IsNullOrWhiteSpace(character.Id))
+      if (character.Id == 0)
       {
-        character.Id = Guid.NewGuid().ToString();
+        character.Id = MockDb.Characters.Max(r => r.Id);
         MockDb.Characters.Add(character);
       }
       else

@@ -13,20 +13,18 @@ namespace GameMechanics
   [Serializable]
   public class Character : BusinessBase<Character>
   {
-    public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
-    public string Id
+    public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
+    public int Id
     {
       get => GetProperty(IdProperty);
       private set => LoadProperty(IdProperty, value);
     }
 
-    public static readonly PropertyInfo<string> PlayerEmailProperty = RegisterProperty<string>(nameof(PlayerEmail));
-    [Required]
-    [Display(Name = "Player email")]
-    public string PlayerEmail
+    public static readonly PropertyInfo<int> PlayerIdProperty = RegisterProperty<int>(nameof(PlayerId));
+    public int PlayerId
     {
-      get => GetProperty(PlayerEmailProperty);
-      private set => LoadProperty(PlayerEmailProperty, value);
+      get => GetProperty(PlayerIdProperty);
+      private set => LoadProperty(PlayerIdProperty, value);
     }
 
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
@@ -223,7 +221,6 @@ namespace GameMechanics
     {
       using (BypassPropertyChecks)
       {
-        PlayerEmail = playerEmail;
         DamageClass = 1;
         AttributeList = DataPortal.CreateChild<AttributeList>();
         DamageList = DataPortal.CreateChild<DamageList>(this);
@@ -245,17 +242,17 @@ namespace GameMechanics
       };
 
     [Fetch]
-    private async Task Fetch(string id, [Inject] ICharacterDal dal)
+    private async Task Fetch(int id, [Inject] ICharacterDal dal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
         AttributeList = DataPortal.FetchChild<AttributeList>(existing.AttributeList);
-        DamageList = DataPortal.FetchChild<DamageList>(existing.DamageList);
+        DamageList = DataPortal.FetchChild<DamageList>(dal);
         Wounds = DataPortal.FetchChild<WoundList>(existing.Wounds);
         Skills = DataPortal.FetchChild<SkillList>(existing.Skills);
-        ActionPoints = DataPortal.FetchChild<ActionPoints>(existing.ActionPoints);
+        ActionPoints = DataPortal.FetchChild<ActionPoints>(dal);
       }
       BusinessRules.CheckRules();
     }

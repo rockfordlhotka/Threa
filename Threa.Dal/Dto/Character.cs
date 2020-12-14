@@ -5,8 +5,8 @@ namespace Threa.Dal.Dto
 {
   public class Character : ICharacter
   {
-    public string Id { get; set; }
-    public string PlayerEmail { get; set; }
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
     public string Name { get; set; }
     public string TrueName { get; set; }
     public string Aliases { get; set; }
@@ -22,11 +22,21 @@ namespace Threa.Dal.Dto
     public bool IsPassedOut { get; set; }
     public double XPTotal { get; set; }
     public double XPBanked { get; set; }
-    public bool Playable { get; set; }
+    public bool IsPlayable { get; set; }
+    public int ActionPointMax { get; set; }
+    public int ActionPointRecovery { get; set; }
+    public int ActionPointAvailable { get; set; }
+    public int VitValue { get; set; }
+    public int VitBaseValue { get; set; }
+    public int VitPendingHealing { get; set; }
+    public int VitPendingDamage { get; set; }
+    public int FatValue { get; set; }
+    public int FatBaseValue { get; set; }
+    public int FatPendingHealing { get; set; }
+    public int FatPendingDamage { get; set; }
+    public string ImageUrl { get; set; }
     public List<IAttribute> AttributeList { get; set; } = new List<IAttribute>();
-    public List<IDamage> DamageList { get; set; } = new List<IDamage>();
-    public List<IWound> Wounds { get; set; } = new WoundList();
     public List<ICharacterSkill> Skills { get; set; } = new CharacterSkillList();
-    public IActionPoints ActionPoints { get; set; } = new ActionPoints();
+    public List<IWound> Wounds { get; set; } = new WoundList();
   }
 }

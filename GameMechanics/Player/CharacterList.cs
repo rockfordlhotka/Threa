@@ -9,9 +9,9 @@ namespace GameMechanics.Player
   public class CharacterList : ReadOnlyListBase<CharacterList, CharacterInfo>
   {
     [Fetch]
-    private async Task Fetch(string playerEmail, [Inject] ICharacterDal dal)
+    private async Task Fetch(int playerId, [Inject] ICharacterDal dal)
     {
-      var items = await dal.GetCharactersAsync(playerEmail);
+      var items = await dal.GetCharactersAsync(playerId);
       using (LoadListMode)
       {
         foreach (var item in items)
@@ -23,8 +23,8 @@ namespace GameMechanics.Player
   [Serializable]
   public class CharacterInfo : ReadOnlyBase<CharacterInfo>
   {
-    public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
-    public string Id
+    public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
+    public int Id
     {
       get => GetProperty(IdProperty);
       private set => LoadProperty(IdProperty, value);

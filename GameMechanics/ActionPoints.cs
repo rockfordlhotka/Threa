@@ -115,9 +115,9 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(IActionPoints actionPoints)
+    private void Fetch(ICharacter character)
     {
-      if (actionPoints == null)
+      if (character.ActionPointMax == 0)
       {
         Recovery = CalculateRecovery(14);
         Max = CalculateMax(45);
@@ -127,9 +127,9 @@ namespace GameMechanics
       {
         using (BypassPropertyChecks)
         {
-          Recovery = actionPoints.Recovery;
-          Max = actionPoints.Max;
-          Available = actionPoints.Available;
+          Recovery = character.ActionPointRecovery;
+          Max = character.ActionPointMax;
+          Available = character.ActionPointAvailable;
         }
       }
     }

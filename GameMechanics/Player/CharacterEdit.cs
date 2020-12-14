@@ -28,20 +28,18 @@ namespace GameMechanics.Player
       }
     }
 
-    public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
-    public string Id
+    public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
+    public int Id
     {
       get => GetProperty(IdProperty);
       private set => LoadProperty(IdProperty, value);
     }
 
-    public static readonly PropertyInfo<string> PlayerEmailProperty = RegisterProperty<string>(nameof(PlayerEmail));
-    [Required]
-    [Display(Name = "Player email")]
-    public string PlayerEmail
+    public static readonly PropertyInfo<int> PlayerIdProperty = RegisterProperty<int>(nameof(PlayerId));
+    public int PlayerId
     {
-      get => GetProperty(PlayerEmailProperty);
-      private set => LoadProperty(PlayerEmailProperty, value);
+      get => GetProperty(PlayerIdProperty);
+      private set => LoadProperty(PlayerIdProperty, value);
     }
 
     public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
@@ -127,11 +125,11 @@ namespace GameMechanics.Player
       set => SetProperty(NotesProperty, value);
     }
 
-    public static readonly PropertyInfo<bool> PlayableProperty = RegisterProperty<bool>(nameof(Playable));
-    public bool Playable
+    public static readonly PropertyInfo<bool> IsPlayableProperty = RegisterProperty<bool>(nameof(IsPlayable));
+    public bool IsPlayable
     {
-      get => GetProperty(PlayableProperty);
-      set => SetProperty(PlayableProperty, value);
+      get => GetProperty(IsPlayableProperty);
+      set => SetProperty(IsPlayableProperty, value);
     }
 
     public static readonly PropertyInfo<AttributeEditList> AttributeListProperty = RegisterProperty<AttributeEditList>(nameof(AttributeList));
@@ -196,7 +194,7 @@ namespace GameMechanics.Player
       base.AddBusinessRules();
       BusinessRules.AddRule(new CalculateFatigue { PrimaryProperty = FatigueProperty });
       BusinessRules.AddRule(new CalculateVitality { PrimaryProperty = VitalityProperty });
-      BusinessRules.AddRule(new LockCharacter(PlayableProperty));
+      BusinessRules.AddRule(new LockCharacter(IsPlayableProperty));
       BusinessRules.AddRule(new LockCharacter(DamageClassProperty));
       BusinessRules.AddRule(new LockCharacter(BirthdateProperty));
     }
@@ -233,7 +231,7 @@ namespace GameMechanics.Player
       protected override void Execute(IAuthorizationContext context)
       {
         var character = (CharacterEdit)context.Target;
-        var locked = character.Playable;
+        var locked = character.IsPlayable;
         context.HasPermission = !locked;
       }
     }
@@ -242,16 +240,17 @@ namespace GameMechanics.Player
     [RunLocal]
     private void Create()
     {
-      Create(Csla.ApplicationContext.User.Identity.Name);
+      var ci = (System.Security.Claims.ClaimsIdentity)Csla.ApplicationContext.User.Identity;
+      var playerId = int.Parse(ci.Claims.Where(r => r.Type == "playerId").First().Value);
+      Create(playerId);
     }
 
     [Create]
     [RunLocal]
-    private void Create(string playerEmail)
+    private void Create(int playerId)
     {
       using (BypassPropertyChecks)
       {
-        PlayerEmail = playerEmail;
         DamageClass = 1;
         AttributeList = DataPortal.CreateChild<AttributeEditList>();
         Skills = DataPortal.CreateChild<SkillEditList>();
@@ -266,24 +265,19 @@ namespace GameMechanics.Player
         nameof(Fatigue),
         nameof(Vitality),
         nameof(IsBeingSaved),
-        nameof(Threa.Dal.Dto.Character.ActionPoints),
-        nameof(Threa.Dal.Dto.Character.DamageList),
         nameof(Threa.Dal.Dto.Character.IsPassedOut),
         nameof(Threa.Dal.Dto.Character.Wounds),
       };
 
     [Fetch]
-    private async Task FetchAsync(string id, [Inject] ICharacterDal dal)
+    private async Task FetchAsync(int id, [Inject] ICharacterDal dal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
-        if (existing.DamageList != null)
-        {
-          Fatigue = existing.DamageList.Where(r => r.Name == "FAT").First().BaseValue;
-          Vitality = existing.DamageList.Where(r => r.Name == "VIT").First().BaseValue;
-        }
+        Fatigue = existing.FatBaseValue;
+        Vitality = existing.VitBaseValue;
         AttributeList = DataPortal.FetchChild<AttributeEditList>(existing.AttributeList);
         Skills = DataPortal.FetchChild<SkillEditList>(existing.Skills);
       }
@@ -297,8 +291,8 @@ namespace GameMechanics.Player
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(this, toSave, mapIgnore);
-        toSave.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "FAT", BaseValue = Fatigue, Value = Fatigue });
-        toSave.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "VIT", BaseValue = Vitality, Value = Vitality });
+        toSave.FatBaseValue = toSave.FatValue = Fatigue;
+        toSave.VitBaseValue = toSave.VitValue = Vitality;
         DataPortal.UpdateChild(AttributeList, toSave.AttributeList);
         DataPortal.UpdateChild(Skills, toSave.Skills);
       }
@@ -313,8 +307,8 @@ namespace GameMechanics.Player
       {
         var existing = await dal.GetCharacterAsync(Id);
         Csla.Data.DataMapper.Map(this, existing, mapIgnore);
-        existing.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "FAT", BaseValue = Fatigue, Value = Fatigue });
-        existing.DamageList.Add(new Threa.Dal.Dto.Damage { Name = "VIT", BaseValue = Vitality, Value = Vitality });
+        existing.FatBaseValue = existing.FatValue = Fatigue;
+        existing.VitBaseValue = existing.VitValue = Vitality;
         DataPortal.UpdateChild(AttributeList, existing.AttributeList);
         DataPortal.UpdateChild(Skills, existing.Skills);
         await dal.SaveCharacter(existing);
@@ -324,7 +318,7 @@ namespace GameMechanics.Player
     [Delete]
     private async Task DeleteAsync([Inject] ICharacterDal dal)
     {
-      await dal.DeleteCharacter(Id);
+      await dal.DeleteCharacterAsync(Id);
     }
   }
 }

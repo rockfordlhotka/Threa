@@ -1,5 +1,5 @@
 ﻿@page "/player/character"
-@page "/player/character/{id}"
+@page "/player/character/{id:int}"
 
 @inject ViewModel<GameMechanics.Player.CharacterEdit> vm
 @inject NavigationManager NavigationManager
@@ -30,7 +30,7 @@ else
           </thead>
           <tbody>
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
-            <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PlayerEmail)" />
+            <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
@@ -40,8 +40,8 @@ else
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Weight)" />
             <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
             <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
-            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.Playable)" />
-            <tr><td>@vm.Model.Playable.ToString()</td><td></td></tr>
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPlayable)" />
+            <tr><td>@vm.Model.IsPlayable.ToString()</td><td></td></tr>
           </tbody>
         </table>
       </RadzenTabsItem>
@@ -90,7 +90,7 @@ else
 
 @code {
   [Parameter]
-  public string Id { get; set; }
+  public int id { get; set; }
 
   protected override void OnInitialized()
   {
@@ -101,12 +101,12 @@ else
 
   protected override async Task OnParametersSetAsync()
   {
-    if (string.IsNullOrWhiteSpace(Id))
+    if (id == 0)
       await vm.RefreshAsync(() =>
         DataPortal.CreateAsync<GameMechanics.Player.CharacterEdit>());
     else
       await vm.RefreshAsync(() =>
-        DataPortal.FetchAsync<GameMechanics.Player.CharacterEdit>(Id));
+        DataPortal.FetchAsync<GameMechanics.Player.CharacterEdit>(id));
   }
 
   private async void SaveAsync()

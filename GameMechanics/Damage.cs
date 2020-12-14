@@ -200,21 +200,27 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(IDamage damage)
+    private void Fetch(string name, ICharacter character)
     {
       using (BypassPropertyChecks)
       {
-        if (damage == null)
+        Name = name;
+        switch (name)
         {
-          Value = 14;
-          BaseValue = 14;
-        }
-        else
-        {
-          Value = damage.Value;
-          BaseValue = damage.BaseValue;
-          PendingDamage = damage.PendingDamage;
-          PendingHealing = damage.PendingHealing;
+          case "FAT":
+            BaseValue = character.FatBaseValue;
+            Value = character.FatValue;
+            PendingDamage = character.FatPendingDamage;
+            PendingHealing = character.FatPendingHealing;
+            break;
+          case "VIT":
+            BaseValue = character.VitBaseValue;
+            Value = character.VitValue;
+            PendingDamage = character.VitPendingDamage;
+            PendingHealing = character.VitPendingHealing;
+            break;
+          default:
+            throw new InvalidOperationException(name);
         }
       }
     }

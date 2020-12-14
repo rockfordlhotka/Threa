@@ -9,8 +9,8 @@ namespace GameMechanics.Player
   [Serializable]
   public class Player : BusinessBase<Player>
   {
-    public static readonly PropertyInfo<string> IdProperty = RegisterProperty<string>(nameof(Id));
-    public string Id
+    public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
+    public int Id
     {
       get => GetProperty(IdProperty);
       private set => LoadProperty(IdProperty, value);
@@ -29,30 +29,19 @@ namespace GameMechanics.Player
     public string Email
     {
       get => GetProperty(EmailProperty);
-      set => SetProperty(EmailProperty, value);
+      private set => LoadProperty(EmailProperty, value);
+    }
+
+    public static readonly PropertyInfo<string> ImageUrlProperty = RegisterProperty<string>(nameof(ImageUrl));
+    public string ImageUrl
+    {
+      get => GetProperty(ImageUrlProperty);
+      set => SetProperty(ImageUrlProperty, value);
     }
 
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();
-      BusinessRules.AddRule(new Csla.Rules.CommonRules.RegExMatch(
-        EmailProperty, 
-        "^(?(\")(\".+?(?<!\\\\)\"@)|(([0-9a-z]((\\.(?!\\.))|[-!#\\$%&'\\*\\+/=\\?\\^`\\{\\}\\|~\\w])*)(?<=[0-9a-z])@))(?(\\[)(\\[(\\d{1,3}\\.){3}\\d{1,3}\\])|(([0-9a-z][-\\w]*[0-9a-z]*\\.)+[a-z0-9][\\-a-z0-9]{0,22}[a-z0-9]))$"));
-    }
-
-    [Create]
-    [RunLocal]
-    private void Create()
-    {
-      Create(string.Empty);
-    }
-
-    [Create]
-    [RunLocal]
-    private void Create(string name)
-    {
-      Name = name;
-      BusinessRules.CheckRules();
     }
 
     [Fetch]
@@ -61,6 +50,7 @@ namespace GameMechanics.Player
       var data = await dal.GetPlayerByEmailAsync(email);
       if (data == null)
       {
+        Name = email;
         Email = email;
         MarkNew();
       }
@@ -71,9 +61,29 @@ namespace GameMechanics.Player
           Id = data.Id;
           Name = data.Name;
           Email = data.Email;
+          ImageUrl = data.ImageUrl;
         }
       }
       BusinessRules.CheckRules();
+      if (IsNew)
+        await this.SaveAndMergeAsync();
+    }
+
+    [Insert]
+    [Update]
+    private async Task SaveAsync([Inject] IPlayerDal dal)
+    {
+      var player = new Threa.Dal.Dto.Player
+      {
+        Name = Name,
+        Email = Email,
+        ImageUrl = ImageUrl
+      };
+      var result = await dal.SavePlayerAsync(player);
+      using (BypassPropertyChecks)
+      {
+        Id = result.Id;
+      }
     }
   }
 }
