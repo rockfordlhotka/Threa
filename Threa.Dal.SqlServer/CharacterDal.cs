@@ -33,7 +33,7 @@ namespace Threa.Dal.SqlServer
     {
       var sql = "SELECT * FROM Character WHERE ID = @id";
       var data = (await db.QueryAsync<Character>(sql, new { id })).FirstOrDefault();
-      if (data != null)
+      if (data == null)
         throw new NotFoundException($"Character {id}");
       return (ICharacter)data;
     }
@@ -49,15 +49,15 @@ namespace Threa.Dal.SqlServer
     {
       var sql = "SELECT * FROM Character WHERE ID = @id";
       var data = (await db.QueryAsync<Character>(sql, new { id = character.Id })).FirstOrDefault();
-      if (data != null)
+      if (data == null)
       {
         sql = @"INSERT INTO Character (
-            [Name],[TrueName],[Aliases],[Species],[DamageClass],[Height],[Weight],[Notes],[SkinDescription],
+            [PlayerId],[Name],[TrueName],[Aliases],[Species],[DamageClass],[Height],[Weight],[Notes],[SkinDescription],
             [HairDescription],[Description],[Birthdate],[XPTotal],[XPBanked],[IsPlayable],[ActionPointMax],[ActionPointRecovery],
             [ActionPointAvailable],[IsPassedOut],[VitValue],[VitBaseValue],[VitPendingHealing],[VitPendingDamage],
             [FatValue],[FatBaseValue],[FatPendingHealing],[FatPendingDamage],[ImageUrl]) 
           VALUES (
-            @Name,@TrueName,@Aliases,@Species,@DamageClass,@Height,@Weight,@Notes,@SkinDescription,
+            @PlayerId,@Name,@TrueName,@Aliases,@Species,@DamageClass,@Height,@Weight,@Notes,@SkinDescription,
             @HairDescription,@Description,@Birthdate,@XPTotal,@XPBanked,@IsPlayable,@ActionPointMax,@ActionPointRecovery,
             @ActionPointAvailable,@IsPassedOut,@VitValue,@VitBaseValue,@VitPendingHealing,@VitPendingDamage,
             @FatValue,@FatBaseValue,@FatPendingHealing,@FatPendingDamage,@ImageUrl);
@@ -109,6 +109,7 @@ namespace Threa.Dal.SqlServer
     {
       return new
       {
+        character.PlayerId,
         character.Name,
         character.TrueName,
         character.Aliases,

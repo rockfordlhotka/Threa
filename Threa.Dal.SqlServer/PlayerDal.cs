@@ -57,7 +57,7 @@ namespace Threa.Dal.SqlServer
       }
       else
       {
-        sql = @"UPDATE Character SET 
+        sql = @"UPDATE Player SET 
                 [Email] = @Email,
                 [Name] = @Name,
                 [LastUsed] = @LastUsed,

@@ -118,6 +118,13 @@ namespace GameMechanics.Player
       set => SetProperty(DescriptionProperty, value);
     }
 
+    public static readonly PropertyInfo<string> ImageUrlProperty = RegisterProperty<string>(nameof(ImageUrl));
+    public string ImageUrl
+    {
+      get => GetProperty(ImageUrlProperty);
+      set => SetProperty(ImageUrlProperty, value);
+    }
+
     public static readonly PropertyInfo<string> NotesProperty = RegisterProperty<string>(nameof(Notes));
     public string Notes
     {
@@ -252,6 +259,7 @@ namespace GameMechanics.Player
       using (BypassPropertyChecks)
       {
         DamageClass = 1;
+        PlayerId = playerId;
         AttributeList = DataPortal.CreateChild<AttributeEditList>();
         Skills = DataPortal.CreateChild<SkillEditList>();
       }
@@ -267,6 +275,17 @@ namespace GameMechanics.Player
         nameof(IsBeingSaved),
         nameof(Threa.Dal.Dto.Character.IsPassedOut),
         nameof(Threa.Dal.Dto.Character.Wounds),
+        nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
+        nameof(Threa.Dal.Dto.Character.ActionPointMax),
+        nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
+        nameof(Threa.Dal.Dto.Character.FatValue),
+        nameof(Threa.Dal.Dto.Character.FatBaseValue),
+        nameof(Threa.Dal.Dto.Character.FatPendingDamage),
+        nameof(Threa.Dal.Dto.Character.FatPendingHealing),
+        nameof(Threa.Dal.Dto.Character.VitValue),
+        nameof(Threa.Dal.Dto.Character.VitBaseValue),
+        nameof(Threa.Dal.Dto.Character.VitPendingDamage),
+        nameof(Threa.Dal.Dto.Character.VitPendingHealing),
       };
 
     [Fetch]
