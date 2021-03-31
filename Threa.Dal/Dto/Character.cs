@@ -35,7 +35,7 @@ namespace Threa.Dal.Dto
     public int FatPendingHealing { get; set; }
     public int FatPendingDamage { get; set; }
     public string ImageUrl { get; set; }
-    public List<IAttribute> AttributeList { get; set; } = new List<IAttribute>();
+    public List<ICharacterAttribute> AttributeList { get; set; } = new List<ICharacterAttribute>();
     public List<ICharacterSkill> Skills { get; set; } = new CharacterSkillList();
     public List<IWound> Wounds { get; set; } = new WoundList();
   }

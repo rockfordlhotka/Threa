@@ -10,6 +10,7 @@ namespace Threa.Dal.SqlServer
   public class CharacterDal : ICharacterDal
   {
     private readonly SqlConnection db;
+    private SqlTransaction tr;
 
     public CharacterDal(SqlConnection db)
     {
@@ -35,6 +36,7 @@ namespace Threa.Dal.SqlServer
       var data = (await db.QueryAsync<Character>(sql, new { id })).FirstOrDefault();
       if (data == null)
         throw new NotFoundException($"Character {id}");
+      data.AttributeList = await GetCharacterAttributes(data.Id);
       return (ICharacter)data;
     }
 
@@ -42,16 +44,31 @@ namespace Threa.Dal.SqlServer
     {
       var sql = "SELECT * FROM Character WHERE PlayerId = @playerId";
       var data = (await db.QueryAsync<Character>(sql, new { playerId })).ToList();
+      foreach (var item in data)
+        item.AttributeList = await GetCharacterAttributes(item.Id);
       return new List<ICharacter>(data);
+    }
+
+    private async Task<List<ICharacterAttribute>> GetCharacterAttributes(int characterId)
+    {
+      var attributes = await GetAttributeList();
+      var sql = @"SELECT CharacterAttribute.BaseValue,CharacterAttribute.Value,Attribute.Name,Attribute.ImageUrl FROM CharacterAttribute 
+                  INNER JOIN Attribute ON Attribute.Id=CharacterAttribute.AttributeId
+                  WHERE CharacterAttribute.CharacterId = @id";
+      var list = await db.QueryAsync<CharacterAttribute>(sql, new { id = characterId }, tr);
+      return list.ToList<ICharacterAttribute>();
     }
 
     public async Task<ICharacter> SaveCharacter(ICharacter character)
     {
-      var sql = "SELECT * FROM Character WHERE ID = @id";
-      var data = (await db.QueryAsync<Character>(sql, new { id = character.Id })).FirstOrDefault();
-      if (data == null)
+      tr = db.BeginTransaction();
+      using (tr)
       {
-        sql = @"INSERT INTO Character (
+        var sql = "SELECT * FROM Character WHERE ID = @id";
+        var data = (await db.QueryAsync<Character>(sql, new { id = character.Id }, tr)).FirstOrDefault();
+        if (data == null)
+        {
+          sql = @"INSERT INTO Character (
             [PlayerId],[Name],[TrueName],[Aliases],[Species],[DamageClass],[Height],[Weight],[Notes],[SkinDescription],
             [HairDescription],[Description],[Birthdate],[XPTotal],[XPBanked],[IsPlayable],[ActionPointMax],[ActionPointRecovery],
             [ActionPointAvailable],[IsPassedOut],[VitValue],[VitBaseValue],[VitPendingHealing],[VitPendingDamage],
@@ -62,13 +79,13 @@ namespace Threa.Dal.SqlServer
             @ActionPointAvailable,@IsPassedOut,@VitValue,@VitBaseValue,@VitPendingHealing,@VitPendingDamage,
             @FatValue,@FatBaseValue,@FatPendingHealing,@FatPendingDamage,@ImageUrl);
           SELECT CAST(SCOPE_IDENTITY() AS INT)";
-        character.Id = (await db.QueryAsync<int>(sql, GetParams(character))).Single();
-        if (character.Id == 0)
-          throw new OperationFailedException($"Insert Character {character.Id}");
-      }
-      else
-      {
-        sql = @"UPDATE Character SET 
+          character.Id = (await db.QueryAsync<int>(sql, GetCharacterParams(character), tr)).Single();
+          if (character.Id == 0)
+            throw new OperationFailedException($"Insert Character {character.Id}");
+        }
+        else
+        {
+          sql = @"UPDATE Character SET 
                 [Name] = @Name,
                 [TrueName] = @TrueName,
                 [Aliases] = @Aliases,
@@ -98,14 +115,59 @@ namespace Threa.Dal.SqlServer
                 [FatPendingDamage] = @FatPendingDamage,
                 [ImageUrl] = @ImageUrl
               WHERE Id = @id";
-        var affectedRows = await db.ExecuteAsync(sql, GetParams(character));
-        if (affectedRows == 0)
-          throw new OperationFailedException($"Update Character {character.Id}");
+          var affectedRows = await db.ExecuteAsync(sql, GetCharacterParams(character), tr);
+          if (affectedRows == 0)
+            throw new OperationFailedException($"Update Character {character.Id}");
+        }
+        await UpdateAttributes(character);
+        tr.Commit();
       }
       return character;
     }
 
-    private object GetParams(ICharacter character)
+    private IEnumerable<Attribute> attributeList;
+    private async Task<IEnumerable<Attribute>> GetAttributeList()
+    {
+      if (attributeList == null)
+      {
+        var sql = "SELECT Id,Name FROM Attribute";
+        attributeList = await db.QueryAsync<Attribute>(sql, null, tr);
+      }
+      return attributeList;
+    }
+
+    private async Task UpdateAttributes(ICharacter character)
+    {
+      var attributes = await GetAttributeList();
+
+      var sql = "SELECT * FROM CharacterAttribute WHERE CharacterId = @id";
+      var charAttributes = await GetCharacterAttributes(character.Id);
+      foreach (var item in character.AttributeList)
+      {
+        var data = charAttributes.Where(r => r.Name == item.Name).FirstOrDefault();
+        if (data == null)
+        {
+          sql = @"INSERT INTO CharacterAttribute (
+            [CharacterId],[AttributeId],[BaseValue],[Value]) 
+          VALUES (
+            @CharacterId,@AttributeId,@BaseValue,@Value);";
+        }
+        else
+        {
+          sql = @"UPDATE CharacterAttribute SET 
+                [BaseValue] = @BaseValue,
+                [Value] = @Value
+              WHERE CharacterId = @CharacterId AND AttributeId = @AttributeId";
+        }
+        var attribute = attributes.Where(r => r.Name == item.Name).First();
+        var affectedRows = await db.ExecuteAsync(sql,
+          new { CharacterId = character.Id, AttributeId = attribute.Id, BaseValue = item.BaseValue, Value = item.Value }, tr);
+        if (affectedRows == 0)
+          throw new OperationFailedException($"Update CharacterAttribute {character.Id}-{attribute.Name}");
+      }
+    }
+
+    private object GetCharacterParams(ICharacter character)
     {
       return new
       {

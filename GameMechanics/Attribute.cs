@@ -38,7 +38,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(IAttribute attribute)
+    private void Fetch(ICharacterAttribute attribute)
     {
       using (BypassPropertyChecks)
       {
@@ -50,7 +50,7 @@ namespace GameMechanics
 
     [InsertChild]
     [UpdateChild]
-    private void InsertUpdate(List<IAttribute> attributes)
+    private void InsertUpdate(List<ICharacterAttribute> attributes)
     {
       using (BypassPropertyChecks)
       {

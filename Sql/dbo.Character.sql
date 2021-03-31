@@ -1,18 +1,22 @@
-﻿CREATE TABLE [dbo].[Character]
+﻿IF OBJECT_ID('dbo.[Character]', 'U') IS NOT NULL
+ DROP TABLE dbo.[Character];
+GO
+
+CREATE TABLE [dbo].[Character]
 (
   [Id] INT NOT NULL PRIMARY KEY IDENTITY, 
     [PlayerId] INT NOT NULL,
-    [Name] VARCHAR(MAX) NOT NULL, 
-    [TrueName] VARCHAR(MAX), 
-    [Aliases] VARCHAR(MAX), 
-    [Species] VARCHAR(MAX), 
+    [Name] NVARCHAR(MAX) NOT NULL, 
+    [TrueName] NVARCHAR(MAX), 
+    [Aliases] NVARCHAR(MAX), 
+    [Species] NVARCHAR(MAX), 
     [DamageClass] INT, 
-    [Height] VARCHAR(15), 
-    [Weight] VARCHAR(15), 
-    [Notes] VARCHAR(MAX), 
-    [SkinDescription] VARCHAR(MAX), 
-    [HairDescription] VARCHAR(MAX), 
-    [Description] VARCHAR(MAX), 
+    [Height] NVARCHAR(15), 
+    [Weight] NVARCHAR(15), 
+    [Notes] NVARCHAR(MAX), 
+    [SkinDescription] NVARCHAR(MAX), 
+    [HairDescription] NVARCHAR(MAX), 
+    [Description] NVARCHAR(MAX), 
     [Birthdate] BIGINT, 
     [XPTotal] FLOAT, 
     [XPBanked] FLOAT, 
@@ -29,5 +33,6 @@
     [FatBaseValue] INT,
     [FatPendingHealing] INT,
     [FatPendingDamage] INT,
-    [ImageUrl] VARCHAR(MAX) NOT NULL
+    [ImageUrl] NVARCHAR(MAX) NOT NULL
 )
+GO

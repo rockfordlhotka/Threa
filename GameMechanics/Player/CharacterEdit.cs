@@ -193,7 +193,11 @@ namespace GameMechanics.Player
 
     public int GetAttribute(string attributeName)
     {
-      return AttributeList.Where(r => r.Name == attributeName).First().Value;
+      var result = AttributeList.Where(r => r.Name == attributeName).FirstOrDefault();
+      if (result == null)
+        return 0;
+      else
+        return result.Value;
     }
 
     protected override void AddBusinessRules()

@@ -1,16 +1,21 @@
+IF OBJECT_ID('dbo.[Skill]', 'U') IS NOT NULL
+ DROP TABLE dbo.[Skill];
+GO
+
 CREATE TABLE [dbo].[Skill]
 (
   [Id] INT NOT NULL PRIMARY KEY IDENTITY, 
-    [Category] VARCHAR(MAX) NOT NULL, 
-    [Name] VARCHAR(MAX) NOT NULL, 
-    [IsSpecialized] BIT,
-    [IsMagic] BIT,
-    [IsTheology] BIT,
-    [IsPsionic] BIT,
+    [Category] NVARCHAR(MAX) NOT NULL, 
+    [Name] NVARCHAR(MAX) NOT NULL, 
+    [IsSpecialized] BIT NOT NULL,
+    [IsMagic] BIT NOT NULL,
+    [IsTheology] BIT NOT NULL,
+    [IsPsionic] BIT NOT NULL,
     [Trained] INT NOT NULL,
     [Untrained] INT NOT NULL,
-    [PrimaryAttribute] VARCHAR(20) NOT NULL,
-    [SecondaryAttribute] VARCHAR(20),
-    [TertiaryAttribute] VARCHAR(20),
-    [ImageUrl] VARCHAR(MAX)
+    [PrimaryAttribute] NVARCHAR(20) NOT NULL,
+    [SecondaryAttribute] NVARCHAR(20),
+    [TertiaryAttribute] NVARCHAR(20),
+    [ImageUrl] NVARCHAR(MAX)
 )
+GO

@@ -72,7 +72,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(IAttribute attribute)
+    private void Fetch(ICharacterAttribute attribute)
     {
 
     }

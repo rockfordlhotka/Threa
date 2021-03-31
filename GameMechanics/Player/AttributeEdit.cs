@@ -31,7 +31,7 @@ namespace GameMechanics.Player
     }
 
     [FetchChild]
-    private void Fetch(IAttribute attribute)
+    private void Fetch(ICharacterAttribute attribute)
     {
       using (BypassPropertyChecks)
       {
@@ -42,7 +42,7 @@ namespace GameMechanics.Player
 
     [InsertChild]
     [UpdateChild]
-    private void InsertUpdate(List<IAttribute> attributes)
+    private void InsertUpdate(List<ICharacterAttribute> attributes)
     {
       using (BypassPropertyChecks)
       {
@@ -60,7 +60,7 @@ namespace GameMechanics.Player
     }
 
     [DeleteSelfChild]
-    private void Delete(List<IAttribute> attributes)
+    private void Delete(List<ICharacterAttribute> attributes)
     {
       if (IsNew) return;
       attributes.Remove(attributes.Where(r => r.Name == Name).First());

@@ -1,9 +1,13 @@
+IF OBJECT_ID('dbo.[CharacterAttribute]', 'U') IS NOT NULL
+ DROP TABLE dbo.[CharacterAttribute];
+GO
+
 CREATE TABLE [dbo].[CharacterAttribute]
 (
-  [CharacterId] INT NOT NULL, 
+    [CharacterId] INT NOT NULL, 
     [AttributeId] INT NOT NULL,
-    [TargetValue] INT,
-    [CurrentValue] INT
+    [BaseValue] INT NOT NULL,
+    [Value] INT NOT NULL
 );
 GO
 

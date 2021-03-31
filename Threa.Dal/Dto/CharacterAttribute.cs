@@ -1,6 +1,6 @@
 ﻿namespace Threa.Dal.Dto
 {
-  public class CharacterAttribute : IAttribute
+  public class CharacterAttribute : ICharacterAttribute
   {
     public string Name { get; set; }
     public int Value { get; set; }

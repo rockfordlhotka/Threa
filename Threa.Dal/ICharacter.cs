@@ -36,7 +36,7 @@ namespace Threa.Dal
     int FatPendingHealing { get; set; }
     int FatPendingDamage { get; set; }
     string ImageUrl { get; set; }
-    List<IAttribute> AttributeList { get; set; }
+    List<ICharacterAttribute> AttributeList { get; set; }
     List<ICharacterSkill> Skills { get; set; }
     List<IWound> Wounds { get; set; }
   }

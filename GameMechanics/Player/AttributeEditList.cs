@@ -22,7 +22,7 @@ namespace GameMechanics.Player
     }
 
     [FetchChild]
-    private void Fetch(List<IAttribute> list)
+    private void Fetch(List<ICharacterAttribute> list)
     {
       if (list == null)
       {
