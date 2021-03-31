@@ -1,8 +1,12 @@
+IF OBJECT_ID('dbo.Player', 'U') IS NOT NULL
+ DROP TABLE dbo.Player;
+GO
+
 CREATE TABLE [dbo].[Player]
 (
   [Id] INT NOT NULL PRIMARY KEY IDENTITY, 
-    [Email] VARCHAR(MAX) NOT NULL, 
-    [Name] VARCHAR(MAX) NOT NULL, 
+    [Email] NVARCHAR(MAX) NOT NULL, 
+    [Name] NVARCHAR(MAX) NOT NULL, 
     [LastUsed] DATETIME,
-    [ImageUrl] VARCHAR(MAX) NOT NULL
+    [ImageUrl] NVARCHAR(MAX) NOT NULL
 )
