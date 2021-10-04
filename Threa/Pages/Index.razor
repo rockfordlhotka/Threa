@@ -1,59 +1,9 @@
 ﻿@page "/"
-@inject Services.ChatService chat
-@inject Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler circuit
 
-<h1>Threa, Helicon V, and More!</h1>
+<PageTitle>Index</PageTitle>
 
-<p>This app allows you to create and manage RPG characters for Threa, Helicon V, and other games using the Threa Gaming System.</p>
+<h1>Hello, world!</h1>
 
-<p>
-  <textarea rows="20" cols="80">@messageList</textarea>
-</p>
-<br />
-<input type="text" @bind-value="messageText" />
-<input type="button" @onclick="SendMessage" value="Send" />
-<p>
-  Active users:
-  <ul>
-    @foreach (var item in activeUsers)
-    {
-      <li>@item</li>
-    }
-  </ul>
-</p>
+Welcome to your new app.
 
-
-@code {
-  private string messageList;
-  private string messageText;
-  private List<string> activeUsers = new List<string>();
-
-  protected override void OnParametersSet()
-  {
-    chat.NewMessage += async (text) =>
-    {
-      await InvokeAsync(() =>
-      {
-        messageList += text;
-        messageList += Environment.NewLine;
-        StateHasChanged();
-      });
-    };
-    var myCircuit = (Threa.Services.CircuitSessionService)circuit;
-    myCircuit.SessionCountChanged += async () => await InvokeAsync(ShowActiveUsers);
-    ShowActiveUsers();
-  }
-
-  private void ShowActiveUsers()
-  {
-    var myCircuit = (Threa.Services.CircuitSessionService)circuit;
-    activeUsers = myCircuit.ActiveUsers;
-    StateHasChanged();
-  }
-
-  private void SendMessage()
-  {
-    chat.SendMessage(messageText);
-    messageText = string.Empty;
-  }
-}
+<SurveyPrompt Title="How is Blazor working for you?" />
