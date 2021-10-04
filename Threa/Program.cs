@@ -33,7 +33,6 @@ builder.Services.AddTransient<SqlConnection>((a) =>
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<ChatHub>();
 builder.Services.AddSingleton<SessionList>();
