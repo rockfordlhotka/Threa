@@ -9,47 +9,16 @@ namespace GameMechanics.Player
   public class CharacterList : ReadOnlyListBase<CharacterList, CharacterInfo>
   {
     [Fetch]
-    private async Task Fetch(int playerId, [Inject] ICharacterDal dal)
+    private async Task Fetch(int playerId, 
+      [Inject] ICharacterDal dal, 
+      [Inject] IChildDataPortal<CharacterInfo> characterPortal)
     {
       var items = await dal.GetCharactersAsync(playerId);
       using (LoadListMode)
       {
         foreach (var item in items)
-          Add(DataPortal.FetchChild<CharacterInfo>(item));
+          Add(characterPortal.FetchChild(item));
       }
-    }
-  }
-
-  [Serializable]
-  public class CharacterInfo : ReadOnlyBase<CharacterInfo>
-  {
-    public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
-    public int Id
-    {
-      get => GetProperty(IdProperty);
-      private set => LoadProperty(IdProperty, value);
-    }
-
-    public static readonly PropertyInfo<string> NameProperty = RegisterProperty<string>(nameof(Name));
-    public string Name
-    {
-      get => GetProperty(NameProperty);
-      private set => LoadProperty(NameProperty, value);
-    }
-
-    public static readonly PropertyInfo<string> SpeciesProperty = RegisterProperty<string>(nameof(Species));
-    public string Species
-    {
-      get => GetProperty(SpeciesProperty);
-      private set => LoadProperty(SpeciesProperty, value);
-    }
-
-    [FetchChild]
-    private void Fetch(ICharacter character)
-    {
-      Id = character.Id;
-      Name = character.Name;
-      Species = character.Species;
     }
   }
 }

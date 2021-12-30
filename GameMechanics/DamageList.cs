@@ -8,19 +8,19 @@ namespace GameMechanics
   public class DamageList : BusinessListBase<DamageList, Damage>
   {
     [CreateChild]
-    private void Create(Character character)
+    private void Create(CharacterEdit character, [Inject] IChildDataPortal<Damage> damagePortal)
     {
-      Add(DataPortal.CreateChild<Damage>("FAT", character));
-      Add(DataPortal.CreateChild<Damage>("VIT", character));
+      Add(damagePortal.CreateChild("FAT", character));
+      Add(damagePortal.CreateChild("VIT", character));
     }
 
     [FetchChild]
-    private void Fetch(ICharacter character)
+    private void Fetch(ICharacter character, [Inject] IChildDataPortal<Damage> damagePortal)
     {
       using (LoadListMode)
       {
-        Add(DataPortal.FetchChild<Damage>("FAT", character));
-        Add(DataPortal.FetchChild<Damage>("VIT", character));
+        Add(damagePortal.FetchChild("FAT", character));
+        Add(damagePortal.FetchChild("VIT", character));
       }
     }
   }

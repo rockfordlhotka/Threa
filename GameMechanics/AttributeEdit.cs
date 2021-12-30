@@ -4,7 +4,7 @@ using System.Linq;
 using Csla;
 using Threa.Dal;
 
-namespace GameMechanics.Player
+namespace GameMechanics
 {
   [Serializable]
   public class AttributeEdit : BusinessBase<AttributeEdit>
@@ -23,11 +23,18 @@ namespace GameMechanics.Player
       set => SetProperty(ValueProperty, value);
     }
 
+    public static readonly PropertyInfo<int> BaseValueProperty = RegisterProperty<int>(nameof(BaseValue));
+    public int BaseValue
+    {
+      get => GetProperty(BaseValueProperty);
+      set => LoadProperty(BaseValueProperty, value);
+    }
+
     [CreateChild]
     private void Create(string name)
     {
       Name = name;
-      Value = 10 + Dice.Roll(4, "F");
+      Value = BaseValue = 10 + Dice.Roll(4, "F");
     }
 
     [FetchChild]

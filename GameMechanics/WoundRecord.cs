@@ -68,7 +68,7 @@ namespace GameMechanics
       get => TotalWounds >= MaxWounds - 1;
     }
 
-    private Character Character
+    private CharacterEdit Character
     {
       get => ((WoundList)Parent).Character;
     }

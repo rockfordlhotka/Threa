@@ -1,6 +1,9 @@
 ﻿@page "/player/characters"
 
 @using GameMechanics.Player
+@inject IDataPortal<Player> playerPortal
+@inject IDataPortal<CharacterList> characterListPortal
+@inject ApplicationContext applicationContext
 @inject ViewModel<CharacterList> vm
 @inject NavigationManager NavigationManager
 
@@ -39,11 +42,11 @@ else
 @code {
   protected override async Task OnParametersSetAsync()
   {
-    var player = await DataPortal.FetchAsync<Player>(Csla.ApplicationContext.User.Identity.Name);
-    var ci = (System.Security.Claims.ClaimsIdentity)Csla.ApplicationContext.User.Identity;
+    var player = await playerPortal.FetchAsync(applicationContext.User.Identity.Name);
+    var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
     ci.AddClaim(new System.Security.Claims.Claim("playerId", player.Id.ToString()));
     await vm.RefreshAsync(() =>
-      DataPortal.FetchAsync<CharacterList>(player.Id));
+      characterListPortal.FetchAsync(player.Id));
     StateHasChanged();
   }
 }

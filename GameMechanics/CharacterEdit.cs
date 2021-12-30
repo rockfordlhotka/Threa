@@ -1,13 +1,14 @@
 ﻿using Csla;
 using Csla.Core;
 using Csla.Rules;
+using GameMechanics.Reference;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
 
-namespace GameMechanics.Player
+namespace GameMechanics
 {
   [Serializable]
   public class CharacterEdit : BusinessBase<CharacterEdit>
@@ -146,18 +147,41 @@ namespace GameMechanics.Player
       private set => LoadProperty(AttributeListProperty, value);
     }
 
-    public static readonly PropertyInfo<int> FatigueProperty = RegisterProperty<int>(nameof(Fatigue));
-    public int Fatigue
+    public static readonly PropertyInfo<Fatigue> FatigueProperty = RegisterProperty<Fatigue>(nameof(Fatigue));
+    public Fatigue Fatigue
     {
       get => GetProperty(FatigueProperty);
       private set => LoadProperty(FatigueProperty, value);
     }
 
-    public static readonly PropertyInfo<int> VitalityProperty = RegisterProperty<int>(nameof(Vitality));
-    public int Vitality
+    public static readonly PropertyInfo<Vitality> VitalityProperty = RegisterProperty<Vitality>(nameof(Vitality));
+    public Vitality Vitality
     {
       get => GetProperty(VitalityProperty);
       private set => LoadProperty(VitalityProperty, value);
+    }
+
+    public static readonly PropertyInfo<WoundList> WoundsProperty = RegisterProperty<WoundList>(nameof(Wounds));
+    public WoundList Wounds
+    {
+      get => GetProperty(WoundsProperty);
+      private set => LoadProperty(WoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
+    [Display(Name = "Is passed out")]
+    public bool IsPassedOut
+    {
+      get => GetProperty(IsPassedOutProperty);
+      set => SetProperty(IsPassedOutProperty, value);
+    }
+
+    public static readonly PropertyInfo<ActionPoints> ActionPointsProperty = RegisterProperty<ActionPoints>(nameof(ActionPoints));
+    [Display(Name = "Action points")]
+    public ActionPoints ActionPoints
+    {
+      get => GetProperty(ActionPointsProperty);
+      set => SetProperty(ActionPointsProperty, value);
     }
 
     public static readonly PropertyInfo<SkillEditList> SkillsProperty = RegisterProperty<SkillEditList>(nameof(Skills));
@@ -200,35 +224,27 @@ namespace GameMechanics.Player
         return result.Value;
     }
 
+    public void EndOfRound()
+    {
+      Fatigue.EndOfRound();
+      Vitality.EndOfRound();
+      Wounds.EndOfRound();
+      ActionPoints.EndOfRound();
+    }
+
+    public void TakeDamage(DamageValue damageValue)
+    {
+      Fatigue.TakeDamage(damageValue);
+      Vitality.TakeDamage(damageValue);
+      Wounds.TakeDamage(damageValue);
+    }
+
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();
-      BusinessRules.AddRule(new CalculateFatigue { PrimaryProperty = FatigueProperty });
-      BusinessRules.AddRule(new CalculateVitality { PrimaryProperty = VitalityProperty });
       BusinessRules.AddRule(new LockCharacter(IsPlayableProperty));
       BusinessRules.AddRule(new LockCharacter(DamageClassProperty));
       BusinessRules.AddRule(new LockCharacter(BirthdateProperty));
-    }
-
-    public class CalculateFatigue : BusinessRule
-    {
-      protected override void Execute(IRuleContext context)
-      {
-        var character = (CharacterEdit)context.Target;
-        var end = character.GetAttribute("END");
-        var wil = character.GetAttribute("WIL");
-        context.AddOutValue(end + wil - 5);
-      }
-    }
-
-    public class CalculateVitality : BusinessRule
-    {
-      protected override void Execute(IRuleContext context)
-      {
-        var character = (CharacterEdit)context.Target;
-        var str = character.GetAttribute("STR");
-        context.AddOutValue(str * 2 - 5);
-      }
     }
 
     public class LockCharacter : AuthorizationRule
@@ -249,23 +265,39 @@ namespace GameMechanics.Player
 
     [Create]
     [RunLocal]
-    private void Create()
+    private void Create([Inject] ApplicationContext applicationContext,
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
     {
-      var ci = (System.Security.Claims.ClaimsIdentity)Csla.ApplicationContext.User.Identity;
+      var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
       var playerId = int.Parse(ci.Claims.Where(r => r.Type == "playerId").First().Value);
-      Create(playerId);
+      Create(playerId, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
     [Create]
     [RunLocal]
-    private void Create(int playerId)
+    private void Create(int playerId, 
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
     {
       using (BypassPropertyChecks)
       {
         DamageClass = 1;
         PlayerId = playerId;
-        AttributeList = DataPortal.CreateChild<AttributeEditList>();
-        Skills = DataPortal.CreateChild<SkillEditList>();
+        AttributeList = attributePortal.CreateChild();
+        Skills = skillPortal.CreateChild();
+        Wounds = woundPortal.CreateChild();
+        Fatigue = fatPortal.CreateChild(this);
+        Vitality = vitPortal.CreateChild(this);
+        ActionPoints = actionPointsPortal.CreateChild(this);
       }
       BusinessRules.CheckRules();
     }
@@ -293,47 +325,59 @@ namespace GameMechanics.Player
       };
 
     [Fetch]
-    private async Task FetchAsync(int id, [Inject] ICharacterDal dal)
+    private async Task FetchAsync(int id, [Inject] ICharacterDal dal,
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
-        Fatigue = existing.FatBaseValue;
-        Vitality = existing.VitBaseValue;
-        AttributeList = DataPortal.FetchChild<AttributeEditList>(existing.AttributeList);
-        Skills = DataPortal.FetchChild<SkillEditList>(existing.Skills);
+        Fatigue = fatPortal.FetchChild(existing);
+        Vitality = vitPortal.FetchChild(existing);
+        AttributeList = attributePortal.FetchChild(existing.AttributeList);
+        Skills = skillPortal.FetchChild(existing.Skills);
       }
       BusinessRules.CheckRules();
     }
 
     [Insert]
-    private async Task InsertAsync([Inject] ICharacterDal dal)
+    private async Task InsertAsync([Inject] ICharacterDal dal,
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
     {
       var toSave = dal.GetBlank();
       using (BypassPropertyChecks)
       {
         Csla.Data.DataMapper.Map(this, toSave, mapIgnore);
-        toSave.FatBaseValue = toSave.FatValue = Fatigue;
-        toSave.VitBaseValue = toSave.VitValue = Vitality;
-        DataPortal.UpdateChild(AttributeList, toSave.AttributeList);
-        DataPortal.UpdateChild(Skills, toSave.Skills);
+        fatPortal.UpdateChild(Fatigue, toSave);
+        vitPortal.UpdateChild(Vitality, toSave);
+        attributePortal.UpdateChild(AttributeList, toSave.AttributeList);
+        skillPortal.UpdateChild(Skills, toSave.Skills);
       }
       var result = await dal.SaveCharacter(toSave);
       Id = result.Id;
     }
 
     [Update]
-    private async Task UpdateAsync([Inject] ICharacterDal dal)
+    private async Task UpdateAsync([Inject] ICharacterDal dal,
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
     {
       using (BypassPropertyChecks)
       {
         var existing = await dal.GetCharacterAsync(Id);
         Csla.Data.DataMapper.Map(this, existing, mapIgnore);
-        existing.FatBaseValue = existing.FatValue = Fatigue;
-        existing.VitBaseValue = existing.VitValue = Vitality;
-        DataPortal.UpdateChild(AttributeList, existing.AttributeList);
-        DataPortal.UpdateChild(Skills, existing.Skills);
+        fatPortal.UpdateChild(Fatigue, existing);
+        vitPortal.UpdateChild(Vitality, existing);
+        attributePortal.UpdateChild(AttributeList, existing.AttributeList);
+        skillPortal.UpdateChild(Skills, existing.Skills);
         await dal.SaveCharacter(existing);
       }
     }

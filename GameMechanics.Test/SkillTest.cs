@@ -1,4 +1,6 @@
 ﻿using Csla;
+using Csla.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 using Threa.Dal.Dto;
@@ -8,17 +10,27 @@ namespace GameMechanics.Test
   [TestClass]
   public class SkillTest
   {
+    private ServiceProvider InitServices()
+    {
+      IServiceCollection services = new ServiceCollection();
+      services.AddCsla();
+      return services.BuildServiceProvider();
+    }
+
     [TestMethod]
     public void SingleAttributeBonus()
     {
-      var c = DataPortal.Create<Character>("");
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var skillp = provider.GetRequiredService<IChildDataPortal<SkillEdit>>();
+      var c = dp.Create(42);
       c.AttributeList.Where(r => r.Name == "STR").First().Value = 7;
       var cs = new CharacterSkill
       {
         PrimaryAttribute = "STR",
         Level = 3
       };
-      var s = DataPortal.FetchChild<Skill>(cs);
+      var s = skillp.FetchChild(cs);
       c.Skills.Add(s);
       Assert.AreEqual("STR", s.PrimaryAttribute);
       Assert.AreEqual(3, s.Level);
@@ -29,7 +41,10 @@ namespace GameMechanics.Test
     [TestMethod]
     public void MultiAttributeBonus()
     {
-      var c = DataPortal.Create<Character>("");
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var skillp = provider.GetRequiredService<IChildDataPortal<SkillEdit>>();
+      var c = dp.Create(42);
       c.AttributeList.Where(r => r.Name == "STR").First().Value = 12;
       c.AttributeList.Where(r => r.Name == "END").First().Value = 10;
       var cs = new CharacterSkill
@@ -37,7 +52,7 @@ namespace GameMechanics.Test
         PrimaryAttribute = "STR/END",
         Level = 3
       };
-      var s = DataPortal.FetchChild<Skill>(cs);
+      var s = skillp.FetchChild(cs);
       c.Skills.Add(s);
       Assert.AreEqual("STR/END", s.PrimaryAttribute);
       Assert.AreEqual(3, s.Level);
@@ -48,7 +63,9 @@ namespace GameMechanics.Test
     [TestMethod]
     public void StandardSkills()
     {
-      var c = DataPortal.Create<Character>("");
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
       Assert.AreEqual(8, c.Skills.Count);
     }
   }

@@ -1,7 +1,8 @@
 ﻿@page "/player/character"
 @page "/player/character/{id:int}"
 
-@inject ViewModel<GameMechanics.Player.CharacterEdit> vm
+@inject ViewModel<GameMechanics.CharacterEdit> vm
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
 @inject NavigationManager NavigationManager
 
 @attribute [Authorize]
@@ -103,10 +104,10 @@ else
   {
     if (id == 0)
       await vm.RefreshAsync(() =>
-        DataPortal.CreateAsync<GameMechanics.Player.CharacterEdit>());
+        characterPortal.CreateAsync());
     else
       await vm.RefreshAsync(() =>
-        DataPortal.FetchAsync<GameMechanics.Player.CharacterEdit>(id));
+        characterPortal.FetchAsync(id));
   }
 
   private async void SaveAsync()

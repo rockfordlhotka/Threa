@@ -1,5 +1,7 @@
 ﻿using Csla;
+using Csla.Configuration;
 using GameMechanics.Reference;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace GameMechanics.Test
@@ -7,23 +9,34 @@ namespace GameMechanics.Test
   [TestClass]
   public class CharacterTests
   {
+    private ServiceProvider InitServices()
+    {
+      IServiceCollection services = new ServiceCollection();
+      services.AddCsla();
+      return services.BuildServiceProvider();
+    }
+
     [TestMethod]
     public void CheckHealth()
     {
-      var c = DataPortal.Create<Character>();
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
       var str = c.GetAttribute("STR");
       var end = c.GetAttribute("END");
       var wil = c.GetAttribute("WIL");
-      Assert.AreEqual(str * 2 - 5, c.Vitality.Value);
-      Assert.AreEqual(c.Vitality.Value, c.Vitality.BaseValue);
-      Assert.AreEqual(end + wil - 5, c.Fatigue.Value);
-      Assert.AreEqual(c.Fatigue.Value, c.Fatigue.BaseValue);
+      Assert.AreEqual(str * 2 - 5, c.Vitality.Value, "vit");
+      Assert.AreEqual(c.Vitality.Value, c.Vitality.BaseValue, "vitbase");
+      Assert.AreEqual((end + wil) / 2 - 5, c.Fatigue.Value, "fat");
+      Assert.AreEqual(c.Fatigue.Value, c.Fatigue.BaseValue, "fatbase");
     }
 
     [TestMethod]
     public void TakeDamage()
     {
-      var c = DataPortal.Create<Character>();
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       var dmg = rv.CalculateDamageValue(0, 1);
       var result = DamageSheet.GetDamageResult(dmg.Damage);
@@ -35,7 +48,9 @@ namespace GameMechanics.Test
     [TestMethod]
     public void HealFatigue()
     {
-      var c = DataPortal.Create<Character>();
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       // get a positive damage value
       DamageValue dmg;
@@ -58,7 +73,9 @@ namespace GameMechanics.Test
     [TestMethod]
     public void HealVitality()
     {
-      var c = DataPortal.Create<Character>();
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create();
       var rv = ResultValues.GetResult(5);
       // get a positive damage value
       DamageValue dmg;

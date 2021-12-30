@@ -1,7 +1,5 @@
 ﻿using Csla;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Threa.Dal;
 
 namespace GameMechanics
@@ -59,7 +57,7 @@ namespace GameMechanics
         throw new InvalidOperationException("Insufficient AP");
       if (Spent > 0)
         throw new InvalidOperationException("Action already taken");
-      var character = (Character)Parent;
+      var character = (CharacterEdit)Parent;
       character.Fatigue.PendingHealing += points;
       Available -= points;
       Locked += Available;
@@ -75,7 +73,7 @@ namespace GameMechanics
     {
       if (Available < 1)
         throw new InvalidOperationException("Insufficient AP");
-      var character = (Character)Parent;
+      var character = (CharacterEdit)Parent;
       character.Fatigue.PendingDamage += 1 + boost;
       Available -= 1;
       Spent += 1;
@@ -90,7 +88,7 @@ namespace GameMechanics
     {
       if (Available < 2)
         throw new InvalidOperationException("Insufficient AP");
-      var character = (Character)Parent;
+      var character = (CharacterEdit)Parent;
       character.Fatigue.PendingDamage += boost;
       Available -= 2;
       Spent += 2;
@@ -107,7 +105,7 @@ namespace GameMechanics
     }
 
     [CreateChild]
-    private void Create(Character character)
+    private void Create(CharacterEdit character)
     {
       Recovery = CalculateRecovery(character.Fatigue.BaseValue);
       Max = CalculateMax(character.XPTotal);

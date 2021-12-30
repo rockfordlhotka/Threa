@@ -43,7 +43,8 @@ builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<NotificationService>();
 //services.AddMockDb();
 builder.Services.AddSqlDb();
-builder.Services.AddCsla().WithBlazorServerSupport();
+builder.Services.AddCsla(opt => opt
+    .AddServerSideBlazor());
 
 var app = builder.Build();
 
@@ -55,7 +56,8 @@ if (!app.Environment.IsDevelopment())
   app.UseHsts();
 }
 
-Csla.ApplicationContext.LocalContext.Add("ContentRootPath", env.ContentRootPath);
+var applicationContext = app.Services.GetRequiredService<Csla.ApplicationContext>();
+applicationContext.LocalContext.Add("ContentRootPath", env.ContentRootPath);
 
 app.UseHttpsRedirection();
 
@@ -66,7 +68,5 @@ app.UseRouting();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
-
-app.UseCsla();
 
 app.Run();

@@ -6,33 +6,19 @@ namespace GameMechanics.Reference
   [Serializable]
   public class SkillList : ReadOnlyListBase<SkillList, SkillInfo>
   {
-    private static SkillList cachedList;
-    public static SkillList GetList()
-    {
-      if (cachedList == null)
-      {
-        lock (typeof(SkillList))
-        {
-          if (cachedList == null)
-            cachedList = DataPortal.Fetch<SkillList>();
-        }
-      }
-      return cachedList;
-    }
-
     [Fetch]
-    private void Fetch()
+    private void Fetch([Inject] IChildDataPortal<SkillInfo> skillPortal)
     {
       using (LoadListMode)
       {
-        Add(DataPortal.FetchChild<SkillInfo>("Physicality"));
-        Add(DataPortal.FetchChild<SkillInfo>("Dodge"));
-        Add(DataPortal.FetchChild<SkillInfo>("Drive"));
-        Add(DataPortal.FetchChild<SkillInfo>("Reasoning"));
-        Add(DataPortal.FetchChild<SkillInfo>("Awareness"));
-        Add(DataPortal.FetchChild<SkillInfo>("Focus"));
-        Add(DataPortal.FetchChild<SkillInfo>("Bearing"));
-        Add(DataPortal.FetchChild<SkillInfo>("Influence"));
+        Add(skillPortal.FetchChild("Physicality"));
+        Add(skillPortal.FetchChild("Dodge"));
+        Add(skillPortal.FetchChild("Drive"));
+        Add(skillPortal.FetchChild("Reasoning"));
+        Add(skillPortal.FetchChild("Awareness"));
+        Add(skillPortal.FetchChild("Focus"));
+        Add(skillPortal.FetchChild("Bearing"));
+        Add(skillPortal.FetchChild("Influence"));
       }
     }
   }

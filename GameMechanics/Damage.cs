@@ -46,9 +46,9 @@ namespace GameMechanics
       set => SetProperty(PendingDamageProperty, value);
     }
 
-    private Character Character
+    private CharacterEdit Character
     {
-      get => (Character)((DamageList)Parent).Parent;
+      get => (CharacterEdit)((DamageList)Parent).Parent;
     }
 
     public void EndOfRound()
@@ -178,7 +178,7 @@ namespace GameMechanics
     }
 
     [CreateChild]
-    private void Create(string name, Character character)
+    private void Create(string name, CharacterEdit character)
     {
       Name = name;
       int start;

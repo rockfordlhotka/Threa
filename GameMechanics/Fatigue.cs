@@ -37,9 +37,9 @@ namespace GameMechanics
       set => SetProperty(PendingHealingProperty, value);
     }
 
-    private Character Character
+    private CharacterEdit Character
     {
-      get => (Character)Parent;
+      get => (CharacterEdit)Parent;
     }
 
     public void EndOfRound()
@@ -49,7 +49,7 @@ namespace GameMechanics
         // recover fatigue
         var vit = Character.Vitality.Value;
         if (vit > 7)
-          PendingDamage += 1;
+          PendingHealing += 1;
         // heal
         int heal = PendingHealing / 2;
         PendingHealing -= heal;
@@ -63,7 +63,7 @@ namespace GameMechanics
         {
           var overflow = -Value;
           Value = 0;
-          Character.Vitality.PendingDamage += overflow * 2;
+          Character.Vitality.PendingDamage += overflow;
         }
         CheckFocusRolls();
       }
@@ -85,46 +85,40 @@ namespace GameMechanics
         Character.IsPassedOut = true;
     }
 
-    [CreateChild]
-
-    private void Create(Character character)
-    {
-      Value = BaseValue = Calculate.GetValue(character.GetAttribute("END"), character.GetAttribute("WIL"));
-    }
-
-    [FetchChild]
-    private void Fetch(ICharacterAttribute attribute)
-    {
-      if (attribute == null)
-      {
-
-      }
-      else
-      {
-
-      }
-    }
-
-    private class Calculate : BusinessRule
-    {
-#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
-      protected override void Execute(IRuleContext context)
-#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
-      {
-        var target = (Fatigue)context.Target;
-        var character = target.Character;
-        target.BaseValue = GetValue(character.GetAttribute("END"), character.GetAttribute("WIL"));
-      }
-
-      public static int GetValue(int endurance, int willpower)
-      {
-        return ((endurance + willpower) / 2) + 14;
-      }
-    }
-
     internal void TakeDamage(DamageValue damageValue)
     {
       PendingDamage += damageValue.GetModifiedDamage(Character.DamageClass);
+    }
+
+    [CreateChild]
+
+    private void Create(CharacterEdit character)
+    {
+      var end = character.GetAttribute("END");
+      var wil = character.GetAttribute("WIL");
+      Value = BaseValue = (end + wil) / 2 - 5;
+    }
+
+    [FetchChild]
+    private void Fetch(ICharacter existing)
+    {
+      using (BypassPropertyChecks)
+      {
+        Value = existing.FatValue;
+        BaseValue = existing.FatBaseValue;
+        PendingDamage = existing.FatPendingDamage;
+        PendingHealing = existing.FatPendingHealing;
+      }
+    }
+
+    [UpdateChild]
+    [InsertChild]
+    private void Update(ICharacter existing)
+    {
+      existing.FatValue = Value;
+      existing.FatBaseValue = BaseValue;
+      existing.FatPendingDamage = PendingDamage;
+      existing.FatPendingHealing = PendingHealing;
     }
   }
 }

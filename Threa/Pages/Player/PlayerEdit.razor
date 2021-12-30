@@ -1,6 +1,8 @@
 ﻿@page "/playeredit"
 
 @using GameMechanics.Player 
+@inject IDataPortal<Player> playerPortal
+@inject ApplicationContext applicationContext
 @inject ViewModel<Player> vm
 @inject NavigationManager NavigationManager
 
@@ -39,6 +41,6 @@ else
   protected override async Task OnParametersSetAsync()
   {
     await vm.RefreshAsync(() => 
-      DataPortal.FetchAsync<Player>(Csla.ApplicationContext.User.Identity.Name));
+      playerPortal.FetchAsync(applicationContext.User.Identity.Name));
   }
 }

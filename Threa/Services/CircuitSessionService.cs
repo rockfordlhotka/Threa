@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Components.Server.Circuits;
-using Microsoft.AspNetCore.Mvc;
+﻿using Csla;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
 
 namespace Threa.Services
 {
@@ -16,10 +14,13 @@ namespace Threa.Services
     public string Email { get; private set; }
     private readonly SessionList sessionList;
 
-    public CircuitSessionService(SessionList sessionList)
+    public CircuitSessionService(SessionList sessionList, ApplicationContext applicationContext)
     {
       this.sessionList = sessionList;
+      ApplicationContext = applicationContext;
     }
+
+    private ApplicationContext ApplicationContext { get; set; }
 
     public int Count
     {
@@ -39,7 +40,7 @@ namespace Threa.Services
     public override Task OnCircuitOpenedAsync(Circuit circuit, CancellationToken cancellationToken)
     {
       SessionId = Guid.NewGuid().ToString();
-      Email = Csla.ApplicationContext.User.Identity.Name;
+      Email = ApplicationContext.User.Identity.Name;
       CurrentCircuit = circuit;
       IsCircuitActive = true;
       sessionList.ListChanged += SessionList_ListChanged;

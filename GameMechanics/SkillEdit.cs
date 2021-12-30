@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Csla;
+using Csla.Core;
+using GameMechanics.Reference;
 using Threa.Dal;
 
-namespace GameMechanics.Player
+namespace GameMechanics
 {
   [Serializable]
   public class SkillEdit : BusinessBase<SkillEdit>
@@ -42,6 +44,45 @@ namespace GameMechanics.Player
     {
       get => GetProperty(XPBankedProperty);
       set => SetProperty(XPBankedProperty, value);
+    }
+
+    public ResultValue SkillCheck()
+    {
+      return ResultValues.GetResult(Dice.Roll4dFWithBonus() + AbilityScore);
+    }
+
+    public int Bonus
+    {
+      get => SkillCost.GetBonus(Level);
+    }
+
+    public int AbilityScore
+    {
+      get => Bonus + GetAttributeBase((CharacterEdit)((IParent)Parent).Parent, PrimaryAttribute);
+    }
+
+    public static int GetAttributeBase(CharacterEdit character, string primaryAttribute)
+    {
+      var attributes = primaryAttribute.Split('/');
+      int sum = 0;
+      foreach (var item in attributes)
+      {
+        sum += character.GetAttribute(item);
+      }
+      var result = sum / attributes.Length;
+      if (character.Fatigue.Value < 1)
+        result = 0;
+      else if (character.Fatigue.Value < 2)
+        result -= 4;
+      else if (character.Fatigue.Value < 4)
+        result -= 2;
+      else if (character.Fatigue.Value < 6)
+        result -= 1;
+      if (character.Vitality.Value < 4)
+        result -= 6;
+      else if (character.Fatigue.Value < 6)
+        result -= 4;
+      return result;
     }
 
     [CreateChild]

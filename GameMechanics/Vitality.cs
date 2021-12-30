@@ -37,9 +37,9 @@ namespace GameMechanics
       set => SetProperty(PendingHealingProperty, value);
     }
 
-    private Character Character
+    private CharacterEdit Character
     {
-      get => (Character)Parent;
+      get => (CharacterEdit)Parent;
     }
 
     public void EndOfRound()
@@ -64,36 +64,6 @@ namespace GameMechanics
       }
     }
 
-    [CreateChild]
-
-    private void Create(Character character)
-    {
-      Value = BaseValue = Calculate.GetValue(character.GetAttribute("STR"));
-    }
-
-    [FetchChild]
-    private void Fetch(ICharacterAttribute attribute)
-    {
-
-    }
-
-    private class Calculate : BusinessRule
-    {
-#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
-      protected override void Execute(IRuleContext context)
-#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
-      {
-        var target = (Vitality)context.Target;
-        var character = target.Character;
-        target.BaseValue = GetValue(character.GetAttribute("STR"));
-      }
-
-      public static int GetValue(int strength)
-      {
-        return strength + 14;
-      }
-    }
-
     internal void TakeDamage(DamageValue damageValue)
     {
       var dmg = damageValue.GetModifiedDamage(Character.DamageClass);
@@ -109,6 +79,34 @@ namespace GameMechanics
         PendingDamage += 8;
       else if (dmg > 9)
         PendingDamage += dmg;
+    }
+
+    [CreateChild]
+    private void Create(CharacterEdit character)
+    {
+      Value = BaseValue = character.GetAttribute("STR") * 2 - 5;
+    }
+
+    [FetchChild]
+    private void Fetch(ICharacter existing)
+    {
+      using (BypassPropertyChecks)
+      {
+        Value = existing.VitValue;
+        BaseValue = existing.VitBaseValue;
+        PendingDamage = existing.VitPendingDamage;
+        PendingHealing = existing.VitPendingHealing;
+      }
+    }
+
+    [UpdateChild]
+    [InsertChild]
+    private void Update(ICharacter existing)
+    {
+      existing.VitValue = Value;
+      existing.VitBaseValue = BaseValue;
+      existing.VitPendingDamage = PendingDamage;
+      existing.VitPendingHealing = PendingHealing;
     }
   }
 }

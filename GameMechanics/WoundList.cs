@@ -10,9 +10,9 @@ namespace GameMechanics
   [Serializable]
   public class WoundList : BusinessListBase<WoundList, WoundRecord>
   {
-    internal Character Character
+    internal CharacterEdit Character
     {
-      get => (Character)Parent;
+      get => (CharacterEdit)Parent;
     }
 
     public void EndOfRound()
@@ -78,27 +78,27 @@ namespace GameMechanics
     }
 
     [CreateChild]
-    private void Create()
+    private void Create([Inject] IChildDataPortal<WoundRecord> woundPortal)
     {
       using (LoadListMode)
       {
-        Add(DataPortal.CreateChild<WoundRecord>("Head", 2));
-        Add(DataPortal.CreateChild<WoundRecord>("RightLeg", 2));
-        Add(DataPortal.CreateChild<WoundRecord>("LeftLeg", 2));
-        Add(DataPortal.CreateChild<WoundRecord>("RightArm", 2));
-        Add(DataPortal.CreateChild<WoundRecord>("LeftArm", 2));
-        Add(DataPortal.CreateChild<WoundRecord>("Torso", 4));
+        Add(woundPortal.CreateChild("Head", 2));
+        Add(woundPortal.CreateChild("RightLeg", 2));
+        Add(woundPortal.CreateChild("LeftLeg", 2));
+        Add(woundPortal.CreateChild("RightArm", 2));
+        Add(woundPortal.CreateChild("LeftArm", 2));
+        Add(woundPortal.CreateChild("Torso", 4));
       }
     }
 
     [FetchChild]
-    private void Fetch(List<IWound> wounds)
+    private void Fetch(List<IWound> wounds, [Inject] IChildDataPortal<WoundRecord> woundPortal)
     {
       if (wounds == null) return;
       using (LoadListMode)
       {
         foreach (var item in wounds)
-          Add(DataPortal.FetchChild<WoundRecord>(item));
+          Add(woundPortal.FetchChild(item));
       }
     }
   }
