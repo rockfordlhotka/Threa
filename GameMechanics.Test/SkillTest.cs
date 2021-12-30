@@ -25,6 +25,8 @@ namespace GameMechanics.Test
       var skillp = provider.GetRequiredService<IChildDataPortal<SkillEdit>>();
       var c = dp.Create(42);
       c.AttributeList.Where(r => r.Name == "STR").First().Value = 7;
+      c.Vitality.Value = 10;
+      c.Fatigue.Value = 10;
       var cs = new CharacterSkill
       {
         PrimaryAttribute = "STR",
@@ -33,6 +35,7 @@ namespace GameMechanics.Test
       var s = skillp.FetchChild(cs);
       c.Skills.Add(s);
       Assert.AreEqual("STR", s.PrimaryAttribute);
+      Assert.AreEqual(7, c.AttributeList.Where(r => r.Name == "STR").First().Value, "STR!=7");
       Assert.AreEqual(3, s.Level);
       Assert.AreEqual(-2, s.Bonus);
       Assert.AreEqual(5, s.AbilityScore);
@@ -47,6 +50,9 @@ namespace GameMechanics.Test
       var c = dp.Create(42);
       c.AttributeList.Where(r => r.Name == "STR").First().Value = 12;
       c.AttributeList.Where(r => r.Name == "END").First().Value = 10;
+      c.AttributeList.Where(r => r.Name == "WIL").First().Value = 10;
+      c.Vitality.Value = 10;
+      c.Fatigue.Value = 10;
       var cs = new CharacterSkill
       {
         PrimaryAttribute = "STR/END",

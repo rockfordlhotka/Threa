@@ -150,7 +150,7 @@ namespace GameMechanics.Reference
     /// <param name="resultValue">AV - TV</param>
     /// <param name="weaponSVBase">Weapon base SV</param>
     /// <param name="weaponClass">Weapon damage class</param>
-    internal DamageValue(ResultValue resultValue, int weaponSVBase, int weaponClass)
+    public DamageValue(ResultValue resultValue, int weaponSVBase, int weaponClass)
     {
       Class = weaponClass;
       SV = resultValue.RVs + weaponSVBase;

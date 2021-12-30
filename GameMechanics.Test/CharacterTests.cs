@@ -52,12 +52,9 @@ namespace GameMechanics.Test
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
-      // get a positive damage value
-      DamageValue dmg;
-      do
-      {
-        dmg = rv.CalculateDamageValue(0, 1);
-      } while (dmg.Damage < 4);
+      DamageValue dmg = new DamageValue(rv, 5, 1);
+      while (dmg.Damage < 1 || dmg.Damage > 6)
+        dmg = new DamageValue(rv, 5, 1);
 
       // use damage value
       c.TakeDamage(dmg);
@@ -75,7 +72,7 @@ namespace GameMechanics.Test
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
-      var c = dp.Create();
+      var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       // get a positive damage value
       DamageValue dmg;

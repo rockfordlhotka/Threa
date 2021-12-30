@@ -44,18 +44,35 @@ namespace GameMechanics
 
     public void EndOfRound()
     {
-      if (PendingDamage > 0 || PendingHealing > 0)
+      if (Value < BaseValue)
       {
-        // recover fatigue
-        var vit = Character.Vitality.Value;
-        if (vit > 7)
+        // recover
+        if (Character.Vitality.Value > Character.Vitality.BaseValue / 2)
           PendingHealing += 1;
         // heal
-        int heal = PendingHealing / 2;
-        PendingHealing -= heal;
+        int heal;
+        if (PendingHealing > 1)
+          heal = PendingHealing / 2;
+        else
+          heal = 1;
         Value += heal;
+        PendingHealing -= heal;
+      }
+      else if (PendingHealing > 0)
+      {
+        if (PendingHealing > 1)
+          PendingHealing /= 2;
+        else
+          PendingHealing = 0;
+      }
+      if (PendingDamage > 0)
+      {
         // take damage
-        int damage = PendingDamage / 2;
+        int damage;
+        if (PendingDamage > 2)
+          damage = PendingDamage / 2;
+        else
+          damage = 1;
         PendingDamage -= damage;
         Value -= damage;
         // cascade overflow
@@ -65,8 +82,8 @@ namespace GameMechanics
           Value = 0;
           Character.Vitality.PendingDamage += overflow;
         }
-        CheckFocusRolls();
       }
+      CheckFocusRolls();
     }
 
     private void CheckFocusRolls()

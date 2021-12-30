@@ -101,7 +101,10 @@ namespace GameMechanics
 
     public static int CalculateMax(double xpTotal)
     {
-      return (int)xpTotal / 10;
+      var result = (int)xpTotal / 10;
+      if (result < 1)
+        result = 1;
+      return result;
     }
 
     [CreateChild]
