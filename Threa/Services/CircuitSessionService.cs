@@ -40,7 +40,9 @@ namespace Threa.Services
     public override Task OnCircuitOpenedAsync(Circuit circuit, CancellationToken cancellationToken)
     {
       SessionId = Guid.NewGuid().ToString();
-      Email = ApplicationContext.User.Identity.Name;
+      ActiveUsers.Add(SessionId);
+      if (ApplicationContext.User.Identity != null && ApplicationContext.User.Identity.Name != null)
+        Email = ApplicationContext.User.Identity.Name;
       CurrentCircuit = circuit;
       IsCircuitActive = true;
       sessionList.ListChanged += SessionList_ListChanged;

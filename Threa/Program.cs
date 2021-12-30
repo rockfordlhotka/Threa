@@ -41,8 +41,7 @@ builder.Services.AddScoped<CircuitHandler, CircuitSessionService>();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
 builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<NotificationService>();
-//services.AddMockDb();
-builder.Services.AddSqlDb();
+builder.Services.AddMockDb();
 builder.Services.AddCsla(opt => opt
     .AddServerSideBlazor());
 
@@ -55,9 +54,6 @@ if (!app.Environment.IsDevelopment())
   // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
   app.UseHsts();
 }
-
-var applicationContext = app.Services.GetRequiredService<Csla.ApplicationContext>();
-applicationContext.LocalContext.Add("ContentRootPath", env.ContentRootPath);
 
 app.UseHttpsRedirection();
 

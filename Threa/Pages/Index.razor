@@ -1,4 +1,7 @@
 ﻿@page "/"
+@using System.Security.Claims
+@using System.Security.Principal
+@inject ApplicationContext applicationContext
 @inject Services.ChatService chat
 @inject Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler circuit
 
@@ -30,6 +33,13 @@
 
   protected override void OnParametersSet()
   {
+    if (applicationContext.User.Identity == null)
+    {
+      var template = new GenericIdentity("illiante@yahoo.com");
+      var identity = new ClaimsIdentity(template);
+      applicationContext.User = new ClaimsPrincipal(identity);
+    }
+
     chat.NewMessage += async (text) =>
     {
       await InvokeAsync(() =>
