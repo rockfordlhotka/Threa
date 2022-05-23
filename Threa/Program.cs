@@ -23,7 +23,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         Configuration.GetConnectionString("AzureThrea")));
 builder.Services.AddDefaultIdentity<IdentityUser>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddTransient<SqlConnection>((a) =>
+builder.Services.AddScoped<SqlConnection>((a) =>
 {
   var db = new SqlConnection(Configuration.GetConnectionString("AzureThrea"));
   db.Open();
