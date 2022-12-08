@@ -1,0 +1,13 @@
+﻿@using Microsoft.AspNetCore.Components.Server.Circuits
+@using Services
+@inject CircuitHandler circuit
+
+<div>Connected: @(((CircuitSessionService)circuit).Count)  </div>
+
+@code { 
+  protected override void OnParametersSet()
+  {
+    var myCircuit = (CircuitSessionService)circuit;
+    myCircuit.SessionCountChanged += () => InvokeAsync(StateHasChanged);
+  }
+}

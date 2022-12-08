@@ -1,0 +1,52 @@
+﻿@page "/player/characters"
+
+@using GameMechanics.Player
+@inject IDataPortal<Player> playerPortal
+@inject IDataPortal<CharacterList> characterListPortal
+@inject ApplicationContext applicationContext
+@inject ViewModel<CharacterList> vm
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+<h3>Your Characters</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+<p><a href="player/character">Add character</a></p>
+
+@if (vm.Model == null)
+{
+  <div>Loading...  </div>
+  <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
+}
+else
+{
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Species</th><th></th></tr>
+    </thead>
+    <tbody>
+      @foreach (var item in vm.Model)
+      {
+        <tr>
+          <td>@item.Name</td>
+          <td>(@item.Species)</td>
+          <td><a href="player/character/@item.Id">Details</a></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  protected override async Task OnParametersSetAsync()
+  {
+    var player = await playerPortal.FetchAsync(applicationContext.User.Identity.Name);
+    var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
+    ci.AddClaim(new System.Security.Claims.Claim("playerId", player.Id.ToString()));
+    await vm.RefreshAsync(() =>
+      characterListPortal.FetchAsync(player.Id));
+    StateHasChanged();
+  }
+}
