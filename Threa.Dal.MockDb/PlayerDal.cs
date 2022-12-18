@@ -10,44 +10,65 @@ namespace Threa.Dal.MockDb
   {
     public Task DeletePlayerAsync(int id)
     {
-      var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
-      if (player == null)
-        throw new NotFoundException(nameof(player));
-      MockDb.Players.Remove(player);
-      return Task.CompletedTask;
+      lock (MockDb.Players)
+      {
+        var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
+        if (player == null)
+          throw new NotFoundException(nameof(player));
+        MockDb.Players.Remove(player);
+        return Task.CompletedTask;
+      }
     }
 
     public Task<IPlayer> GetPlayerAsync(int id)
     {
-      var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
-      return Task.FromResult(player);
+      lock (MockDb.Players)
+      {
+        var player = MockDb.Players.Where(r => r.Id == id).FirstOrDefault();
+        return Task.FromResult(player);
+      }
     }
 
     public Task<IPlayer> GetPlayerByEmailAsync(string email)
     {
-      var player = MockDb.Players.Where(r => r.Email == email).FirstOrDefault();
-      return Task.FromResult(player);
+      lock (MockDb.Players)
+      {
+        try
+        {
+          var players = MockDb.Players;
+          var player = players.Where(r => r.Email == email).FirstOrDefault();
+          return Task.FromResult(player);
+        }
+        catch (Exception ex)
+        {
+          var x = ex;
+        }
+        return Task.FromResult(((IPlayer)new Player()));
+      }
     }
 
     public Task<IPlayer> SavePlayerAsync(IPlayer obj)
     {
-      var player = MockDb.Players.Where(r => r.Id == obj.Id).FirstOrDefault();
-      if (player == null)
+      lock (MockDb.Players)
       {
-        player = new Player
+        var player = MockDb.Players.Where(r => r.Id == obj.Id).FirstOrDefault();
+        if (player == null)
         {
-          Id = MockDb.Players.Max(r => r.Id),
-          Name = obj.Name,
-          Email = obj.Email
-        };
-        MockDb.Players.Add(player);
+          player = new Player
+          {
+            Id = MockDb.Players.Max(r => r.Id),
+            Name = obj.Name,
+            Email = obj.Email
+          };
+          MockDb.Players.Add(player);
+        }
+        else
+        {
+          player.Name = obj.Name;
+          player.Email = obj.Email;
+        }
+        return Task.FromResult(player);
       }
-      else
-      {
-        player.Name = obj.Name;
-        player.Email = obj.Email;
-      }
-      return Task.FromResult(player);
     }
   }
 }

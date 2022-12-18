@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Threa.Dal.MockDb;
 
-namespace Threa.Dal.MockDb
+namespace Threa.Dal
 {
   public static  class ConfigurationExtensions
   {

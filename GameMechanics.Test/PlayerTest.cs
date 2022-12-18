@@ -10,6 +10,13 @@ namespace GameMechanics.Test
   [TestClass]
   public class PlayerTest
   {
+    [TestMethod]
+    public void MockDbInitializationCheck()
+    {
+      var players = MockDb.Players;
+      var characters = MockDb.Characters;
+    }
+
     //[TestMethod]
     //[Ignore]
     //public async Task InsertPlayer()

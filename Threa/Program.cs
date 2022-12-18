@@ -1,11 +1,22 @@
+using Csla;
+using Csla.Configuration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using System.Security.Claims;
+using System.Security.Principal;
+using Threa.Dal;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddCsla(o => o
+    .AddAspNetCore()
+    .AddServerSideBlazor());
+builder.Services.AddMockDb();
 
 var app = builder.Build();
 

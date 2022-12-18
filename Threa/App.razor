@@ -1,4 +1,8 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@using System.Security.Claims;
+@using System.Security.Principal;
+@inject ApplicationContext applicationContext
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -10,3 +14,14 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code
+{
+  protected override void OnParametersSet()
+  {
+    // TODO: remove when authn is implemented
+    var identity = new ClaimsIdentity(new GenericIdentity("rocky@lhotka.net"));
+    var principal = new ClaimsPrincipal(identity);
+    applicationContext.Principal = principal;
+  }
+}

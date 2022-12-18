@@ -13,14 +13,9 @@ namespace GameMechanics
   [Serializable]
   public class CharacterEdit : BusinessBase<CharacterEdit>
   {
-    public CharacterEdit()
-    {
-      this.ChildChanged += CharacterEdit_ChildChanged;
-    }
-
     public bool IsBeingSaved { get; set; }
 
-    private void CharacterEdit_ChildChanged(object sender, Csla.Core.ChildChangedEventArgs e)
+    protected override void OnChildChanged(ChildChangedEventArgs e)
     {
       if (!IsBeingSaved && e.ChildObject is AttributeEdit)
       {
