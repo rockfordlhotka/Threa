@@ -1,5 +1,5 @@
 ﻿<div>
-  <RadzenCheckBox @bind-Value="@BoolValue" TValue="bool"
+  <RadzenCheckBox @bind-Value=@BoolValue TValue="bool"
                   Disabled="@(!Property.CanWrite)" />
                   @*Change="@(args => Change(args))"/>*@
   <span class="text-danger">@Property.ErrorText</span>
