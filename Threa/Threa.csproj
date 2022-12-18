@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Threa.Dal\Threa.Dal.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\" />
+  </ItemGroup>
+
 </Project>
