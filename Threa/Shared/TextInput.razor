@@ -8,13 +8,13 @@
 
 @code {
     [Parameter]
-    public Csla.Blazor.IPropertyInfo Property { get; set; }
+    public Csla.Blazor.IPropertyInfo? Property { get; set; }
     [Parameter]
     public string InputType { get; set; } = "text";
 
-  private string TextValue
+  private string? TextValue
   {
-    get => Property.Value.ToString();
+    get => Property?.Value.ToString();
     set => Property.Value =
       Utilities.CoerceValue(Property.Value.GetType(), value.GetType(), Property.Value, value);
   }

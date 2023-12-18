@@ -4,12 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Csla.AspNetCore" Version="7.0.2" />
-    <PackageReference Include="Csla.Blazor" Version="7.0.2" />
-    <PackageReference Include="Radzen.Blazor" Version="4.22.1" />
+    <PackageReference Include="Csla.AspNetCore" Version="8.0.0-R23121704" />
+    <PackageReference Include="Csla.Blazor" Version="8.0.0-R23121704" />
+    <PackageReference Include="Radzen.Blazor" Version="4.23.3" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,9 +1,5 @@
 using Csla;
 using Csla.Configuration;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using System.Security.Claims;
-using System.Security.Principal;
 using Threa.Dal;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,10 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 builder.Services.AddCsla(o => o
     .AddAspNetCore()
+    .PropertyChangedMode(ApplicationContext.PropertyChangedModes.Windows)
     .AddServerSideBlazor());
+
 builder.Services.AddMockDb();
 
 var app = builder.Build();
@@ -33,6 +33,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

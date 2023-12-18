@@ -1,0 +1,10 @@
+﻿@inject ApplicationContext ApplicationContext
+
+<AuthorizeView>
+    <Authorized>
+        @ApplicationContext.User.Identity.Name
+    </Authorized>
+    <NotAuthorized>
+        @ApplicationContext.User.Identity.IsAuthenticated
+    </NotAuthorized>
+</AuthorizeView>
