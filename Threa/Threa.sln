@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35209.166
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa", "Threa\Threa\Threa.csproj", "{480B4BCA-7642-42E1-9188-FA37CE45B726}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Client", "Threa\Threa.Client\Threa.Client.csproj", "{8244D220-4120-46CB-8AA0-2EA89FA3164D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameMechanics", "..\GameMechanics\GameMechanics.csproj", "{782EBEF8-DEF7-472B-AD65-9B9F1F952A65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameMechanics.Test", "..\GameMechanics.Test\GameMechanics.Test.csproj", "{5672640C-E270-4B22-99DF-B6DB2DE38922}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Dal", "..\Threa.Dal\Threa.Dal.csproj", "{AB969AF1-6C7A-49E4-82A5-90F8449190D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Dal.MockDb", "..\Threa.Dal.MockDb\Threa.Dal.MockDb.csproj", "{33D31D27-1B58-4946-AEA9-96FF11F46EB6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{46E4A176-B991-49B7-84AF-106A3B9F4C09}"
+	ProjectSection(SolutionItems) = preProject
+		..\global.json = ..\global.json
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{480B4BCA-7642-42E1-9188-FA37CE45B726}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{480B4BCA-7642-42E1-9188-FA37CE45B726}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{480B4BCA-7642-42E1-9188-FA37CE45B726}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{480B4BCA-7642-42E1-9188-FA37CE45B726}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8244D220-4120-46CB-8AA0-2EA89FA3164D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8244D220-4120-46CB-8AA0-2EA89FA3164D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8244D220-4120-46CB-8AA0-2EA89FA3164D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8244D220-4120-46CB-8AA0-2EA89FA3164D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{782EBEF8-DEF7-472B-AD65-9B9F1F952A65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{782EBEF8-DEF7-472B-AD65-9B9F1F952A65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{782EBEF8-DEF7-472B-AD65-9B9F1F952A65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{782EBEF8-DEF7-472B-AD65-9B9F1F952A65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5672640C-E270-4B22-99DF-B6DB2DE38922}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5672640C-E270-4B22-99DF-B6DB2DE38922}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5672640C-E270-4B22-99DF-B6DB2DE38922}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5672640C-E270-4B22-99DF-B6DB2DE38922}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB969AF1-6C7A-49E4-82A5-90F8449190D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB969AF1-6C7A-49E4-82A5-90F8449190D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB969AF1-6C7A-49E4-82A5-90F8449190D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB969AF1-6C7A-49E4-82A5-90F8449190D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33D31D27-1B58-4946-AEA9-96FF11F46EB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33D31D27-1B58-4946-AEA9-96FF11F46EB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33D31D27-1B58-4946-AEA9-96FF11F46EB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33D31D27-1B58-4946-AEA9-96FF11F46EB6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1F996183-3B22-42F7-B588-999B5032177E}
+	EndGlobalSection
+EndGlobal
