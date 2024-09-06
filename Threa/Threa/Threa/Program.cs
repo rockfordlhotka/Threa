@@ -1,8 +1,9 @@
 using Csla.Configuration;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Threa.Client.Components.Pages;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Threa.Components;
 using Threa.Dal;
+using Threa.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
   .AddCookie();
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddTransient<RenderModeProvider>();
+builder.Services.AddScoped<ActiveCircuitState>();
+builder.Services.AddScoped(typeof(CircuitHandler), typeof(ActiveCircuitHandler));
 
 builder.Services.AddCsla(o => o
     .AddAspNetCore()

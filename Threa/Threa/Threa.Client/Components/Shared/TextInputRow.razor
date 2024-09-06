@@ -1,4 +1,4 @@
-﻿@if (Property.CanRead)
+﻿@if (Property != null && Property.CanRead)
 {
   <tr>
     <td>@(Property.FriendlyName)</td>
@@ -10,7 +10,7 @@
 
 @code {
   [Parameter]
-  public Csla.Blazor.IPropertyInfo Property { get; set; }
+  public Csla.Blazor.IPropertyInfo? Property { get; set; }
   [Parameter]
   public string InputType { get; set; } = "text";
 }

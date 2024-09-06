@@ -1,6 +1,10 @@
 ﻿@page "/player/character"
 @page "/player/character/{id:int}"
+@rendermode InteractiveServer
+@using Threa.Services
 
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
 @inject ViewModel<GameMechanics.CharacterEdit> vm
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
 @inject NavigationManager NavigationManager
@@ -12,111 +16,119 @@
 <div class="alert-danger">@vm.ViewModelErrorText</div>
 @if (vm.Exception != null)
 {
-  <div class="alert-danger">@vm.Exception.ToString()</div>
+    <div class="alert-danger">@vm.Exception.ToString()</div>
 }
 
 @if (vm.Model == null)
 {
-  <div>Loading...  </div>
-  <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
+    <div>Loading...  </div>
+    <img src="images/busy.gif" height="30" width="30" />
 }
 else
 {
-  <RadzenTabs>
-    <Tabs>
-      <RadzenTabsItem Text="Info">
-        <table>
-          <thead>
-            <tr><th></th><th></th></tr>
-          </thead>
-          <tbody>
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
-            <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Height)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Weight)" />
-            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
-            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
-            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPlayable)" />
-            <tr><td>@vm.Model.IsPlayable.ToString()</td><td></td></tr>
-          </tbody>
-        </table>
-      </RadzenTabsItem>
-      <RadzenTabsItem Text="Attributes">
-        <table>
-          <thead>
-            <tr><th></th><th></th></tr>
-          </thead>
-          <tbody>
-            @foreach (var item in vm.Model.AttributeList)
-            {
-              <tr>
-                <td>@item.Name</td>
-                <td><TextInput Property="new Csla.Blazor.PropertyInfo(item, nameof(item.Value))" /></td>
-              </tr>
-            }
-            <tr>
-              <td>Fatigue</td>
-              <td>@vm.Model.Fatigue</td>
-            </tr>
-            <tr>
-              <td>Vitality</td>
-              <td>@vm.Model.Vitality</td>
-            </tr>
-          </tbody>
-        </table>
-      </RadzenTabsItem>
-      <RadzenTabsItem Text="Skills">
-      </RadzenTabsItem>
-      <RadzenTabsItem Text="Spells">
-      </RadzenTabsItem>
-      <RadzenTabsItem Text="Inventory">
-      </RadzenTabsItem>
-    </Tabs>
-  </RadzenTabs>
-  @if (vm.Model.IsBeingSaved)
-  {
-    <button disabled>Save</button><span>  </span>
-    <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
-  }
-  else
-  {
-    <button @onclick="SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
-  }
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Info">
+                <table>
+                    <thead>
+                        <tr><th></th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+                        <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Height)" />
+                        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Weight)" />
+                        <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+                        <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
+                        <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPlayable)" />
+                        <tr><td>@vm.Model.IsPlayable.ToString()</td><td></td></tr>
+                    </tbody>
+                </table>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Attributes">
+                <table>
+                    <thead>
+                        <tr><th></th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in vm.Model.AttributeList)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td><TextInput Property="new Csla.Blazor.PropertyInfo(item, nameof(item.Value))" /></td>
+                            </tr>
+                        }
+                        <tr>
+                            <td>Fatigue</td>
+                            <td>@vm.Model.Fatigue</td>
+                        </tr>
+                        <tr>
+                            <td>Vitality</td>
+                            <td>@vm.Model.Vitality</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Skills">
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Spells">
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Inventory">
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+    @if (vm.Model.IsBeingSaved)
+    {
+        <button disabled>Save</button>
+
+        <span>  </span>
+        <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
+    }
+    else
+    {
+        <button @onclick="SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
+    }
 }
 
 @code {
-  [Parameter]
-  public int id { get; set; }
+    [Parameter]
+    public int id { get; set; }
 
-  protected override void OnInitialized()
-  {
-    vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
-    vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
-    vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
-  }
+    protected override async Task OnInitializedAsync()
+    {
+        // Every page _must_ initialize the state manager
+        await StateManager.InitializeAsync();
 
-  protected override async Task OnParametersSetAsync()
-  {
-    if (id == 0)
-      await vm.RefreshAsync(() =>
-        characterPortal.CreateAsync());
-    else
-      await vm.RefreshAsync(() =>
-        characterPortal.FetchAsync(id));
-  }
+        vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+    }
 
-  private async void SaveAsync()
-  {
-    vm.Model.IsBeingSaved = true;
-    StateHasChanged();
-    await Task.Delay(1000);
-    await vm.SaveAsync();
-    vm.Model.IsBeingSaved = false;
-    StateHasChanged();
-  }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            if (id == 0)
+                await vm.RefreshAsync(() =>
+                  characterPortal.CreateAsync());
+            else
+                await vm.RefreshAsync(() =>
+                  characterPortal.FetchAsync(id));
+        }
+    }
+
+    private async void SaveAsync()
+    {
+        vm.Model.IsBeingSaved = true;
+        StateHasChanged();
+        await Task.Delay(1000);
+        await vm.SaveAsync();
+        vm.Model.IsBeingSaved = false;
+        StateHasChanged();
+    }
 }

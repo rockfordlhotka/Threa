@@ -1,25 +1,26 @@
 ﻿<div>
   <RadzenCheckBox @bind=@BoolValue TValue="bool"
-                  Disabled="@(!Property.CanWrite)" />
+                    Disabled="@(Property == null || !Property.CanWrite)" />
                   @*Change="@(args => Change(args))"/>*@
-  <span class="text-danger">@Property.ErrorText</span>
-  <span class="text-warning">@Property.WarningText</span>
-  <span class="text-info">@Property.InformationText</span>
+  <span class="text-danger">@Property?.ErrorText</span>
+  <span class="text-warning">@Property?.WarningText</span>
+  <span class="text-info">@Property?.InformationText</span>
 </div>
 
 @code {
-  [Parameter]
-  public Csla.Blazor.IPropertyInfo Property { get; set; }
+    [Parameter]
+    public Csla.Blazor.IPropertyInfo? Property { get; set; }
 
-  private bool BoolValue
-  {
-    get => (bool)Property.Value;
-    set => Property.Value = value;
+    private bool BoolValue
+    {
+        get => Property != null ? (bool)Property.Value : false;
+        set => Property.Value = value;
   }
 
   void Change(bool value)
   {
-    Property.Value = value;
+    if (Property != null)
+        Property.Value = value;
     StateHasChanged();
   }
 }

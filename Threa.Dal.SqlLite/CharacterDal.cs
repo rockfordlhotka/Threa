@@ -1,0 +1,141 @@
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Threa.Dal.Dto;
+using Microsoft.Data.Sqlite;
+
+namespace Threa.Dal.Sqlite
+{
+    public class CharacterDal
+    {
+        private readonly SqliteConnection Connection;
+
+        public CharacterDal(SqliteConnection connection)
+        {
+            Connection = connection;
+            try
+            {
+                var sql = @"
+                CREATE TABLE IF NOT EXISTS 
+                Characters (
+                    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    PlayerId INTEGER NOT NULL,
+                    Json TEXT
+                );
+            ";
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error creating character table", ex);
+            }
+        }
+
+        public Character GetBlank()
+        {
+            return new Character();
+        }
+
+        public async Task DeleteCharacterAsync(int id)
+        {
+            try
+            {
+                var sql = "DELETE FROM Characters WHERE Id = @Id";
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Id", id);
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error deleting character", ex);
+            }
+        }
+
+        public async Task<Character> GetCharacterAsync(int id)
+        {
+            try
+            {
+                var sql = "SELECT Json FROM Characters WHERE Id = @Id";
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Id", id);
+                using var reader = await command.ExecuteReaderAsync();
+                if (!reader.Read())
+                    throw new NotFoundException($"{nameof(Character)} {id}");
+                string json = reader.GetString(0);
+                return System.Text.Json.JsonSerializer.Deserialize<Character>(json);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting character", ex);
+            }
+        }
+
+        public async Task<List<Character>> GetCharactersAsync(int playerId)
+        {
+            try
+            {
+                var sql = "SELECT Json FROM Characters WHERE PlayerId = @PlayerId";
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@PlayerId", playerId);
+                using var reader = await command.ExecuteReaderAsync();
+                List<Character> characters = new();
+                while (reader.Read())
+                {
+                    string json = reader.GetString(0);
+                    characters.Add(System.Text.Json.JsonSerializer.Deserialize<Character>(json));
+                }
+                return characters;
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting characters", ex);
+            }
+        }
+
+        public async Task<Character> SaveCharacterAsync(Character character)
+        {
+            try
+            {
+                string sql;
+                if (character.Id == 0)
+                {
+                    sql = "INSERT INTO Characters (PlayerId, Json) VALUES (@PlayerId, @Json)";
+                }
+                else
+                {
+                    sql = "UPDATE Characters SET PlayerId = @PlayerId, Json = @Json WHERE Id = @Id";
+                }
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Id", character.Id);
+                command.Parameters.AddWithValue("@PlayerId", character.PlayerId);
+                command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(character));
+                await command.ExecuteNonQueryAsync();
+
+                if (character.Id == 0)
+                {
+                    sql = "SELECT last_insert_rowid()";
+                    using var idCommand = Connection.CreateCommand();
+                    {
+                        long? lastInsertId = (long?)idCommand.ExecuteScalar();
+                        if (lastInsertId.HasValue)
+                        {
+                            character.Id = (int)lastInsertId.Value;
+                        }
+                    }
+                }
+                return character;
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error saving character", ex);
+            }
+        }
+    }
+}
