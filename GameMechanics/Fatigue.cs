@@ -1,8 +1,7 @@
 ﻿using Csla;
-using Csla.Rules;
 using GameMechanics.Reference;
 using System;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -117,7 +116,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(ICharacter existing)
+    private void Fetch(Character existing)
     {
       using (BypassPropertyChecks)
       {
@@ -130,7 +129,7 @@ namespace GameMechanics
 
     [UpdateChild]
     [InsertChild]
-    private void Update(ICharacter existing)
+    private void Update(Character existing)
     {
       existing.FatValue = Value;
       existing.FatBaseValue = BaseValue;

@@ -1,6 +1,6 @@
 ﻿using Csla;
 using System;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -116,7 +116,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(ICharacter character)
+    private void Fetch(Character character)
     {
       if (character.ActionPointMax == 0)
       {

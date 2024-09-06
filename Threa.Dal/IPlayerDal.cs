@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Threa.Dal.Dto;
 
-namespace Threa.Dal
+namespace Threa.Dal;
+
+public interface IPlayerDal
 {
-  public interface IPlayerDal
-  {
-    Task<IPlayer> GetPlayerAsync(int id);
-    Task<IPlayer> GetPlayerByEmailAsync(string email);
-    Task<IPlayer> SavePlayerAsync(IPlayer obj);
+    Task<Player> GetPlayerAsync(int id);
+    Task<Player> GetPlayerByEmailAsync(string email);
+    Task<Player> SavePlayerAsync(Player obj);
     Task DeletePlayerAsync(int id);
-  }
 }

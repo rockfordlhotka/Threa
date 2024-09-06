@@ -1,6 +1,6 @@
 ﻿using Csla;
 using System;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -15,7 +15,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(ICharacter character, [Inject] IChildDataPortal<Damage> damagePortal)
+    private void Fetch(Character character, [Inject] IChildDataPortal<Damage> damagePortal)
     {
       using (LoadListMode)
       {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Csla;
 using GameMechanics.Reference;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -33,7 +33,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(List<ICharacterSkill> skills, [Inject] IChildDataPortal<SkillEdit> skillPortal)
+    private void Fetch(List<CharacterSkill> skills, [Inject] IChildDataPortal<SkillEdit> skillPortal)
     {
       if (skills == null) return;
       using (LoadListMode)

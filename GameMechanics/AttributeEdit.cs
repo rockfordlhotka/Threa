@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Csla;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -38,7 +38,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(ICharacterAttribute attribute)
+    private void Fetch(CharacterAttribute attribute)
     {
       using (BypassPropertyChecks)
       {
@@ -49,7 +49,7 @@ namespace GameMechanics
 
     [InsertChild]
     [UpdateChild]
-    private void InsertUpdate(List<ICharacterAttribute> attributes)
+    private void InsertUpdate(List<CharacterAttribute> attributes)
     {
       using (BypassPropertyChecks)
       {
@@ -67,7 +67,7 @@ namespace GameMechanics
     }
 
     [DeleteSelfChild]
-    private void Delete(List<ICharacterAttribute> attributes)
+    private void Delete(List<CharacterAttribute> attributes)
     {
       if (IsNew) return;
       attributes.Remove(attributes.Where(r => r.Name == Name).First());

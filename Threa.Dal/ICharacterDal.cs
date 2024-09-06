@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Threa.Dal.Dto;
 
-namespace Threa.Dal
+namespace Threa.Dal;
+
+public interface ICharacterDal
 {
-  public interface ICharacterDal
-  {
-    ICharacter GetBlank();
-    Task<List<ICharacter>> GetCharactersAsync(int playerId);
-    Task<ICharacter> GetCharacterAsync(int id);
-    Task<ICharacter> SaveCharacter(ICharacter character);
+    Character GetBlank();
+    Task<List<Character>> GetCharactersAsync(int playerId);
+    Task<Character> GetCharacterAsync(int id);
+    Task<Character> SaveCharacterAsync(Character character);
     Task DeleteCharacterAsync(int id);
-  }
 }

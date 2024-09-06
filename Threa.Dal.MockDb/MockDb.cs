@@ -5,12 +5,12 @@ namespace Threa.Dal.MockDb
 {
   public static class MockDb
   {
-    public static readonly List<IPlayer> Players = new()
+    public static readonly List<Player> Players = new()
     { 
       new Player { Id = 42, Name = "Rocky", Email = "rocky@lhotka.net" }
     };
 
-    public static readonly List<ICharacter> Characters = new()
+    public static readonly List<Character> Characters = new()
     {
       new Character
       {

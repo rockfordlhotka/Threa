@@ -17,36 +17,35 @@
 
 @if (vm.Model == null)
 {
-  <div>Loading...  </div>
-  <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
+    <div>Loading...  </div>
+    <img src="images/ajax-loader-gif-6.gif" height="30" width="30" />
 }
 else
 {
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Species</th><th></th></tr>
-    </thead>
-    <tbody>
-      @foreach (var item in vm.Model)
-      {
-        <tr>
-          <td>@item.Name</td>
-          <td>(@item.Species)</td>
-          <td><a href="player/character/@item.Id">Details</a></td>
-        </tr>
-      }
-    </tbody>
-  </table>
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Species</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var item in vm.Model)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>(@item.Species)</td>
+                    <td><a href="player/character/@item.Id">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
-  protected override async Task OnParametersSetAsync()
-  {
-    var player = await playerPortal.FetchAsync(applicationContext.User.Identity.Name);
-    var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
-    ci.AddClaim(new System.Security.Claims.Claim("playerId", player.Id.ToString()));
-    await vm.RefreshAsync(() =>
-      characterListPortal.FetchAsync(player.Id));
-    StateHasChanged();
-  }
+    protected override async Task OnParametersSetAsync()
+    {
+        var playerId = int.Parse(applicationContext.Principal.Claims
+            .Where(_ => _.Type == System.Security.Claims.ClaimTypes.NameIdentifier).First().Value);
+        await vm.RefreshAsync(() =>
+            characterListPortal.FetchAsync(playerId));
+        StateHasChanged();
+    }
 }

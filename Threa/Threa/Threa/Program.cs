@@ -49,6 +49,6 @@ app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Threa.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(Threa.Client.Components._Imports).Assembly);
 
 app.Run();

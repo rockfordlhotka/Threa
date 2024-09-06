@@ -4,7 +4,7 @@ using System.Linq;
 using Csla;
 using Csla.Core;
 using GameMechanics.Reference;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -94,7 +94,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(ICharacterSkill skill)
+    private void Fetch(CharacterSkill skill)
     {
       using (BypassPropertyChecks)
       {
@@ -108,11 +108,11 @@ namespace GameMechanics
 
     [InsertChild]
     [UpdateChild]
-    private void InsertUpdate(List<ICharacterSkill> skills)
+    private void InsertUpdate(List<CharacterSkill> skills)
     {
       using (BypassPropertyChecks)
       {
-        ICharacterSkill skill;
+        CharacterSkill skill;
         if (IsNew)
         {
           skill = new Threa.Dal.Dto.CharacterSkill();
@@ -132,7 +132,7 @@ namespace GameMechanics
     }
 
     [DeleteSelfChild]
-    private void Delete(List<ICharacterSkill> skills)
+    private void Delete(List<CharacterSkill> skills)
     {
       if (IsNew) return;
       skills.Remove(skills.Where(r => r.Name == Name).First());

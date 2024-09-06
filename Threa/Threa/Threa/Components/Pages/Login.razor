@@ -45,24 +45,18 @@
         await StateManager.InitializeAsync();
         Message = "";
         var userValidation = await portal.ExecuteAsync(userInfo.Username, userInfo.Password);
-        ClaimsPrincipal principal;
-        if (userValidation.IsValid)
+        if (userValidation != null && 
+            userValidation.Principal != null && 
+            userValidation.Principal.Identity != null && 
+            userValidation.Principal.Identity.IsAuthenticated)
         {
-            // create authenticated principal
-            var identity = new ClaimsIdentity("custom");
-            var claims = new List<Claim>();
-            claims.Add(new Claim(ClaimTypes.Name, userInfo.Username, ClaimValueTypes.String));
-            foreach (var item in userValidation.Roles)
-                claims.Add(new Claim(ClaimTypes.Role, item, ClaimValueTypes.String));
-            identity.AddClaims(claims);
-            principal = new ClaimsPrincipal(identity);
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext is not null)
             {
                 AuthenticationProperties authProperties = new AuthenticationProperties();
                 await httpContext.SignInAsync(
                   CookieAuthenticationDefaults.AuthenticationScheme,
-                  principal,
+                  userValidation.Principal,
                   authProperties);
                 NavigationManager.NavigateTo("/");
             }
@@ -70,7 +64,6 @@
         else
         {
             Message = "Invalid credentials";
-            //StateHasChanged();
         }
     }
 

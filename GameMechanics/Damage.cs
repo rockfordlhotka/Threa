@@ -1,10 +1,8 @@
 ﻿using Csla;
 using GameMechanics.Reference;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -200,7 +198,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(string name, ICharacter character)
+    private void Fetch(string name, Character character)
     {
       using (BypassPropertyChecks)
       {

@@ -1,7 +1,6 @@
 ﻿using Csla;
 using System;
-using System.Threading.Tasks;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Player
 {
@@ -30,7 +29,7 @@ namespace GameMechanics.Player
     }
 
     [FetchChild]
-    private void Fetch(ICharacter character)
+    private void Fetch(Character character)
     {
       Id = character.Id;
       Name = character.Name;

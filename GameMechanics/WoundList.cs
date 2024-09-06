@@ -3,7 +3,7 @@ using GameMechanics.Reference;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -92,7 +92,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(List<IWound> wounds, [Inject] IChildDataPortal<WoundRecord> woundPortal)
+    private void Fetch(List<Wound> wounds, [Inject] IChildDataPortal<WoundRecord> woundPortal)
     {
       if (wounds == null) return;
       using (LoadListMode)

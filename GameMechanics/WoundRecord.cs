@@ -1,8 +1,6 @@
 ﻿using Csla;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -122,7 +120,7 @@ namespace GameMechanics
     }
 
     [FetchChild]
-    private void Fetch(IWound wound)
+    private void Fetch(Wound wound)
     {
       using (BypassPropertyChecks)
       {

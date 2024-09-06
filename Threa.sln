@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32519.111
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa", "Threa\Threa.csproj", "{5592A64D-6246-40FD-A4D1-D6BB16C1E9F7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameMechanics", "GameMechanics\GameMechanics.csproj", "{14221EAC-2889-425A-9C8C-2E240E72FE66}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal", "Threa.Dal\Threa.Dal.csproj", "{E59AA6EB-44F4-49D1-8D60-842EF4C02F7F}"
@@ -13,16 +11,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal.MockDb", "Threa.D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameMechanics.Test", "GameMechanics.Test\GameMechanics.Test.csproj", "{E3725288-3FAB-4A8B-B592-868B0AF8CD4B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa.Client", "Threa\Threa\Threa.Client\Threa.Client.csproj", "{606B8DC7-4C44-4F58-99DD-97CEFFD032E2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8721FFF8-E211-450E-9FAE-F34C45052D62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Threa", "Threa\Threa\Threa\Threa.csproj", "{DE74EEE7-69C8-4ED4-A289-192B116382C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5592A64D-6246-40FD-A4D1-D6BB16C1E9F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5592A64D-6246-40FD-A4D1-D6BB16C1E9F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5592A64D-6246-40FD-A4D1-D6BB16C1E9F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5592A64D-6246-40FD-A4D1-D6BB16C1E9F7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{14221EAC-2889-425A-9C8C-2E240E72FE66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{14221EAC-2889-425A-9C8C-2E240E72FE66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14221EAC-2889-425A-9C8C-2E240E72FE66}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -39,6 +39,14 @@ Global
 		{E3725288-3FAB-4A8B-B592-868B0AF8CD4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3725288-3FAB-4A8B-B592-868B0AF8CD4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3725288-3FAB-4A8B-B592-868B0AF8CD4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{606B8DC7-4C44-4F58-99DD-97CEFFD032E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{606B8DC7-4C44-4F58-99DD-97CEFFD032E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{606B8DC7-4C44-4F58-99DD-97CEFFD032E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{606B8DC7-4C44-4F58-99DD-97CEFFD032E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE74EEE7-69C8-4ED4-A289-192B116382C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE74EEE7-69C8-4ED4-A289-192B116382C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE74EEE7-69C8-4ED4-A289-192B116382C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE74EEE7-69C8-4ED4-A289-192B116382C7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

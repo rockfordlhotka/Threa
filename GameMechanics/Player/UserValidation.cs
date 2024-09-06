@@ -2,38 +2,49 @@
 using Csla;
 using System;
 using Threa.Dal;
+using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Collections.Generic;
 
 namespace GameMechanics.Player;
 
 [Serializable]
 public class UserValidation : CommandBase<UserValidation>
 {
-    public static readonly PropertyInfo<bool> IsValidProperty = RegisterProperty<bool>(nameof(IsValid));
-    public bool IsValid
+    public static readonly PropertyInfo<ClaimsPrincipal> PrincipalProperty = RegisterProperty<ClaimsPrincipal>(nameof(Principal));
+    public ClaimsPrincipal Principal
     {
-        get => ReadProperty(IsValidProperty);
-        private set => LoadProperty(IsValidProperty, value);
-    }
-
-    public static readonly PropertyInfo<MobileList<string>> RolesProperty = RegisterProperty<MobileList<string>>(nameof(Roles));
-    public MobileList<string> Roles
-    {
-        get => ReadProperty(RolesProperty);
-        private set => LoadProperty(RolesProperty, value);
+        get => ReadProperty(PrincipalProperty);
+        set => LoadProperty(PrincipalProperty, value);
     }
 
     [Execute]
-    private void Execute(string username, [Inject] IPlayerDal dal)
+    private async Task Execute(string username, [Inject] IPlayerDal dal)
     {
-        var user = dal.GetPlayerByEmailAsync(username);
-        Roles = new MobileList<string>();
+        var user = await dal.GetPlayerByEmailAsync(username);
+        if (user == null)
+            throw new InvalidOperationException("Invalid username");
+        Principal = GetPrincipal(user);
     }
 
     [Execute]
-    private void Execute(string username, string password, [Inject] IPlayerDal dal)
+    private async Task Execute(string username, string password, [Inject] IPlayerDal dal)
     {
-        var user = dal.GetPlayerByEmailAsync(username);
-        IsValid = (user is not null);
-        Roles = new MobileList<string>();
+        var user = await dal.GetPlayerByEmailAsync(username);
+        if (user == null)
+            throw new InvalidOperationException("Invalid username or password");
+        Principal = GetPrincipal(user);
+    }
+
+    private ClaimsPrincipal GetPrincipal(Threa.Dal.Dto.Player user)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+        var identity = new ClaimsIdentity(claims, "password");
+        return new ClaimsPrincipal(identity);
     }
 }

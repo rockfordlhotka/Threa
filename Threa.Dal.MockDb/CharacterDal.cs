@@ -8,7 +8,7 @@ namespace Threa.Dal.MockDb
 {
   public class CharacterDal : ICharacterDal
   {
-    public ICharacter GetBlank()
+    public Character GetBlank()
     {
       return new Character();
     }
@@ -22,7 +22,7 @@ namespace Threa.Dal.MockDb
       return Task.CompletedTask;
     }
 
-    public Task<ICharacter> GetCharacterAsync(int id)
+    public Task<Character> GetCharacterAsync(int id)
     {
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
       if (character == null)
@@ -30,13 +30,13 @@ namespace Threa.Dal.MockDb
       return Task.FromResult(character);
     }
 
-    public Task<List<ICharacter>> GetCharactersAsync(int playerId)
+    public Task<List<Character>> GetCharactersAsync(int playerId)
     {
       var character = MockDb.Characters.Where(r => r.PlayerId == playerId);
       return Task.FromResult(character.ToList());
     }
 
-    public Task<ICharacter> SaveCharacter(ICharacter character)
+    public Task<Character> SaveCharacterAsync(Character character)
     {
       if (character.Id == 0)
       {
@@ -45,7 +45,7 @@ namespace Threa.Dal.MockDb
       }
       else
       {
-        ICharacter existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
+        Character existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
         if (existing == null)
           throw new NotFoundException(nameof(character));
         MockDb.Characters.Remove(existing);

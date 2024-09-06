@@ -5,6 +5,7 @@ using GameMechanics.Reference;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Threa.Dal;
 
@@ -269,7 +270,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Vitality> vitPortal)
     {
       var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
-      var playerId = int.Parse(ci.Claims.Where(r => r.Type == "playerId").First().Value);
+      var playerId = int.Parse(ci.Claims.Where(r => r.Type == ClaimTypes.NameIdentifier).First().Value);
       Create(playerId, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
@@ -354,7 +355,7 @@ namespace GameMechanics
         attributePortal.UpdateChild(AttributeList, toSave.AttributeList);
         skillPortal.UpdateChild(Skills, toSave.Skills);
       }
-      var result = await dal.SaveCharacter(toSave);
+      var result = await dal.SaveCharacterAsync(toSave);
       Id = result.Id;
     }
 
@@ -373,7 +374,7 @@ namespace GameMechanics
         vitPortal.UpdateChild(Vitality, existing);
         attributePortal.UpdateChild(AttributeList, existing.AttributeList);
         skillPortal.UpdateChild(Skills, existing.Skills);
-        await dal.SaveCharacter(existing);
+        await dal.SaveCharacterAsync(existing);
       }
     }
 

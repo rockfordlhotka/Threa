@@ -20,7 +20,7 @@ namespace Threa.Dal.MockDb
       }
     }
 
-    public Task<IPlayer> GetPlayerAsync(int id)
+    public Task<Player> GetPlayerAsync(int id)
     {
       lock (MockDb.Players)
       {
@@ -29,7 +29,7 @@ namespace Threa.Dal.MockDb
       }
     }
 
-    public Task<IPlayer> GetPlayerByEmailAsync(string email)
+    public Task<Player> GetPlayerByEmailAsync(string email)
     {
       lock (MockDb.Players)
       {
@@ -43,11 +43,11 @@ namespace Threa.Dal.MockDb
         {
           var x = ex;
         }
-        return Task.FromResult(((IPlayer)new Player()));
+        return Task.FromResult(((Player)new Player()));
       }
     }
 
-    public Task<IPlayer> SavePlayerAsync(IPlayer obj)
+    public Task<Player> SavePlayerAsync(Player obj)
     {
       lock (MockDb.Players)
       {
