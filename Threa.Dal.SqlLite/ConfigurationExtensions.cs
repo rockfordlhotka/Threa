@@ -13,7 +13,7 @@ public static class ConfigurationExtensions
         services.AddSqlite();
         services.AddScoped<SqliteConnection>(provider => 
         {
-            var conn = new SqliteConnection("Data Source=threa.db";
+            var conn = new SqliteConnection("Data Source=threa.db");
             conn.Open();
             return conn;
         });

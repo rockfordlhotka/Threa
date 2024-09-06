@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Threa.Dal.Sqlite
 {
-    public class CharacterDal
+    public class CharacterDal : ICharacterDal
     {
         private readonly SqliteConnection Connection;
 
