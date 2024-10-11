@@ -1,8 +1,10 @@
 ﻿@page "/login"
+
 @using GameMechanics.Player
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using System.Security.Claims
+
 @inject Csla.Blazor.State.StateManager StateManager
 @inject IHttpContextAccessor httpContextAccessor
 @inject IDataPortal<UserValidation> portal
@@ -26,11 +28,6 @@
   </EditForm>
 </div>
 
-<div style="background-color:lightgray">
-  <p>User identities:</p>
-  <p>admin, admin<br />manager, manager</p>
-</div>
-
 <div><p class="alert-danger">@Message</p></div>
 
 @code {
@@ -44,26 +41,33 @@
     {
         await StateManager.InitializeAsync();
         Message = "";
-        var userValidation = await portal.ExecuteAsync(userInfo.Username, userInfo.Password);
-        if (userValidation != null && 
-            userValidation.Principal != null && 
-            userValidation.Principal.Identity != null && 
-            userValidation.Principal.Identity.IsAuthenticated)
+        try
         {
-            var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext is not null)
+            var userValidation = await portal.ExecuteAsync(userInfo.Username, userInfo.Password);
+            if (userValidation != null &&
+                userValidation.Principal != null &&
+                userValidation.Principal.Identity != null &&
+                userValidation.Principal.Identity.IsAuthenticated)
             {
-                AuthenticationProperties authProperties = new AuthenticationProperties();
-                await httpContext.SignInAsync(
-                  CookieAuthenticationDefaults.AuthenticationScheme,
-                  userValidation.Principal,
-                  authProperties);
-                NavigationManager.NavigateTo("/");
+                var httpContext = httpContextAccessor.HttpContext;
+                if (httpContext is not null)
+                {
+                    AuthenticationProperties authProperties = new AuthenticationProperties();
+                    await httpContext.SignInAsync(
+                      CookieAuthenticationDefaults.AuthenticationScheme,
+                      userValidation.Principal,
+                      authProperties);
+                    NavigationManager.NavigateTo("/");
+                }
+            }
+            else
+            {
+                Message = "Invalid credentials";
             }
         }
-        else
+        catch (DataPortalException ex)
         {
-            Message = "Invalid credentials";
+            Message = ex.BusinessExceptionMessage;
         }
     }
 

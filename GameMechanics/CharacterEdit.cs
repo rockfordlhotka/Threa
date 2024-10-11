@@ -269,7 +269,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal)
     {
-      var ci = (System.Security.Claims.ClaimsIdentity)applicationContext.User.Identity;
+      var ci = (System.Security.Claims.ClaimsIdentity?)applicationContext.User.Identity ?? 
+        throw new InvalidOperationException("User not authenticated");
       var playerId = int.Parse(ci.Claims.Where(r => r.Type == ClaimTypes.NameIdentifier).First().Value);
       Create(playerId, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
     }
@@ -301,6 +302,7 @@ namespace GameMechanics
     private static readonly string[] mapIgnore = new string[]
       {
         nameof(AttributeList),
+        nameof(ActionPoints),
         nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
