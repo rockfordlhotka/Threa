@@ -10,7 +10,6 @@ public static class ConfigurationExtensions
     {
         services.AddTransient<IPlayerDal, PlayerDal>();
         services.AddTransient<ICharacterDal, CharacterDal>();
-        services.AddSqlite();
         services.AddScoped<SqliteConnection>(provider => 
         {
             var conn = new SqliteConnection("Data Source=threa.db");
