@@ -49,3 +49,24 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.tab-buttons {
+  display: flex;
+}
+
+  .tab-buttons button {
+    padding: 10px;
+    cursor: pointer;
+    border: none;
+    background-color: #f1f1f1;
+    margin-right: 5px;
+  }
+
+    .tab-buttons button.active {
+      background-color: #ccc;
+    }
+
+.tab-content {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
