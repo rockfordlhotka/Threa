@@ -1,5 +1,7 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: url('/images/parchment.jpg') no-repeat center center fixed;
+  background-size: cover;
+  font-family: 'Palatino Linotype', serif;
 }
 
 a, .btn-link {
