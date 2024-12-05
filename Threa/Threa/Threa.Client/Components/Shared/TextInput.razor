@@ -15,7 +15,7 @@
   private string? TextValue
   {
     get => Property?.Value.ToString();
-    set => Property.Value =
+    set => Property!.Value =
       Utilities.CoerceValue(Property.Value.GetType(), value?.GetType(), Property.Value, value);
   }
 }

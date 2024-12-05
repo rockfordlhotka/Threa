@@ -14,7 +14,7 @@
     private bool BoolValue
     {
         get => Property != null ? (bool)Property.Value : false;
-        set => Property.Value = value;
+        set => Property!.Value = value;
   }
 
   void Change(bool value)

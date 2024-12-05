@@ -67,7 +67,10 @@ namespace Threa.Dal.Sqlite
                 if (!reader.Read())
                     throw new NotFoundException($"{nameof(Character)} {id}");
                 string json = reader.GetString(0);
-                return System.Text.Json.JsonSerializer.Deserialize<Character>(json);
+                var result = System.Text.Json.JsonSerializer.Deserialize<Character>(json);
+                if (result == null)
+                    throw new OperationFailedException($"Character {id} not found");
+                return result;
             }
             catch (Exception ex)
             {
@@ -88,7 +91,9 @@ namespace Threa.Dal.Sqlite
                 while (reader.Read())
                 {
                     string json = reader.GetString(0);
-                    characters.Add(System.Text.Json.JsonSerializer.Deserialize<Character>(json));
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<Character>(json);
+                    if (obj != null)
+                        characters.Add(obj);
                 }
                 return characters;
             }

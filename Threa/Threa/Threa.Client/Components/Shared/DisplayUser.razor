@@ -3,9 +3,9 @@
 
 <AuthorizeView>
     <Authorized>
-        @ApplicationContext.User.Identity.Name
+        @ApplicationContext.User.Identity!.Name
     </Authorized>
     <NotAuthorized>
-        @ApplicationContext.User.Identity.IsAuthenticated
+        @ApplicationContext.User.Identity!.IsAuthenticated
     </NotAuthorized>
 </AuthorizeView>
