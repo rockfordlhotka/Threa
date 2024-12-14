@@ -1,0 +1,23 @@
+﻿<table>
+    <thead>
+        <tr><th></th><th></th></tr>
+    </thead>
+    <tbody>
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+        <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Height)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Weight)" />
+        <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+        <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
+    </tbody>
+</table>
+
+@code 
+{
+    [Parameter]
+    public ViewModel<GameMechanics.CharacterEdit> vm { get; set; }
+}

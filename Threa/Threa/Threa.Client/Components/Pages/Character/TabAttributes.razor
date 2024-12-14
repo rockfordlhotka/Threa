@@ -1,0 +1,28 @@
+﻿<table>
+    <thead>
+        <tr><th></th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var item in vm.Model.AttributeList)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td><TextInput Property="new Csla.Blazor.PropertyInfo(item, nameof(item.Value))" /></td>
+            </tr>
+        }
+        <tr>
+            <td>Fatigue</td>
+            <td>@vm.Model.Fatigue.Value</td>
+        </tr>
+        <tr>
+            <td>Vitality</td>
+            <td>@vm.Model.Vitality.Value</td>
+        </tr>
+    </tbody>
+</table>
+
+@code 
+{
+    [Parameter]
+    public ViewModel<GameMechanics.CharacterEdit> vm { get; set; }
+}

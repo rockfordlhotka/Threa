@@ -52,6 +52,11 @@ h1:focus {
     border-color: #929292;
 }
 
+.busy-animation {
+    height: 30px; 
+    width: 30px;
+}
+
 .tab-buttons {
   display: flex;
 }
@@ -69,6 +74,7 @@ h1:focus {
     }
 
 .tab-content {
-  padding: 10px;
-  border: 1px solid #ccc;
+    padding: 10px;
+    border: 1px solid #ccc;
+    display: block;
 }

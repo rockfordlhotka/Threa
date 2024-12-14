@@ -55,14 +55,6 @@ namespace GameMechanics
       set => SetProperty(AliasesProperty, value);
     }
 
-    public static readonly PropertyInfo<string> TrueNameProperty = RegisterProperty<string>(nameof(TrueName));
-    [Display(Name = "True name")]
-    public string TrueName
-    {
-      get => GetProperty(TrueNameProperty);
-      set => SetProperty(TrueNameProperty, value);
-    }
-
     public static readonly PropertyInfo<string> SpeciesProperty = RegisterProperty<string>(nameof(Species));
     public string Species
     {
@@ -127,13 +119,6 @@ namespace GameMechanics
     {
       get => GetProperty(NotesProperty);
       set => SetProperty(NotesProperty, value);
-    }
-
-    public static readonly PropertyInfo<bool> IsPlayableProperty = RegisterProperty<bool>(nameof(IsPlayable));
-    public bool IsPlayable
-    {
-      get => GetProperty(IsPlayableProperty);
-      set => SetProperty(IsPlayableProperty, value);
     }
 
     public static readonly PropertyInfo<AttributeEditList> AttributeListProperty = RegisterProperty<AttributeEditList>(nameof(AttributeList));
@@ -238,25 +223,6 @@ namespace GameMechanics
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();
-      BusinessRules.AddRule(new LockCharacter(IsPlayableProperty));
-      BusinessRules.AddRule(new LockCharacter(DamageClassProperty));
-      BusinessRules.AddRule(new LockCharacter(BirthdateProperty));
-    }
-
-    public class LockCharacter : AuthorizationRule
-    {
-      public LockCharacter(IPropertyInfo property)
-        : base(AuthorizationActions.WriteProperty, property)
-      {
-        CacheResult = false;
-      }
-
-      protected override void Execute(IAuthorizationContext context)
-      {
-        var character = (CharacterEdit)context.Target;
-        var locked = character.IsPlayable;
-        context.HasPermission = !locked;
-      }
     }
 
     [Create]
@@ -299,15 +265,14 @@ namespace GameMechanics
       BusinessRules.CheckRules();
     }
 
-    private static readonly string[] mapIgnore = new string[]
-      {
+    private static readonly string[] mapIgnore =
+      [
         nameof(AttributeList),
         nameof(ActionPoints),
         nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
         nameof(IsBeingSaved),
-        nameof(Threa.Dal.Dto.Character.IsPassedOut),
         nameof(Threa.Dal.Dto.Character.Wounds),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
@@ -320,7 +285,7 @@ namespace GameMechanics
         nameof(Threa.Dal.Dto.Character.VitBaseValue),
         nameof(Threa.Dal.Dto.Character.VitPendingDamage),
         nameof(Threa.Dal.Dto.Character.VitPendingHealing),
-      };
+      ];
 
     [Fetch]
     private async Task FetchAsync(int id, [Inject] ICharacterDal dal,

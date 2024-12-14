@@ -14,17 +14,21 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="player/characters">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My characters
-            </NavLink>
-        </div>
+        <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="player/characters">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My characters
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="player/campaigns">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My campaigns
-            </NavLink>
-        </div>
-  </nav>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="player/campaigns">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My campaigns
+                    </NavLink>
+                </div>
+            </Authorized>
+        </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+    </nav>
 </div>
 

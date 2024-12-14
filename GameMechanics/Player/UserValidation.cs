@@ -5,6 +5,8 @@ using Threa.Dal;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using System.Collections.Generic;
+using BCrypt.Net;
+using System.Security;
 
 namespace GameMechanics.Player;
 
@@ -19,20 +21,11 @@ public class UserValidation : CommandBase<UserValidation>
     }
 
     [Execute]
-    private async Task Execute(string username, [Inject] IPlayerDal dal)
-    {
-        var user = await dal.GetPlayerByEmailAsync(username);
-        if (user == null)
-            throw new InvalidOperationException("Invalid username");
-        Principal = GetPrincipal(user);
-    }
-
-    [Execute]
     private async Task Execute(string username, string password, [Inject] IPlayerDal dal)
     {
-        var user = await dal.GetPlayerByEmailAsync(username);
-        if (user == null)
-            throw new InvalidOperationException("Invalid username or password");
+        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+        var user = await dal.GetPlayerByEmailAsync(username, hashedPassword) 
+            ?? throw new InvalidOperationException("Invalid username or password");
         Principal = GetPrincipal(user);
     }
 
@@ -40,9 +33,9 @@ public class UserValidation : CommandBase<UserValidation>
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Email),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Name, user.Email),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Email, user.Email)
         };
         var identity = new ClaimsIdentity(claims, "password");
         return new ClaimsPrincipal(identity);

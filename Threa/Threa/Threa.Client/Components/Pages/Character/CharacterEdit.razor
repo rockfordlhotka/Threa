@@ -1,0 +1,112 @@
+﻿@page "/player/character"
+@page "/player/character/{id:int}"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+
+@using Threa.Services
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject ViewModel<GameMechanics.CharacterEdit> vm
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject NavigationManager NavigationManager
+
+<h3>Character Details</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (vm.Exception != null)
+{
+    <div class="alert-danger">@vm.Exception.ToString()</div>
+}
+
+@if (vm.Model == null)
+{
+    <div>Loading...  </div>
+    <img src="images/busy.gif" class="busy-animation"  />
+}
+else
+{
+    <div class="tab-buttons">
+        <button class="tab-link @(activeTab == tabNames[0] ? "active" : "")" @onclick="() => SelectTab(tabNames[0])">@tabNames[0]</button>
+        <button class="tab-link @(activeTab == tabNames[1] ? "active" : "")" @onclick="() => SelectTab(tabNames[1])">@tabNames[1]</button>
+        <button class="tab-link @(activeTab == tabNames[2] ? "active" : "")" @onclick="() => SelectTab(tabNames[2])">@tabNames[2]</button>
+    </div>
+
+    @if (activeTab == tabNames[0])
+    {
+        <div class="tab-content">
+            <TabDetails vm="vm" />
+        </div>
+    }
+
+    @if (activeTab == tabNames[1])
+    {
+        <div class="tab-content">
+            <TabAttributes vm="vm" />
+        </div>
+    }
+
+    @if (activeTab == tabNames[2])
+    {
+        <div class="tab-content">
+            <TabSkills vm="vm" />
+        </div>
+    }
+    @if (vm.Model.IsBeingSaved)
+    {
+        <button disabled>Save</button>
+        <img src="images/busy.gif" class="busy-animation" />
+    }
+    else
+    {
+        <button @onclick="SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
+    }
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills" };
+    private string activeTab = tabNames[0];
+
+    private void SelectTab(string tabName)
+    {
+        activeTab = tabName;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Every page _must_ initialize the state manager
+        await StateManager.InitializeAsync();
+
+        vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            if (id == 0)
+                await vm.RefreshAsync(() =>
+                  characterPortal.CreateAsync());
+            else
+                await vm.RefreshAsync(() =>
+                  characterPortal.FetchAsync(id));
+        }
+    }
+
+    private async void SaveAsync()
+    {
+        vm.Model.IsBeingSaved = true;
+        StateHasChanged();
+        await Task.Delay(1000);
+        await vm.SaveAsync();
+        vm.Model.IsBeingSaved = false;
+        StateHasChanged();
+    }
+}

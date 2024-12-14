@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Threa.Dal.MockDb;
 
-namespace Threa.Dal
+namespace Threa.Dal;
+
+public static class ConfigurationExtensions
 {
-  public static  class ConfigurationExtensions
-  {
     public static void AddMockDb(this IServiceCollection services)
     {
-      services.AddTransient<IPlayerDal, PlayerDal>();
-      services.AddTransient<ICharacterDal, CharacterDal>();
+        services.AddTransient<IPlayerDal, PlayerDal>();
+        services.AddTransient<ICharacterDal, CharacterDal>();
+        services.AddTransient<IImageDal, ImageDal>();
     }
-  }
 }

@@ -29,7 +29,7 @@ namespace Threa.Dal.MockDb
       }
     }
 
-    public Task<Player> GetPlayerByEmailAsync(string email)
+    public Task<Player> GetPlayerByEmailAsync(string email, string hashedPassword)
     {
       lock (MockDb.Players)
       {
