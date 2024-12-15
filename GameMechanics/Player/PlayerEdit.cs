@@ -7,7 +7,7 @@ using Threa.Dal;
 namespace GameMechanics.Player
 {
     [Serializable]
-    public class Player : BusinessBase<Player>
+    public class PlayerEdit : BusinessBase<PlayerEdit>
     {
         public static readonly PropertyInfo<int> IdProperty = RegisterProperty<int>(nameof(Id));
         public int Id
@@ -25,18 +25,10 @@ namespace GameMechanics.Player
         }
 
         public static readonly PropertyInfo<string> EmailProperty = RegisterProperty<string>(nameof(Email));
-        [Required]
         public string Email
         {
             get => GetProperty(EmailProperty);
             private set => LoadProperty(EmailProperty, value);
-        }
-
-        public static readonly PropertyInfo<string> HashedPasswordProperty = RegisterProperty<string>(nameof(HashedPassword));
-        public string HashedPassword
-        {
-            get => GetProperty(HashedPasswordProperty);
-            set => SetProperty(HashedPasswordProperty, value);
         }
 
         public static readonly PropertyInfo<string> ImageUrlProperty = RegisterProperty<string>(nameof(ImageUrl));
@@ -46,44 +38,38 @@ namespace GameMechanics.Player
             set => SetProperty(ImageUrlProperty, value);
         }
 
-        protected override void AddBusinessRules()
-        {
-            base.AddBusinessRules();
-        }
-
         [Fetch]
         private async Task Fetch(int id, [Inject] IPlayerDal dal)
         {
             var data = await dal.GetPlayerAsync(id);
+            LoadProperties(data);
+        }
+
+        private void LoadProperties(Threa.Dal.Dto.Player data)
+        {
             using (BypassPropertyChecks)
             {
                 Id = data.Id;
                 Name = data.Name;
                 Email = data.Email;
-                HashedPassword = data.HashedPassword;
                 ImageUrl = data.ImageUrl;
             }
             BusinessRules.CheckRules();
-            if (IsNew)
-                await this.SaveAndMergeAsync();
         }
 
         [Insert]
         [Update]
         private async Task SaveAsync([Inject] IPlayerDal dal)
         {
-            var player = new Threa.Dal.Dto.Player
+            Threa.Dal.Dto.Player? player = new()
             {
+                Id = Id,
                 Name = Name,
                 Email = Email,
-                HashedPassword = HashedPassword,
                 ImageUrl = ImageUrl
             };
             var result = await dal.SavePlayerAsync(player);
-            using (BypassPropertyChecks)
-            {
-                Id = result.Id;
-            }
+            LoadProperty(IdProperty, result.Id);
         }
     }
 }

@@ -1,12 +1,9 @@
-﻿using Csla.Core;
-using Csla;
+﻿using Csla;
 using System;
 using Threa.Dal;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using System.Collections.Generic;
-using BCrypt.Net;
-using System.Security;
 
 namespace GameMechanics.Player;
 
@@ -23,10 +20,8 @@ public class UserValidation : CommandBase<UserValidation>
     [Execute]
     private async Task Execute(string username, string password, [Inject] IPlayerDal dal)
     {
-        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
-        var user = await dal.GetPlayerByEmailAsync(username, hashedPassword) 
-            ?? throw new InvalidOperationException("Invalid username or password");
-        Principal = GetPrincipal(user);
+        var player = await dal.GetPlayerByEmailAsync(username, password);
+        Principal = GetPrincipal(player);
     }
 
     private ClaimsPrincipal GetPrincipal(Threa.Dal.Dto.Player user)
@@ -35,6 +30,7 @@ public class UserValidation : CommandBase<UserValidation>
         {
             new(ClaimTypes.Name, user.Email),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.GivenName, user.Name),
             new(ClaimTypes.Email, user.Email)
         };
         var identity = new ClaimsIdentity(claims, "password");
