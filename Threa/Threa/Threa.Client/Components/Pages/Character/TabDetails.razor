@@ -1,4 +1,10 @@
-﻿<table>
+﻿@if (vm == null || vm.Model == null)
+{
+    <p>Loading...</p>
+    return;
+}
+
+<table>
     <thead>
         <tr><th></th><th></th></tr>
     </thead>
@@ -19,5 +25,5 @@
 @code 
 {
     [Parameter]
-    public ViewModel<GameMechanics.CharacterEdit> vm { get; set; }
+    public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
 }
