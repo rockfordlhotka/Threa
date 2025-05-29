@@ -22,6 +22,8 @@ namespace GameMechanics
       {
         BusinessRules.CheckRules(FatigueProperty);
         BusinessRules.CheckRules(VitalityProperty);
+        OnPropertyChanged(FatigueProperty);
+        OnPropertyChanged(VitalityProperty);
       }
     }
 
@@ -223,6 +225,8 @@ namespace GameMechanics
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();
+      BusinessRules.AddRule(new FatigueBase());
+      BusinessRules.AddRule(new VitalityBase());
     }
 
     [Create]
@@ -350,6 +354,40 @@ namespace GameMechanics
     private async Task DeleteAsync([Inject] ICharacterDal dal)
     {
       await dal.DeleteCharacterAsync(Id);
+    }
+
+    private class FatigueBase : PropertyRule
+    {
+        public FatigueBase() : base(FatigueProperty)
+        {
+            InputProperties.Add(FatigueProperty);
+            AffectedProperties.Add(FatigueProperty);
+        }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+            var target = (CharacterEdit)context.Target;
+            target.Fatigue.CalculateBase(target);
+        }
+    }
+
+    private class VitalityBase : PropertyRule
+    {
+      public VitalityBase() : base(VitalityProperty)
+      {
+        InputProperties.Add(VitalityProperty);
+        AffectedProperties.Add(VitalityProperty);
+      }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+        var target = (CharacterEdit)context.Target;
+        target.Vitality.CalculateBase(target);
+      }
     }
   }
 }

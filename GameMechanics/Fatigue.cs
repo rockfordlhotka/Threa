@@ -106,13 +106,19 @@ namespace GameMechanics
       PendingDamage += damageValue.GetModifiedDamage(Character.DamageClass);
     }
 
+    internal void CalculateBase(CharacterEdit character)
+    {
+      var end = character.GetAttribute("END");
+      var wil = character.GetAttribute("WIL");
+      BaseValue = end + wil - 5;
+    }
+
     [CreateChild]
 
     private void Create(CharacterEdit character)
     {
-      var end = character.GetAttribute("END");
-      var wil = character.GetAttribute("WIL");
-      Value = BaseValue = (end + wil) / 2 - 5;
+      CalculateBase(character);
+      Value = BaseValue;
     }
 
     [FetchChild]

@@ -101,10 +101,16 @@ namespace GameMechanics
         PendingDamage += dmg;
     }
 
+    internal void CalculateBase(CharacterEdit character)
+    {
+      BaseValue = character.GetAttribute("STR") * 2 - 5;
+    }
+
     [CreateChild]
     private void Create(CharacterEdit character)
     {
-      Value = BaseValue = character.GetAttribute("STR") * 2 - 5;
+      CalculateBase(character);
+      Value = BaseValue;
     }
 
     [FetchChild]

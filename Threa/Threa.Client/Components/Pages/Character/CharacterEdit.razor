@@ -85,10 +85,7 @@ else
         vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
         vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
         vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
-    }
 
-    protected override async Task OnParametersSetAsync()
-    {
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {
             if (id == 0)
