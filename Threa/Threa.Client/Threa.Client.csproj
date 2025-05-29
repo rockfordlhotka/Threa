@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\GameMechanics\GameMechanics.csproj" />
+    <ProjectReference Include="..\..\GameMechanics\GameMechanics.csproj" />
   </ItemGroup>
 
 </Project>

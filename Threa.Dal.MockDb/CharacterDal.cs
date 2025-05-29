@@ -40,7 +40,8 @@ namespace Threa.Dal.MockDb
     {
       if (character.Id == 0)
       {
-        character.Id = MockDb.Characters.Max(r => r.Id);
+        character.Id = MockDb.Characters.Count == 0 ? 
+          1 : MockDb.Characters.Max(r => r.Id) + 1;
         MockDb.Characters.Add(character);
       }
       else

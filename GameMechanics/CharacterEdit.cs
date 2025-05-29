@@ -272,6 +272,7 @@ namespace GameMechanics
         nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
+        nameof(IsPassedOut),
         nameof(IsBeingSaved),
         nameof(Threa.Dal.Dto.Character.Wounds),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
