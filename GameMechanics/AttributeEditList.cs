@@ -1,4 +1,5 @@
 ﻿using Csla;
+using GameMechanics.Reference;
 using System;
 using System.Collections.Generic;
 using Threa.Dal.Dto;
@@ -8,16 +9,29 @@ namespace GameMechanics
   [Serializable]
   public class AttributeEditList : BusinessListBase<AttributeEditList, AttributeEdit>
   {
+    private static readonly string[] AttributeNames = ["STR", "DEX", "END", "INT", "ITT", "WIL", "PHY"];
+
+    /// <summary>
+    /// Creates attributes with no species modifiers (Human baseline).
+    /// </summary>
     [CreateChild]
     private void Create([Inject] IChildDataPortal<AttributeEdit> attributePortal)
     {
-      Add(attributePortal.CreateChild("STR"));
-      Add(attributePortal.CreateChild("DEX"));
-      Add(attributePortal.CreateChild("END"));
-      Add(attributePortal.CreateChild("INT"));
-      Add(attributePortal.CreateChild("ITT"));
-      Add(attributePortal.CreateChild("WIL"));
-      Add(attributePortal.CreateChild("PHY"));
+      foreach (var name in AttributeNames)
+        Add(attributePortal.CreateChild(name, 0));
+    }
+
+    /// <summary>
+    /// Creates attributes with species-specific modifiers.
+    /// </summary>
+    [CreateChild]
+    private void Create(SpeciesInfo species, [Inject] IChildDataPortal<AttributeEdit> attributePortal)
+    {
+      foreach (var name in AttributeNames)
+      {
+        int modifier = species?.GetModifier(name) ?? 0;
+        Add(attributePortal.CreateChild(name, modifier));
+      }
     }
 
     [FetchChild]

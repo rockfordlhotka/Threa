@@ -11,7 +11,7 @@ This document compares the design specifications in the `/design` folder against
 | System | Design Status | Implementation Status | Gap Level |
 |--------|--------------|----------------------|-----------|
 | Dice Mechanics | ✅ Complete | ✅ Implemented | Minor |
-| Attributes | ✅ Complete | ⚠️ Partial | Medium |
+| Attributes | ✅ Complete | ✅ Implemented | None |
 | Health (Fatigue/Vitality) | ✅ Complete | ✅ Core formulas correct | Low |
 | Skills | ✅ Complete | ⚠️ Partial | High |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
@@ -20,7 +20,7 @@ This document compares the design specifications in the `/design` folder against
 | Inventory/Carrying Capacity | ✅ Complete | ❌ Not Implemented | High |
 | Currency | ✅ Complete | ❌ Not Implemented | High |
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
-| Species Modifiers | ✅ Complete | ❌ Not Implemented | Medium |
+| Species Modifiers | ✅ Complete | ✅ Implemented | None |
 
 ---
 
@@ -48,18 +48,12 @@ This document compares the design specifications in the `/design` folder against
 - Species modifiers (Elf, Dwarf, Halfling, Orc) with attribute adjustments
 
 **Implementation** ([AttributeEditList.cs](../GameMechanics/AttributeEditList.cs)):
-- ⚠️ Creates 8 attributes (adds "SOC" not in design)
+- ✅ Creates 7 attributes (SOC removed)
 - ✅ Uses 4dF + 10 for attribute generation
-- ❌ No species modifiers implemented
-- ⚠️ Attribute names inconsistent with design (uses abbreviations STR, DEX, etc.)
+- ✅ Species modifiers implemented via database
+- ✅ Species reference data in MockDb with all 5 species
 
-**Action Items**:
-| Priority | Task | File(s) |
-|----------|------|---------|
-| **Critical** | Remove "SOC" attribute | `AttributeEditList.cs` |
-| High | Implement species modifiers (Human, Elf, Dwarf, Halfling, Orc) | `CharacterEdit.cs`, `AttributeEdit.cs` |
-| Medium | Add Species property validation and modifier application | `CharacterEdit.cs` |
-| Low | Create species enum or reference data | New file needed |
+**Action Items**: None - implementation complete.
 
 ---
 
@@ -101,8 +95,7 @@ This document compares the design specifications in the `/design` folder against
 
 **Implementation** ([SkillEdit.cs](../GameMechanics/SkillEdit.cs), [SkillCost.cs](../GameMechanics/SkillCost.cs)):
 - ✅ Ability Score calculation matches design
-- ⚠️ 8 standard skills created (Physicality, Dodge, Drive, Reasoning, Awareness, Focus, Bearing, **Influence**)
-- ❌ "Influence" skill not in design specification
+- ✅ 7 standard skills (Influence removed)
 - ❌ SkillCost uses a fixed table instead of dynamic Base Cost × Multiplier^N formula
 - ❌ No usage tracking (UsagePoints exists but no advancement logic)
 - ❌ No skill categories defined in code
@@ -114,7 +107,6 @@ Implementation: Uses hardcoded 10×14 lookup table with different values
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Remove "Influence" skill from code | `SkillList.cs` |
 | High | Implement dynamic skill progression formula | `SkillCost.cs` |
 | High | Add skill category definitions | New `SkillCategory.cs` or database |
 | High | Implement usage-based advancement logic | `SkillEdit.cs` |
@@ -321,11 +313,11 @@ Implementation: Uses hardcoded 10×14 lookup table with different values
 
 ## Recommended Implementation Order
 
-### Phase 1: Core Fixes (Critical)
+### Phase 1: Core Fixes (Critical) ✅ COMPLETE
 1. ~~Fix Fatigue formula~~ ✅ Design docs updated to match code
 2. ~~Fix Vitality formula~~ ✅ Design docs updated to match code
-3. Remove SOC attribute and Influence skill from code
-4. Implement species modifiers
+3. ~~Remove SOC attribute and Influence skill from code~~ ✅ Done
+4. ~~Implement species modifiers~~ ✅ Done (database-driven)
 
 ### Phase 2: Skill System Completion
 1. Implement dynamic skill progression (BaseCost × Multiplier^N)

@@ -10,5 +10,6 @@ public static class ConfigurationExtensions
         services.AddTransient<IPlayerDal, PlayerDal>();
         services.AddTransient<ICharacterDal, CharacterDal>();
         services.AddTransient<IImageDal, ImageDal>();
+        services.AddTransient<ISpeciesDal, SpeciesDal>();
     }
 }

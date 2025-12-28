@@ -33,8 +33,15 @@ namespace GameMechanics
     [CreateChild]
     private void Create(string name)
     {
+      Create(name, 0);
+    }
+
+    [CreateChild]
+    private void Create(string name, int speciesModifier)
+    {
       Name = name;
-      Value = BaseValue = 10 + Dice.Roll(4, "F");
+      // Per design: Attribute = 4dF + 10 + species modifier
+      Value = BaseValue = 10 + Dice.Roll(4, "F") + speciesModifier;
     }
 
     [FetchChild]

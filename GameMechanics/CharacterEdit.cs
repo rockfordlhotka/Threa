@@ -242,7 +242,7 @@ namespace GameMechanics
       var ci = (System.Security.Claims.ClaimsIdentity?)applicationContext.User.Identity ?? 
         throw new InvalidOperationException("User not authenticated");
       var playerId = int.Parse(ci.Claims.Where(r => r.Type == ClaimTypes.NameIdentifier).First().Value);
-      Create(playerId, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, null, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
     [Create]
@@ -255,11 +255,47 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal)
     {
+      CreateInternal(playerId, null, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+    }
+
+    /// <summary>
+    /// Creates a new character with species-specific attribute modifiers.
+    /// </summary>
+    /// <param name="playerId">The player ID.</param>
+    /// <param name="species">The species information with attribute modifiers.</param>
+    [Create]
+    [RunLocal]
+    private void Create(int playerId, Reference.SpeciesInfo species,
+      [Inject] IChildDataPortal<AttributeEditList> attributePortal,
+      [Inject] IChildDataPortal<SkillEditList> skillPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<Fatigue> fatPortal,
+      [Inject] IChildDataPortal<Vitality> vitPortal)
+    {
+      CreateInternal(playerId, species, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+    }
+
+    private void CreateInternal(int playerId, Reference.SpeciesInfo species,
+      IChildDataPortal<AttributeEditList> attributePortal,
+      IChildDataPortal<SkillEditList> skillPortal,
+      IChildDataPortal<WoundList> woundPortal,
+      IChildDataPortal<ActionPoints> actionPointsPortal,
+      IChildDataPortal<Fatigue> fatPortal,
+      IChildDataPortal<Vitality> vitPortal)
+    {
       using (BypassPropertyChecks)
       {
         DamageClass = 1;
         PlayerId = playerId;
-        AttributeList = attributePortal.CreateChild();
+        Species = species?.Id ?? "Human";
+        
+        // Apply species modifiers to attributes during creation
+        if (species != null)
+          AttributeList = attributePortal.CreateChild(species);
+        else
+          AttributeList = attributePortal.CreateChild();
+        
         Skills = skillPortal.CreateChild();
         Wounds = woundPortal.CreateChild();
         Fatigue = fatPortal.CreateChild(this);

@@ -12,6 +12,67 @@ public static class MockDb
 
     public static readonly List<string> Images = [];
 
+    /// <summary>
+    /// Species reference data with attribute modifiers per design spec.
+    /// </summary>
+    public static readonly List<Species> Species =
+    [
+        new Species
+        {
+            Id = "Human",
+            Name = "Human",
+            Description = "Humans are the baseline species with no attribute modifiers.",
+            AttributeModifiers = []
+        },
+        new Species
+        {
+            Id = "Elf",
+            Name = "Elf",
+            Description = "Elves are intellectual and agile, but physically delicate.",
+            AttributeModifiers =
+            [
+                new SpeciesAttributeModifier { AttributeName = "INT", Modifier = 1 },
+                new SpeciesAttributeModifier { AttributeName = "STR", Modifier = -1 }
+            ]
+        },
+        new Species
+        {
+            Id = "Dwarf",
+            Name = "Dwarf",
+            Description = "Dwarves are strong and resilient, but less agile.",
+            AttributeModifiers =
+            [
+                new SpeciesAttributeModifier { AttributeName = "STR", Modifier = 1 },
+                new SpeciesAttributeModifier { AttributeName = "DEX", Modifier = -1 }
+            ]
+        },
+        new Species
+        {
+            Id = "Halfling",
+            Name = "Halfling",
+            Description = "Halflings are quick and perceptive, but physically weak.",
+            AttributeModifiers =
+            [
+                new SpeciesAttributeModifier { AttributeName = "DEX", Modifier = 1 },
+                new SpeciesAttributeModifier { AttributeName = "ITT", Modifier = 1 },
+                new SpeciesAttributeModifier { AttributeName = "STR", Modifier = -2 }
+            ]
+        },
+        new Species
+        {
+            Id = "Orc",
+            Name = "Orc",
+            Description = "Orcs are physically powerful and enduring, but less intelligent and social.",
+            AttributeModifiers =
+            [
+                new SpeciesAttributeModifier { AttributeName = "STR", Modifier = 2 },
+                new SpeciesAttributeModifier { AttributeName = "END", Modifier = 1 },
+                new SpeciesAttributeModifier { AttributeName = "INT", Modifier = -1 },
+                new SpeciesAttributeModifier { AttributeName = "PHY", Modifier = -1 }
+            ]
+        }
+    ];
+
     public static readonly List<Character> Characters =
     [
       new Character
