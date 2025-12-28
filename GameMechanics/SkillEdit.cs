@@ -48,7 +48,7 @@ namespace GameMechanics
 
     public ResultValue SkillCheck()
     {
-      return ResultValues.GetResult(Dice.Roll4dFWithBonus() + AbilityScore);
+      return ResultValues.GetResult(Dice.Roll4dFPlus() + AbilityScore);
     }
 
     public int Bonus

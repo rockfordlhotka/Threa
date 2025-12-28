@@ -34,7 +34,7 @@ This document compares the design specifications in the `/design` folder against
 
 **Implementation** ([Dice.cs](../GameMechanics/Dice.cs)):
 - ✅ `Roll(count, "F")` - Basic Fudge dice implemented
-- ✅ `Roll4dFWithBonus()` - Exploding dice implemented correctly
+- ✅ `Roll4dFPlus()` - Exploding dice (4dF+) implemented correctly per spec
 
 **Action Items**: None - implementation matches design.
 
