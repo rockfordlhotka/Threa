@@ -18,7 +18,6 @@ namespace GameMechanics
       Add(attributePortal.CreateChild("ITT"));
       Add(attributePortal.CreateChild("WIL"));
       Add(attributePortal.CreateChild("PHY"));
-      Add(attributePortal.CreateChild("SOC"));
     }
 
     [FetchChild]

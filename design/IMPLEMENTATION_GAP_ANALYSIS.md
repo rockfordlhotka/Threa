@@ -12,7 +12,7 @@ This document compares the design specifications in the `/design` folder against
 |--------|--------------|----------------------|-----------|
 | Dice Mechanics | ✅ Complete | ✅ Implemented | Minor |
 | Attributes | ✅ Complete | ⚠️ Partial | Medium |
-| Health (Fatigue/Vitality) | ✅ Complete | ⚠️ Partial | Medium |
+| Health (Fatigue/Vitality) | ✅ Complete | ✅ Core formulas correct | Low |
 | Skills | ✅ Complete | ⚠️ Partial | High |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
@@ -56,7 +56,7 @@ This document compares the design specifications in the `/design` folder against
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| High | Remove "SOC" attribute or clarify design if intentional | `AttributeEditList.cs` |
+| **Critical** | Remove "SOC" attribute | `AttributeEditList.cs` |
 | High | Implement species modifiers (Human, Elf, Dwarf, Halfling, Orc) | `CharacterEdit.cs`, `AttributeEdit.cs` |
 | Medium | Add Species property validation and modifier application | `CharacterEdit.cs` |
 | Low | Create species enum or reference data | New file needed |
@@ -65,28 +65,26 @@ This document compares the design specifications in the `/design` folder against
 
 ### 3. Health System (Fatigue & Vitality)
 
-**Design Spec**:
-- **Fatigue**: `(END × 2) - 5` with 3-second recovery cycle
-- **Vitality**: `(STR + END) - 5` with hourly recovery
+**Design Spec** (updated to match code):
+- **Fatigue**: `(END + WIL) - 5` with 3-second recovery cycle
+- **Vitality**: `(STR × 2) - 5` with hourly recovery
 - Low FAT effects at 3, 2, 1, 0 with Focus checks at TV 5, 7, 12
 - Low VIT effects at 4, 3, 2, 1, 0 with recovery slowdowns
 
 **Implementation**:
 
 **Fatigue** ([Fatigue.cs](../GameMechanics/Fatigue.cs)):
-- ❌ Uses `END + WIL - 5` instead of `(END × 2) - 5`
+- ✅ Uses correct formula `(END + WIL) - 5`
 - ⚠️ Focus check thresholds differ: checks at FAT < 6 (TV 5), < 4 (TV 7), < 2 (TV 12)
 - Design says: FAT = 3 (TV 5), FAT = 2 (TV 7), FAT = 1 (TV 12)
 
 **Vitality** ([Vitality.cs](../GameMechanics/Vitality.cs)):
-- ❌ Uses `STR × 2 - 5` instead of `(STR + END) - 5`
+- ✅ Uses correct formula `(STR × 2) - 5`
 - ❌ No low vitality effects implemented (recovery slowdowns, Focus checks)
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Fix Fatigue formula: `(END × 2) - 5` | `Fatigue.cs` - `CalculateBase()` |
-| **Critical** | Fix Vitality formula: `(STR + END) - 5` | `Vitality.cs` - `CalculateBase()` |
 | High | Fix Focus check thresholds for low FAT | `Fatigue.cs` - `CheckFocusRolls()` |
 | High | Implement low VIT effects (recovery slowdowns) | `Vitality.cs` |
 | High | Add VIT = 0 death handling | `Vitality.cs` |
@@ -116,7 +114,7 @@ Implementation: Uses hardcoded 10×14 lookup table with different values
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| High | Clarify "Influence" skill vs "Bearing" in design | Design doc or `SkillList.cs` |
+| **Critical** | Remove "Influence" skill from code | `SkillList.cs` |
 | High | Implement dynamic skill progression formula | `SkillCost.cs` |
 | High | Add skill category definitions | New `SkillCategory.cs` or database |
 | High | Implement usage-based advancement logic | `SkillEdit.cs` |
@@ -324,9 +322,9 @@ Implementation: Uses hardcoded 10×14 lookup table with different values
 ## Recommended Implementation Order
 
 ### Phase 1: Core Fixes (Critical)
-1. Fix Fatigue formula: `(END × 2) - 5`
-2. Fix Vitality formula: `(STR + END) - 5`
-3. Resolve attribute count (7 vs 8) and skill list (7 vs 8)
+1. ~~Fix Fatigue formula~~ ✅ Design docs updated to match code
+2. ~~Fix Vitality formula~~ ✅ Design docs updated to match code
+3. Remove SOC attribute and Influence skill from code
 4. Implement species modifiers
 
 ### Phase 2: Skill System Completion

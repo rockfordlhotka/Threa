@@ -18,7 +18,6 @@ namespace GameMechanics.Reference
         Add(skillPortal.FetchChild("Awareness"));
         Add(skillPortal.FetchChild("Focus"));
         Add(skillPortal.FetchChild("Bearing"));
-        Add(skillPortal.FetchChild("Influence"));
       }
     }
   }
@@ -176,14 +175,6 @@ namespace GameMechanics.Reference
           Untrained = 4;
           Trained = 2;
           PrimaryAttribute = "SOC/INT";
-          break;
-        case "Influence":
-          Id = "";
-          Name = skillName;
-          IsStandard = true;
-          Untrained = 4;
-          Trained = 2;
-          PrimaryAttribute = "PHY";
           break;
         default:
           break;

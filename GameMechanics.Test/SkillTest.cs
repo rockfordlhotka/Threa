@@ -72,7 +72,7 @@ namespace GameMechanics.Test
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
-      Assert.AreEqual(8, c.Skills.Count);
+      Assert.AreEqual(7, c.Skills.Count);
     }
   }
 }

@@ -27,7 +27,7 @@ namespace GameMechanics.Test
       var wil = c.GetAttribute("WIL");
       Assert.AreEqual(str * 2 - 5, c.Vitality.Value, "vit");
       Assert.AreEqual(c.Vitality.Value, c.Vitality.BaseValue, "vitbase");
-      Assert.AreEqual((end + wil) / 2 - 5, c.Fatigue.Value, "fat");
+      Assert.AreEqual(end + wil - 5, c.Fatigue.Value, "fat");
       Assert.AreEqual(c.Fatigue.Value, c.Fatigue.BaseValue, "fatbase");
     }
 
