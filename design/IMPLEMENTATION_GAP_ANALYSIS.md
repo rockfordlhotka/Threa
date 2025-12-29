@@ -21,6 +21,8 @@ This document compares the design specifications in the `/design` folder against
 | Currency | ✅ Complete | ✅ Implemented | None |
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
+| Action Points | ✅ Complete | ⚠️ Partial | Low |
+| Time System | ✅ Complete | ❌ Not Implemented | High |
 
 ---
 
@@ -129,23 +131,24 @@ This document compares the design specifications in the `/design` folder against
 
 ### 6. Combat System (NOT IMPLEMENTED)
 
-**Design Spec** covers:
-- Attack/Defense resolution (AV = AS + 4dF+, SV = AV - TV)
-- Melee combat (1 FAT cost per attack/dodge)
-- Parry mode (weapon skill for defense, no FAT cost)
-- Ranged combat with range modifiers
-- Physicality damage bonus (STR check vs TV 8)
-- Result Value System (RVS) chart
-- Defense sequence (Shield → Armor → Damage)
-- Hit locations (1d12 roll)
-- Damage classes 1-4
+**Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
+- Initiative by Available AP (highest first)
+- Action cost: 1 AP + 1 FAT (or 2 AP)
+- Multiple action penalty: -1 AS (not cumulative)
+- Boost mechanic: 1 AP or 1 FAT = +1 AS (stackable)
+- Active defense (dodge, parry, shield): costs action
+- Passive defense: Dodge AS - 1 (no action, no roll)
+- Parry mode: enter as action, free defenses until broken
+- Ranged cooldowns by skill level
+- Cooldown interruption: resettable vs pausable
 
 **Implementation**:
 - ❌ No combat action classes
 - ❌ No attack/defense resolution
-- ❌ No parry mode
-- ❌ No ranged combat
-- ⚠️ `Calculator.cs` has partial damage/RV logic (test/reference only?)
+- ❌ No initiative system
+- ❌ No parry mode tracking
+- ❌ No ranged combat/cooldowns
+- ⚠️ `Calculator.cs` has partial damage/RV logic
 
 **Action Items**:
 | Priority | Task | File(s) |
@@ -284,7 +287,35 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 11. Action Points System
+### 11. Time System (NOT IMPLEMENTED)
+
+**Design Spec** ([TIME_SYSTEM.md](TIME_SYSTEM.md)):
+- Round = 3 seconds
+- Initiative based on Available AP (highest goes first)
+- End-of-round processing: pending damage, FAT recovery, AP recovery, cooldowns
+- Long-term time events: minute (20 rounds), turn (10 min), hour, day, week
+- Cooldown system for actions with prep time (resettable vs pausable)
+- GM-triggered time events affecting all tracked entities
+
+**Implementation**:
+- ❌ No time/round tracking system
+- ❌ No initiative calculation
+- ❌ No cooldown tracking
+- ❌ No long-term time event system
+- ⚠️ `EndOfRound()` exists in ActionPoints.cs but no orchestrating time manager
+
+**Action Items**:
+| Priority | Task | File(s) |
+|----------|------|---------|
+| **Critical** | Create `TimeManager` class for round/time tracking | New `GameMechanics/Time/TimeManager.cs` |
+| **Critical** | Create time event system (EndOfRound, EndOfMinute, etc.) | New `GameMechanics/Time/TimeEvents.cs` |
+| High | Implement initiative calculation (by Available AP) | `TimeManager.cs` |
+| High | Create cooldown tracking per character | New `GameMechanics/Cooldown.cs` |
+| Medium | Integrate EndOfRound processing across systems | Multiple files |
+
+---
+
+### 12. Action Points System
 
 **Design Spec** ([ACTION_POINTS.md](ACTION_POINTS.md)):
 - Max AP = Total Skill Levels / 10 (minimum 1)
