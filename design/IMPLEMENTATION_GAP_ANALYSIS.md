@@ -13,7 +13,7 @@ This document compares the design specifications in the `/design` folder against
 | Dice Mechanics | ✅ Complete | ✅ Implemented | Minor |
 | Attributes | ✅ Complete | ✅ Implemented | None |
 | Health (Fatigue/Vitality) | ✅ Complete | ✅ Core formulas correct | Low |
-| Skills | ✅ Complete | ⚠️ Partial | High |
+| Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
 | Equipment/Items | ✅ Complete | ❌ Not Implemented | High |
@@ -90,28 +90,17 @@ This document compares the design specifications in the `/design` folder against
 **Design Spec**:
 - 7 core attribute skills matching attributes
 - Ability Score formula: `Related Attribute + Current Skill Level - 5`
-- Usage-based progression with Base Cost and Multiplier per skill category
-- Skill categories: Core Attribute, Weapon, Spell, Mana Recovery, Crafting, Social
+- XP-based progression with 10×14 lookup table (level × difficulty)
+- Skill difficulty ratings from 1 (easiest) to 14 (hardest)
 
 **Implementation** ([SkillEdit.cs](../GameMechanics/SkillEdit.cs), [SkillCost.cs](../GameMechanics/SkillCost.cs)):
 - ✅ Ability Score calculation matches design
 - ✅ 7 standard skills (Influence removed)
-- ❌ SkillCost uses a fixed table instead of dynamic Base Cost × Multiplier^N formula
-- ❌ No usage tracking (UsagePoints exists but no advancement logic)
-- ❌ No skill categories defined in code
+- ✅ SkillCost uses 10×14 XP cost lookup table matching design
+- ✅ GetBonus() returns `level - 5` per design
+- ✅ GetLevelUpCost() returns XP cost based on current level and difficulty
 
-**SkillCost Discrepancy**:
-Design formula: `Cost(N→N+1) = BaseCost × (Multiplier^N)`
-Implementation: Uses hardcoded 10×14 lookup table with different values
-
-**Action Items**:
-| Priority | Task | File(s) |
-|----------|------|---------|
-| High | Implement dynamic skill progression formula | `SkillCost.cs` |
-| High | Add skill category definitions | New `SkillCategory.cs` or database |
-| High | Implement usage-based advancement logic | `SkillEdit.cs` |
-| Medium | Add progression parameters (BaseCost, Multiplier) per skill | `SkillInfo.cs` |
-| Medium | Implement usage event types (Routine, Challenging, Critical) | New service class |
+**Action Items**: None - implementation matches design.
 
 ---
 
@@ -319,11 +308,10 @@ Implementation: Uses hardcoded 10×14 lookup table with different values
 3. ~~Remove SOC attribute and Influence skill from code~~ ✅ Done
 4. ~~Implement species modifiers~~ ✅ Done (database-driven)
 
-### Phase 2: Skill System Completion
-1. Implement dynamic skill progression (BaseCost × Multiplier^N)
-2. Add skill categories and parameters
-3. Implement usage-based advancement
-4. Wire wound penalties into skill checks
+### Phase 2: Skill System ✅ COMPLETE
+1. ~~XP-based skill progression~~ ✅ 10×14 lookup table implemented
+2. ~~Skill difficulty ratings~~ ✅ Design updated to match implementation
+3. Wire wound penalties into skill checks (deferred to combat)
 
 ### Phase 3: Items & Equipment
 1. Create ItemTemplate and Item classes

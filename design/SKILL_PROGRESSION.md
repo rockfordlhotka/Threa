@@ -2,86 +2,117 @@
 
 ## Overview
 
-Threa uses a usage-based skill progression system where skills improve through actual practice. Each skill tracks usage events and converts them into skill level increases based on progression parameters.
+Threa uses an experience point (XP) based skill progression system. Characters earn XP through gameplay and spend it to advance individual skills. The cost to advance depends on both the skill's current level and the skill's difficulty rating.
 
 ## Core Mechanics
 
-### Base Cost and Multiplier System
+### Experience Point Cost Table
 
-Each skill is defined with two key progression parameters:
+Skill advancement costs are determined by a lookup table based on:
 
-1. **Base Cost**: The number of usage events required to advance from level 0 to level 1
-2. **Multiplier**: A real number that compounds the cost for each subsequent level
+1. **Current Skill Level**: The skill's level before advancement (0-9)
+2. **Skill Difficulty**: A rating from 1 (easiest) to 14 (hardest) assigned to each skill
 
-### Cost Calculation Formula
+### XP Cost Lookup Table
+
+| Level | Diff 1 | Diff 2 | Diff 3 | Diff 4 | Diff 5 | Diff 6 | Diff 7 | Diff 8 | Diff 9 | Diff 10 | Diff 11 | Diff 12 | Diff 13 | Diff 14 |
+|-------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|---------|---------|---------|---------|
+| 0→1 | 0.1 | 0.3 | 0.5 | 1 | 1 | 1 | 2 | 2 | 3 | 4 | 4 | 5 | 6 | 6 |
+| 1→2 | 0.3 | 0.5 | 1 | 2 | 3 | 3 | 4 | 5 | 5 | 6 | 6 | 7 | 8 | 8 |
+| 2→3 | 0.5 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 7 | 8 | 9 | 10 | 10 | 11 |
+| 3→4 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| 4→5 | 2 | 3 | 4 | 5 | 6 | 8 | 9 | 10 | 12 | 13 | 14 | 16 | 17 | 18 |
+| 5→6 | 3 | 5 | 7 | 10 | 12 | 15 | 17 | 20 | 22 | 24 | 27 | 29 | 32 | 34 |
+| 6→7 | 4 | 7 | 11 | 14 | 18 | 21 | 25 | 28 | 32 | 35 | 39 | 43 | 46 | 50 |
+| 7→8 | 8 | 17 | 25 | 33 | 41 | 50 | 58 | 66 | 74 | 83 | 91 | 99 | 107 | 116 |
+| 8→9 | 22 | 44 | 65 | 87 | 109 | 131 | 152 | 174 | 196 | 218 | 240 | 261 | 283 | 305 |
+| 9→10 | 37 | 74 | 111 | 148 | 185 | 222 | 259 | 296 | 333 | 370 | 407 | 444 | 481 | 518 |
+
+**Note**: Fractional XP costs (0.1, 0.3, 0.5) allow multiple low-level skills to be advanced with a single XP.
+
+### Skill Level Bonus
+
+Each skill level provides a bonus to skill checks:
 
 ```
-Cost (N → N+1) = Base Cost × (Multiplier^N)
+Skill Bonus = Skill Level - 5
 ```
 
-Where:
-- **Base Cost**: Skill-specific starting difficulty (typically 10-100 usage events)
-- **Multiplier**: Progression difficulty scaling (typically 2.0-3.5)
-- **N**: Current skill level
+| Level | Bonus |
+|-------|-------|
+| 0 | -5 |
+| 1 | -4 |
+| 2 | -3 |
+| 3 | -2 |
+| 4 | -1 |
+| 5 | 0 |
+| 6 | +1 |
+| 7 | +2 |
+| 8 | +3 |
+| 9 | +4 |
+| 10 | +5 |
 
-## Skill Category Parameters
+## Skill Difficulty Ratings
 
 **Game Balance Note**: Skills are not intended to progress significantly beyond level 10. Progression becomes prohibitively expensive after level 5 to maintain balanced gameplay.
 
-### Core Attribute Skills
+### Suggested Difficulty Ratings by Category
 
-- **Base Cost**: 15
-- **Multiplier**: 2.5
-- **Rationale**: Fundamental abilities that become exponentially harder to master
-
-### Weapon Skills
-
-- **Base Cost**: 25
-- **Multiplier**: 2.2
-- **Rationale**: Combat skills require practice but plateau at higher levels
-
-### Individual Spell Skills
-
-| Spell Type | Base Cost | Multiplier |
-|------------|-----------|------------|
-| Cantrips | 20 | 2.0 |
-| Standard spells | 40 | 2.3 |
-| Advanced spells | 80 | 2.8 |
-| Master spells | 150 | 3.5 |
-
-### Other Skills
-
-| Category | Base Cost | Multiplier |
-|----------|-----------|------------|
-| Mana Recovery | 30 | 2.1 |
-| Crafting | 35 | 2.4 |
-| Social | 20 | 2.0 |
+| Skill Category | Difficulty Range | Typical |
+|----------------|------------------|---------|
+| Core Attribute Skills | 4-6 | 5 |
+| Simple Weapons | 3-5 | 4 |
+| Martial Weapons | 5-8 | 6 |
+| Exotic Weapons | 8-11 | 9 |
+| Cantrips | 2-4 | 3 |
+| Standard Spells | 5-7 | 6 |
+| Advanced Spells | 8-10 | 9 |
+| Master Spells | 11-14 | 12 |
+| Mana Recovery | 5-7 | 6 |
+| Crafting | 6-9 | 7 |
+| Social Skills | 3-5 | 4 |
 
 ## Progression Examples
 
-**Weapon Skill** (Base Cost: 25, Multiplier: 2.2):
+**Sword Skill** (Difficulty 6, Martial Weapon):
 
-| Level | Uses Required | Cumulative |
-|-------|---------------|------------|
-| 0→1 | 25 | 25 |
-| 1→2 | 55 | 80 |
-| 2→3 | 121 | 201 |
-| 3→4 | 266 | 467 |
-| 4→5 | 585 | 1,052 |
-| 5→6 | 1,287 | 2,339 |
-| 6→7 | 2,831 | 5,170 |
+| Level | XP Cost | Cumulative XP |
+|-------|---------|---------------|
+| 0→1 | 1 | 1 |
+| 1→2 | 3 | 4 |
+| 2→3 | 5 | 9 |
+| 3→4 | 6 | 15 |
+| 4→5 | 8 | 23 |
+| 5→6 | 15 | 38 |
+| 6→7 | 21 | 59 |
+| 7→8 | 50 | 109 |
 
-## Usage Event Types
+**Fireball Spell** (Difficulty 9, Advanced Spell):
 
-Not all skill usage generates the same advancement potential:
+| Level | XP Cost | Cumulative XP |
+|-------|---------|---------------|
+| 0→1 | 3 | 3 |
+| 1→2 | 5 | 8 |
+| 2→3 | 7 | 15 |
+| 3→4 | 9 | 24 |
+| 4→5 | 12 | 36 |
+| 5→6 | 22 | 58 |
+| 6→7 | 32 | 90 |
+| 7→8 | 74 | 164 |
 
-| Event Type | Multiplier | Description |
-|------------|------------|-------------|
-| Routine Use | 1.0x | Standard skill application |
-| Challenging Use | 1.5x | Difficult circumstances |
-| Critical Success | 2.0x | Exceptional performance |
-| Teaching Others | 0.8x | Instructing other characters |
-| Training Practice | 0.5x | Safe, deliberate practice |
+## Earning Experience Points
+
+XP is awarded by the Game Master based on:
+
+| Activity | Typical XP Award |
+|----------|------------------|
+| Minor encounter/challenge | 1-2 XP |
+| Standard encounter | 3-5 XP |
+| Significant challenge | 6-10 XP |
+| Major story milestone | 10-20 XP |
+| Campaign arc completion | 20-50 XP |
+
+**Session Guidelines**: A typical session awards 5-15 XP depending on accomplishments.
 
 ## Skill Level Meanings
 
@@ -101,19 +132,21 @@ Not all skill usage generates the same advancement potential:
 
 ## Character Sheet Integration
 
-The assistant should:
-- Track current level and usage points for each skill
-- Calculate progress percentage toward next level
+The character sheet should:
+- Track current level and available XP for each character
 - Display skill level with appropriate rank label
-- Show advancement notifications
-- Support adding usage events with appropriate multipliers
+- Show XP cost to advance each skill to the next level
+- Allow spending XP to advance skills
+- Display skill difficulty rating for reference
 
 ## Benefits of This System
 
-1. **Meaningful Differentiation**: Each level represents significant improvement
-2. **Natural Plateaus**: Progress slows appropriately at higher levels
-3. **Build Diversity**: Players choose breadth vs depth
-4. **Long-term Goals**: High-level skills remain aspirational
+1. **Player Agency**: Players choose which skills to advance
+2. **Meaningful Differentiation**: Each level represents significant improvement
+3. **Natural Plateaus**: Progress slows appropriately at higher levels
+4. **Build Diversity**: Players choose breadth vs depth
+5. **Simple Mechanics**: Lookup table is easy for GMs and players to use
+6. **Balanced Progression**: Difficulty ratings ensure complex skills cost more
 
 ---
 
