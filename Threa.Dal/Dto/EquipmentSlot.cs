@@ -1,0 +1,50 @@
+namespace Threa.Dal.Dto;
+
+/// <summary>
+/// Equipment slots where items can be equipped on a character.
+/// </summary>
+public enum EquipmentSlot
+{
+    // Not equipped
+    None = 0,
+
+    // Body Slots
+    Head = 1,
+    Face = 2,
+    Ears = 3,
+    Neck = 4,
+    Shoulders = 5,
+    Back = 6,
+    Chest = 7,
+    ArmLeft = 8,
+    ArmRight = 9,
+    WristLeft = 10,
+    WristRight = 11,
+    HandLeft = 12,
+    HandRight = 13,
+    Waist = 14,
+    Legs = 15,
+    AnkleLeft = 16,
+    AnkleRight = 17,
+    FootLeft = 18,
+    FootRight = 19,
+
+    // Weapon Slots
+    MainHand = 20,
+    OffHand = 21,
+    TwoHand = 22,
+
+    // Jewelry Slots - Left Hand Fingers
+    FingerLeft1 = 30,
+    FingerLeft2 = 31,
+    FingerLeft3 = 32,
+    FingerLeft4 = 33,
+    FingerLeft5 = 34,
+
+    // Jewelry Slots - Right Hand Fingers
+    FingerRight1 = 40,
+    FingerRight2 = 41,
+    FingerRight3 = 42,
+    FingerRight4 = 43,
+    FingerRight5 = 44
+}

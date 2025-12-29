@@ -34,4 +34,25 @@ public class Character
     public List<CharacterAttribute> AttributeList { get; set; } = [];
     public List<CharacterSkill> Skills { get; set; } = [];
     public List<Wound> Wounds { get; set; } = [];
+
+    /// <summary>
+    /// Items owned by this character.
+    /// Note: Items are managed separately via ICharacterItemDal for efficiency.
+    /// This list is populated on-demand and may not always be filled.
+    /// </summary>
+    public List<CharacterItem> Items { get; set; } = [];
+
+    /// <summary>
+    /// Currency held by this character (in copper pieces for easy calculation).
+    /// </summary>
+    public int CopperCoins { get; set; }
+    public int SilverCoins { get; set; }
+    public int GoldCoins { get; set; }
+    public int PlatinumCoins { get; set; }
+
+    /// <summary>
+    /// Gets the total currency value in copper pieces.
+    /// 1 sp = 20 cp, 1 gp = 400 cp, 1 pp = 8000 cp
+    /// </summary>
+    public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
 }

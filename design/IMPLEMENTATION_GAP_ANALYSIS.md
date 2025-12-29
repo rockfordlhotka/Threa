@@ -16,9 +16,9 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
-| Equipment/Items | ✅ Complete | ❌ Not Implemented | High |
-| Inventory/Carrying Capacity | ✅ Complete | ❌ Not Implemented | High |
-| Currency | ✅ Complete | ❌ Not Implemented | High |
+| Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
+| Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
+| Currency | ✅ Complete | ✅ DAL Implemented | Low |
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 
@@ -160,7 +160,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Equipment System (NOT IMPLEMENTED)
+### 7. Equipment System (DAL IMPLEMENTED)
 
 **Design Spec** covers:
 - Weapon properties (skill, min level, damage type/class, SV/AV/DEX modifiers, range, durability)
@@ -170,29 +170,32 @@ This document compares the design specifications in the `/design` folder against
 - Item skill bonuses and attribute modifiers
 - Equipment slots (27+ slots defined)
 
-**Implementation**:
-- ❌ No Item/ItemTemplate classes
-- ❌ No equipment slot management
-- ❌ No weapon/armor properties
-- ❌ No durability system
-- ❌ No item bonuses
+**Implementation** (Threa.Dal layer):
+- ✅ `ItemTemplate` DTO with full weapon/armor properties ([ItemTemplate.cs](../Threa.Dal/Dto/ItemTemplate.cs))
+- ✅ `CharacterItem` DTO for item instances ([CharacterItem.cs](../Threa.Dal/Dto/CharacterItem.cs))
+- ✅ `EquipmentSlot` enum with 27+ slots ([EquipmentSlot.cs](../Threa.Dal/Dto/EquipmentSlot.cs))
+- ✅ `ItemSkillBonus` for skill bonuses ([ItemSkillBonus.cs](../Threa.Dal/Dto/ItemSkillBonus.cs))
+- ✅ `ItemAttributeModifier` for attribute modifiers ([ItemAttributeModifier.cs](../Threa.Dal/Dto/ItemAttributeModifier.cs))
+- ✅ `IItemTemplateDal` and `ICharacterItemDal` interfaces ([IItemDal.cs](../Threa.Dal/IItemDal.cs))
+- ✅ MockDb implementation with sample items ([MockDb.cs](../Threa.Dal.MockDb/MockDb.cs))
+- ✅ SQLite implementation ([ItemTemplateDal.cs](../Threa.Dal.SqlLite/ItemTemplateDal.cs), [CharacterItemDal.cs](../Threa.Dal.SqlLite/CharacterItemDal.cs))
+- ✅ SQL scripts for database tables ([Sql/dbo.ItemTemplate.sql](../Sql/dbo.ItemTemplate.sql), etc.)
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Create `ItemTemplate` class | New `Items/ItemTemplate.cs` |
-| **Critical** | Create `Item` instance class | New `Items/Item.cs` |
-| High | Implement equipment slot enum | New `Items/EquipmentSlot.cs` |
-| High | Create `Weapon` subclass/properties | New `Items/Weapon.cs` |
-| High | Create `Armor` subclass/properties | New `Items/Armor.cs` |
-| High | Implement durability system | Item classes |
-| High | Implement ItemSkillBonus | New `Items/ItemSkillBonus.cs` |
-| High | Implement ItemAttributeModifier | New `Items/ItemAttributeModifier.cs` |
-| Medium | Wire item bonuses into skill calculations | `SkillEdit.cs` |
+| ~~Critical~~ | ~~Create `ItemTemplate` class~~ | ✅ `Threa.Dal/Dto/ItemTemplate.cs` |
+| ~~Critical~~ | ~~Create `Item` instance class~~ | ✅ `Threa.Dal/Dto/CharacterItem.cs` |
+| ~~High~~ | ~~Implement equipment slot enum~~ | ✅ `Threa.Dal/Dto/EquipmentSlot.cs` |
+| ~~High~~ | ~~Implement ItemSkillBonus~~ | ✅ `Threa.Dal/Dto/ItemSkillBonus.cs` |
+| ~~High~~ | ~~Implement ItemAttributeModifier~~ | ✅ `Threa.Dal/Dto/ItemAttributeModifier.cs` |
+| Medium | Wire item bonuses into skill calculations | `GameMechanics/SkillEdit.cs` |
+| Medium | Create GameMechanics Item business logic | New `GameMechanics/Items/` |
+| Low | Implement durability degradation logic | GameMechanics layer |
 
 ---
 
-### 8. Inventory & Carrying Capacity (NOT IMPLEMENTED)
+### 8. Inventory & Carrying Capacity (DAL IMPLEMENTED)
 
 **Design Spec**:
 - Base weight: `50 lbs × (1.15 ^ (Physicality - 10))`
@@ -200,38 +203,44 @@ This document compares the design specifications in the `/design` folder against
 - Container system with nesting
 - Magical containers with weight reduction
 
-**Implementation**:
-- ❌ No inventory management
-- ❌ No carrying capacity calculation
-- ❌ No container system
+**Implementation** (Threa.Dal layer):
+- ✅ Container support in `ItemTemplate` (IsContainer, ContainerMaxWeight, ContainerMaxVolume)
+- ✅ Container nesting via `CharacterItem.ContainerItemId` self-reference
+- ✅ `ContainerWeightReduction` for magical containers
+- ✅ `ContainerAllowedTypes` for restricted containers (e.g., quivers)
+- ✅ `MoveToContainerAsync()` operation in DAL
+- ⚠️ Carrying capacity calculation not yet in GameMechanics layer
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| High | Add `CalculateCarryingCapacity()` method | `CharacterEdit.cs` |
-| High | Create `Inventory` class | New `Inventory/Inventory.cs` |
-| High | Create `Container` functionality | New `Inventory/Container.cs` |
-| Medium | Implement weight/volume tracking | Inventory classes |
-| Medium | Implement magical container reductions | Container class |
+| High | Add `CalculateCarryingCapacity()` method | `GameMechanics/CharacterEdit.cs` |
+| ~~High~~ | ~~Create `Inventory` class~~ | ✅ Via `ICharacterItemDal` |
+| ~~High~~ | ~~Create `Container` functionality~~ | ✅ Via `ItemTemplate.IsContainer` |
+| Medium | Implement weight/volume tracking in GameMechanics | New `GameMechanics/Inventory/` |
+| ~~Medium~~ | ~~Implement magical container reductions~~ | ✅ `ItemTemplate.ContainerWeightReduction` |
 
 ---
 
-### 9. Currency System (NOT IMPLEMENTED)
+### 9. Currency System (DAL IMPLEMENTED)
 
 **Design Spec**:
 - 4 denominations: Copper, Silver (20cp), Gold (400cp), Platinum (8000cp)
 - 100 coins = 1 pound
 
-**Implementation**:
-- ❌ No currency tracking
-- ❌ No coin weight calculation
+**Implementation** (Threa.Dal layer):
+- ✅ Currency properties in `Character` DTO (CopperCoins, SilverCoins, GoldCoins, PlatinumCoins)
+- ✅ `TotalCopperValue` calculated property for total value
+- ✅ Coin item templates in MockDb (Gold/Silver/Copper coins as stackable items)
+- ✅ SQL script for CharacterCurrency ([dbo.CharacterCurrency.sql](../Sql/dbo.CharacterCurrency.sql))
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| Medium | Create `Currency` class | New `Currency.cs` |
-| Medium | Add currency properties to CharacterEdit | `CharacterEdit.cs` |
-| Low | Implement coin optimization | Currency class |
+| ~~Medium~~ | ~~Create `Currency` class~~ | ✅ Via `Character` DTO properties |
+| Medium | Add currency methods to CharacterEdit | `GameMechanics/CharacterEdit.cs` |
+| Low | Implement coin optimization/change-making | GameMechanics layer |
+| Low | Implement coin weight calculation | GameMechanics layer |
 
 ---
 
@@ -313,12 +322,12 @@ This document compares the design specifications in the `/design` folder against
 2. ~~Skill difficulty ratings~~ ✅ Design updated to match implementation
 3. Wire wound penalties into skill checks (deferred to combat)
 
-### Phase 3: Items & Equipment
-1. Create ItemTemplate and Item classes
-2. Implement equipment slots
-3. Create weapon/armor property systems
-4. Implement item bonuses affecting skills/attributes
-5. Implement durability
+### Phase 3: Items & Equipment ✅ DAL COMPLETE
+1. ~~Create ItemTemplate and Item classes~~ ✅ Done (Threa.Dal.Dto)
+2. ~~Implement equipment slots~~ ✅ Done (EquipmentSlot enum)
+3. ~~Create weapon/armor property systems~~ ✅ Done (ItemTemplate properties)
+4. ~~Implement item bonuses affecting skills/attributes~~ ✅ Done (ItemSkillBonus, ItemAttributeModifier)
+5. Wire item bonuses into GameMechanics skill calculations (TODO)
 
 ### Phase 4: Combat System
 1. Create combat action framework
@@ -327,11 +336,11 @@ This document compares the design specifications in the `/design` folder against
 4. Implement ranged combat
 5. Implement parry mode
 
-### Phase 5: Inventory & Economy
-1. Implement carrying capacity
-2. Create inventory management
-3. Implement container system
-4. Add currency tracking
+### Phase 5: Inventory & Economy ✅ DAL COMPLETE
+1. Implement carrying capacity calculation in GameMechanics (TODO)
+2. ~~Create inventory management~~ ✅ Done (ICharacterItemDal)
+3. ~~Implement container system~~ ✅ Done (Container properties in ItemTemplate)
+4. ~~Add currency tracking~~ ✅ Done (Currency properties in Character)
 
 ### Phase 6: Magic System
 1. Create magic schools
@@ -351,12 +360,12 @@ The [DATABASE_DESIGN.md](DATABASE_DESIGN.md) defines tables that are not yet imp
 | CharacterSkills | ⚠️ Partial (missing progression tracking) |
 | MagicSchools | ❌ Not implemented |
 | CharacterMana | ❌ Not implemented |
-| ItemTemplates | ❌ Not implemented |
-| Items | ❌ Not implemented |
-| ItemSkillBonuses | ❌ Not implemented |
-| ItemAttributeModifiers | ❌ Not implemented |
-| CharacterCurrency | ❌ Not implemented |
-| CharacterInventory | ❌ Not implemented |
+| ItemTemplates | ✅ Implemented (DTO, DAL, SQL) |
+| Items (CharacterItem) | ✅ Implemented (DTO, DAL, SQL) |
+| ItemSkillBonuses | ✅ Implemented (DTO, SQL) |
+| ItemAttributeModifiers | ✅ Implemented (DTO, SQL) |
+| CharacterCurrency | ✅ Implemented (Character DTO, SQL) |
+| CharacterInventory | ✅ Via CharacterItem table |
 | EffectDefinitions | ❌ Not implemented |
 | CharacterEffects | ❌ Not implemented |
 
@@ -364,12 +373,19 @@ The [DATABASE_DESIGN.md](DATABASE_DESIGN.md) defines tables that are not yet imp
 
 ## Conclusion
 
-The GameMechanics library has a solid foundation with dice mechanics, basic character attributes, health pools (with formula errors), and wounds. However, the majority of the game systems described in the design documents are not yet implemented, particularly:
+The GameMechanics library has a solid foundation with dice mechanics, basic character attributes, health pools, and wounds. The DAL layer now includes comprehensive support for:
 
-- Combat resolution
-- Equipment and items
-- Inventory management
-- Currency
-- Magic system
+- ✅ **Equipment and Items** - Full ItemTemplate/CharacterItem system with bonuses
+- ✅ **Inventory Management** - Container support with nesting and weight reduction
+- ✅ **Currency** - 4-denomination system integrated into Character DTO
 
-The most critical immediate actions are fixing the health pool formulas and resolving the attribute/skill count discrepancies, as these affect all downstream calculations.
+Remaining major systems to implement:
+
+- ❌ **Combat resolution** - Attack/defense mechanics, damage calculation
+- ❌ **Magic system** - Mana pools, spells, magic schools
+- ⚠️ **GameMechanics integration** - Wire item bonuses into skill/attribute calculations
+
+Next steps should focus on:
+1. Adding carrying capacity calculation to GameMechanics
+2. Wiring item bonuses into skill calculations
+3. Implementing the combat system
