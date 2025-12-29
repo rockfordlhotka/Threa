@@ -63,6 +63,74 @@ public static class Movement
             _ => "Invalid range"
         };
     }
+
+    /// <summary>
+    /// Gets the action cost for a movement type.
+    /// </summary>
+    public static MovementCost GetCost(MovementType movementType)
+    {
+        return movementType switch
+        {
+            MovementType.FreePositioning => MovementCost.Free(),
+            MovementType.Sprint => MovementCost.Standard(),
+            MovementType.FullRoundSprint => MovementCost.FullRound(),
+            _ => MovementCost.Standard()
+        };
+    }
+}
+
+/// <summary>
+/// Represents the cost of a movement action.
+/// </summary>
+public class MovementCost
+{
+    /// <summary>
+    /// Action points required.
+    /// </summary>
+    public int AP { get; init; }
+
+    /// <summary>
+    /// Fatigue points required.
+    /// </summary>
+    public int FAT { get; init; }
+
+    /// <summary>
+    /// Whether this uses the entire round.
+    /// </summary>
+    public bool IsFullRound { get; init; }
+
+    /// <summary>
+    /// Whether this is free (no cost).
+    /// </summary>
+    public bool IsFree => AP == 0 && FAT == 0 && !IsFullRound;
+
+    /// <summary>
+    /// Creates a free movement cost.
+    /// </summary>
+    public static MovementCost Free() => new() { AP = 0, FAT = 0, IsFullRound = false };
+
+    /// <summary>
+    /// Creates a standard sprint cost (1 AP + 1 FAT).
+    /// </summary>
+    public static MovementCost Standard() => new() { AP = 1, FAT = 1, IsFullRound = false };
+
+    /// <summary>
+    /// Creates a fatigue-free sprint cost (2 AP).
+    /// </summary>
+    public static MovementCost FatigueFree() => new() { AP = 2, FAT = 0, IsFullRound = false };
+
+    /// <summary>
+    /// Creates a full-round sprint cost.
+    /// </summary>
+    public static MovementCost FullRound() => new() { AP = 0, FAT = 0, IsFullRound = true };
+
+    public override string ToString()
+    {
+        if (IsFree) return "Free";
+        if (IsFullRound) return "Full Round";
+        if (FAT == 0) return $"{AP} AP";
+        return $"{AP} AP + {FAT} FAT";
+    }
 }
 
 /// <summary>

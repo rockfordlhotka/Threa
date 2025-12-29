@@ -25,7 +25,7 @@ This document compares the design specifications in the `/design` folder against
 | Action Points | ✅ Complete | ⚠️ Partial | Low |
 | Time System | ✅ Complete | ❌ Not Implemented | High |
 | Effects System | ✅ Complete | ❌ Not Implemented | High |
-| Movement | ✅ Complete | ❌ Not Implemented | Medium |
+| Movement | ✅ Complete | ✅ Implemented | None |
 
 ---
 
@@ -425,7 +425,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 15. Movement System (NOT IMPLEMENTED)
+### 15. Movement System ✅ IMPLEMENTED
 
 **Design Spec** ([MOVEMENT.md](MOVEMENT.md)):
 - Range system: Distance = Range Value² (in meters)
@@ -434,19 +434,56 @@ This document compares the design specifications in the `/design` folder against
 - Full-round sprint: Range 5 (25m) - uses entire round
 - Travel rates: Walking 4m/round, Endurance 10m, Burst 12m, Sprint 16m
 - Travel fatigue costs per distance traveled
+- Encumbrance effects on movement
 
-**Implementation**:
-- ❌ No movement tracking
-- ❌ No range calculations
-- ❌ No travel fatigue system
+**Implementation** ([Movement.cs](../GameMechanics/Actions/Movement.cs), [SprintResolver.cs](../GameMechanics/Actions/SprintResolver.cs), [TravelCalculator.cs](../GameMechanics/Actions/TravelCalculator.cs), [Encumbrance.cs](../GameMechanics/Actions/Encumbrance.cs)):
+
+**Core Movement** (`Movement.cs`):
+- ✅ `RangeToMeters(range)` - Power-of-2 conversion (Range² = meters)
+- ✅ `MetersToRange(meters)` - Inverse conversion (√meters = range)
+- ✅ `GetRangeDescription(range)` - Human-readable descriptions
+- ✅ `MovementType` enum - FreePositioning, Sprint, FullRoundSprint
+- ✅ `MovementCost` class - AP/FAT costs for each movement type
+- ✅ `MovementResult` class - Result container with base/achieved range
+
+**Sprint Resolution** (`SprintResolver.cs`):
+- ✅ `FreePositioning()` - No-cost movement up to Range 2
+- ✅ `Sprint()` - Skill check for Range 3 movement
+- ✅ `FullRoundSprint()` - Full-round Range 5 movement
+- ✅ Terrain modifiers via `TerrainModifiers` constants
+- ✅ Uses `IDiceRoller` DI for testability
+
+**Travel System** (`TravelCalculator.cs`):
+- ✅ `TravelType` enum - Walking, EnduranceRunning, BurstRunning, FastSprinting
+- ✅ `TravelRate` class - Speed and fatigue cost per travel type
+- ✅ `CalculateTravel(distance, type)` - Rounds and fatigue for travel
+- ✅ `CalculateMaxDistance(fatigue, type)` - How far with available FAT
+- ✅ Time constants: 3 sec/round, 20 rounds/min, 1200 rounds/hour
+
+**Encumbrance** (`Encumbrance.cs`):
+- ✅ `CalculateMaxWeight(physicality)` - 50 lbs × 1.15^(PHY-10)
+- ✅ `CalculateMaxVolume(physicality)` - 10 cu.ft. × 1.15^(PHY-10)
+- ✅ `CalculateEncumbrance(weight, capacity)` - Encumbrance status
+- ✅ `EncumbranceLevel` enum - Unencumbered to Overloaded
+- ✅ Movement penalties: -1 at 75%, -2 at 100%, -3 at 125%, can't move at 150%
+- ✅ `ApplyToMovement(range, encumbrance)` - Apply penalties to movement
+
+**Unit Tests** (`MovementTests.cs`):
+- ✅ 91 tests covering all movement functionality
+- ✅ Range conversion tests
+- ✅ Sprint resolution tests with deterministic dice
+- ✅ Travel calculation tests
+- ✅ Encumbrance level and penalty tests
+
+**Remaining Gaps** (marked "To be documented" in design):
+- ⚠️ Species movement rate modifiers not implemented
+- ⚠️ Special movement (climbing, swimming, jumping, falling) not implemented
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| Medium | Create `Movement` class for combat movement | New `GameMechanics/Movement.cs` |
-| Medium | Implement range calculations (power-of-2) | `Movement.cs` |
-| Low | Implement travel fatigue calculations | `Movement.cs` |
-| Low | Add position tracking relative to other entities | New tracking system |
+| Low | Add species movement modifiers | `Movement.cs`, `SprintResolver.cs` |
+| Low | Implement special movement types | New files or `Movement.cs` |
 
 ---
 
