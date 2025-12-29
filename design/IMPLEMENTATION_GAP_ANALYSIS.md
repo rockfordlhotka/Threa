@@ -18,7 +18,7 @@ This document compares the design specifications in the `/design` folder against
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
-| Currency | ✅ Complete | ✅ DAL Implemented | Low |
+| Currency | ✅ Complete | ✅ Implemented | None |
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 
@@ -222,25 +222,41 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 9. Currency System (DAL IMPLEMENTED)
+### 9. Currency System (IMPLEMENTED)
 
 **Design Spec**:
 - 4 denominations: Copper, Silver (20cp), Gold (400cp), Platinum (8000cp)
 - 100 coins = 1 pound
 
-**Implementation** (Threa.Dal layer):
+**Implementation**:
+
+**DAL Layer** (Threa.Dal):
 - ✅ Currency properties in `Character` DTO (CopperCoins, SilverCoins, GoldCoins, PlatinumCoins)
 - ✅ `TotalCopperValue` calculated property for total value
 - ✅ Coin item templates in MockDb (Gold/Silver/Copper coins as stackable items)
 - ✅ SQL script for CharacterCurrency ([dbo.CharacterCurrency.sql](../Sql/dbo.CharacterCurrency.sql))
 
+**GameMechanics Layer**:
+- ✅ `Currency` class ([Currency.cs](../GameMechanics/Currency.cs)) - tracks coin quantities with INotifyPropertyChanged
+- ✅ `CoinType` enum ([CoinType.cs](../GameMechanics/CoinType.cs)) - Copper, Silver, Gold, Platinum
+- ✅ `MoneyChanger` static class ([MoneyChanger.cs](../GameMechanics/MoneyChanger.cs)) - currency exchange functionality:
+  - ✅ `FromCopper()` - converts copper value to optimized coin distribution
+  - ✅ `Optimize()` - minimizes coin count by converting to larger denominations
+  - ✅ `TryMakeChange()` - calculates change for transactions
+  - ✅ `TryPay()` / `TryPayExact()` - payment processing
+  - ✅ `TryConvert()` - converts between denominations
+  - ✅ `TryBreakCoin()` - breaks larger coins into smaller ones
+  - ✅ `TryTransfer()` / `TryTransferValue()` - moves currency between purses
+  - ✅ `TryParse()` / `FormatCopper()` - string parsing and formatting
+- ✅ Unit tests ([CurrencyTests.cs](../GameMechanics.Test/CurrencyTests.cs)) - 36 tests covering all functionality
+
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| ~~Medium~~ | ~~Create `Currency` class~~ | ✅ Via `Character` DTO properties |
-| Medium | Add currency methods to CharacterEdit | `GameMechanics/CharacterEdit.cs` |
-| Low | Implement coin optimization/change-making | GameMechanics layer |
-| Low | Implement coin weight calculation | GameMechanics layer |
+| ~~Medium~~ | ~~Create `Currency` class~~ | ✅ `GameMechanics/Currency.cs` |
+| ~~Low~~ | ~~Implement coin optimization/change-making~~ | ✅ `GameMechanics/MoneyChanger.cs` |
+| ~~Low~~ | ~~Implement coin weight calculation~~ | ✅ `Currency.WeightInPounds` |
+| Low | Add currency methods to CharacterEdit | `GameMechanics/CharacterEdit.cs` |
 
 ---
 
