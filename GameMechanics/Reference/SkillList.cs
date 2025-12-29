@@ -11,6 +11,7 @@ namespace GameMechanics.Reference
     {
       using (LoadListMode)
       {
+        // Standard attribute-based skills
         Add(skillPortal.FetchChild("Physicality"));
         Add(skillPortal.FetchChild("Dodge"));
         Add(skillPortal.FetchChild("Drive"));
@@ -18,6 +19,9 @@ namespace GameMechanics.Reference
         Add(skillPortal.FetchChild("Awareness"));
         Add(skillPortal.FetchChild("Focus"));
         Add(skillPortal.FetchChild("Bearing"));
+        
+        // Movement skills
+        Add(skillPortal.FetchChild("Sprint"));
       }
     }
   }
@@ -175,6 +179,16 @@ namespace GameMechanics.Reference
           Untrained = 4;
           Trained = 2;
           PrimaryAttribute = "SOC/INT";
+          break;
+        case "Sprint":
+          Id = "sprint";
+          Name = skillName;
+          Category = "Movement";
+          IsStandard = false;
+          IsSpecialized = false;
+          Untrained = 5;
+          Trained = 2;
+          PrimaryAttribute = "DEX";
           break;
         default:
           break;

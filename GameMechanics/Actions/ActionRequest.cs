@@ -75,10 +75,4 @@ public class ActionRequest
     /// Optional description of the target.
     /// </summary>
     public string? TargetDescription { get; set; }
-
-    /// <summary>
-    /// Override dice roll (for testing or predetermined outcomes).
-    /// If null, roll 4dF+.
-    /// </summary>
-    public int? OverrideDiceRoll { get; set; }
 }

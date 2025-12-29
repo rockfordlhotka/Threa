@@ -52,5 +52,11 @@ public enum ResultTableType
     /// Spell effect table.
     /// Maps SV to spell effectiveness.
     /// </summary>
-    SpellEffect = 7
+    SpellEffect = 7,
+
+    /// <summary>
+    /// Movement result table.
+    /// Maps SV to distance achieved (in range values).
+    /// </summary>
+    Movement = 8
 }

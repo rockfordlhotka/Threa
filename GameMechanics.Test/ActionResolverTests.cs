@@ -8,6 +8,15 @@ namespace GameMechanics.Test;
 [TestClass]
 public class ActionResolverTests
 {
+    private IDiceRoller _zeroRoller = null!;
+
+    [TestInitialize]
+    public void Setup()
+    {
+        // Use deterministic dice roller that returns 0 for most tests
+        _zeroRoller = DeterministicDiceRoller.WithFixed4dFPlus(0);
+    }
+
     private Skill CreateBasicSkill()
     {
         return new Skill
@@ -40,8 +49,7 @@ public class ActionResolverTests
     public void Resolve_WithStandardAction_CalculatesCorrectly()
     {
         var request = CreateBasicRequest();
-        request.OverrideDiceRoll = 0; // Override dice for deterministic test
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -58,8 +66,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.IsMultipleAction = true;
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -73,8 +80,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.WoundCount = 2;
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -88,8 +94,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.BoostAP = 2;
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -105,8 +110,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.BoostFAT = 3;
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -122,8 +126,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.HasAimed = true;
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -145,8 +148,7 @@ public class ActionResolverTests
         {
             new AsModifier(ModifierSource.Equipment, "Magic Sword", 1)
         };
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -165,10 +167,9 @@ public class ActionResolverTests
             Skill = skill,
             SkillLevel = 4,
             AttributeName = "STR",
-            AttributeValue = 12,
-            OverrideDiceRoll = 0
+            AttributeValue = 12
         };
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -188,10 +189,9 @@ public class ActionResolverTests
             Skill = skill,
             SkillLevel = 4,
             AttributeName = "INT",
-            AttributeValue = 12,
-            OverrideDiceRoll = 0
+            AttributeValue = 12
         };
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -253,8 +253,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.TargetValue = TargetValue.Opposed(10, 2, "Goblin Dodge");
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         
@@ -269,8 +268,7 @@ public class ActionResolverTests
     {
         var request = CreateBasicRequest();
         request.TargetValue = TargetValue.Passive(10, "Surprised Guard");
-        request.OverrideDiceRoll = 0;
-        var resolver = new ActionResolver();
+        var resolver = new ActionResolver(_zeroRoller);
         
         var result = resolver.Resolve(request);
         

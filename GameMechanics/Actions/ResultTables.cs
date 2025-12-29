@@ -22,6 +22,7 @@ public static class ResultTables
             ResultTableType.Perception => GetPerceptionResult(sv),
             ResultTableType.Crafting => GetCraftingResult(sv),
             ResultTableType.Healing => GetHealingResult(sv),
+            ResultTableType.Movement => GetMovementResult(sv),
             _ => GetGeneralResult(sv)
         };
     }
@@ -234,6 +235,67 @@ public static class ResultTables
             return new ResultInterpretation(true, $"Healed {healAmount}", $"Restore {healAmount} FAT or VIT.")
             {
                 EffectValue = healAmount
+            };
+        }
+    }
+
+    private static ResultInterpretation GetMovementResult(int sv)
+    {
+        // Movement result table maps SV to range achieved
+        // Base range is determined by movement type (Sprint=3, FullRound=5)
+        // SV modifies the achieved range
+        // EffectValue = range modifier (added to base range, clamped to 0)
+        
+        if (sv < 0)
+        {
+            return sv switch
+            {
+                >= -2 => new ResultInterpretation(false, "Slowed", "Movement impeded, achieve partial distance.")
+                {
+                    EffectValue = -1 // Reduce range by 1
+                },
+                >= -4 => new ResultInterpretation(false, "Stumbled", "Lost footing, minimal movement.")
+                {
+                    EffectValue = -2 // Reduce range by 2
+                },
+                >= -6 => new ResultInterpretation(false, "Stopped", "Failed to move effectively.")
+                {
+                    EffectValue = -3 // Reduce range by 3
+                },
+                >= -8 => new ResultInterpretation(false, "Fell", "Fell down, no movement, must recover.")
+                {
+                    EffectValue = -99 // No movement, prone
+                },
+                _ => new ResultInterpretation(false, "Mishap", "Serious fall or collision, possible injury.")
+                {
+                    EffectValue = -99 // No movement, possible damage
+                }
+            };
+        }
+        else
+        {
+            return sv switch
+            {
+                <= 1 => new ResultInterpretation(true, "Moved", "Achieved base movement distance.")
+                {
+                    EffectValue = 0 // Base range
+                },
+                <= 3 => new ResultInterpretation(true, "Quick", "Efficient movement, full distance.")
+                {
+                    EffectValue = 0 // Base range (no bonus for safety)
+                },
+                <= 5 => new ResultInterpretation(true, "Swift", "Excellent movement, bonus distance possible.")
+                {
+                    EffectValue = 1 // +1 range bonus
+                },
+                <= 7 => new ResultInterpretation(true, "Burst", "Exceptional speed burst.")
+                {
+                    EffectValue = 1 // +1 range bonus
+                },
+                _ => new ResultInterpretation(true, "Blazing", "Maximum possible speed achieved.")
+                {
+                    EffectValue = 2 // +2 range bonus
+                }
             };
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Actions;
@@ -8,6 +9,24 @@ namespace GameMechanics.Actions;
 /// </summary>
 public class ActionResolver
 {
+    private readonly IDiceRoller _diceRoller;
+
+    /// <summary>
+    /// Creates an ActionResolver with the default random dice roller.
+    /// </summary>
+    public ActionResolver() : this(new RandomDiceRoller())
+    {
+    }
+
+    /// <summary>
+    /// Creates an ActionResolver with an injected dice roller.
+    /// </summary>
+    /// <param name="diceRoller">The dice roller to use for action resolution.</param>
+    public ActionResolver(IDiceRoller diceRoller)
+    {
+        _diceRoller = diceRoller ?? throw new ArgumentNullException(nameof(diceRoller));
+    }
+
     /// <summary>
     /// Resolves an action and returns the complete result.
     /// </summary>
@@ -31,7 +50,7 @@ public class ActionResolver
         }
 
         // 5. Roll the dice
-        int diceRoll = request.OverrideDiceRoll ?? Dice.Roll4dFPlus();
+        int diceRoll = _diceRoller.Roll4dFPlus();
 
         // 6. Build and return the result
         return new ActionResult

@@ -15,7 +15,7 @@ This document compares the design specifications in the `/design` folder against
 | Health (Fatigue/Vitality) | ✅ Complete | ✅ Core formulas correct | Low |
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
-| Actions System | ✅ Complete | ❌ Not Implemented | High |
+| Actions System | ✅ Complete | ✅ Implemented | None |
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
@@ -132,7 +132,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 6. Actions System (NOT IMPLEMENTED)
+### 6. Actions System (IMPLEMENTED)
 
 **Design Spec** ([ACTIONS.md](ACTIONS.md)):
 - Universal action resolution framework for ALL skill uses
@@ -147,25 +147,38 @@ This document compares the design specifications in the `/design` folder against
 - Result lookup tables (general, combat damage, skill-specific)
 - Skill definition requirements for app implementation
 
-**Implementation**:
-- ❌ No Action class or resolution flow
-- ❌ No boost mechanic implementation
-- ❌ No multiple action tracking
-- ❌ No modifier aggregation system
-- ❌ No result lookup tables
-- ⚠️ `Calculator.cs` has partial SV/RV logic
-- ⚠️ `Dice.cs` has 4dF+ rolling (foundation exists)
+**Implementation** (GameMechanics.Actions namespace):
+- ✅ `ActionResolver` - Main service implementing 9-step resolution flow ([ActionResolver.cs](../GameMechanics/Actions/ActionResolver.cs))
+- ✅ `ActionRequest` - Input containing Skill, attribute, modifiers, boosts ([ActionRequest.cs](../GameMechanics/Actions/ActionRequest.cs))
+- ✅ `ActionResult` - Complete result with AS, TV, SV, success/failure, quality ([ActionResult.cs](../GameMechanics/Actions/ActionResult.cs))
+- ✅ `AbilityScore` - AS calculation with `BaseAS = Attribute + Skill - 5` ([AbilityScore.cs](../GameMechanics/Actions/AbilityScore.cs))
+- ✅ `ActionCost` - Standard (1 AP + 1 FAT), FatigueFree (2 AP), Free, Spell ([ActionCost.cs](../GameMechanics/Actions/ActionCost.cs))
+- ✅ `TargetValue` - Fixed, Opposed (with opponent roll), Passive (AS - 1) ([TargetValue.cs](../GameMechanics/Actions/TargetValue.cs))
+- ✅ `ModifierStack` / `AsModifier` - Modifier aggregation with sources ([ModifierStack.cs](../GameMechanics/Actions/ModifierStack.cs))
+- ✅ `ResultTables` - 7 result tables (General, CombatDamage, Defense, Social, Perception, Crafting, Healing) ([ResultTables.cs](../GameMechanics/Actions/ResultTables.cs))
+- ✅ Boost mechanic: `ActionCost.WithAPBoost()`, `WithFATBoost()` add to AS
+- ✅ Multiple action penalty via `ApplyMultipleActionPenalty()`
+- ✅ Wound penalty via `ApplyWoundPenalties(count)` - 2 AS per wound
+- ✅ Aim bonus via `ApplyAimBonus()` - +2 AS for ranged
+- ✅ 58 unit tests validating action resolution ([ActionSystemTests.cs](../GameMechanics.Test/ActionSystemTests.cs), [ActionResolverTests.cs](../GameMechanics.Test/ActionResolverTests.cs), [ResultTablesTests.cs](../GameMechanics.Test/ResultTablesTests.cs))
+
+**DAL Layer** (Threa.Dal.Dto):
+- ✅ `ActionType` enum - 14 action categories (Attack, Defense, Spell, Social, etc.) ([ActionType.cs](../Threa.Dal/Dto/ActionType.cs))
+- ✅ `TargetValueType` enum - Fixed, Opposed, Passive ([TargetValueType.cs](../Threa.Dal/Dto/TargetValueType.cs))
+- ✅ `CooldownType` enum - None, SkillBased, Fixed, PrepRequired ([CooldownType.cs](../Threa.Dal/Dto/CooldownType.cs))
+- ✅ `ResultTableType` enum - 8 result table types ([ResultTableType.cs](../Threa.Dal/Dto/ResultTableType.cs))
+- ✅ `Skill` DTO extended with 14 action system properties (ActionType, TargetValueType, DefaultTV, ResultTable, etc.) ([Skill.cs](../Threa.Dal/Dto/Skill.cs))
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Create `Action` class with resolution flow | New `Actions/ActionResolution.cs` |
-| **Critical** | Implement AS calculation with modifiers | New `Actions/AbilityScore.cs` |
-| **Critical** | Implement boost mechanic | `Actions/ActionResolution.cs` |
-| High | Create modifier aggregation system | New `Actions/ModifierStack.cs` |
-| High | Implement TV calculation (fixed and opposed) | New `Actions/TargetValue.cs` |
-| High | Create result lookup tables | New `Actions/ResultTables.cs` |
-| Medium | Implement skill definition schema | `Reference/SkillDefinition.cs` |
+| ~~Critical~~ | ~~Create `Action` class with resolution flow~~ | ✅ `Actions/ActionResolver.cs` |
+| ~~Critical~~ | ~~Implement AS calculation with modifiers~~ | ✅ `Actions/AbilityScore.cs` |
+| ~~Critical~~ | ~~Implement boost mechanic~~ | ✅ `Actions/ActionCost.cs` |
+| ~~High~~ | ~~Create modifier aggregation system~~ | ✅ `Actions/ModifierStack.cs` |
+| ~~High~~ | ~~Implement TV calculation (fixed and opposed)~~ | ✅ `Actions/TargetValue.cs` |
+| ~~High~~ | ~~Create result lookup tables~~ | ✅ `Actions/ResultTables.cs` |
+| ~~Medium~~ | ~~Implement skill definition schema~~ | ✅ `Threa.Dal/Dto/Skill.cs` |
 | Medium | Track multiple actions per round | Combat/round state tracking |
 | Low | Create app action trigger interface | New `Actions/IActionTrigger.cs` |
 
@@ -532,13 +545,13 @@ The GameMechanics library has a solid foundation with dice mechanics, basic char
 
 Remaining major systems to implement:
 
-- ❌ **Actions System** - Universal action resolution framework for all skill uses
+- ✅ **Actions System** - Universal action resolution framework implemented in `GameMechanics.Actions`
 - ❌ **Combat resolution** - Attack/defense mechanics, damage calculation
 - ❌ **Magic system** - Mana pools, spells, magic schools
 - ⚠️ **GameMechanics integration** - Wire item bonuses into skill/attribute calculations
 
 Next steps should focus on:
-1. Implementing the Actions System (universal action resolution) - foundation for all skill use
+1. ~~Implementing the Actions System (universal action resolution)~~ ✅ Done
 2. Adding carrying capacity calculation to GameMechanics
 3. Wiring item bonuses into skill calculations
-4. Implementing the combat system (builds on Actions System)
+4. Implementing the combat system (builds on Actions System - now ready)
