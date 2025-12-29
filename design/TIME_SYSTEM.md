@@ -266,6 +266,15 @@ OnEndOfDay()      - Daily resets, condition updates
 OnEndOfWeek()     - Training, crafting, major progression
 ```
 
+### Interrupt Capability
+
+The assistant app must provide a way for the GM (or player) to **interrupt** a long-running action:
+
+- Interrupt cancels or pauses an in-progress cooldown action
+- Effect depends on action type (resettable vs pausable)
+- Beyond the mechanical interrupt, narrative consequences are determined by the GM
+- Examples: interrupting an aim action, stopping a reload mid-progress
+
 ### Related Systems
 
 - **Action Points**: See [ACTION_POINTS.md](ACTION_POINTS.md) for AP mechanics
