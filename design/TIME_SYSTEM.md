@@ -279,5 +279,5 @@ The assistant app must provide a way for the GM (or player) to **interrupt** a l
 
 - **Action Points**: See [ACTION_POINTS.md](ACTION_POINTS.md) for AP mechanics
 - **Health Pools**: See [GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md) for FAT/VIT
-- **Combat**: Actions and their costs (to be documented)
-- **Effects**: Spells, poisons, conditions (to be documented)
+- **Combat**: See [COMBAT_SYSTEM.md](COMBAT_SYSTEM.md) for combat actions and resolution
+- **Effects**: See [EFFECTS_SYSTEM.md](EFFECTS_SYSTEM.md) for wounds, conditions, buffs, spell effects

@@ -21,6 +21,7 @@ This folder contains the game rules and design specifications for the Threa tabl
 
 | Document | Description |
 |----------|-------------|
+| [Effects System](EFFECTS_SYSTEM.md) | Wounds, conditions, buffs, debuffs, spell effects - anything that persists over time |
 | [Equipment System](EQUIPMENT_SYSTEM.md) | Equipment slots, item bonuses, attribute modifiers, and stacking rules |
 | [Item System Overview](ITEM_SYSTEM_OVERVIEW.md) | Architecture diagram, container hierarchy, weight/volume calculations |
 | [Item Bonuses and Cascading Effects](ITEM_BONUSES_AND_CASCADING_EFFECTS.md) | Detailed explanation of how item bonuses affect skills and cascade through attributes |
