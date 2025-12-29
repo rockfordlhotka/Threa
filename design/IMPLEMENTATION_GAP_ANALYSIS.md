@@ -15,6 +15,7 @@ This document compares the design specifications in the `/design` folder against
 | Health (Fatigue/Vitality) | ✅ Complete | ✅ Core formulas correct | Low |
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
+| Actions System | ✅ Complete | ❌ Not Implemented | High |
 | Combat System | ✅ Complete | ❌ Not Implemented | High |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
@@ -23,6 +24,8 @@ This document compares the design specifications in the `/design` folder against
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 | Action Points | ✅ Complete | ⚠️ Partial | Low |
 | Time System | ✅ Complete | ❌ Not Implemented | High |
+| Effects System | ✅ Complete | ❌ Not Implemented | High |
+| Movement | ✅ Complete | ❌ Not Implemented | Medium |
 
 ---
 
@@ -129,7 +132,46 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 6. Combat System (NOT IMPLEMENTED)
+### 6. Actions System (NOT IMPLEMENTED)
+
+**Design Spec** ([ACTIONS.md](ACTIONS.md)):
+- Universal action resolution framework for ALL skill uses
+- 9-step resolution flow: Declare → Cost → Modifiers → AS → Roll → TV → SV → Result → Effects
+- Standard cost: 1 AP + 1 FAT (or 2 AP fatigue-free)
+- AS calculation: Attribute + Skill Level - 5 + modifiers
+- Boost mechanic: 1 AP or 1 FAT = +1 AS (stackable, mixable)
+- Multiple action penalty: -1 AS (not cumulative)
+- TV: Fixed (difficulty table) or Opposed (defender roll)
+- Passive TV: AS - 1 (no roll)
+- SV determines success/failure and result magnitude
+- Result lookup tables (general, combat damage, skill-specific)
+- Skill definition requirements for app implementation
+
+**Implementation**:
+- ❌ No Action class or resolution flow
+- ❌ No boost mechanic implementation
+- ❌ No multiple action tracking
+- ❌ No modifier aggregation system
+- ❌ No result lookup tables
+- ⚠️ `Calculator.cs` has partial SV/RV logic
+- ⚠️ `Dice.cs` has 4dF+ rolling (foundation exists)
+
+**Action Items**:
+| Priority | Task | File(s) |
+|----------|------|---------|
+| **Critical** | Create `Action` class with resolution flow | New `Actions/ActionResolution.cs` |
+| **Critical** | Implement AS calculation with modifiers | New `Actions/AbilityScore.cs` |
+| **Critical** | Implement boost mechanic | `Actions/ActionResolution.cs` |
+| High | Create modifier aggregation system | New `Actions/ModifierStack.cs` |
+| High | Implement TV calculation (fixed and opposed) | New `Actions/TargetValue.cs` |
+| High | Create result lookup tables | New `Actions/ResultTables.cs` |
+| Medium | Implement skill definition schema | `Reference/SkillDefinition.cs` |
+| Medium | Track multiple actions per round | Combat/round state tracking |
+| Low | Create app action trigger interface | New `Actions/IActionTrigger.cs` |
+
+---
+
+### 7. Combat System (NOT IMPLEMENTED)
 
 **Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
 - Initiative by Available AP (highest first)
@@ -163,7 +205,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Equipment System (DAL IMPLEMENTED)
+### 8. Equipment System (DAL IMPLEMENTED)
 
 **Design Spec** covers:
 - Weapon properties (skill, min level, damage type/class, SV/AV/DEX modifiers, range, durability)
@@ -198,7 +240,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 8. Inventory & Carrying Capacity (DAL IMPLEMENTED)
+### 9. Inventory & Carrying Capacity (DAL IMPLEMENTED)
 
 **Design Spec**:
 - Base weight: `50 lbs × (1.15 ^ (Physicality - 10))`
@@ -225,7 +267,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 9. Currency System (IMPLEMENTED)
+### 10. Currency System (IMPLEMENTED)
 
 **Design Spec**:
 - 4 denominations: Copper, Silver (20cp), Gold (400cp), Platinum (8000cp)
@@ -263,7 +305,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 10. Magic & Mana System (NOT IMPLEMENTED)
+### 11. Magic & Mana System (NOT IMPLEMENTED)
 
 **Design Spec**:
 - Separate mana pools per magic school
@@ -287,7 +329,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 11. Time System (NOT IMPLEMENTED)
+### 12. Time System (NOT IMPLEMENTED)
 
 **Design Spec** ([TIME_SYSTEM.md](TIME_SYSTEM.md)):
 - Round = 3 seconds
@@ -315,7 +357,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 12. Action Points System
+### 13. Action Points System
 
 **Design Spec** ([ACTION_POINTS.md](ACTION_POINTS.md)):
 - Max AP = Total Skill Levels / 10 (minimum 1)
@@ -340,7 +382,62 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 12. Reference Data Inconsistencies
+### 14. Effects System (NOT IMPLEMENTED)
+
+**Design Spec** ([EFFECTS_SYSTEM.md](EFFECTS_SYSTEM.md)):
+- Effects apply to characters, NPCs, or objects
+- Effect types: Wounds, Conditions, Poisons, Buffs, Debuffs, Spell Effects, Object Effects
+- Duration types: Rounds, Minutes, Hours, Days, Weeks, Permanent, UntilRemoved
+- Stacking behaviors: Replace, Extend, Intensify, Independent
+- Effect impacts modify: Attributes, Skills, AS, AV, TV, SV, Recovery rates
+- Cascading attribute modifiers to skills
+- Time-based processing at round/minute/hour/day/week boundaries
+
+**Implementation**:
+- ❌ No effect definitions or templates
+- ❌ No character effects tracking
+- ❌ No effect impact calculations
+- ❌ No effect duration/expiration handling
+- ⚠️ WoundList.cs handles wounds but not as generic effects
+
+**Action Items**:
+| Priority | Task | File(s) |
+|----------|------|---------|
+| **Critical** | Create `Effect` base class and types | New `GameMechanics/Effects/Effect.cs` |
+| **Critical** | Create `EffectManager` for tracking active effects | New `GameMechanics/Effects/EffectManager.cs` |
+| High | Implement effect impact calculations | New `GameMechanics/Effects/EffectCalculator.cs` |
+| High | Integrate effects into skill/attribute calculations | `SkillEdit.cs`, `AttributeEdit.cs` |
+| Medium | Convert WoundList to use effects system | `WoundList.cs` |
+| Medium | Create common effect definitions | New effect definition files |
+
+---
+
+### 15. Movement System (NOT IMPLEMENTED)
+
+**Design Spec** ([MOVEMENT.md](MOVEMENT.md)):
+- Range system: Distance = Range Value² (in meters)
+- Free positioning: Range 0-2 (0-4m) - no action cost
+- Sprint action: Range 3 (9m) - costs 1 AP + 1 FAT
+- Full-round sprint: Range 5 (25m) - uses entire round
+- Travel rates: Walking 4m/round, Endurance 10m, Burst 12m, Sprint 16m
+- Travel fatigue costs per distance traveled
+
+**Implementation**:
+- ❌ No movement tracking
+- ❌ No range calculations
+- ❌ No travel fatigue system
+
+**Action Items**:
+| Priority | Task | File(s) |
+|----------|------|---------|
+| Medium | Create `Movement` class for combat movement | New `GameMechanics/Movement.cs` |
+| Medium | Implement range calculations (power-of-2) | `Movement.cs` |
+| Low | Implement travel fatigue calculations | `Movement.cs` |
+| Low | Add position tracking relative to other entities | New tracking system |
+
+---
+
+### 16. Reference Data Inconsistencies
 
 **SkillList.cs Issues**:
 - "Influence" skill not in design (PHY-based) - may be meant to be "Bearing"?
@@ -435,11 +532,13 @@ The GameMechanics library has a solid foundation with dice mechanics, basic char
 
 Remaining major systems to implement:
 
+- ❌ **Actions System** - Universal action resolution framework for all skill uses
 - ❌ **Combat resolution** - Attack/defense mechanics, damage calculation
 - ❌ **Magic system** - Mana pools, spells, magic schools
 - ⚠️ **GameMechanics integration** - Wire item bonuses into skill/attribute calculations
 
 Next steps should focus on:
-1. Adding carrying capacity calculation to GameMechanics
-2. Wiring item bonuses into skill calculations
-3. Implementing the combat system
+1. Implementing the Actions System (universal action resolution) - foundation for all skill use
+2. Adding carrying capacity calculation to GameMechanics
+3. Wiring item bonuses into skill calculations
+4. Implementing the combat system (builds on Actions System)

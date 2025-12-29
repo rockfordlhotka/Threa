@@ -4,7 +4,10 @@
 
 Combat in Threa uses a skill-based resolution system built on the 4dF+ dice mechanic. Combat integrates with the Action Points (AP) and Time systems to create tactical depth where characters must manage their action economy and fatigue.
 
+Combat actions follow the universal action resolution framework defined in [ACTIONS.md](ACTIONS.md). This document provides combat-specific rules and extensions.
+
 **Related Documents**:
+- [Actions](ACTIONS.md) - Universal action resolution framework
 - [Action Points](ACTION_POINTS.md) - AP calculation, costs, and recovery
 - [Time System](TIME_SYSTEM.md) - Rounds, initiative, and cooldowns
 - [Game Rules Specification](GAME_RULES_SPECIFICATION.md) - Dice mechanics, damage tables

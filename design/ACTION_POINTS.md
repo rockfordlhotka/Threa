@@ -188,6 +188,8 @@ Fatigue-Free Action = 2 AP
 
 ### Related Systems
 
+- **Actions**: See [ACTIONS.md](ACTIONS.md) for the universal action resolution framework
 - **Fatigue**: See [GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md) for FAT calculation and effects
-- **Combat**: Actions are spent during combat resolution (to be documented)
-- **Time**: Rounds and timing interact with AP recovery (to be documented)
+- **Combat**: See [COMBAT_SYSTEM.md](COMBAT_SYSTEM.md) for combat-specific action rules
+- **Time**: See [TIME_SYSTEM.md](TIME_SYSTEM.md) for rounds and timing
+- **Movement**: See [MOVEMENT.md](MOVEMENT.md) for movement action rules

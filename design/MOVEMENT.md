@@ -4,6 +4,8 @@
 
 Movement in Threa covers how characters navigate the battlefield and the world. Movement interacts with the Action Points system and affects combat positioning. Movement uses the same **power-of-2 range system** as ranged combat.
 
+Movement actions follow the universal action resolution framework defined in [ACTIONS.md](ACTIONS.md). This document provides movement-specific rules.
+
 ---
 
 ## Range and Distance
