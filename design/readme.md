@@ -11,6 +11,7 @@ This folder contains the game rules and design specifications for the Threa tabl
 | Document | Description |
 |----------|-------------|
 | [Game Rules Specification](GAME_RULES_SPECIFICATION.md) | **Primary reference** - Complete game mechanics including dice system, attributes, skills, combat, damage, equipment, magic, and currency |
+| [Action Points](ACTION_POINTS.md) | Action economy system - AP calculation, costs, recovery, and interaction with Fatigue |
 | [Skill Progression](SKILL_PROGRESSION.md) | Usage-based skill advancement system with base costs, multipliers, and level meanings |
 
 ### Character Systems

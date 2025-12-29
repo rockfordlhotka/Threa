@@ -286,19 +286,26 @@ This document compares the design specifications in the `/design` folder against
 
 ### 11. Action Points System
 
-**Design Spec**:
-- Not explicitly detailed in reviewed documents
-- Referenced in combat (actions cost FAT)
+**Design Spec** ([ACTION_POINTS.md](ACTION_POINTS.md)):
+- Max AP = Total Skill Levels / 10 (minimum 1)
+- Actions cost: 1 AP + 1 FAT (standard) OR 2 AP (fatigue-free)
+- Recovery per round = Current FAT / 4 (minimum 1)
+- Three states: Available, Spent, Locked
 
 **Implementation** ([ActionPoints.cs](../GameMechanics/ActionPoints.cs)):
-- ✅ Implemented with Available, Locked, Spent, Max, Recovery
-- ⚠️ May need alignment with combat action costs
+- ✅ Available, Locked, Spent, Max, Recovery properties
+- ✅ `TakeActionWithFatigue()` - 1 AP + 1 FAT cost
+- ✅ `TakeActionNoFatigue()` - 2 AP cost
+- ✅ `CalculateRecovery()` - FAT / 4 (matches design)
+- ✅ `EndOfRound()` - recovers AP, returns locked
+- ✅ `Rest()` - trades AP for FAT healing
+- ❌ `CalculateMax()` uses XP total instead of skill level total
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| Low | Verify AP mechanics align with combat design | `ActionPoints.cs` |
-| Low | Document AP system in design docs if custom | New design doc |
+| High | Fix `CalculateMax()` to use total skill levels instead of XP | `ActionPoints.cs` |
+| Medium | Add minimum 1 AP recovery guarantee | `ActionPoints.cs` |
 
 ---
 
