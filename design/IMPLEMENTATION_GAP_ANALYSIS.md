@@ -23,7 +23,7 @@ This document compares the design specifications in the `/design` folder against
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 | Action Points | ✅ Complete | ⚠️ Partial | Low |
-| Time System | ✅ Complete | ❌ Not Implemented | High |
+| Time System | ✅ Complete | ✅ Implemented | Low |
 | Effects System | ✅ Complete | ✅ Implemented | None |
 | Movement | ✅ Complete | ✅ Implemented | None |
 
@@ -342,7 +342,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 12. Time System (NOT IMPLEMENTED)
+### 12. Time System ✅ IMPLEMENTED
 
 **Design Spec** ([TIME_SYSTEM.md](TIME_SYSTEM.md)):
 - Round = 3 seconds
@@ -352,12 +352,63 @@ This document compares the design specifications in the `/design` folder against
 - Cooldown system for actions with prep time (resettable vs pausable)
 - GM-triggered time events affecting all tracked entities
 
-**Implementation**:
-- ❌ No time/round tracking system
-- ❌ No initiative calculation
-- ❌ No cooldown tracking
-- ❌ No long-term time event system
-- ⚠️ `EndOfRound()` exists in ActionPoints.cs but no orchestrating time manager
+**Implementation** (GameMechanics.Time namespace):
+
+**Core Classes**:
+- ✅ `TimeEventType` enum - EndOfRound, EndOfMinute, EndOfTurn, EndOfHour, EndOfDay, EndOfWeek ([TimeEventType.cs](../GameMechanics/Time/TimeEventType.cs))
+- ✅ `TimeState` class - Tracks current time state (rounds, minutes, turns, hours, days, weeks) ([TimeManager.cs](../GameMechanics/Time/TimeManager.cs))
+- ✅ `TimeManager` class - Top-level orchestrator for GM-triggered time advancement ([TimeManager.cs](../GameMechanics/Time/TimeManager.cs))
+  - ✅ `AdvanceTimeAsync()` - Advances time by specified event type
+  - ✅ `SkipTimeAsync()` - Narrative time skip without detailed processing
+  - ✅ `TrackCharacter()`/`UntrackCharacter()` - Register characters for time events
+  - ✅ `EnterCombat()`/`ExitCombat()` - Combat mode management
+  - ✅ Event handlers for `TimeAdvanced` notifications
+  - ✅ `ITimeEventHandler` interface for external time event subscribers
+
+**Combat/Round Management**:
+- ✅ `RoundManager` class - Manages combat rounds and per-character processing ([RoundManager.cs](../GameMechanics/Time/RoundManager.cs))
+  - ✅ `StartCombat()` / `EndCombat()` - Combat lifecycle
+  - ✅ `StartRound()` / `EndRoundAsync()` - Round lifecycle with end-of-round processing
+  - ✅ Integration with existing `CharacterEdit.EndOfRound()` methods
+  - ✅ Events: `RoundEnded`, `MinuteEnded`, `TurnEnded`, `HourEnded`
+- ✅ `RoundResult` / `CharacterRoundResult` - Detailed results from round processing ([RoundResult.cs](../GameMechanics/Time/RoundResult.cs))
+  - ✅ Tracks AP/FAT/VIT changes, cooldowns completed, effects expired, deaths
+
+**Initiative System**:
+- ✅ `InitiativeCalculator` class - AP-based initiative ordering ([InitiativeCalculator.cs](../GameMechanics/Time/InitiativeCalculator.cs))
+  - ✅ Orders by Available AP (descending), Awareness as tiebreaker
+  - ✅ `AddParticipant()` / `RemoveParticipant()` - Manage combatants
+  - ✅ `CalculateInitiative()` - Recalculate order for new round
+  - ✅ `ActAndAdvance()` / `PassAndAdvance()` / `Delay()` - Turn management
+  - ✅ Tracks `HasActed`, `HasPassed`, `IsDelaying`, `CanAct` per participant
+- ✅ `InitiativeEntry` class - Individual participant state
+
+**Cooldown System**:
+- ✅ `Cooldown` class - Individual action cooldown tracking ([Cooldown.cs](../GameMechanics/Time/Cooldown.cs))
+  - ✅ `AdvanceRound()` / `AdvanceSeconds()` - Progress cooldown
+  - ✅ `Interrupt()` / `Resume()` / `Restart()` - Interruption handling
+  - ✅ `ForSkillBasedAction()` - Skill-level-based cooldown duration (per TIME_SYSTEM.md table)
+  - ✅ `Progress` property - 0.0 to 1.0 completion percentage
+- ✅ `CooldownBehavior` enum - Resettable vs Pausable ([CooldownType.cs](../GameMechanics/Time/CooldownType.cs))
+- ✅ `CooldownState` enum - Ready, Active, Paused, Reset
+- ✅ `CooldownTracker` class - Per-character cooldown management ([CooldownTracker.cs](../GameMechanics/Time/CooldownTracker.cs))
+  - ✅ `StartCooldown()` / `StartSkillBasedCooldown()` - Begin tracking
+  - ✅ `IsOnCooldown()` / `IsActionReady()` - Query status
+  - ✅ `InterruptAll()` / `InterruptAction()` - Handle interruptions
+
+**Unit Tests** ([TimeSystemTests.cs](../GameMechanics.Test/TimeSystemTests.cs)):
+- ✅ 31 tests covering cooldowns, initiative, time state, and event types
+
+**Action Items**:
+| Priority | Task | File(s) |
+|----------|------|---------|
+| ~~Critical~~ | ~~Create `TimeManager` class for round/time tracking~~ | ✅ `GameMechanics/Time/TimeManager.cs` |
+| ~~Critical~~ | ~~Create time event system (EndOfRound, EndOfMinute, etc.)~~ | ✅ `GameMechanics/Time/TimeEventType.cs` |
+| ~~High~~ | ~~Implement initiative calculation (by Available AP)~~ | ✅ `GameMechanics/Time/InitiativeCalculator.cs` |
+| ~~High~~ | ~~Create cooldown tracking per character~~ | ✅ `GameMechanics/Time/CooldownTracker.cs` |
+| ~~Medium~~ | ~~Integrate EndOfRound processing across systems~~ | ✅ `RoundManager.cs` |
+| Medium | Add RabbitMQ/messaging integration for GM triggers | New messaging layer |
+| Low | Add NPC tracking to initiative/time system | Extend `RoundManager` |
 
 **Action Items**:
 | Priority | Task | File(s) |
