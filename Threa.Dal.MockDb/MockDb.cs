@@ -23,6 +23,21 @@ public static class MockDb
     /// </summary>
     public static readonly List<CharacterItem> CharacterItems = CreateCharacterItems();
 
+    /// <summary>
+    /// Effect definition reference data - templates for all effects in the game.
+    /// </summary>
+    public static readonly List<EffectDefinition> EffectDefinitions = CreateEffectDefinitions();
+
+    /// <summary>
+    /// Active effects on characters.
+    /// </summary>
+    public static readonly List<CharacterEffect> CharacterEffects = [];
+
+    /// <summary>
+    /// Active effects on items.
+    /// </summary>
+    public static readonly List<ItemEffect> ItemEffects = [];
+
     private static List<ItemTemplate> CreateItemTemplates()
     {
         return
@@ -666,6 +681,571 @@ public static class MockDb
                 OwnerCharacterId = 1,
                 ContainerItemId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                 StackSize = 25
+            }
+        ];
+    }
+
+    private static List<EffectDefinition> CreateEffectDefinitions()
+    {
+        return
+        [
+            // === WOUNDS ===
+            new EffectDefinition
+            {
+                Id = 1,
+                Name = "Wound",
+                Description = "A physical injury that causes ongoing pain and impairs abilities.",
+                EffectType = EffectType.Wound,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.UntilRemoved,
+                DefaultDuration = 0,
+                IsStackable = true,
+                MaxStacks = 4,
+                StackBehavior = StackBehavior.Independent,
+                CanBeRemoved = true,
+                RemovalMethods = "Medicine,Spell,NaturalHealing",
+                RemovalDifficulty = 8,
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 1,
+                        EffectDefinitionId = 1,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "All",
+                        Value = -2
+                    },
+                    new EffectImpact
+                    {
+                        Id = 2,
+                        EffectDefinitionId = 1,
+                        ImpactType = EffectImpactType.DamageOverTime,
+                        Target = "FAT",
+                        Value = 1,
+                        DamageInterval = 2
+                    }
+                ]
+            },
+
+            // === CONDITIONS ===
+            new EffectDefinition
+            {
+                Id = 10,
+                Name = "Stunned",
+                Description = "Unable to take actions. FAT recovery suspended.",
+                EffectType = EffectType.Condition,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.Rounds,
+                DefaultDuration = 1,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Time,Healing",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 10,
+                        EffectDefinitionId = 10,
+                        ImpactType = EffectImpactType.SpecialAbility,
+                        Target = "Actions",
+                        Value = 0 // 0 = disabled
+                    },
+                    new EffectImpact
+                    {
+                        Id = 11,
+                        EffectDefinitionId = 10,
+                        ImpactType = EffectImpactType.RecoveryModifier,
+                        Target = "FAT",
+                        Value = 0 // No recovery
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 11,
+                Name = "Unconscious",
+                Description = "Completely unaware and unable to act.",
+                EffectType = EffectType.Condition,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.UntilRemoved,
+                DefaultDuration = 0,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Time,Healing,Damage",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 12,
+                        EffectDefinitionId = 11,
+                        ImpactType = EffectImpactType.SpecialAbility,
+                        Target = "Actions",
+                        Value = 0
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 12,
+                Name = "Prone",
+                Description = "On the ground. Harder to hit with ranged, easier for melee.",
+                EffectType = EffectType.Condition,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.UntilRemoved,
+                DefaultDuration = 0,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "StandUp",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 13,
+                        EffectDefinitionId = 12,
+                        ImpactType = EffectImpactType.TVModifier,
+                        Target = "Ranged",
+                        Value = 2 // Harder to hit with ranged
+                    },
+                    new EffectImpact
+                    {
+                        Id = 14,
+                        EffectDefinitionId = 12,
+                        ImpactType = EffectImpactType.TVModifier,
+                        Target = "Melee",
+                        Value = -2 // Easier to hit in melee
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 13,
+                Name = "Blinded",
+                Description = "Cannot see. Severe penalties to visual actions.",
+                EffectType = EffectType.Condition,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.UntilRemoved,
+                DefaultDuration = 0,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Extend,
+                CanBeRemoved = true,
+                RemovalMethods = "Spell,Medicine,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 15,
+                        EffectDefinitionId = 13,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "Physical",
+                        Value = -4
+                    },
+                    new EffectImpact
+                    {
+                        Id = 16,
+                        EffectDefinitionId = 13,
+                        ImpactType = EffectImpactType.TVModifier,
+                        Target = "Self",
+                        Value = -4 // Easier to hit
+                    }
+                ]
+            },
+
+            // === POISONS ===
+            new EffectDefinition
+            {
+                Id = 20,
+                Name = "Weak Poison",
+                Description = "A mild poison causing fatigue damage over time.",
+                EffectType = EffectType.Poison,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 10,
+                IsStackable = true,
+                MaxStacks = 3,
+                StackBehavior = StackBehavior.Intensify,
+                CanBeRemoved = true,
+                RemovalMethods = "Medicine,Spell,Antidote",
+                RemovalDifficulty = 6,
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 20,
+                        EffectDefinitionId = 20,
+                        ImpactType = EffectImpactType.DamageOverTime,
+                        Target = "FAT",
+                        Value = 1,
+                        DamageInterval = 20 // Per minute (20 rounds)
+                    },
+                    new EffectImpact
+                    {
+                        Id = 21,
+                        EffectDefinitionId = 20,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "All",
+                        Value = -1
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 21,
+                Name = "Strong Poison",
+                Description = "A potent poison causing vitality damage over time.",
+                EffectType = EffectType.Poison,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 5,
+                IsStackable = true,
+                MaxStacks = 3,
+                StackBehavior = StackBehavior.Intensify,
+                CanBeRemoved = true,
+                RemovalMethods = "Medicine,Spell,Antidote",
+                RemovalDifficulty = 10,
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 22,
+                        EffectDefinitionId = 21,
+                        ImpactType = EffectImpactType.DamageOverTime,
+                        Target = "VIT",
+                        Value = 1,
+                        DamageInterval = 10 // Every 30 seconds
+                    },
+                    new EffectImpact
+                    {
+                        Id = 23,
+                        EffectDefinitionId = 21,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "All",
+                        Value = -2
+                    }
+                ]
+            },
+
+            // === BUFFS ===
+            new EffectDefinition
+            {
+                Id = 30,
+                Name = "Strength Boost",
+                Description = "Magical enhancement to physical strength.",
+                EffectType = EffectType.Buff,
+                TargetType = EffectTargetType.Character,
+                Source = "Spell",
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 10,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 30,
+                        EffectDefinitionId = 30,
+                        ImpactType = EffectImpactType.AttributeModifier,
+                        Target = "STR",
+                        Value = 2
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 31,
+                Name = "Agility Boost",
+                Description = "Magical enhancement to speed and reflexes.",
+                EffectType = EffectType.Buff,
+                TargetType = EffectTargetType.Character,
+                Source = "Spell",
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 10,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 31,
+                        EffectDefinitionId = 31,
+                        ImpactType = EffectImpactType.AttributeModifier,
+                        Target = "DEX",
+                        Value = 2
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 32,
+                Name = "Battle Focus",
+                Description = "Heightened combat awareness and precision.",
+                EffectType = EffectType.Buff,
+                TargetType = EffectTargetType.Character,
+                Source = "Skill",
+                DurationType = DurationType.Rounds,
+                DefaultDuration = 10,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 32,
+                        EffectDefinitionId = 32,
+                        ImpactType = EffectImpactType.AVModifier,
+                        Target = "All",
+                        Value = 2
+                    }
+                ]
+            },
+
+            // === DEBUFFS ===
+            new EffectDefinition
+            {
+                Id = 40,
+                Name = "Weakened",
+                Description = "Physical strength is diminished.",
+                EffectType = EffectType.Debuff,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 5,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Spell,Rest",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 40,
+                        EffectDefinitionId = 40,
+                        ImpactType = EffectImpactType.AttributeModifier,
+                        Target = "STR",
+                        Value = -2
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 41,
+                Name = "Intoxicated",
+                Description = "Impaired by alcohol or similar substances.",
+                EffectType = EffectType.Debuff,
+                TargetType = EffectTargetType.Character,
+                DurationType = DurationType.Hours,
+                DefaultDuration = 2,
+                IsStackable = true,
+                MaxStacks = 3,
+                StackBehavior = StackBehavior.Intensify,
+                CanBeRemoved = true,
+                RemovalMethods = "Time,Medicine",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 41,
+                        EffectDefinitionId = 41,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "Physical",
+                        Value = -2
+                    },
+                    new EffectImpact
+                    {
+                        Id = 42,
+                        EffectDefinitionId = 41,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "Mental",
+                        Value = -1
+                    },
+                    new EffectImpact
+                    {
+                        Id = 43,
+                        EffectDefinitionId = 41,
+                        ImpactType = EffectImpactType.AttributeModifier,
+                        Target = "WIL",
+                        Value = -2
+                    }
+                ]
+            },
+
+            // === SPELL EFFECTS ===
+            new EffectDefinition
+            {
+                Id = 50,
+                Name = "Invisibility",
+                Description = "Rendered invisible to normal sight.",
+                EffectType = EffectType.SpellEffect,
+                TargetType = EffectTargetType.Character,
+                Source = "Spell",
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 5,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Extend,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Detection,BreakAction",
+                BreakConditions = "Attack,CastSpell,TakeDamage",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 50,
+                        EffectDefinitionId = 50,
+                        ImpactType = EffectImpactType.SpecialAbility,
+                        Target = "Visibility",
+                        Value = 0 // 0 = Invisible
+                    },
+                    new EffectImpact
+                    {
+                        Id = 51,
+                        EffectDefinitionId = 50,
+                        ImpactType = EffectImpactType.TVModifier,
+                        Target = "Self",
+                        Value = 4 // Harder for enemies to hit
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 51,
+                Name = "Magic Shield",
+                Description = "A protective magical barrier.",
+                EffectType = EffectType.SpellEffect,
+                TargetType = EffectTargetType.Character,
+                Source = "Spell",
+                DurationType = DurationType.Minutes,
+                DefaultDuration = 10,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 52,
+                        EffectDefinitionId = 51,
+                        ImpactType = EffectImpactType.TVModifier,
+                        Target = "Self",
+                        Value = 2
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 52,
+                Name = "Burning",
+                Description = "Engulfed in magical flames causing ongoing damage.",
+                EffectType = EffectType.SpellEffect,
+                TargetType = EffectTargetType.Character,
+                Source = "Spell",
+                DurationType = DurationType.Rounds,
+                DefaultDuration = 5,
+                IsStackable = true,
+                MaxStacks = 3,
+                StackBehavior = StackBehavior.Intensify,
+                CanBeRemoved = true,
+                RemovalMethods = "Water,Spell,Roll",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 53,
+                        EffectDefinitionId = 52,
+                        ImpactType = EffectImpactType.DamageOverTime,
+                        Target = "FAT",
+                        Value = 2,
+                        DamageInterval = 1 // Every round
+                    }
+                ]
+            },
+
+            // === OBJECT EFFECTS ===
+            new EffectDefinition
+            {
+                Id = 60,
+                Name = "Magical Light",
+                Description = "The item glows with magical light.",
+                EffectType = EffectType.ObjectEffect,
+                TargetType = EffectTargetType.Item,
+                Source = "Spell",
+                DurationType = DurationType.Hours,
+                DefaultDuration = 4,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Extend,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 60,
+                        EffectDefinitionId = 60,
+                        ImpactType = EffectImpactType.SpecialAbility,
+                        Target = "LightRadius",
+                        Value = 10 // 10 meters
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 61,
+                Name = "Temporary Enchantment",
+                Description = "A temporary magical enhancement to the item.",
+                EffectType = EffectType.ObjectEffect,
+                TargetType = EffectTargetType.Item,
+                Source = "Spell",
+                DurationType = DurationType.Hours,
+                DefaultDuration = 1,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "Dispel,Time",
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 61,
+                        EffectDefinitionId = 61,
+                        ImpactType = EffectImpactType.SkillModifier,
+                        Target = "RelatedSkill",
+                        Value = 2
+                    }
+                ]
+            },
+            new EffectDefinition
+            {
+                Id = 62,
+                Name = "Cursed",
+                Description = "A malevolent curse affecting the item and its holder.",
+                EffectType = EffectType.ObjectEffect,
+                TargetType = EffectTargetType.Item,
+                Source = "Curse",
+                DurationType = DurationType.Permanent,
+                DefaultDuration = 0,
+                IsStackable = false,
+                StackBehavior = StackBehavior.Replace,
+                CanBeRemoved = true,
+                RemovalMethods = "RemoveCurse,Dispel",
+                RemovalDifficulty = 12,
+                Impacts =
+                [
+                    new EffectImpact
+                    {
+                        Id = 62,
+                        EffectDefinitionId = 62,
+                        ImpactType = EffectImpactType.ASModifier,
+                        Target = "All",
+                        Value = -2
+                    }
+                ]
             }
         ];
     }

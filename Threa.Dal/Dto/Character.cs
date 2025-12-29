@@ -43,6 +43,13 @@ public class Character
     public List<CharacterItem> Items { get; set; } = [];
 
     /// <summary>
+    /// Active effects on this character (buffs, debuffs, conditions, etc.).
+    /// Note: Effects are managed separately via IEffectDal for efficiency.
+    /// This list is populated on-demand and may not always be filled.
+    /// </summary>
+    public List<CharacterEffect> Effects { get; set; } = [];
+
+    /// <summary>
     /// Currency held by this character (in copper pieces for easy calculation).
     /// </summary>
     public int CopperCoins { get; set; }

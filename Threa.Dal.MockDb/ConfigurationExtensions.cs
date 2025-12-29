@@ -11,5 +11,10 @@ public static class ConfigurationExtensions
         services.AddTransient<ICharacterDal, CharacterDal>();
         services.AddTransient<IImageDal, ImageDal>();
         services.AddTransient<ISpeciesDal, SpeciesDal>();
+        services.AddTransient<IItemTemplateDal, ItemTemplateDal>();
+        services.AddTransient<ICharacterItemDal, CharacterItemDal>();
+        services.AddTransient<IEffectDefinitionDal, EffectDefinitionDal>();
+        services.AddTransient<ICharacterEffectDal, CharacterEffectDal>();
+        services.AddTransient<IItemEffectDal, ItemEffectDal>();
     }
 }

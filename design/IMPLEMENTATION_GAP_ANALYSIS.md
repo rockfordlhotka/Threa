@@ -24,7 +24,7 @@ This document compares the design specifications in the `/design` folder against
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 | Action Points | ✅ Complete | ⚠️ Partial | Low |
 | Time System | ✅ Complete | ❌ Not Implemented | High |
-| Effects System | ✅ Complete | ❌ Not Implemented | High |
+| Effects System | ✅ Complete | ✅ Implemented | None |
 | Movement | ✅ Complete | ✅ Implemented | None |
 
 ---
@@ -395,7 +395,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 14. Effects System (NOT IMPLEMENTED)
+### 14. Effects System ✅ IMPLEMENTED
 
 **Design Spec** ([EFFECTS_SYSTEM.md](EFFECTS_SYSTEM.md)):
 - Effects apply to characters, NPCs, or objects
@@ -407,21 +407,69 @@ This document compares the design specifications in the `/design` folder against
 - Time-based processing at round/minute/hour/day/week boundaries
 
 **Implementation**:
-- ❌ No effect definitions or templates
-- ❌ No character effects tracking
-- ❌ No effect impact calculations
-- ❌ No effect duration/expiration handling
-- ⚠️ WoundList.cs handles wounds but not as generic effects
+
+**DAL Layer DTOs** (Threa.Dal.Dto):
+- ✅ `EffectType` enum - 9 types: Wound, Condition, Poison, Disease, Buff, Debuff, SpellEffect, ObjectEffect, Environmental ([EffectType.cs](../Threa.Dal/Dto/EffectType.cs))
+- ✅ `DurationType` enum - 7 types: Rounds, Minutes, Hours, Days, Weeks, Permanent, UntilRemoved ([DurationType.cs](../Threa.Dal/Dto/DurationType.cs))
+- ✅ `StackBehavior` enum - 4 behaviors: Replace, Extend, Intensify, Independent ([StackBehavior.cs](../Threa.Dal/Dto/StackBehavior.cs))
+- ✅ `EffectTargetType` enum - Character, Npc, Item, Location ([EffectTargetType.cs](../Threa.Dal/Dto/EffectTargetType.cs))
+- ✅ `EffectImpactType` enum - 10 impact types: AttributeModifier, SkillModifier, ASModifier, AVModifier, TVModifier, SVModifier, RecoveryModifier, DamageOverTime, MovementModifier, SpecialAbility ([EffectImpactType.cs](../Threa.Dal/Dto/EffectImpactType.cs))
+- ✅ `EffectImpact` class - Individual modifier within an effect ([EffectImpact.cs](../Threa.Dal/Dto/EffectImpact.cs))
+- ✅ `EffectDefinition` class - Template for effects with name, description, duration, impacts, stacking rules ([EffectDefinition.cs](../Threa.Dal/Dto/EffectDefinition.cs))
+- ✅ `CharacterEffect` class - Active effect instance on a character with stacks, duration tracking ([CharacterEffect.cs](../Threa.Dal/Dto/CharacterEffect.cs))
+- ✅ `ItemEffect` class - Active effect instance on an item ([ItemEffect.cs](../Threa.Dal/Dto/ItemEffect.cs))
+
+**DAL Interfaces** (Threa.Dal):
+- ✅ `IEffectDefinitionDal` - CRUD for effect templates ([IEffectDal.cs](../Threa.Dal/IEffectDal.cs))
+- ✅ `ICharacterEffectDal` - Character effect management with stacking logic, ProcessEndOfRoundAsync
+- ✅ `IItemEffectDal` - Item effect management including GetEquippedItemEffectsAsync
+
+**MockDb Implementation** (Threa.Dal.MockDb):
+- ✅ `EffectDefinitionDal` - Full CRUD implementation ([EffectDefinitionDal.cs](../Threa.Dal.MockDb/EffectDefinitionDal.cs))
+- ✅ `CharacterEffectDal` - Effect application with stacking behavior handling ([CharacterEffectDal.cs](../Threa.Dal.MockDb/CharacterEffectDal.cs))
+- ✅ `ItemEffectDal` - Item effect management ([ItemEffectDal.cs](../Threa.Dal.MockDb/ItemEffectDal.cs))
+- ✅ 20+ preset effect definitions in MockDb: Wound, Stunned, Unconscious, Prone, Blinded, Weak/Strong Poison, Strength/Agility Boost, Battle Focus, Weakened, Intoxicated, Invisibility, Magic Shield, Burning, Magical Light, Temporary Enchantment, Cursed ([MockDb.cs](../Threa.Dal.MockDb/MockDb.cs))
+
+**SQLite Implementation** (Threa.Dal.SqlLite):
+- ✅ `EffectDefinitionDal` - SQLite implementation with JSON storage ([EffectDefinitionDal.cs](../Threa.Dal.SqlLite/EffectDefinitionDal.cs))
+- ✅ `CharacterEffectDal` - SQLite implementation ([CharacterEffectDal.cs](../Threa.Dal.SqlLite/CharacterEffectDal.cs))
+- ✅ `ItemEffectDal` - SQLite implementation ([ItemEffectDal.cs](../Threa.Dal.SqlLite/ItemEffectDal.cs))
+
+**SQL Scripts**:
+- ✅ `dbo.EffectDefinition.sql` - EffectDefinition and EffectImpact tables ([dbo.EffectDefinition.sql](../Sql/dbo.EffectDefinition.sql))
+- ✅ `dbo.CharacterEffect.sql` - CharacterEffect table with FK constraints ([dbo.CharacterEffect.sql](../Sql/dbo.CharacterEffect.sql))
+- ✅ `dbo.ItemEffect.sql` - ItemEffect table with FK constraints ([dbo.ItemEffect.sql](../Sql/dbo.ItemEffect.sql))
+
+**GameMechanics Layer** (GameMechanics.Effects):
+- ✅ `EffectManager` - Main service for applying/removing effects, calculating modifiers, processing end-of-round ([EffectManager.cs](../GameMechanics/Effects/EffectManager.cs))
+- ✅ `EffectCalculator` - Stateless calculator for attribute/skill modifiers, AS/AV/TV modifiers, DoT damage, special abilities ([EffectCalculator.cs](../GameMechanics/Effects/EffectCalculator.cs))
+- ✅ `EffectModifierExtensions` - Integration with Actions system ModifierStack ([EffectModifierExtensions.cs](../GameMechanics/Effects/EffectModifierExtensions.cs))
+
+**Unit Tests** (GameMechanics.Test):
+- ✅ `EffectsSystemTests` - Comprehensive tests covering effect definitions, character effects, stacking behaviors, end-of-round processing, calculator functions, manager integration ([EffectsSystemTests.cs](../GameMechanics.Test/EffectsSystemTests.cs))
+
+**Key Features Implemented**:
+- ✅ Effect definition templates with reusable patterns
+- ✅ Multiple effect impacts per definition
+- ✅ Stack behavior handling (Replace removes old, Extend adds duration, Intensify increases stacks, Independent allows duplicates)
+- ✅ Duration tracking with rounds remaining
+- ✅ End-of-round processing (decrement duration, expire effects, DoT ticks)
+- ✅ Character effects with source tracking
+- ✅ Item effects with equipped item awareness
+- ✅ Modifier calculations for attributes, skills, AS, AV, TV, SV
+- ✅ Damage over time (FAT and VIT damage)
+- ✅ Special ability detection
+- ✅ Break conditions for concentration effects
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Create `Effect` base class and types | New `GameMechanics/Effects/Effect.cs` |
-| **Critical** | Create `EffectManager` for tracking active effects | New `GameMechanics/Effects/EffectManager.cs` |
-| High | Implement effect impact calculations | New `GameMechanics/Effects/EffectCalculator.cs` |
-| High | Integrate effects into skill/attribute calculations | `SkillEdit.cs`, `AttributeEdit.cs` |
+| ~~Critical~~ | ~~Create `Effect` base class and types~~ | ✅ `Threa.Dal/Dto/EffectDefinition.cs` |
+| ~~Critical~~ | ~~Create `EffectManager` for tracking active effects~~ | ✅ `GameMechanics/Effects/EffectManager.cs` |
+| ~~High~~ | ~~Implement effect impact calculations~~ | ✅ `GameMechanics/Effects/EffectCalculator.cs` |
+| Medium | Integrate effects into CharacterEdit calculations | `CharacterEdit.cs` |
 | Medium | Convert WoundList to use effects system | `WoundList.cs` |
-| Medium | Create common effect definitions | New effect definition files |
+| Low | Add effect display to UI | Threa.Client components |
 
 ---
 
@@ -567,8 +615,8 @@ The [DATABASE_DESIGN.md](DATABASE_DESIGN.md) defines tables that are not yet imp
 | ItemAttributeModifiers | ✅ Implemented (DTO, SQL) |
 | CharacterCurrency | ✅ Implemented (Character DTO, SQL) |
 | CharacterInventory | ✅ Via CharacterItem table |
-| EffectDefinitions | ❌ Not implemented |
-| CharacterEffects | ❌ Not implemented |
+| EffectDefinitions | ✅ Implemented (DTO, DAL, SQL) |
+| CharacterEffects | ✅ Implemented (DTO, DAL, SQL) |
 
 ---
 
@@ -579,16 +627,20 @@ The GameMechanics library has a solid foundation with dice mechanics, basic char
 - ✅ **Equipment and Items** - Full ItemTemplate/CharacterItem system with bonuses
 - ✅ **Inventory Management** - Container support with nesting and weight reduction
 - ✅ **Currency** - 4-denomination system integrated into Character DTO
+- ✅ **Effects System** - Full effect definitions, character/item effects, stacking, and modifier calculations
 
 Remaining major systems to implement:
 
 - ✅ **Actions System** - Universal action resolution framework implemented in `GameMechanics.Actions`
+- ✅ **Effects System** - Complete implementation in `GameMechanics.Effects` with DAL support
 - ❌ **Combat resolution** - Attack/defense mechanics, damage calculation
 - ❌ **Magic system** - Mana pools, spells, magic schools
-- ⚠️ **GameMechanics integration** - Wire item bonuses into skill/attribute calculations
+- ⚠️ **GameMechanics integration** - Wire item bonuses and effects into skill/attribute calculations
 
 Next steps should focus on:
 1. ~~Implementing the Actions System (universal action resolution)~~ ✅ Done
-2. Adding carrying capacity calculation to GameMechanics
-3. Wiring item bonuses into skill calculations
-4. Implementing the combat system (builds on Actions System - now ready)
+2. ~~Implementing the Effects System~~ ✅ Done
+3. Integrating effects into CharacterEdit calculations
+4. Adding carrying capacity calculation to GameMechanics
+5. Wiring item bonuses into skill calculations
+6. Implementing the combat system (builds on Actions System - now ready)
