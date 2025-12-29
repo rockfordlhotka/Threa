@@ -23,9 +23,10 @@ This document compares the design specifications in the `/design` folder against
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 | Action Points | ✅ Complete | ⚠️ Partial | Low |
-| Time System | ✅ Complete | ✅ Implemented | Low |
+| Time System | ✅ Complete | ✅ Implemented | None |
 | Effects System | ✅ Complete | ✅ Implemented | None |
 | Movement | ✅ Complete | ✅ Implemented | None |
+| **Messaging (RabbitMQ)** | ✅ Complete | ✅ Implemented | None |
 
 ---
 
@@ -407,17 +408,22 @@ This document compares the design specifications in the `/design` folder against
 | ~~High~~ | ~~Implement initiative calculation (by Available AP)~~ | ✅ `GameMechanics/Time/InitiativeCalculator.cs` |
 | ~~High~~ | ~~Create cooldown tracking per character~~ | ✅ `GameMechanics/Time/CooldownTracker.cs` |
 | ~~Medium~~ | ~~Integrate EndOfRound processing across systems~~ | ✅ `RoundManager.cs` |
-| Medium | Add RabbitMQ/messaging integration for GM triggers | New messaging layer |
+| ~~Medium~~ | ~~Add RabbitMQ/messaging integration for GM triggers~~ | ✅ `GameMechanics.Messaging.RabbitMQ` project |
 | Low | Add NPC tracking to initiative/time system | Extend `RoundManager` |
 
-**Action Items**:
-| Priority | Task | File(s) |
-|----------|------|---------|
-| **Critical** | Create `TimeManager` class for round/time tracking | New `GameMechanics/Time/TimeManager.cs` |
-| **Critical** | Create time event system (EndOfRound, EndOfMinute, etc.) | New `GameMechanics/Time/TimeEvents.cs` |
-| High | Implement initiative calculation (by Available AP) | `TimeManager.cs` |
-| High | Create cooldown tracking per character | New `GameMechanics/Cooldown.cs` |
-| Medium | Integrate EndOfRound processing across systems | Multiple files |
+**Messaging System** (GameMechanics.Messaging / GameMechanics.Messaging.RabbitMQ):
+- ✅ `ITimeEventPublisher` interface - Publish time events to message broker ([ITimeEventPublisher.cs](../GameMechanics/Messaging/ITimeEventPublisher.cs))
+- ✅ `ITimeEventSubscriber` interface - Subscribe to time events ([ITimeEventSubscriber.cs](../GameMechanics/Messaging/ITimeEventSubscriber.cs))
+- ✅ `TimeMessages.cs` - DTOs for messaging (TimeEventMessage, TimeSkipMessage, CombatStateMessage, TimeResultMessage)
+- ✅ `MessagingOptions.cs` - Configuration for broker connections
+- ✅ `RabbitMqTimeEventPublisher` - RabbitMQ implementation of publisher
+- ✅ `RabbitMqTimeEventSubscriber` - RabbitMQ implementation of subscriber
+- ✅ `TimeEventHandlerService` - Hosted service bridging messaging with TimeManager
+- ✅ DI extensions for `AddRabbitMqMessaging()` and `AddTimeEventHandlerService()`
+
+---
+
+### 13. Combat System
 
 ---
 
