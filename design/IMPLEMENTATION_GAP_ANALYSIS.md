@@ -16,7 +16,7 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Actions System | ✅ Complete | ✅ Implemented | None |
-| Combat System | ✅ Complete | ⚠️ Phase 3 Complete | Medium |
+| Combat System | ✅ Complete | ⚠️ Phase 4 Complete | Low |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
@@ -185,7 +185,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Combat System (PHASE 3 COMPLETE)
+### 7. Combat System (PHASE 4 COMPLETE)
 
 **Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
 - Initiative by Available AP (highest first)
@@ -243,10 +243,25 @@ This document compares the design specifications in the `/design` folder against
 - ✅ Location-based armor (only covering armor applies)
 - ✅ 24 additional tests (108 total combat tests)
 
-**Remaining (Phases 4-5)**:
-- ❌ Ranged combat with TV modifiers
-- ❌ Aim and Prep actions
-- ❌ Ranged cooldowns by skill level
+**Phase 4 Implementation (Ranged Combat)** ✅:
+- ✅ `Combat/RangeModifiers.cs` - Range categories, TV modifiers, cover, target size
+- ✅ `Combat/WeaponRanges.cs` - Weapon range capabilities with presets
+- ✅ `Combat/RangedAttackRequest.cs` - Input for ranged attack resolution
+- ✅ `Combat/RangedAttackResult.cs` - Output from ranged attack resolution
+- ✅ `Combat/RangedAttackResolver.cs` - Ranged-specific resolution service
+- ✅ `Combat/AimState.cs` - Aim bonus tracking per character/target
+- ✅ `Combat/PrepState.cs` - Prep action handling and ranged cooldowns
+- ✅ Range categories: Short=TV6, Medium=TV8, Long=TV10, Extreme=TV12
+- ✅ Out-of-range detection with clean failure result
+- ✅ TV modifiers: target movement, cover, attacker motion, target size
+- ✅ Aim action: +2 AS if first action next round on same target
+- ✅ Prep actions for ammunition (no cooldown, stackable)
+- ✅ Ranged cooldowns by skill level (0→6s to 10+→0s)
+- ✅ Thrown weapons with Physicality bonus
+- ✅ Cooldown interruption: Pausable (bow/crossbow) vs Resettable (thrown)
+- ✅ 79 additional tests (187 total combat tests)
+
+**Remaining (Phase 5)**:
 - ❌ Special actions (Knockback, Disarm, Called Shot, Stun)
 
 **Action Items**:
@@ -256,7 +271,7 @@ This document compares the design specifications in the `/design` folder against
 | ~~Critical~~ | ~~Implement defense options~~ | ✅ `Combat/DefenseResolver.cs` |
 | ~~High~~ | ~~Implement parry mode system~~ | ✅ `Combat/CombatState.cs` |
 | ~~High~~ | ~~Implement damage absorption sequence~~ | ✅ `Combat/DamageResolver.cs` |
-| High | Implement ranged combat with modifiers | New `Combat/RangedAttackResolver.cs` |
+| ~~High~~ | ~~Implement ranged combat with modifiers~~ | ✅ `Combat/RangedAttackResolver.cs` |
 | Medium | Implement special combat actions | New `Combat/SpecialActions/` |
 
 ---

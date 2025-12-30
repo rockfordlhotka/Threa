@@ -112,38 +112,38 @@ The following systems provide the foundation for combat:
 
 ---
 
-### Phase 4: Ranged Combat
+### Phase 4: Ranged Combat ✅ COMPLETE
 
 **Goal**: Extend combat system to support ranged attacks.
 
-**New/Modified Files**:
-- `GameMechanics/Combat/RangedAttackResolver.cs` - Ranged-specific resolution
-- `GameMechanics/Combat/RangeModifiers.cs` - TV modifiers by range/conditions
-- `GameMechanics/Combat/AimAction.cs` - Aim bonus tracking
-- `GameMechanics/Combat/PrepAction.cs` - Prep action handling
+**Implemented Files**:
+- `GameMechanics/Combat/RangeModifiers.cs` - Range category enum, TV modifiers, cover, target size
+- `GameMechanics/Combat/WeaponRanges.cs` - Weapon range capabilities with presets
+- `GameMechanics/Combat/RangedAttackRequest.cs` - Input for ranged attack resolution
+- `GameMechanics/Combat/RangedAttackResult.cs` - Output from ranged attack resolution
+- `GameMechanics/Combat/RangedAttackResolver.cs` - Ranged-specific resolution service
+- `GameMechanics/Combat/AimState.cs` - Aim bonus tracking per character/target
+- `GameMechanics/Combat/PrepState.cs` - Prep action handling and ranged cooldowns
 
-**Key Features**:
-- Range categories (Short/Medium/Long/Extreme) with base TV
-- TV modifiers: target movement, cover, attacker movement, target size
-- Aim action: +2 AS bonus for next attack on same target
-- Prep actions for ammunition (no cooldown, enables multi-shot)
-- Ranged weapon cooldowns by skill level (integrate with `CooldownTracker`)
-- Thrown weapons (use melee skill, ranged TV modifiers)
-- Cooldown interruption (Pausable vs Resettable)
+**Implemented Features**:
+- ✅ Range categories (Short=TV6, Medium=TV8, Long=TV10, Extreme=TV12)
+- ✅ Out-of-range detection with clean failure result
+- ✅ TV modifiers: target movement (+2), prone (+2), crouching (+2), cover (+1/+2), attacker motion (+2), target size (+1/+2)
+- ✅ Aim action: +2 AS bonus if first action next round on same target
+- ✅ Prep actions for ammunition (stack multiple, no cooldown)
+- ✅ Ranged weapon cooldowns by skill level (0→6s to 10+→0s)
+- ✅ Thrown weapons use Physicality bonus (same as melee)
+- ✅ Cooldown interruption behavior: Pausable (bow/crossbow) vs Resettable (thrown)
+- ✅ Multiple action penalty applied correctly
+- ✅ Boost mechanics integrated
 
 **Integration Points**:
-- Uses `Movement.RangeToMeters()` for distance calculation
-- Integrates with `CooldownTracker` for weapon cooldowns
-- Uses existing `ActionCost` patterns
+- Uses existing `CooldownTracker` for weapon cooldowns
+- Uses existing `Movement.RangeToMeters()` for distance calculation
+- Compatible with `DamageResolver` for damage application
+- Uses existing hit location and damage table systems
 
-**Tests**:
-- Range category determination
-- TV modifier stacking
-- Aim bonus application and loss conditions
-- Prep action + multiple shots per round
-- Cooldown progression and interruption
-
-**Deliverable**: Full ranged combat including bows, crossbows, thrown weapons.
+**Tests**: 79 tests in `RangedCombatTests.cs`
 
 ---
 
