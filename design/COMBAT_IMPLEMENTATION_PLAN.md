@@ -147,37 +147,41 @@ The following systems provide the foundation for combat:
 
 ---
 
-### Phase 5: Special Combat Actions
+### Phase 5: Special Combat Actions ✅ COMPLETE
 
 **Goal**: Implement tactical options beyond basic attacks.
 
-**New Files**:
-- `GameMechanics/Combat/SpecialActions/KnockbackAction.cs`
-- `GameMechanics/Combat/SpecialActions/DisarmAction.cs`
-- `GameMechanics/Combat/SpecialActions/CalledShotAction.cs`
-- `GameMechanics/Combat/SpecialActions/StunAction.cs`
+**Implemented Files**:
+- `GameMechanics/Combat/SpecialActions/SpecialActionType.cs` - Enum for action types + SpecialActionModifiers
+- `GameMechanics/Combat/SpecialActions/KnockbackTable.cs` - RVE lookup table (SV → duration seconds)
+- `GameMechanics/Combat/SpecialActions/SpecialActionRequest.cs` - Input for special action resolution
+- `GameMechanics/Combat/SpecialActions/SpecialActionResult.cs` - Output with effect instructions
+- `GameMechanics/Combat/SpecialActions/SpecialActionResolver.cs` - Main resolver with EffectManager integration
 
-**Key Features**:
-- **Knockback**: Stun instead of damage (SV seconds)
-- **Disarm**: -2 AS penalty, target drops weapon
-- **Called Shot**: -2 AS penalty, choose hit location
-- **Stun/Knockout**: -2 AS penalty, target incapacitated for SV seconds
+**Implemented Features**:
+- ✅ **Knockback**: No AS penalty, prevents target from acting for RVE seconds (lookup table), critical knocks prone
+- ✅ **Disarm**: -2 AS penalty, target drops weapon/item, critical breaks item
+- ✅ **Called Shot**: -2 AS penalty, choose hit location, marginal success (SV 0-1) hits random location
+- ✅ **Stunning Blow**: -2 AS penalty, applies Stunned effect for SV seconds (FAT=0), critical causes unconsciousness
 
 **All special actions**:
 - Use standard action cost (1 AP + 1 FAT or 2 AP)
-- Apply -2 AS penalty (except Knockback)
-- Use same resolution framework as normal attacks
-- Create appropriate effects via `EffectManager`
+- Apply appropriate AS penalties (defined per action type)
+- Use same resolution framework as normal attacks (passive/active defense)
+- Create effects via `EffectManager` for Stunned, Prone, Unconscious
 
 **Integration Points**:
-- Uses `EffectManager` for status effects (Stunned, etc.)
-- Uses existing effect definitions in MockDb
+- `EffectManager.ApplyEffectAsync()` for status effects
+- Uses existing "Stunned", "Prone", "Unconscious" effect definitions
+- Fully testable with constructor that omits EffectManager
 
-**Tests**:
-- Each special action type
-- AS penalty application
-- Effect creation and duration
-- Critical hit handling
+**Tests**: 46 tests in `SpecialActionTests.cs`
+- Knockback duration table mapping
+- AS penalty verification per action type
+- Critical hit thresholds (Knockback: 8, Disarm: 8, Stun: 10)
+- Called shot location mechanics (intended vs random)
+- Effect application integration
+- Active defense compatibility
 
 **Deliverable**: Complete tactical combat system.
 
@@ -206,9 +210,9 @@ Phase 5: Special Actions (can be done in parallel with Phase 4)
 | Phase 1 | 5 | 55 | Medium | ✅ Complete |
 | Phase 2 | 5 | 29 | Medium | ✅ Complete |
 | Phase 3 | 6 | 24 | High | ✅ Complete |
-| Phase 4 | 4 | 25-35 | Medium | Not Started |
-| Phase 5 | 4 | 15-20 | Low | Not Started |
-| **Total** | **24** | **163-178** | | **3/5 Complete** |
+| Phase 4 | 4 | 79 | Medium | ✅ Complete |
+| Phase 5 | 5 | 46 | Medium | ✅ Complete |
+| **Total** | **25** | **233** | | **5/5 Complete** |
 
 ---
 
