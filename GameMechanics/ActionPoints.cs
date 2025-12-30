@@ -94,14 +94,27 @@ namespace GameMechanics
       Spent += 2;
     }
 
+    /// <summary>
+    /// Calculates AP recovery based on current fatigue.
+    /// AP Recovery = Current FAT / 4 (minimum 1)
+    /// </summary>
+    /// <param name="fatigue">Current fatigue value.</param>
     public static int CalculateRecovery(int fatigue)
     {
-      return fatigue / 4;
+      var result = fatigue / 4;
+      if (result < 1)
+        result = 1;
+      return result;
     }
 
-    public static int CalculateMax(double xpTotal)
+    /// <summary>
+    /// Calculates maximum AP based on total skill levels.
+    /// Max AP = Total Skill Levels / 10 (minimum 1)
+    /// </summary>
+    /// <param name="totalSkillLevels">Sum of all individual skill levels the character has.</param>
+    public static int CalculateMax(int totalSkillLevels)
     {
-      var result = (int)xpTotal / 10;
+      var result = totalSkillLevels / 10;
       if (result < 1)
         result = 1;
       return result;
@@ -111,7 +124,7 @@ namespace GameMechanics
     private void Create(CharacterEdit character)
     {
       Recovery = CalculateRecovery(character.Fatigue.BaseValue);
-      Max = CalculateMax(character.XPTotal);
+      Max = CalculateMax(character.Skills.TotalSkillLevels);
       Available = Max;
     }
 
@@ -121,7 +134,7 @@ namespace GameMechanics
       if (character.ActionPointMax == 0)
       {
         Recovery = CalculateRecovery(14);
-        Max = CalculateMax(45);
+        Max = CalculateMax(10); // Default: 10 total skill levels = 1 AP
         Available = Max;
       }
       else

@@ -22,7 +22,7 @@ This document compares the design specifications in the `/design` folder against
 | Currency | ✅ Complete | ✅ Implemented | None |
 | Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
-| Action Points | ✅ Complete | ⚠️ Partial | Low |
+| Action Points | ✅ Complete | ✅ Implemented | None |
 | Time System | ✅ Complete | ✅ Implemented | None |
 | Effects System | ✅ Complete | ✅ Implemented | None |
 | Movement | ✅ Complete | ✅ Implemented | None |
@@ -442,13 +442,9 @@ This document compares the design specifications in the `/design` folder against
 - ✅ `CalculateRecovery()` - FAT / 4 (matches design)
 - ✅ `EndOfRound()` - recovers AP, returns locked
 - ✅ `Rest()` - trades AP for FAT healing
-- ❌ `CalculateMax()` uses XP total instead of skill level total
+- ✅ `CalculateMax()` uses total skill levels / 10 (minimum 1)
 
-**Action Items**:
-| Priority | Task | File(s) |
-|----------|------|---------|
-| High | Fix `CalculateMax()` to use total skill levels instead of XP | `ActionPoints.cs` |
-| Medium | Add minimum 1 AP recovery guarantee | `ActionPoints.cs` |
+**Action Items**: None - implementation matches design.
 
 ---
 

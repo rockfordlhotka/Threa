@@ -11,6 +11,12 @@ namespace GameMechanics
   [Serializable]
   public class SkillEditList : BusinessListBase<SkillEditList, SkillEdit>
   {
+    /// <summary>
+    /// Gets the sum of all individual skill levels.
+    /// Used for calculating Max AP = TotalSkillLevels / 10.
+    /// </summary>
+    public int TotalSkillLevels => this.Sum(s => s.Level);
+
     public Reference.ResultValue SkillCheck(string skillName, int targetValue)
     {
       var skill = this.Where(r => r.Name == skillName).FirstOrDefault();
