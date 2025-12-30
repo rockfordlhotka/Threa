@@ -16,7 +16,7 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Actions System | ✅ Complete | ✅ Implemented | None |
-| Combat System | ✅ Complete | ❌ Not Implemented | High |
+| Combat System | ✅ Complete | ⚠️ Phase 1 Complete | Medium |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
@@ -197,6 +197,8 @@ This document compares the design specifications in the `/design` folder against
 - Parry mode: enter as action, free defenses until broken
 - Ranged cooldowns by skill level
 - Cooldown interruption: resettable vs pausable
+
+**Implementation Plan**: See [COMBAT_IMPLEMENTATION_PLAN.md](COMBAT_IMPLEMENTATION_PLAN.md) for phased approach.
 
 **Implementation**:
 - ❌ No combat action classes
