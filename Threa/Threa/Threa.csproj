@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -11,10 +11,10 @@
     <ProjectReference Include="..\..\Threa.Dal.MockDb\Threa.Dal.MockDb.csproj" />
     <ProjectReference Include="..\..\Threa.Dal\Threa.Dal.csproj" />
     <ProjectReference Include="..\Threa.Client\Threa.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.8" />
-    <PackageReference Include="Csla.AspNetCore" Version="8.2.7" />
-    <PackageReference Include="Csla.Blazor" Version="8.2.7" />
-    <PackageReference Include="Radzen.Blazor" Version="5.1.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />
+    <PackageReference Include="Csla.AspNetCore" Version="9.1.0" />
+    <PackageReference Include="Csla.Blazor" Version="9.1.0" />
+    <PackageReference Include="Radzen.Blazor" Version="8.4.2" />
   </ItemGroup>
 
   <ItemGroup>
