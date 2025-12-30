@@ -85,7 +85,6 @@ public class SpecialActionTests
   }
 
   [TestMethod]
-  [ExpectedException(typeof(InvalidOperationException))]
   public void Knockback_WithoutCapability_Throws()
   {
     var dice = CreateDice(2);
@@ -99,7 +98,7 @@ public class SpecialActionTests
       WeaponHasKnockback = false // No knockback capability
     };
 
-    resolver.Resolve(request);
+    Assert.ThrowsExactly<InvalidOperationException>(() => resolver.Resolve(request));
   }
 
   [TestMethod]
@@ -370,7 +369,6 @@ public class SpecialActionTests
   }
 
   [TestMethod]
-  [ExpectedException(typeof(InvalidOperationException))]
   public void CalledShot_WithoutTargetLocation_Throws()
   {
     var dice = CreateDice(2);
@@ -384,7 +382,7 @@ public class SpecialActionTests
       TargetLocation = null // Missing target
     };
 
-    resolver.Resolve(request);
+    Assert.ThrowsExactly<InvalidOperationException>(() => resolver.Resolve(request));
   }
 
   [TestMethod]

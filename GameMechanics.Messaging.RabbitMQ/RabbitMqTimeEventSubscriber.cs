@@ -18,7 +18,7 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
     private readonly JsonSerializerOptions _jsonOptions;
 
     private IConnection? _connection;
-    private IModel? _channel;
+    private IChannel? _channel;
     private string? _consumerTag;
     private string? _queueName;
     private bool _disposed;
@@ -57,28 +57,32 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
                 _logger.LogInformation("Connecting subscriber to RabbitMQ at {Host}:{Port}...",
                     _options.HostName, _options.Port);
 
-                _connection = factory.CreateConnection();
-                _channel = _connection.CreateModel();
+                _connection = await factory.CreateConnectionAsync(cancellationToken);
+                _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
                 // Declare the exchange (idempotent)
-                _channel.ExchangeDeclare(
+                await _channel.ExchangeDeclareAsync(
                     exchange: _options.TimeEventExchange,
                     type: ExchangeType.Fanout,
                     durable: true,
-                    autoDelete: false);
+                    autoDelete: false,
+                    cancellationToken: cancellationToken);
 
                 // Declare a queue for this subscriber
-                _queueName = _channel.QueueDeclare(
+                var queueDeclareResult = await _channel.QueueDeclareAsync(
                     queue: _options.TimeEventQueue,
                     durable: true,
                     exclusive: string.IsNullOrEmpty(_options.TimeEventQueue), // Exclusive if auto-named
-                    autoDelete: false).QueueName;
+                    autoDelete: false,
+                    cancellationToken: cancellationToken);
+                _queueName = queueDeclareResult.QueueName;
 
                 // Bind queue to exchange
-                _channel.QueueBind(
+                await _channel.QueueBindAsync(
                     queue: _queueName,
                     exchange: _options.TimeEventExchange,
-                    routingKey: "");
+                    routingKey: "",
+                    cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Subscriber connected to RabbitMQ, queue: {Queue}", _queueName);
                 return;
@@ -94,40 +98,41 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
         throw new InvalidOperationException($"Failed to connect subscriber to RabbitMQ after {_options.RetryCount} retries");
     }
 
-    public Task SubscribeAsync(CancellationToken cancellationToken = default)
+    public async Task SubscribeAsync(CancellationToken cancellationToken = default)
     {
         EnsureConnected();
 
         if (IsSubscribed)
         {
             _logger.LogDebug("Already subscribed with consumer tag: {Tag}", _consumerTag);
-            return Task.CompletedTask;
+            return;
         }
 
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += OnMessageReceived;
-        consumer.Shutdown += (_, args) =>
+        var consumer = new AsyncEventingBasicConsumer(_channel!);
+        consumer.ReceivedAsync += OnMessageReceivedAsync;
+        consumer.ShutdownAsync += async (_, args) =>
         {
             _logger.LogWarning("Consumer shutdown: {Reason}", args.ReplyText);
             _consumerTag = null;
+            await Task.CompletedTask;
         };
 
-        _consumerTag = _channel!.BasicConsume(
-            queue: _queueName,
+        _consumerTag = await _channel!.BasicConsumeAsync(
+            queue: _queueName!,
             autoAck: false,
-            consumer: consumer);
+            consumer: consumer,
+            cancellationToken: cancellationToken);
 
         _logger.LogInformation("Subscribed to time events, consumer: {Tag}", _consumerTag);
-        return Task.CompletedTask;
     }
 
-    public Task UnsubscribeAsync(CancellationToken cancellationToken = default)
+    public async Task UnsubscribeAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsSubscribed) return Task.CompletedTask;
+        if (!IsSubscribed) return;
 
         try
         {
-            _channel?.BasicCancel(_consumerTag);
+            await _channel!.BasicCancelAsync(_consumerTag!, cancellationToken: cancellationToken);
             _logger.LogInformation("Unsubscribed from time events");
         }
         catch (Exception ex)
@@ -138,11 +143,9 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
         {
             _consumerTag = null;
         }
-
-        return Task.CompletedTask;
     }
 
-    private void OnMessageReceived(object? sender, BasicDeliverEventArgs e)
+    private async Task OnMessageReceivedAsync(object? sender, BasicDeliverEventArgs e)
     {
         try
         {
@@ -188,14 +191,14 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
             }
 
             // Acknowledge the message
-            _channel?.BasicAck(e.DeliveryTag, multiple: false);
+            await _channel!.BasicAckAsync(e.DeliveryTag, multiple: false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing received message");
             
             // Negative acknowledge - message will be requeued
-            _channel?.BasicNack(e.DeliveryTag, multiple: false, requeue: true);
+            await _channel!.BasicNackAsync(e.DeliveryTag, multiple: false, requeue: true);
         }
     }
 
@@ -230,8 +233,7 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
             Password = _options.Password,
             AutomaticRecoveryEnabled = _options.AutoReconnect,
             ClientProvidedName = _options.ClientName ?? $"Threa.Subscriber.{Environment.MachineName}",
-            Ssl = _options.UseSsl ? new SslOption { Enabled = true } : new SslOption { Enabled = false },
-            DispatchConsumersAsync = false // Use sync consumer for simplicity
+            Ssl = _options.UseSsl ? new SslOption { Enabled = true } : new SslOption { Enabled = false }
         };
     }
 
@@ -243,10 +245,16 @@ public class RabbitMqTimeEventSubscriber : ITimeEventSubscriber
         try
         {
             await UnsubscribeAsync();
-            _channel?.Close();
-            _channel?.Dispose();
-            _connection?.Close();
-            _connection?.Dispose();
+            if (_channel != null)
+            {
+                await _channel.CloseAsync();
+                _channel.Dispose();
+            }
+            if (_connection != null)
+            {
+                await _connection.CloseAsync();
+                _connection.Dispose();
+            }
         }
         catch (Exception ex)
         {

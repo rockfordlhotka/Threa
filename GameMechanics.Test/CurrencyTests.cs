@@ -141,11 +141,10 @@ namespace GameMechanics.Test
         }
 
         [TestMethod]
-        [ExpectedException(typeof(System.ArgumentOutOfRangeException))]
         public void Copper_ThrowsOnNegative()
         {
             var currency = new Currency();
-            currency.Copper = -1;
+            Assert.ThrowsExactly<System.ArgumentOutOfRangeException>(() => currency.Copper = -1);
         }
 
         [TestMethod]

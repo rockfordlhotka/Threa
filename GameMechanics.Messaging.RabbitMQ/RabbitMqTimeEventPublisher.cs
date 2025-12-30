@@ -17,7 +17,7 @@ public class RabbitMqTimeEventPublisher : ITimeEventPublisher
     private readonly JsonSerializerOptions _jsonOptions;
 
     private IConnection? _connection;
-    private IModel? _channel;
+    private IChannel? _channel;
     private bool _disposed;
 
     public RabbitMqTimeEventPublisher(
@@ -50,21 +50,23 @@ public class RabbitMqTimeEventPublisher : ITimeEventPublisher
                 _logger.LogInformation("Connecting to RabbitMQ at {Host}:{Port}...", 
                     _options.HostName, _options.Port);
 
-                _connection = factory.CreateConnection();
-                _channel = _connection.CreateModel();
+                _connection = await factory.CreateConnectionAsync(cancellationToken);
+                _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
                 // Declare the exchanges
-                _channel.ExchangeDeclare(
+                await _channel.ExchangeDeclareAsync(
                     exchange: _options.TimeEventExchange,
                     type: ExchangeType.Fanout,
                     durable: true,
-                    autoDelete: false);
+                    autoDelete: false,
+                    cancellationToken: cancellationToken);
 
-                _channel.ExchangeDeclare(
+                await _channel.ExchangeDeclareAsync(
                     exchange: _options.TimeResultExchange,
                     type: ExchangeType.Fanout,
                     durable: true,
-                    autoDelete: false);
+                    autoDelete: false,
+                    cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Connected to RabbitMQ successfully");
                 return;
@@ -95,7 +97,7 @@ public class RabbitMqTimeEventPublisher : ITimeEventPublisher
         return PublishAsync(_options.TimeEventExchange, "combat.state", message, cancellationToken);
     }
 
-    private Task PublishAsync<T>(string exchange, string routingKey, T message, CancellationToken cancellationToken) 
+    private async Task PublishAsync<T>(string exchange, string routingKey, T message, CancellationToken cancellationToken) 
         where T : TimeMessageBase
     {
         EnsureConnected();
@@ -103,23 +105,25 @@ public class RabbitMqTimeEventPublisher : ITimeEventPublisher
         var json = JsonSerializer.Serialize(message, _jsonOptions);
         var body = Encoding.UTF8.GetBytes(json);
 
-        var properties = _channel!.CreateBasicProperties();
-        properties.ContentType = "application/json";
-        properties.DeliveryMode = 2; // Persistent
-        properties.MessageId = message.MessageId.ToString();
-        properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        properties.Type = typeof(T).Name;
+        var properties = new BasicProperties
+        {
+            ContentType = "application/json",
+            DeliveryMode = DeliveryModes.Persistent,
+            MessageId = message.MessageId.ToString(),
+            Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+            Type = typeof(T).Name
+        };
 
-        _channel.BasicPublish(
+        await _channel!.BasicPublishAsync(
             exchange: exchange,
             routingKey: routingKey,
+            mandatory: false,
             basicProperties: properties,
-            body: body);
+            body: body,
+            cancellationToken: cancellationToken);
 
         _logger.LogDebug("Published {MessageType} to {Exchange}/{RoutingKey}: {MessageId}",
             typeof(T).Name, exchange, routingKey, message.MessageId);
-
-        return Task.CompletedTask;
     }
 
     private void EnsureConnected()
@@ -164,16 +168,20 @@ public class RabbitMqTimeEventPublisher : ITimeEventPublisher
 
         try
         {
-            _channel?.Close();
-            _channel?.Dispose();
-            _connection?.Close();
-            _connection?.Dispose();
+            if (_channel != null)
+            {
+                await _channel.CloseAsync();
+                _channel.Dispose();
+            }
+            if (_connection != null)
+            {
+                await _connection.CloseAsync();
+                _connection.Dispose();
+            }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error during RabbitMQ publisher disposal");
         }
-
-        await Task.CompletedTask;
     }
 }

@@ -14,7 +14,7 @@ builder.Services.AddScoped<ActiveCircuitState>();
 
 builder.Services.AddCsla(o => o
   .AddBlazorWebAssembly(o => o.SyncContextWithServer = true)
-  .DataPortal(o => o.ClientSideDataPortal(o => o
+  .DataPortal(o => o.AddClientSideDataPortal(o => o
     .UseHttpProxy(o => o.DataPortalUrl = "/api/dataportal"))));
 
 await builder.Build().RunAsync();

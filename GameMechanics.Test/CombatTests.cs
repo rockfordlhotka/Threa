@@ -783,12 +783,11 @@ public class CombatTests
   }
 
   [TestMethod]
-  [ExpectedException(typeof(InvalidOperationException))]
   public void CombatState_RecordParryDefense_NotInParryMode_Throws()
   {
     var state = new CombatState("char1");
 
-    state.RecordParryDefense(); // Should throw
+    Assert.ThrowsExactly<InvalidOperationException>(() => state.RecordParryDefense());
   }
 
   [TestMethod]
