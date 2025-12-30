@@ -58,5 +58,11 @@ public enum ResultTableType
     /// Movement result table.
     /// Maps SV to distance achieved (in range values).
     /// </summary>
-    Movement = 8
+    Movement = 8,
+
+    /// <summary>
+    /// Mana recovery result table.
+    /// Maps SV to mana recovered.
+    /// </summary>
+    ManaRecovery = 9
 }

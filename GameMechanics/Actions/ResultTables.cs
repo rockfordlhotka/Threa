@@ -23,6 +23,7 @@ public static class ResultTables
             ResultTableType.Crafting => GetCraftingResult(sv),
             ResultTableType.Healing => GetHealingResult(sv),
             ResultTableType.Movement => GetMovementResult(sv),
+            ResultTableType.ManaRecovery => GetManaRecoveryResult(sv),
             _ => GetGeneralResult(sv)
         };
     }
@@ -296,6 +297,52 @@ public static class ResultTables
                 {
                     EffectValue = 2 // +2 range bonus
                 }
+            };
+        }
+    }
+
+    private static ResultInterpretation GetManaRecoveryResult(int sv)
+    {
+        // Mana recovery result table maps SV to mana recovered.
+        // TV is 6 by default. Each mana recovered takes 1 minute.
+        // EffectValue = mana recovered
+        
+        if (sv < 0)
+        {
+            return sv switch
+            {
+                >= -2 => new ResultInterpretation(false, "No Recovery", "Failed to focus, no mana recovered.")
+                {
+                    EffectValue = 0
+                },
+                >= -4 => new ResultInterpretation(false, "Distracted", "Concentration broken, no mana recovered.")
+                {
+                    EffectValue = 0
+                },
+                >= -6 => new ResultInterpretation(false, "Exhausted", "Recovery attempt drains 1 FAT.")
+                {
+                    EffectValue = -1 // Lose 1 FAT
+                },
+                _ => new ResultInterpretation(false, "Backlash", "Magical backlash, lose 1 mana from pool.")
+                {
+                    EffectValue = -2 // Lose 1 mana
+                }
+            };
+        }
+        else
+        {
+            int manaRecovered = sv switch
+            {
+                <= 1 => 1,
+                <= 3 => 2,
+                <= 5 => 3,
+                <= 7 => 4,
+                _ => 5
+            };
+
+            return new ResultInterpretation(true, $"Recovered {manaRecovered}", $"Recover {manaRecovered} mana (1 minute per mana).")
+            {
+                EffectValue = manaRecovered
             };
         }
     }

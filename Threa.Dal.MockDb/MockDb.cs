@@ -38,6 +38,127 @@ public static class MockDb
     /// </summary>
     public static readonly List<ItemEffect> ItemEffects = [];
 
+    /// <summary>
+    /// Character mana pools per magic school.
+    /// </summary>
+    public static readonly List<CharacterMana> CharacterManaPools = [];
+
+    /// <summary>
+    /// Spell definitions - spell-specific metadata for spell skills.
+    /// </summary>
+    public static readonly List<SpellDefinition> SpellDefinitions = CreateSpellDefinitions();
+
+    private static List<SpellDefinition> CreateSpellDefinitions()
+    {
+        return
+        [
+            // === FIRE SPELLS ===
+            new SpellDefinition
+            {
+                SkillId = "fire-bolt",
+                MagicSchool = MagicSchool.Fire,
+                SpellType = SpellType.Targeted,
+                ManaCost = 1,
+                Range = 2, // Short range
+                ResistanceType = SpellResistanceType.Fixed,
+                FixedResistanceTV = 8,
+                EffectDescription = "Hurls a bolt of fire at the target, dealing fire damage."
+            },
+            new SpellDefinition
+            {
+                SkillId = "flame-shield",
+                MagicSchool = MagicSchool.Fire,
+                SpellType = SpellType.SelfBuff,
+                ManaCost = 2,
+                Range = 0, // Self
+                DefaultDuration = 10, // 10 rounds
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Surrounds the caster with protective flames that damage attackers."
+            },
+
+            // === WATER SPELLS ===
+            new SpellDefinition
+            {
+                SkillId = "ice-shard",
+                MagicSchool = MagicSchool.Water,
+                SpellType = SpellType.Targeted,
+                ManaCost = 1,
+                Range = 2,
+                ResistanceType = SpellResistanceType.Fixed,
+                FixedResistanceTV = 8,
+                EffectDescription = "Launches a shard of ice at the target."
+            },
+            new SpellDefinition
+            {
+                SkillId = "frost-armor",
+                MagicSchool = MagicSchool.Water,
+                SpellType = SpellType.SelfBuff,
+                ManaCost = 2,
+                Range = 0,
+                DefaultDuration = 10,
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Encases the caster in protective ice armor."
+            },
+
+            // === LIGHT SPELLS ===
+            new SpellDefinition
+            {
+                SkillId = "illuminate",
+                MagicSchool = MagicSchool.Light,
+                SpellType = SpellType.SelfBuff,
+                ManaCost = 1,
+                Range = 0,
+                DefaultDuration = 60, // 60 rounds (3 minutes)
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Creates a bright light around the caster."
+            },
+            new SpellDefinition
+            {
+                SkillId = "blind",
+                MagicSchool = MagicSchool.Light,
+                SpellType = SpellType.Targeted,
+                ManaCost = 2,
+                Range = 1, // Touch/Short
+                DefaultDuration = 3,
+                ResistanceType = SpellResistanceType.Willpower,
+                EffectDescription = "Blinds the target with a flash of brilliant light."
+            },
+
+            // === LIFE SPELLS ===
+            new SpellDefinition
+            {
+                SkillId = "minor-heal",
+                MagicSchool = MagicSchool.Life,
+                SpellType = SpellType.Targeted,
+                ManaCost = 1,
+                Range = 1, // Touch
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Heals minor wounds, restoring FAT."
+            },
+            new SpellDefinition
+            {
+                SkillId = "restore-vitality",
+                MagicSchool = MagicSchool.Life,
+                SpellType = SpellType.Targeted,
+                ManaCost = 3,
+                Range = 1,
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Restores vitality to the target."
+            },
+            new SpellDefinition
+            {
+                SkillId = "life-shield",
+                MagicSchool = MagicSchool.Life,
+                SpellType = SpellType.SelfBuff,
+                ManaCost = 2,
+                Range = 0,
+                DefaultDuration = 10,
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Creates a protective aura that absorbs damage."
+            }
+        ];
+    }
+
     private static List<ItemTemplate> CreateItemTemplates()
     {
         return

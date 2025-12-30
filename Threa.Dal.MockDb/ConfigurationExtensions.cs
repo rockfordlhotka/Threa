@@ -16,5 +16,7 @@ public static class ConfigurationExtensions
         services.AddTransient<IEffectDefinitionDal, EffectDefinitionDal>();
         services.AddTransient<ICharacterEffectDal, CharacterEffectDal>();
         services.AddTransient<IItemEffectDal, ItemEffectDal>();
+        services.AddTransient<IManaDal, ManaDal>();
+        services.AddTransient<ISpellDefinitionDal, SpellDefinitionDal>();
     }
 }

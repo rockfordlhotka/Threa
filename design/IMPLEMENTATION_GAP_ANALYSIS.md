@@ -16,7 +16,7 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Actions System | ✅ Complete | ✅ Implemented | None |
-| Combat System | ✅ Complete | ⚠️ Phase 4 Complete | Low |
+| Combat System | ✅ Complete | ✅ All 5 Phases Complete | None |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
@@ -185,7 +185,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Combat System (PHASE 4 COMPLETE)
+### 7. Combat System ✅ ALL PHASES COMPLETE
 
 **Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
 - Initiative by Available AP (highest first)
@@ -261,8 +261,17 @@ This document compares the design specifications in the `/design` folder against
 - ✅ Cooldown interruption: Pausable (bow/crossbow) vs Resettable (thrown)
 - ✅ 79 additional tests (187 total combat tests)
 
-**Remaining (Phase 5)**:
-- ❌ Special actions (Knockback, Disarm, Called Shot, Stun)
+**Phase 5 Implementation (Special Combat Actions)** ✅:
+- ✅ `Combat/SpecialActions/SpecialActionType.cs` - Enum for action types + AS penalty modifiers
+- ✅ `Combat/SpecialActions/KnockbackTable.cs` - RVE lookup table (SV → duration seconds)
+- ✅ `Combat/SpecialActions/SpecialActionRequest.cs` - Input for special action resolution
+- ✅ `Combat/SpecialActions/SpecialActionResult.cs` - Output with effect instructions
+- ✅ `Combat/SpecialActions/SpecialActionResolver.cs` - Main resolver with EffectManager integration
+- ✅ **Knockback**: No AS penalty, prevents target from acting for RVE seconds, critical knocks prone
+- ✅ **Disarm**: -2 AS penalty, target drops weapon/item, critical breaks item
+- ✅ **Called Shot**: -2 AS penalty, choose hit location, marginal success hits random location
+- ✅ **Stunning Blow**: -2 AS penalty, applies Stunned effect for SV seconds, critical causes unconsciousness
+- ✅ 46 additional tests (233 total combat tests)
 
 **Action Items**:
 | Priority | Task | File(s) |
@@ -272,7 +281,7 @@ This document compares the design specifications in the `/design` folder against
 | ~~High~~ | ~~Implement parry mode system~~ | ✅ `Combat/CombatState.cs` |
 | ~~High~~ | ~~Implement damage absorption sequence~~ | ✅ `Combat/DamageResolver.cs` |
 | ~~High~~ | ~~Implement ranged combat with modifiers~~ | ✅ `Combat/RangedAttackResolver.cs` |
-| Medium | Implement special combat actions | New `Combat/SpecialActions/` |
+| ~~Medium~~ | ~~Implement special combat actions~~ | ✅ `Combat/SpecialActions/` |
 
 ---
 
@@ -378,25 +387,38 @@ This document compares the design specifications in the `/design` folder against
 
 ### 11. Magic & Mana System (NOT IMPLEMENTED)
 
-**Design Spec**:
+**Design Spec** ([GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md#magic-and-spells)):
 - Separate mana pools per magic school
 - Individual spell skills
 - Mana recovery skills per school
 - Spell types: Targeted, Self-Buff, Area Effect, Environmental
 
-**Implementation**:
+**Implementation Plan**: See [MAGIC_SYSTEM_IMPLEMENTATION.md](MAGIC_SYSTEM_IMPLEMENTATION.md) for phased implementation approach.
+
+**Current Status**:
 - ❌ No mana pools
 - ❌ No spell definitions
 - ❌ No magic school system
 
-**Action Items**:
+**Phased Implementation**:
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Foundation - DTOs, DAL, ManaManager, SpellCastingService | ❌ Not Started |
+| Phase 2 | Spell Category Resolvers (Targeted, SelfBuff, Area, Environmental) | ❌ Not Started |
+| Phase 3 | Individual Spells (data-driven + custom) | ❌ Not Started |
+
+**Phase 1 Action Items** (Current Priority):
 | Priority | Task | File(s) |
 |----------|------|---------|
-| High | Create `MagicSchool` class | New `Magic/MagicSchool.cs` |
-| High | Create `ManaPool` class | New `Magic/ManaPool.cs` |
-| High | Create `Spell` skill subtype | `SkillEdit.cs` or new class |
-| Medium | Implement mana recovery mechanics | Magic classes |
-| Medium | Implement spell casting | New `Magic/SpellCaster.cs` |
+| High | Create `MagicSchool` enum | `Threa.Dal/Dto/MagicSchool.cs` |
+| High | Create `SpellType` enum | `Threa.Dal/Dto/SpellType.cs` |
+| High | Create `CharacterMana` DTO | `Threa.Dal/Dto/CharacterMana.cs` |
+| High | Create `SpellDefinition` DTO | `Threa.Dal/Dto/SpellDefinition.cs` |
+| High | Create `IManaDal` interface | `Threa.Dal/IManaDal.cs` |
+| High | Create `ManaManager` service | `GameMechanics/Magic/ManaManager.cs` |
+| High | Create `SpellCastingService` | `GameMechanics/Magic/SpellCastingService.cs` |
+| Medium | Time system integration | `GameMechanics/Time/TimeManager.cs` |
 
 ---
 
