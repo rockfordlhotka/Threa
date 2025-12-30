@@ -513,4 +513,501 @@ public class CombatTests
   }
 
   #endregion
+
+  #region DefenseResolver Tests
+
+  [TestMethod]
+  public void DefenseResolver_Passive_ReturnsDodgeASMinus1()
+  {
+    var diceRoller = new DeterministicDiceRoller();
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.Passive(dodgeAS: 12);
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(DefenseType.Passive, result.DefenseType);
+    Assert.AreEqual(11, result.TV);
+    Assert.AreEqual(12, result.AS);
+    Assert.IsNull(result.DefenseRoll);
+    Assert.IsFalse(result.CostsAction);
+    Assert.IsTrue(result.IsValid);
+  }
+
+  [TestMethod]
+  public void DefenseResolver_ActiveDodge_AddsDiceRoll()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(3);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.Dodge(dodgeAS: 10);
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(DefenseType.Dodge, result.DefenseType);
+    Assert.AreEqual(13, result.TV); // 10 + 3
+    Assert.AreEqual(10, result.AS);
+    Assert.AreEqual(3, result.DefenseRoll);
+    Assert.IsTrue(result.CostsAction);
+    Assert.IsTrue(result.IsValid);
+  }
+
+  [TestMethod]
+  public void DefenseResolver_Parry_NotInParryMode_CostsAction()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.Parry(parryAS: 14, isInParryMode: false);
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(DefenseType.Parry, result.DefenseType);
+    Assert.AreEqual(16, result.TV); // 14 + 2
+    Assert.IsTrue(result.CostsAction);
+  }
+
+  [TestMethod]
+  public void DefenseResolver_Parry_InParryMode_IsFree()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.Parry(parryAS: 14, isInParryMode: true);
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(DefenseType.Parry, result.DefenseType);
+    Assert.AreEqual(16, result.TV);
+    Assert.IsFalse(result.CostsAction); // Free when in parry mode
+  }
+
+  [TestMethod]
+  public void DefenseResolver_Parry_AgainstRanged_IsInvalid()
+  {
+    var diceRoller = new DeterministicDiceRoller();
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = new DefenseRequest
+    {
+      DefenseType = DefenseType.Parry,
+      ParryAS = 14,
+      IsRangedAttack = true
+    };
+    var result = resolver.Resolve(request);
+
+    Assert.IsFalse(result.IsValid);
+    Assert.IsNotNull(result.ErrorMessage);
+    Assert.IsTrue(result.ErrorMessage.Contains("ranged"));
+  }
+
+  [TestMethod]
+  public void DefenseResolver_ShieldBlock_SuccessfulRoll()
+  {
+    // Shield AS 12 + roll 0 = 12 >= TV 8, success with RV 4
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.ShieldBlock(shieldAS: 12);
+    var result = resolver.ResolveShieldBlock(request, baseTV: 10);
+
+    Assert.AreEqual(DefenseType.ShieldBlock, result.DefenseType);
+    Assert.AreEqual(10, result.TV); // Base TV unchanged
+    Assert.IsTrue(result.ShieldBlockSuccess);
+    Assert.AreEqual(4, result.ShieldBlockRV); // 12 - 8 = 4
+    Assert.IsFalse(result.CostsAction); // Shield block is free
+  }
+
+  [TestMethod]
+  public void DefenseResolver_ShieldBlock_FailedRoll()
+  {
+    // Shield AS 6 + roll -2 = 4 < TV 8, failure
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(-2);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.ShieldBlock(shieldAS: 6);
+    var result = resolver.ResolveShieldBlock(request, baseTV: 10);
+
+    Assert.IsFalse(result.ShieldBlockSuccess);
+    Assert.IsNull(result.ShieldBlockRV); // No RV on failure
+    Assert.AreEqual(10, result.TV); // Base TV unchanged
+  }
+
+  [TestMethod]
+  public void DefenseResolver_ResolveWithShield_BothResultsReturned()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2, 1); // Dodge roll, then shield roll
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var primaryRequest = DefenseRequest.Dodge(dodgeAS: 10);
+    var (primary, shield) = resolver.ResolveWithShield(primaryRequest, hasShield: true, shieldAS: 8);
+
+    Assert.IsNotNull(primary);
+    Assert.AreEqual(DefenseType.Dodge, primary.DefenseType);
+    Assert.AreEqual(12, primary.TV); // 10 + 2
+
+    Assert.IsNotNull(shield);
+    Assert.AreEqual(DefenseType.ShieldBlock, shield.DefenseType);
+    Assert.AreEqual(12, shield.TV); // Uses primary's TV
+    Assert.IsTrue(shield.ShieldBlockSuccess); // 8 + 1 = 9 >= 8
+  }
+
+  [TestMethod]
+  public void DefenseResolver_ResolveWithShield_NoShield_ReturnsNullShield()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var primaryRequest = DefenseRequest.Dodge(dodgeAS: 10);
+    var (primary, shield) = resolver.ResolveWithShield(primaryRequest, hasShield: false);
+
+    Assert.IsNotNull(primary);
+    Assert.IsNull(shield);
+  }
+
+  [TestMethod]
+  public void DefenseResolver_NegativeDodgeRoll_StillCalculates()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(-3);
+
+    var resolver = new DefenseResolver(diceRoller);
+
+    var request = DefenseRequest.Dodge(dodgeAS: 10);
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(7, result.TV); // 10 + (-3)
+    Assert.AreEqual(-3, result.DefenseRoll);
+  }
+
+  #endregion
+
+  #region CombatState Tests
+
+  [TestMethod]
+  public void CombatState_NewState_HasNoActions()
+  {
+    var state = new CombatState("char1");
+
+    Assert.AreEqual(0, state.ActionsThisRound);
+    Assert.IsFalse(state.HasActed);
+    Assert.IsFalse(state.IsInParryMode);
+    Assert.IsFalse(state.WillHaveMultipleActionPenalty);
+  }
+
+  [TestMethod]
+  public void CombatState_RecordAction_IncrementsCount()
+  {
+    var state = new CombatState("char1");
+
+    state.RecordAction();
+
+    Assert.AreEqual(1, state.ActionsThisRound);
+    Assert.IsTrue(state.HasActed);
+    Assert.IsTrue(state.WillHaveMultipleActionPenalty);
+  }
+
+  [TestMethod]
+  public void CombatState_MultipleActions_TrackedCorrectly()
+  {
+    var state = new CombatState("char1");
+
+    state.RecordAction();
+    state.RecordAction();
+    state.RecordAction();
+
+    Assert.AreEqual(3, state.ActionsThisRound);
+  }
+
+  [TestMethod]
+  public void CombatState_EnterParryMode_SetsState()
+  {
+    var state = new CombatState("char1");
+
+    state.EnterParryMode("sword-skill");
+
+    Assert.IsTrue(state.IsInParryMode);
+    Assert.AreEqual("sword-skill", state.ParrySkillId);
+    Assert.AreEqual(1, state.ActionsThisRound); // Entering parry mode is an action
+  }
+
+  [TestMethod]
+  public void CombatState_NonParryAction_ExitsParryMode()
+  {
+    var state = new CombatState("char1");
+    state.EnterParryMode("sword-skill");
+
+    // Take a non-parry action (like attacking)
+    state.RecordAction(isParryDefense: false);
+
+    Assert.IsFalse(state.IsInParryMode);
+    Assert.IsNull(state.ParrySkillId);
+  }
+
+  [TestMethod]
+  public void CombatState_ParryDefense_StaysInParryMode()
+  {
+    var state = new CombatState("char1");
+    state.EnterParryMode("sword-skill");
+
+    // Record parry defenses
+    state.RecordAction(isParryDefense: true);
+    state.RecordAction(isParryDefense: true);
+
+    Assert.IsTrue(state.IsInParryMode);
+    Assert.AreEqual("sword-skill", state.ParrySkillId);
+  }
+
+  [TestMethod]
+  public void CombatState_RecordParryDefense_WhileInParryMode_IsFree()
+  {
+    var state = new CombatState("char1");
+    state.EnterParryMode("sword-skill"); // Actions = 1
+
+    state.RecordParryDefense();
+    state.RecordParryDefense();
+
+    // Parry defenses while in parry mode don't increment action count
+    Assert.AreEqual(1, state.ActionsThisRound);
+    Assert.IsTrue(state.IsInParryMode);
+  }
+
+  [TestMethod]
+  [ExpectedException(typeof(InvalidOperationException))]
+  public void CombatState_RecordParryDefense_NotInParryMode_Throws()
+  {
+    var state = new CombatState("char1");
+
+    state.RecordParryDefense(); // Should throw
+  }
+
+  [TestMethod]
+  public void CombatState_StartNewRound_ResetsActions_KeepsParryMode()
+  {
+    var state = new CombatState("char1");
+    state.EnterParryMode("sword-skill");
+    state.RecordAction(isParryDefense: true);
+
+    state.StartNewRound();
+
+    Assert.AreEqual(0, state.ActionsThisRound);
+    Assert.IsFalse(state.HasActed);
+    Assert.IsTrue(state.IsInParryMode); // Parry mode persists across rounds
+    Assert.AreEqual("sword-skill", state.ParrySkillId);
+  }
+
+  [TestMethod]
+  public void CombatState_Reset_ClearsEverything()
+  {
+    var state = new CombatState("char1");
+    state.EnterParryMode("sword-skill");
+    state.RecordAction();
+
+    state.Reset();
+
+    Assert.AreEqual(0, state.ActionsThisRound);
+    Assert.IsFalse(state.IsInParryMode);
+    Assert.IsNull(state.ParrySkillId);
+  }
+
+  #endregion
+
+  #region CombatStateManager Tests
+
+  [TestMethod]
+  public void CombatStateManager_GetState_CreatesIfNotExists()
+  {
+    var manager = new CombatStateManager();
+
+    var state = manager.GetState("char1");
+
+    Assert.IsNotNull(state);
+    Assert.AreEqual("char1", state.CombatantId);
+  }
+
+  [TestMethod]
+  public void CombatStateManager_GetState_ReturnsSameInstance()
+  {
+    var manager = new CombatStateManager();
+
+    var state1 = manager.GetState("char1");
+    state1.RecordAction();
+
+    var state2 = manager.GetState("char1");
+
+    Assert.AreSame(state1, state2);
+    Assert.AreEqual(1, state2.ActionsThisRound);
+  }
+
+  [TestMethod]
+  public void CombatStateManager_StartNewRound_ResetsAllCombatants()
+  {
+    var manager = new CombatStateManager();
+
+    var state1 = manager.GetState("char1");
+    var state2 = manager.GetState("char2");
+    state1.RecordAction();
+    state2.RecordAction();
+    state2.RecordAction();
+
+    manager.StartNewRound();
+
+    Assert.AreEqual(0, state1.ActionsThisRound);
+    Assert.AreEqual(0, state2.ActionsThisRound);
+  }
+
+  [TestMethod]
+  public void CombatStateManager_RemoveCombatant_RemovesFromTracking()
+  {
+    var manager = new CombatStateManager();
+
+    var state1 = manager.GetState("char1");
+    state1.RecordAction();
+
+    manager.RemoveCombatant("char1");
+
+    var state2 = manager.GetState("char1");
+
+    // Should be a new state, not the old one
+    Assert.AreEqual(0, state2.ActionsThisRound);
+  }
+
+  [TestMethod]
+  public void CombatStateManager_EndCombat_ClearsAllState()
+  {
+    var manager = new CombatStateManager();
+    manager.GetState("char1");
+    manager.GetState("char2");
+
+    manager.EndCombat();
+
+    // Getting combatant IDs should return empty after clearing
+    var ids = manager.GetCombatantIds();
+    Assert.AreEqual(0, System.Linq.Enumerable.Count(ids));
+  }
+
+  #endregion
+
+  #region Integration Tests - Defense + Attack Resolution
+
+  [TestMethod]
+  public void Integration_PassiveDefense_AttackResolvesWithTV()
+  {
+    // Defender uses passive defense
+    var defenseRoller = new DeterministicDiceRoller();
+    var defenseResolver = new DefenseResolver(defenseRoller);
+
+    var defenseRequest = DefenseRequest.Passive(dodgeAS: 12);
+    var defenseResult = defenseResolver.Resolve(defenseRequest);
+
+    Assert.AreEqual(11, defenseResult.TV);
+
+    // Attacker resolves attack with that TV
+    var attackRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0); // Attack roll
+
+    var attackResolver = new AttackResolver(attackRoller);
+    var attackRequest = AttackRequest.Create(
+      attackerAS: 14,
+      attackerPhysicalityAS: 10,
+      defenderDodgeAS: 12);
+
+    var attackResult = attackResolver.ResolveWithTV(attackRequest, defenseResult.TV);
+
+    Assert.IsTrue(attackResult.IsHit);
+    Assert.AreEqual(11, attackResult.TV);
+    Assert.AreEqual(3, attackResult.SV); // 14 - 11 = 3
+  }
+
+  [TestMethod]
+  public void Integration_ActiveDodge_IncreasesTV()
+  {
+    // Defender uses active dodge
+    var defenseRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(4); // Good dodge roll
+
+    var defenseResolver = new DefenseResolver(defenseRoller);
+    var defenseResult = defenseResolver.Resolve(DefenseRequest.Dodge(dodgeAS: 12));
+
+    Assert.AreEqual(16, defenseResult.TV); // 12 + 4
+
+    // Same attack now misses
+    var attackRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var attackResolver = new AttackResolver(attackRoller);
+    var attackRequest = AttackRequest.Create(14, 10, 12);
+
+    var attackResult = attackResolver.ResolveWithTV(attackRequest, defenseResult.TV);
+
+    Assert.IsFalse(attackResult.IsHit);
+    Assert.AreEqual(-2, attackResult.SV); // 14 - 16 = -2
+  }
+
+  [TestMethod]
+  public void Integration_ParryMode_MultipleDefensesFree()
+  {
+    // Character enters parry mode
+    var state = new CombatState("defender");
+    state.EnterParryMode("sword-skill");
+
+    Assert.AreEqual(1, state.ActionsThisRound); // Cost to enter
+
+    // Multiple parry defenses are free
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2, 3, 1); // Three parry rolls
+
+    var defenseResolver = new DefenseResolver(diceRoller);
+
+    // First parry
+    var result1 = defenseResolver.Resolve(DefenseRequest.Parry(parryAS: 14, isInParryMode: true));
+    state.RecordParryDefense();
+
+    // Second parry
+    var result2 = defenseResolver.Resolve(DefenseRequest.Parry(parryAS: 14, isInParryMode: true));
+    state.RecordParryDefense();
+
+    // Third parry
+    var result3 = defenseResolver.Resolve(DefenseRequest.Parry(parryAS: 14, isInParryMode: true));
+    state.RecordParryDefense();
+
+    Assert.AreEqual(16, result1.TV);
+    Assert.AreEqual(17, result2.TV);
+    Assert.AreEqual(15, result3.TV);
+
+    Assert.IsFalse(result1.CostsAction);
+    Assert.IsFalse(result2.CostsAction);
+    Assert.IsFalse(result3.CostsAction);
+
+    // Actions still at 1 (just the parry mode entry)
+    Assert.AreEqual(1, state.ActionsThisRound);
+    Assert.IsTrue(state.IsInParryMode);
+  }
+
+  [TestMethod]
+  public void Integration_AttackBreaksParryMode()
+  {
+    var state = new CombatState("fighter");
+    state.EnterParryMode("sword-skill");
+
+    Assert.IsTrue(state.IsInParryMode);
+
+    // Take an attack action
+    state.RecordAction(isParryDefense: false);
+
+    Assert.IsFalse(state.IsInParryMode);
+    Assert.AreEqual(2, state.ActionsThisRound);
+  }
+
+  #endregion
 }

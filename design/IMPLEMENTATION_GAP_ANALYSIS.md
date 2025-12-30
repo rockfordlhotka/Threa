@@ -16,7 +16,7 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Actions System | ✅ Complete | ✅ Implemented | None |
-| Combat System | ✅ Complete | ⚠️ Phase 1 Complete | Medium |
+| Combat System | ✅ Complete | ⚠️ Phase 2 Complete | Medium |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
@@ -185,7 +185,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Combat System (NOT IMPLEMENTED)
+### 7. Combat System (PHASE 2 COMPLETE)
 
 **Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
 - Initiative by Available AP (highest first)
@@ -200,24 +200,50 @@ This document compares the design specifications in the `/design` folder against
 
 **Implementation Plan**: See [COMBAT_IMPLEMENTATION_PLAN.md](COMBAT_IMPLEMENTATION_PLAN.md) for phased approach.
 
-**Implementation**:
-- ❌ No combat action classes
-- ❌ No attack/defense resolution
-- ❌ No initiative system
-- ❌ No parry mode tracking
-- ❌ No ranged combat/cooldowns
-- ⚠️ `Calculator.cs` has partial damage/RV logic
+**Phase 1 Implementation (Attack Resolution)** ✅:
+- ✅ `Combat/HitLocation.cs` - Hit location enum and optimized d24 calculator
+- ✅ `Combat/CombatResultTables.cs` - Physicality bonus and damage lookup tables
+- ✅ `Combat/AttackRequest.cs` - Input for attack resolution
+- ✅ `Combat/AttackResult.cs` - Output from attack resolution
+- ✅ `Combat/AttackResolver.cs` - Main attack resolution service
+- ✅ Multiple action penalty (-1 AS, not cumulative)
+- ✅ Boost mechanic (AP + FAT boosts stack)
+- ✅ Passive defense (Dodge AS - 1)
+- ✅ Physicality bonus roll (free, like design spec)
+- ✅ 55 tests passing
+
+**Phase 2 Implementation (Defense Resolution)** ✅:
+- ✅ `Combat/DefenseType.cs` - Enum: Passive, Dodge, Parry, ShieldBlock
+- ✅ `Combat/DefenseRequest.cs` - Input for defense resolution
+- ✅ `Combat/DefenseResult.cs` - Output with calculated TV
+- ✅ `Combat/DefenseResolver.cs` - Defense calculation service
+- ✅ `Combat/CombatState.cs` - Per-character combat state + CombatStateManager
+- ✅ Passive defense: TV = Dodge AS - 1 (no roll, no cost)
+- ✅ Active Dodge: TV = Dodge AS + 4dF+ (costs action)
+- ✅ Active Parry: TV = Parry AS + 4dF+ (costs action to enter mode)
+- ✅ Parry mode: free defenses until broken by non-parry action
+- ✅ Shield block: Shield AS + 4dF+ vs TV 8 (free action)
+- ✅ Parry cannot block ranged attacks
+- ✅ Combat state tracking per-character
+- ✅ 84 total combat tests passing
+
+**Remaining (Phases 3-5)**:
+- ❌ Damage absorption sequence (Shield → Armor → Character)
+- ❌ Armor/shield durability degradation
+- ❌ Ranged combat with TV modifiers
+- ❌ Aim and Prep actions
+- ❌ Ranged cooldowns by skill level
+- ❌ Special actions (Knockback, Disarm, Called Shot, Stun)
 
 **Action Items**:
 | Priority | Task | File(s) |
 |----------|------|---------|
-| **Critical** | Create `CombatAction` class for attack resolution | New `Combat/CombatAction.cs` |
-| **Critical** | Implement attack/defense roll mechanics | New `Combat/AttackResolver.cs` |
-| High | Implement parry mode system | New combat classes |
-| High | Implement ranged combat with modifiers | New combat classes |
-| High | Implement Physicality damage bonus | Combat classes |
-| High | Implement defense sequence (Shield → Armor) | New `Combat/DefenseResolver.cs` |
-| Medium | Implement hit location determination | `WoundList.cs` (partial exists) |
+| ~~Critical~~ | ~~Create attack resolution~~ | ✅ `Combat/AttackResolver.cs` |
+| ~~Critical~~ | ~~Implement defense options~~ | ✅ `Combat/DefenseResolver.cs` |
+| ~~High~~ | ~~Implement parry mode system~~ | ✅ `Combat/CombatState.cs` |
+| High | Implement damage absorption sequence | New `Combat/DamageResolver.cs` |
+| High | Implement ranged combat with modifiers | New `Combat/RangedAttackResolver.cs` |
+| Medium | Implement special combat actions | New `Combat/SpecialActions/` |
 
 ---
 

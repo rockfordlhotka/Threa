@@ -49,35 +49,34 @@ The following systems provide the foundation for combat:
 
 ---
 
-### Phase 2: Defense Resolution
+### Phase 2: Defense Resolution ✅ COMPLETE
 
 **Goal**: Implement active and passive defense options.
 
-**New Files**:
+**Implemented Files**:
+- `GameMechanics/Combat/DefenseType.cs` - Enum: Passive, Dodge, Parry, ShieldBlock
 - `GameMechanics/Combat/DefenseRequest.cs` - Input for defense resolution
 - `GameMechanics/Combat/DefenseResult.cs` - Output from defense resolution
 - `GameMechanics/Combat/DefenseResolver.cs` - Defense resolution service
-- `GameMechanics/Combat/DefenseType.cs` - Enum: Passive, Dodge, Parry, Shield
-- `GameMechanics/Combat/ParryMode.cs` - Parry mode state tracking
+- `GameMechanics/Combat/CombatState.cs` - Per-character combat state + CombatStateManager
 
-**Key Features**:
-- **Passive Defense**: Dodge AS - 1 (no roll, no cost)
-- **Active Dodge**: Dodge AS + 4dF+ (costs 1 AP + 1 FAT)
-- **Active Parry**: Weapon/Shield AS + 4dF+ (costs action to enter mode)
-- **Parry Mode**: Free defenses until broken by non-parry action
-- **Shield Block**: Shield AS + 4dF+ vs TV 8
+**Implemented Features**:
+- ✅ **Passive Defense**: Dodge AS - 1 (no roll, no cost)
+- ✅ **Active Dodge**: Dodge AS + 4dF+ (costs action)
+- ✅ **Active Parry**: Weapon/Shield AS + 4dF+ (costs action to enter mode)
+- ✅ **Parry Mode**: Free defenses until broken by non-parry action
+- ✅ **Shield Block**: Shield AS + 4dF+ vs TV 8 (free action, like Physicality bonus)
+- ✅ Parry cannot be used against ranged attacks
+- ✅ Combat state tracking per character (actions, parry mode)
+- ✅ CombatStateManager for multi-combatant encounters
+- ✅ Round tracking with parry mode persistence
 
-**Integration Points**:
-- `AttackResolver` modified to accept defense type and calculate TV
-- Parry mode tracked per-character (in combat state)
+**Integration with AttackResolver**:
+- `DefenseResolver.Resolve()` returns `DefenseResult` with calculated TV
+- `AttackResolver.ResolveWithTV()` accepts explicit TV from defense
+- `ResolveWithShield()` combines primary defense with optional shield block
 
-**Tests**:
-- Passive defense calculation
-- Active dodge resolution
-- Parry mode entry/exit
-- Shield block success/failure
-
-**Deliverable**: Full attack vs defense resolution for melee combat.
+**Tests**: 29 additional tests (84 total combat tests)
 
 ---
 
@@ -204,14 +203,14 @@ Phase 5: Special Actions (can be done in parallel with Phase 4)
 
 ## Estimated Scope
 
-| Phase | New Files | Estimated Tests | Complexity |
-|-------|-----------|-----------------|------------|
-| Phase 1 | 6 | 20-30 | Medium |
-| Phase 2 | 5 | 15-25 | Medium |
-| Phase 3 | 3 | 20-30 | High |
-| Phase 4 | 4 | 25-35 | Medium |
-| Phase 5 | 4 | 15-20 | Low |
-| **Total** | **22** | **95-140** | |
+| Phase | New Files | Estimated Tests | Complexity | Status |
+|-------|-----------|-----------------|------------|--------|
+| Phase 1 | 5 | 55 | Medium | ✅ Complete |
+| Phase 2 | 5 | 29 | Medium | ✅ Complete |
+| Phase 3 | 3 | 20-30 | High | Not Started |
+| Phase 4 | 4 | 25-35 | Medium | Not Started |
+| Phase 5 | 4 | 15-20 | Low | Not Started |
+| **Total** | **21** | **144-169** | | **2/5 Complete** |
 
 ---
 
