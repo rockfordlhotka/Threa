@@ -292,28 +292,128 @@ All 24 resolver tests passing in `SpellResolverTests.cs`:
 
 ---
 
-## Phase 3: Individual Spells
+## Phase 3: Individual Spells ✅ COMPLETED
 
-Each spell is primarily data-driven, with custom code only where needed.
+Each spell (or group of similar spells) has its own effect class that handles specific mechanics.
 
-### 3.1 Data-Driven Spells
+### Design Decisions (Phase 3)
 
-Most spells can be fully defined through configuration:
+| Topic | Decision |
+|-------|----------|
+| **Spell Effect Pattern** | Each spell/spell-group is a class implementing `ISpellEffect` |
+| **Physical Damage Spells** | Use melee combat damage table (like a punch) |
+| **Energy Damage Spells** | Use dedicated energy damage lookup table |
+| **Healing Spells** | Inverse damage - restores FAT/VIT based on SV |
+| **Pump Mechanic** | Extra FAT or mana adds to effective SV for power/duration |
 
-1. **Skill Definition** - The spell as a learnable skill (name, attributes, costs)
-2. **Spell Definition** - Spell-specific metadata (school, type, mana cost, range)
-3. **Effect Definition** - What the spell does when successful (buffs, damage, conditions)
+### 3.1 Core Types ✅
 
-**Example: Fire Bolt (Data-Driven)**
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `ISpellEffect` | `GameMechanics/Magic/Effects/ISpellEffect.cs` | Interface for spell effect classes |
+| `SpellEffectContext` | Same file | Input: spell, SV, caster, target(s), pump amounts |
+| `SpellEffectResult` | Same file | Output: damage, healing, effects, narrative for UI |
+| `SpellEffectFactory` | `GameMechanics/Magic/Effects/SpellEffectFactory.cs` | Factory to get effect class by spell ID |
+
+### 3.2 Pump Mechanic ✅
+
+Spells can be "pumped" by allocating extra FAT or mana:
+
+```csharp
+public class SpellEffectContext
+{
+    public int PumpedFatigue { get; init; }  // Extra FAT for power
+    public Dictionary<MagicSchool, int>? PumpedMana { get; init; }  // Extra mana
+    public int TotalPumpValue => PumpedFatigue + (PumpedMana?.Values.Sum() ?? 0);
+}
 ```
-Skill: Fire Bolt, INT/WIL, Base Cost 20, Multiplier 2.0
-Spell: Fire School, Targeted, 5 Mana, Range 2
-Effect: Fire Damage, SV-based damage to FAT/VIT
+
+Effects of pumping (varies by spell):
+- **Damage Spells**: +1 to effective SV per pump point
+- **Healing Spells**: +1 to effective SV per pump point
+- **Duration Spells**: Additional rounds (varies by spell type)
+
+### 3.3 Spell Effect Classes ✅
+
+| Class | Spells Handled | Effect |
+|-------|----------------|--------|
+| `PhysicalDamageSpellEffect` | mystic-punch, force-strike | Uses melee damage table |
+| `EnergyDamageSpellEffect` | fire-bolt, ice-shard, lightning-bolt | Uses energy damage table |
+| `HealingSpellEffect` | minor-heal, restore-vitality, major-heal | FAT/VIT restoration |
+| `AreaLightSpellEffect` | illuminate-area, daylight, dancing-lights | Creates light at location |
+| `WallOfFireSpellEffect` | wall-of-fire, fire-storm, inferno | Environmental fire damage |
+
+### 3.4 Damage Tables ✅
+
+**Energy Damage Table** (for fire-bolt, ice-shard, etc.):
+
+| SV | FAT | VIT | Wound | Description |
+|----|-----|-----|-------|-------------|
+| <0 | 0 | 0 | No | Miss |
+| 0 | 2 | 0 | No | Graze |
+| 1 | 3 | 0 | No | Light hit |
+| 2 | 4 | 0 | No | Solid hit |
+| 3 | 5 | 1 | No | Good hit |
+| 4 | 6 | 1 | No | Strong hit |
+| 5 | 7 | 2 | No | Heavy hit |
+| 6 | 8 | 3 | Yes | Searing |
+| 7 | 9 | 4 | Yes | Scorching |
+| 8+ | 9+(sv-7) | 4+(sv-7) | Yes | Devastating |
+
+**Healing Table** (for minor-heal, etc.):
+
+| SV | FAT Healed | VIT Healed |
+|----|------------|------------|
+| <0 | 1 | 1 (minimal) |
+| 0 | 2 | 1 |
+| 1 | 3 | 1 |
+| 2 | 4 | 2 |
+| 3 | 5 | 2 |
+| 4 | 6 | 3 |
+| 5 | 7 | 3 |
+| 6+ | 8+(sv-6) | 4+(sv-6)/2 |
+
+### 3.5 Sample Spells Added ✅
+
+| Spell | School | Type | Description |
+|-------|--------|------|-------------|
+| `mystic-punch` | Life | Targeted | Physical damage like a punch |
+| `illuminate-area` | Light | AreaEffect | Creates persistent light at location |
+| `wall-of-fire` | Fire | Environmental | Persistent fire damage at location |
+
+### 3.6 Unit Tests ✅
+
+All 33 tests passing in `SpellEffectTests.cs`:
+
+| Category | Tests |
+|----------|-------|
+| SpellEffectFactory | 3 tests |
+| PhysicalDamageSpellEffect | 5 tests |
+| EnergyDamageSpellEffect | 4 tests |
+| HealingSpellEffect | 5 tests |
+| AreaLightSpellEffect | 3 tests |
+| WallOfFireSpellEffect | 6 tests |
+| Damage/Healing Tables | 7 tests |
+
+**Total magic/spell tests**: 81 (23 Phase 1 + 24 Phase 2 + 33 Phase 3 + 1 integration)
+
+---
+
+## Future Enhancements
+
+### Condition Removal Spells (Not Yet Implemented)
+
+Healing spells that counter wounds, poison, disease, etc.:
+
+```csharp
+public class ConditionRemovalSpellEffect : ISpellEffect
+{
+    // Removes effects matching criteria (poison, wound, etc.)
+    // SV determines difficulty of removal
+}
 ```
 
-### 3.2 Custom Spell Resolvers
-
-Complex spells with unique mechanics need custom code:
+### Complex Custom Spells (Not Yet Implemented)
 
 | Spell | Reason for Custom Code |
 |-------|------------------------|
@@ -323,16 +423,14 @@ Complex spells with unique mechanics need custom code:
 | Dispel Magic | Interacts with other spell effects |
 | Time Stop | Affects initiative/turn order |
 
-Custom resolvers implement `ISpellResolver` and are registered in the factory.
-
-### 3.3 Spell Implementation Checklist
+### 3.7 Spell Implementation Checklist
 
 For each new spell:
 
 - [ ] Create/update Skill definition in database
-- [ ] Create SpellDefinition record
-- [ ] Create EffectDefinition (if spell has persistent effects)
-- [ ] If custom logic needed, create resolver class
+- [ ] Create SpellDefinition record in MockDb
+- [ ] Create or use existing ISpellEffect class
+- [ ] Register in SpellEffectFactory if new class
 - [ ] Add unit tests
 - [ ] Document in spell reference
 
@@ -340,31 +438,31 @@ For each new spell:
 
 ## Implementation Order
 
-### Priority 1: Core Infrastructure
+### Priority 1: Core Infrastructure ✅ COMPLETE
 1. Enums: `MagicSchool`, `SpellType`
 2. DTOs: `CharacterMana`, `SpellDefinition`
 3. DAL interfaces and implementations
 4. `ManaManager` service
 5. Unit tests for mana operations
 
-### Priority 2: Spell Casting Framework
+### Priority 2: Spell Casting Framework ✅ COMPLETE
 1. `SpellCastRequest`/`SpellCastResult` models
 2. `SpellCastingService` base implementation
 3. Integration with `EffectManager`
 4. Time system integration for mana recovery
 5. Unit tests for spell casting flow
 
-### Priority 3: Category Resolvers
+### Priority 3: Category Resolvers ✅ COMPLETE
 1. `SelfBuffResolver` (simplest)
 2. `TargetedSpellResolver`
 3. `AreaEffectResolver`
 4. `EnvironmentalSpellResolver`
 5. Unit tests for each resolver
 
-### Priority 4: Sample Spells
-1. Implement 2-3 spells per category to validate the system
-2. One data-driven spell per category
-3. One custom resolver spell to validate extensibility
+### Priority 4: Sample Spells ✅ COMPLETE
+1. Implement spell effect classes for each category
+2. Pump mechanic for power/duration boosting
+3. Sample spells: mystic-punch, illuminate-area, wall-of-fire
 
 ---
 

@@ -85,6 +85,18 @@ public static class MockDb
                 ResistanceType = SpellResistanceType.None,
                 EffectDescription = "Surrounds the caster with protective flames that damage attackers."
             },
+            new SpellDefinition
+            {
+                SkillId = "wall-of-fire",
+                MagicSchool = MagicSchool.Fire,
+                SpellType = SpellType.Environmental,
+                ManaCost = 3,
+                Range = 2, // Short range
+                AreaRadius = 3, // 3 meter radius
+                DefaultDuration = 10, // 10 rounds base
+                ResistanceType = SpellResistanceType.None, // Location-based, no resistance
+                EffectDescription = "Creates a wall of fire at a location that burns anyone who enters or remains in the area."
+            },
 
             // === WATER SPELLS ===
             new SpellDefinition
@@ -124,6 +136,18 @@ public static class MockDb
             },
             new SpellDefinition
             {
+                SkillId = "illuminate-area",
+                MagicSchool = MagicSchool.Light,
+                SpellType = SpellType.AreaEffect,
+                ManaCost = 2,
+                Range = 2, // Short range
+                AreaRadius = 10, // 10 meter radius
+                DefaultDuration = 60, // 60 rounds (3 minutes)
+                ResistanceType = SpellResistanceType.None,
+                EffectDescription = "Creates a persistent magical light at a location, illuminating the area."
+            },
+            new SpellDefinition
+            {
                 SkillId = "blind",
                 MagicSchool = MagicSchool.Light,
                 SpellType = SpellType.Targeted,
@@ -135,6 +159,17 @@ public static class MockDb
             },
 
             // === LIFE SPELLS ===
+            new SpellDefinition
+            {
+                SkillId = "mystic-punch",
+                MagicSchool = MagicSchool.Life,
+                SpellType = SpellType.Targeted,
+                ManaCost = 1,
+                Range = 1, // Touch
+                ResistanceType = SpellResistanceType.Fixed,
+                FixedResistanceTV = 6,
+                EffectDescription = "Channels magical force into a physical strike, dealing damage like a punch."
+            },
             new SpellDefinition
             {
                 SkillId = "minor-heal",

@@ -20,7 +20,7 @@ This document compares the design specifications in the `/design` folder against
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
-| Magic/Mana | ✅ Complete | ❌ Not Implemented | High |
+| Magic/Mana | ✅ Complete | ✅ All 3 Phases Complete | None |
 | Species Modifiers | ✅ Complete | ✅ Implemented | None |
 | Action Points | ✅ Complete | ✅ Implemented | None |
 | Time System | ✅ Complete | ✅ Implemented | None |
@@ -385,7 +385,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 11. Magic & Mana System (NOT IMPLEMENTED)
+### 11. Magic & Mana System ✅ ALL 3 PHASES COMPLETE
 
 **Design Spec** ([GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md#magic-and-spells)):
 - Separate mana pools per magic school
@@ -393,32 +393,59 @@ This document compares the design specifications in the `/design` folder against
 - Mana recovery skills per school
 - Spell types: Targeted, Self-Buff, Area Effect, Environmental
 
-**Implementation Plan**: See [MAGIC_SYSTEM_IMPLEMENTATION.md](MAGIC_SYSTEM_IMPLEMENTATION.md) for phased implementation approach.
+**Implementation Plan**: See [MAGIC_SYSTEM_IMPLEMENTATION.md](MAGIC_SYSTEM_IMPLEMENTATION.md) for complete implementation details.
 
 **Current Status**:
-- ❌ No mana pools
-- ❌ No spell definitions
-- ❌ No magic school system
+- ✅ Mana pools per magic school (Fire, Water, Light, Life)
+- ✅ Spell definitions with resistance types
+- ✅ Magic school system with mana tracking
+- ✅ Spell type resolvers (Targeted, SelfBuff, AreaEffect, Environmental)
+- ✅ Spell effect classes with pump mechanic
+- ✅ 81 unit tests passing
 
-**Phased Implementation**:
+**Implementation** (GameMechanics.Magic namespace):
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| Phase 1 | Foundation - DTOs, DAL, ManaManager, SpellCastingService | ❌ Not Started |
-| Phase 2 | Spell Category Resolvers (Targeted, SelfBuff, Area, Environmental) | ❌ Not Started |
-| Phase 3 | Individual Spells (data-driven + custom) | ❌ Not Started |
+**Phase 1 - Foundation** ✅:
+- ✅ `MagicSchool` enum - Fire, Water, Light, Life ([MagicSchool.cs](../Threa.Dal/Dto/MagicSchool.cs))
+- ✅ `SpellType` enum - Targeted, SelfBuff, AreaEffect, Environmental ([SpellType.cs](../Threa.Dal/Dto/SpellType.cs))
+- ✅ `CharacterMana` DTO - Per-school mana tracking ([CharacterMana.cs](../Threa.Dal/Dto/CharacterMana.cs))
+- ✅ `SpellDefinition` DTO - Spell metadata with resistance types ([SpellDefinition.cs](../Threa.Dal/Dto/SpellDefinition.cs))
+- ✅ `IManaDal` / `ISpellDefinitionDal` interfaces with MockDb implementations
+- ✅ `ManaManager` - Mana pool management, spending, recovery ([ManaManager.cs](../GameMechanics/Magic/ManaManager.cs))
+- ✅ `SpellCastingService` - Spell casting orchestration ([SpellCastingService.cs](../GameMechanics/Magic/SpellCastingService.cs))
+- ✅ `ManaRecovery` result table in ResultTables.cs
+- ✅ 23 unit tests
 
-**Phase 1 Action Items** (Current Priority):
-| Priority | Task | File(s) |
-|----------|------|---------|
-| High | Create `MagicSchool` enum | `Threa.Dal/Dto/MagicSchool.cs` |
-| High | Create `SpellType` enum | `Threa.Dal/Dto/SpellType.cs` |
-| High | Create `CharacterMana` DTO | `Threa.Dal/Dto/CharacterMana.cs` |
-| High | Create `SpellDefinition` DTO | `Threa.Dal/Dto/SpellDefinition.cs` |
-| High | Create `IManaDal` interface | `Threa.Dal/IManaDal.cs` |
-| High | Create `ManaManager` service | `GameMechanics/Magic/ManaManager.cs` |
-| High | Create `SpellCastingService` | `GameMechanics/Magic/SpellCastingService.cs` |
-| Medium | Time system integration | `GameMechanics/Time/TimeManager.cs` |
+**Phase 2 - Spell Category Resolvers** ✅:
+- ✅ `ISpellResolver` interface with context/result types ([ISpellResolver.cs](../GameMechanics/Magic/Resolvers/ISpellResolver.cs))
+- ✅ `SpellResolverFactory` - Gets resolver by SpellType ([SpellResolverFactory.cs](../GameMechanics/Magic/Resolvers/SpellResolverFactory.cs))
+- ✅ `SelfBuffResolver` - Auto-success, targets caster ([SelfBuffResolver.cs](../GameMechanics/Magic/Resolvers/SelfBuffResolver.cs))
+- ✅ `TargetedSpellResolver` - Single target with resistance ([TargetedSpellResolver.cs](../GameMechanics/Magic/Resolvers/TargetedSpellResolver.cs))
+- ✅ `AreaEffectResolver` - Multi-target, individual defenses ([AreaEffectResolver.cs](../GameMechanics/Magic/Resolvers/AreaEffectResolver.cs))
+- ✅ `EnvironmentalSpellResolver` - Location-based effects ([EnvironmentalSpellResolver.cs](../GameMechanics/Magic/Resolvers/EnvironmentalSpellResolver.cs))
+- ✅ `SpellLocation` / `LocationEffect` DTOs for environmental spells
+- ✅ `ILocationEffectDal` with MockDb implementation
+- ✅ 24 unit tests
+
+**Phase 3 - Individual Spells** ✅:
+- ✅ `ISpellEffect` interface - Spell-specific effect classes ([ISpellEffect.cs](../GameMechanics/Magic/Effects/ISpellEffect.cs))
+- ✅ `SpellEffectContext` / `SpellEffectResult` - Input/output for effects
+- ✅ `SpellEffectFactory` - Gets effect class by spell ID ([SpellEffectFactory.cs](../GameMechanics/Magic/Effects/SpellEffectFactory.cs))
+- ✅ `PhysicalDamageSpellEffect` - Mystic Punch, uses melee damage table ([PhysicalDamageSpellEffect.cs](../GameMechanics/Magic/Effects/PhysicalDamageSpellEffect.cs))
+- ✅ `EnergyDamageSpellEffect` - Fire Bolt, Ice Shard with energy damage table ([EnergyDamageSpellEffect.cs](../GameMechanics/Magic/Effects/EnergyDamageSpellEffect.cs))
+- ✅ `HealingSpellEffect` - Minor Heal, Restore Vitality with healing tables ([HealingSpellEffect.cs](../GameMechanics/Magic/Effects/HealingSpellEffect.cs))
+- ✅ `AreaLightSpellEffect` - Illuminate Area, creates light at location ([AreaLightSpellEffect.cs](../GameMechanics/Magic/Effects/AreaLightSpellEffect.cs))
+- ✅ `WallOfFireSpellEffect` - Environmental fire damage ([WallOfFireSpellEffect.cs](../GameMechanics/Magic/Effects/WallOfFireSpellEffect.cs))
+- ✅ Pump mechanic - Extra FAT/mana increases power/duration
+- ✅ 33 unit tests
+
+**Sample Spells in MockDb**:
+- Fire Bolt, Flame Shield, Wall of Fire (Fire school)
+- Ice Shard, Frost Armor (Water school)
+- Illuminate, Illuminate Area, Blind (Light school)
+- Mystic Punch, Minor Heal, Restore Vitality, Life Shield (Life school)
+
+**Action Items**: None - all phases complete.
 
 ---
 
