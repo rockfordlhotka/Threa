@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using GameMechanics.Actions;
 using GameMechanics.Effects;
+using GameMechanics.Magic.Resolvers;
 using Threa.Dal;
 using Threa.Dal.Dto;
 
@@ -9,7 +10,7 @@ namespace GameMechanics.Magic;
 
 /// <summary>
 /// Service for casting spells. Handles mana validation, skill checks,
-/// and effect application.
+/// and delegates to spell type resolvers for effect application.
 /// </summary>
 public class SpellCastingService
 {
@@ -17,17 +18,20 @@ public class SpellCastingService
     private readonly ISpellDefinitionDal _spellDal;
     private readonly EffectManager _effectManager;
     private readonly IDiceRoller _diceRoller;
+    private readonly SpellResolverFactory _resolverFactory;
 
     public SpellCastingService(
         ManaManager manaManager,
         ISpellDefinitionDal spellDal,
         EffectManager effectManager,
-        IDiceRoller diceRoller)
+        IDiceRoller diceRoller,
+        ILocationEffectDal? locationEffectDal = null)
     {
         _manaManager = manaManager;
         _spellDal = spellDal;
         _effectManager = effectManager;
         _diceRoller = diceRoller;
+        _resolverFactory = new SpellResolverFactory(effectManager, locationEffectDal);
     }
 
     /// <summary>
@@ -59,17 +63,13 @@ public class SpellCastingService
             result.Errors.Add($"Insufficient {spell.MagicSchool} mana. Need {totalManaCost}.");
         }
 
-        // Check target requirements
-        if (spell.SpellType == SpellType.Targeted && !request.TargetCharacterId.HasValue && !request.TargetItemId.HasValue)
+        // Validate spell type requirements using the resolver
+        var resolver = _resolverFactory.GetResolver(spell.SpellType);
+        var typeValidation = resolver.ValidateRequest(request, spell);
+        if (!typeValidation.IsValid)
         {
             result.IsValid = false;
-            result.Errors.Add("Targeted spell requires a target.");
-        }
-
-        if (spell.SpellType == SpellType.Environmental && string.IsNullOrEmpty(request.TargetLocation))
-        {
-            result.IsValid = false;
-            result.Errors.Add("Environmental spell requires a target location.");
+            result.Errors.AddRange(typeValidation.Errors);
         }
 
         result.SpellDefinition = spell;
@@ -78,7 +78,7 @@ public class SpellCastingService
     }
 
     /// <summary>
-    /// Casts a spell.
+    /// Casts a spell using the appropriate resolver for the spell type.
     /// </summary>
     /// <param name="request">The spell cast request.</param>
     /// <returns>Result of the spell cast attempt.</returns>
@@ -111,134 +111,63 @@ public class SpellCastingService
             };
         }
 
-        // Calculate spell skill check
+        // Calculate spell skill check (caster rolls once)
         int skillBonus = SkillCost.GetBonus(request.SpellSkillLevel);
         int abilityScore = skillBonus + request.AttributeBonus + request.BoostBonus;
         int roll = _diceRoller.Roll4dFPlus();
-        int av = abilityScore + roll;
+        int casterAV = abilityScore + roll;
 
-        // Determine TV based on resistance type
-        int tv = await CalculateTargetValueAsync(spell, request);
-        int sv = av - tv;
-
-        var result = new SpellCastResult
+        // Create resolution context
+        var context = new SpellResolutionContext
         {
-            AV = av,
-            TV = tv,
-            SV = sv,
+            Request = request,
+            Spell = spell,
+            CasterAV = casterAV,
             Roll = roll,
-            ManaSpent = totalManaCost,
-            SpellDefinition = spell
+            ManaCost = totalManaCost
         };
 
-        // Check if spell succeeds
-        if (sv >= 0)
-        {
-            result.Success = true;
-            result.SuccessLevel = ResultTables.GetResult(sv, ResultTableType.SpellEffect);
+        // Get the appropriate resolver and resolve the spell
+        var resolver = _resolverFactory.GetResolver(spell.SpellType);
+        var resolution = await resolver.ResolveAsync(context);
 
-            // Apply effect if spell has one
-            if (spell.EffectDefinitionId.HasValue)
-            {
-                await ApplySpellEffectAsync(spell, request, result);
-            }
-        }
-        else
+        // Build final result
+        var result = new SpellCastResult
         {
-            result.Success = false;
-            result.FailureReason = GetFailureDescription(sv);
+            Success = resolution.Success,
+            AV = casterAV,
+            Roll = roll,
+            ManaSpent = totalManaCost,
+            SpellDefinition = spell,
+            TargetResults = resolution.TargetResults,
+            AffectedLocation = resolution.AffectedLocation,
+            ResultDescription = resolution.ResultDescription,
+            FailureReason = resolution.ErrorMessage
+        };
+
+        // Populate legacy AppliedEffects from TargetResults
+        foreach (var targetResult in resolution.TargetResults)
+        {
+            if (targetResult.AppliedEffect != null)
+            {
+                result.AppliedEffects.Add(targetResult.AppliedEffect);
+            }
+
+            // For single-target spells, populate TV/SV from the target result
+            if (spell.SpellType == SpellType.Targeted || spell.SpellType == SpellType.SelfBuff)
+            {
+                result.TV = targetResult.TV;
+                result.SV = targetResult.SV;
+            }
         }
 
         return result;
     }
 
     /// <summary>
-    /// Calculates the Target Value for a spell based on its resistance type.
+    /// Gets the resolver factory for custom resolver registration.
     /// </summary>
-    private async Task<int> CalculateTargetValueAsync(SpellDefinition spell, SpellCastRequest request)
-    {
-        return spell.ResistanceType switch
-        {
-            SpellResistanceType.None => 0, // Self-buffs auto-succeed
-            SpellResistanceType.Fixed => spell.FixedResistanceTV ?? 8,
-            SpellResistanceType.Willpower => await GetTargetWillpowerAsync(request),
-            SpellResistanceType.Opposed => await GetOpposedSkillValueAsync(spell, request),
-            _ => 8 // Default TV
-        };
-    }
-
-    /// <summary>
-    /// Gets the target's Willpower-based resistance value.
-    /// </summary>
-    private Task<int> GetTargetWillpowerAsync(SpellCastRequest request)
-    {
-        // For now, use provided target defense value
-        // Full implementation would look up target's WIL attribute
-        return Task.FromResult(request.TargetDefenseValue ?? 8);
-    }
-
-    /// <summary>
-    /// Gets the target's opposed skill value.
-    /// </summary>
-    private Task<int> GetOpposedSkillValueAsync(SpellDefinition spell, SpellCastRequest request)
-    {
-        // For now, use provided target defense value
-        // Full implementation would roll target's resistance skill
-        return Task.FromResult(request.TargetDefenseValue ?? 8);
-    }
-
-    /// <summary>
-    /// Applies the spell's effect to the target(s).
-    /// </summary>
-    private async Task ApplySpellEffectAsync(SpellDefinition spell, SpellCastRequest request, SpellCastResult result)
-    {
-        int? targetId = null;
-
-        switch (spell.SpellType)
-        {
-            case SpellType.SelfBuff:
-                targetId = request.CasterId;
-                break;
-            case SpellType.Targeted:
-                targetId = request.TargetCharacterId;
-                break;
-            case SpellType.AreaEffect:
-                // Area effects need special handling - apply to multiple targets
-                // For Phase 1, just apply to the primary target
-                targetId = request.TargetCharacterId;
-                break;
-            case SpellType.Environmental:
-                // Environmental effects apply to locations, not characters
-                // Defer full implementation to Phase 2
-                break;
-        }
-
-        if (targetId.HasValue && spell.EffectDefinitionId.HasValue)
-        {
-            var effect = await _effectManager.ApplyEffectAsync(
-                targetId.Value,
-                spell.EffectDefinitionId.Value.ToString(),
-                spell.DefaultDuration,
-                sourceEntityId: Guid.NewGuid() // Would be caster's entity ID
-            );
-            result.AppliedEffects.Add(effect);
-        }
-    }
-
-    /// <summary>
-    /// Gets a description of why a spell failed based on SV.
-    /// </summary>
-    private static string GetFailureDescription(int sv)
-    {
-        return sv switch
-        {
-            >= -2 => "Spell fizzles - target resists.",
-            >= -4 => "Spell fails to take hold.",
-            >= -6 => "Spell backfires slightly - minor fatigue.",
-            >= -8 => "Significant spell failure - lose additional mana.",
-            _ => "Critical spell failure - possible backlash."
-        };
-    }
+    public SpellResolverFactory ResolverFactory => _resolverFactory;
 }
 
 /// <summary>
@@ -287,6 +216,22 @@ public class SpellCastRequest
     public int? TargetDefenseValue { get; set; }
 
     /// <summary>
+    /// For area effect spells: list of target character IDs.
+    /// </summary>
+    public System.Collections.Generic.List<int>? TargetCharacterIds { get; set; }
+
+    /// <summary>
+    /// For area effect spells: defense values per target.
+    /// Key = character ID, Value = defense value.
+    /// </summary>
+    public System.Collections.Generic.Dictionary<int, int>? TargetDefenseValues { get; set; }
+
+    /// <summary>
+    /// Campaign ID for environmental spells (to track location effects).
+    /// </summary>
+    public int? CampaignId { get; set; }
+
+    /// <summary>
     /// Extra mana spent for boosted effects.
     /// </summary>
     public int BoostMana { get; set; }
@@ -313,12 +258,12 @@ public class SpellCastResult
     public int AV { get; set; }
 
     /// <summary>
-    /// The Target Value (resistance).
+    /// The Target Value (resistance). For multi-target spells, this is 0.
     /// </summary>
     public int TV { get; set; }
 
     /// <summary>
-    /// The Success Value (AV - TV).
+    /// The Success Value (AV - TV). For multi-target spells, check TargetResults.
     /// </summary>
     public int SV { get; set; }
 
@@ -333,14 +278,29 @@ public class SpellCastResult
     public int ManaSpent { get; set; }
 
     /// <summary>
-    /// Effects applied by this spell.
+    /// Effects applied by this spell (legacy, use TargetResults for new code).
     /// </summary>
     public System.Collections.Generic.List<CharacterEffect> AppliedEffects { get; set; } = new();
+
+    /// <summary>
+    /// Individual results for each target (for area effect and targeted spells).
+    /// </summary>
+    public System.Collections.Generic.List<Resolvers.SpellTargetResult> TargetResults { get; set; } = new();
+
+    /// <summary>
+    /// For environmental spells, the location where the effect was placed.
+    /// </summary>
+    public SpellLocation? AffectedLocation { get; set; }
 
     /// <summary>
     /// Reason for failure if the spell failed.
     /// </summary>
     public string? FailureReason { get; set; }
+
+    /// <summary>
+    /// Description of the overall result.
+    /// </summary>
+    public string? ResultDescription { get; set; }
 
     /// <summary>
     /// The spell definition that was cast.

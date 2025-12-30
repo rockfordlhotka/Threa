@@ -178,60 +178,117 @@ CREATE TABLE SpellDefinition (
 
 ---
 
-## Phase 2: Spell Category Resolvers
+## Phase 2: Spell Category Resolvers ✅ COMPLETED
 
 Build category-specific resolvers that handle the mechanics for each spell type.
 
-### 2.1 Targeted Spell Resolver (`GameMechanics/Magic/Resolvers/TargetedSpellResolver.cs`)
+### Design Decisions (Phase 2)
+
+| Topic | Decision |
+|-------|----------|
+| **Area Target Selection** | Caller provides list of target IDs (no spatial simulation) |
+| **Multiple Target Rolls** | Caster rolls once (AV), each target defends individually (TV) |
+| **Environmental Locations** | Narrative names with generic location construct (no coordinate system) |
+| **Effect Duration** | Environmental spells persist at location; other spells affect target directly |
+| **Spell Effects** | Per-spell interpretation: some use damage tables, some custom lookups, some narrative (SV passed to resolver) |
+
+### 2.1 Core Types ✅
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `ISpellResolver` | `GameMechanics/Magic/Resolvers/ISpellResolver.cs` | Interface for spell type resolvers |
+| `SpellResolutionContext` | Same file | Input data for resolution |
+| `SpellResolutionResult` | Same file | Output from resolution |
+| `SpellTargetResult` | Same file | Per-target outcome for multi-target spells |
+| `SpellTypeValidation` | Same file | Validation result with valid flag and reasons |
+| `SpellResolverFactory` | `GameMechanics/Magic/Resolvers/SpellResolverFactory.cs` | Factory to get resolver by SpellType |
+
+### 2.2 Targeted Spell Resolver ✅ (`GameMechanics/Magic/Resolvers/TargetedSpellResolver.cs`)
 
 Handles single-target offensive and beneficial spells:
 
-- Validates target exists and is in range
+- Validates exactly one target is specified
 - Performs spell skill check vs target's resistance (if offensive)
+- Calculates TV based on SpellResistanceType (None, Fixed, Willpower, Opposed)
+- Uses `ResultTableType.CombatDamage` for damage spells
 - Applies effect to single target
 - Examples: Fire Bolt, Heal, Curse
 
-### 2.2 Self-Buff Resolver (`GameMechanics/Magic/Resolvers/SelfBuffResolver.cs`)
+### 2.3 Self-Buff Resolver ✅ (`GameMechanics/Magic/Resolvers/SelfBuffResolver.cs`)
 
 Handles caster-only enhancement spells:
 
-- No target validation needed
-- Automatic success (no opposed roll)
+- No target validation needed (targets caster automatically)
+- Automatic success (no opposed roll, TV = 0)
+- SV equals AV (full success value)
 - Applies effect to caster
 - Examples: Strength, Invisibility, Shield
 
-### 2.3 Area Effect Resolver (`GameMechanics/Magic/Resolvers/AreaEffectResolver.cs`)
+### 2.4 Area Effect Resolver ✅ (`GameMechanics/Magic/Resolvers/AreaEffectResolver.cs`)
 
 Handles multi-target spells:
 
-- Determines affected targets based on area/radius
-- May require separate rolls per target
-- Applies effects to multiple characters
+- Validates at least one target is specified via `TargetCharacterIds`
+- Caster AV applies to all targets
+- Each target defends individually using `TargetDefenseValues` dictionary
+- Returns `TargetResults` list with per-target outcomes
 - Examples: Fireball, Mass Heal, Fear
 
-### 2.4 Environmental Spell Resolver (`GameMechanics/Magic/Resolvers/EnvironmentalSpellResolver.cs`)
+### 2.5 Environmental Spell Resolver ✅ (`GameMechanics/Magic/Resolvers/EnvironmentalSpellResolver.cs`)
 
 Handles persistent location-based effects:
 
-- Creates effect on a location rather than character
-- Effect persists for duration
-- Affects characters entering/remaining in area
-- Higher mana cost due to persistence
+- Creates `SpellLocation` with narrative name and description
+- Creates `LocationEffect` with duration (in rounds)
+- Effect persists at location independently of caster
+- Can affect characters already at location (uses Willpower resistance)
+- Returns `AffectedLocation` in result
+- Uses `ILocationEffectDal` for persistence
 - Examples: Wall of Fire, Fog Cloud, Silence, Darkness
 
-### 2.5 Resolver Factory
+### 2.6 Location System ✅
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `SpellLocation` DTO | `Threa.Dal/Dto/SpellLocation.cs` | Location entity (Id, Name, Description, CampaignId) |
+| `LocationEffect` DTO | Same file | Persistent effect at location (SpellSkillId, CasterId, Duration, SV) |
+| `ILocationEffectDal` | `Threa.Dal/ILocationEffectDal.cs` | DAL interface for locations and effects |
+| `LocationEffectDal` | `Threa.Dal.MockDb/LocationEffectDal.cs` | MockDb implementation |
+
+### 2.7 SpellCastingService Updates ✅
+
+Extended to use resolver factory:
 
 ```csharp
-public interface ISpellResolver
+public class SpellCastRequest
 {
-    Task<SpellCastResult> ResolveAsync(SpellCastRequest request, SpellDefinition spell);
+    // Existing properties...
+    public List<int>? TargetCharacterIds { get; set; }  // NEW: For area effects
+    public Dictionary<int, int>? TargetDefenseValues { get; set; }  // NEW: Per-target TV
+    public int? CampaignId { get; set; }  // NEW: For environmental spells
 }
 
-public class SpellResolverFactory
+public class SpellCastResult
 {
-    public ISpellResolver GetResolver(SpellType spellType);
+    // Existing properties...
+    public List<SpellTargetResult> TargetResults { get; set; }  // NEW: Per-target outcomes
+    public SpellLocation? AffectedLocation { get; set; }  // NEW: For environmental spells
 }
 ```
+
+### 2.8 Unit Tests ✅
+
+All 24 resolver tests passing in `SpellResolverTests.cs`:
+
+| Category | Tests |
+|----------|-------|
+| SpellResolverFactory | 2 tests (returns correct resolver, custom registration) |
+| SelfBuffResolver | 4 tests (always succeeds, validation, targets caster, SV=AV) |
+| TargetedSpellResolver | 6 tests (success, failure, validation, fixed/willpower/opposed resistance) |
+| AreaEffectResolver | 6 tests (multi-target, validation, individual defenses, partial success) |
+| EnvironmentalSpellResolver | 6 tests (creates location, persists effect, affects characters, validation) |
+
+**Total magic/spell tests**: 48 (23 Phase 1 + 24 Phase 2 + 1 integration)
 
 ---
 

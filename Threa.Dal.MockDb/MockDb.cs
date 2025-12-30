@@ -48,6 +48,16 @@ public static class MockDb
     /// </summary>
     public static readonly List<SpellDefinition> SpellDefinitions = CreateSpellDefinitions();
 
+    /// <summary>
+    /// Spell locations for environmental effects.
+    /// </summary>
+    public static readonly List<SpellLocation> SpellLocations = [];
+
+    /// <summary>
+    /// Location-based spell effects.
+    /// </summary>
+    public static readonly List<LocationEffect> LocationEffects = [];
+
     private static List<SpellDefinition> CreateSpellDefinitions()
     {
         return
