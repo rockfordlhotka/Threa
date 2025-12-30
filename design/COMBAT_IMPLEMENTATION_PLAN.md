@@ -80,37 +80,35 @@ The following systems provide the foundation for combat:
 
 ---
 
-### Phase 3: Damage Resolution
+### Phase 3: Damage Resolution ✅ COMPLETE
 
 **Goal**: Implement the damage absorption sequence and apply wounds.
 
-**New Files**:
-- `GameMechanics/Combat/DamageResolver.cs` - Damage resolution service
-- `GameMechanics/Combat/DamageResult.cs` - Detailed damage breakdown
-- `GameMechanics/Combat/ArmorAbsorption.cs` - Armor absorption calculation
+**Implemented Files**:
+- `GameMechanics/Combat/DamageType.cs` - Enum: Bashing, Cutting, Piercing, Projectile, Energy
+- `GameMechanics/Combat/ArmorInfo.cs` - Armor properties for damage resolution
+- `GameMechanics/Combat/ShieldInfo.cs` - Shield properties (in ArmorInfo.cs)
+- `GameMechanics/Combat/AbsorptionRecord.cs` - Record of each absorption step
+- `GameMechanics/Combat/DamageRequest.cs` - Input for damage resolution
+- `GameMechanics/Combat/DamageResolutionResult.cs` - Output with full damage breakdown
+- `GameMechanics/Combat/DamageResolver.cs` - Main damage resolution service
 
-**Key Features**:
-- **Defense Sequence**: Shield → Armor → Character
-- Armor absorption by hit location and damage type
-- Durability reduction for shields/armor
-- SV-to-damage conversion (using existing damage tables)
-- Apply damage to Vitality/Fatigue
-- Create wounds via existing `WoundList`
+**Implemented Features**:
+- ✅ **Defense Sequence**: Shield → Armor (outer to inner) → Character
+- ✅ **Armor Skill Check**: Free action, RV modifies absorption (like Physicality)
+- ✅ Absorption by damage type (5 types: Bashing, Cutting, Piercing, Projectile, Energy)
+- ✅ Armor layers ordered by LayerOrder (outer absorbs first)
+- ✅ Armor skill bonus only applies to first (outermost) layer
+- ✅ Durability reduction 1:1 with absorbed damage
+- ✅ Equipment destruction when durability hits 0
+- ✅ Damage class interactions (higher class absorbs lower class at 10× effectiveness)
+- ✅ Absorption limited by remaining durability
+- ✅ Shield block RV provides bonus absorption
+- ✅ Location-based armor (only armor covering hit location applies)
+- ✅ SV-to-damage conversion via existing damage tables
+- ✅ Factory method to create DamageRequest from AttackResult
 
-**Integration Points**:
-- Uses `ItemTemplate` armor properties from DAL
-- Integrates with `CharacterItem` for equipped armor
-- Connects to existing `Vitality` and `Fatigue` systems
-- Wire wound penalties into combat (already -2 AV per wound in design)
-
-**Tests**:
-- Shield absorption scenarios
-- Armor absorption by location
-- Penetrating damage after absorption
-- Wound creation from successful hits
-- Durability degradation
-
-**Deliverable**: Complete melee combat with damage, armor, and wounds.
+**Tests**: 24 additional tests (108 total combat tests)
 
 ---
 
@@ -207,10 +205,10 @@ Phase 5: Special Actions (can be done in parallel with Phase 4)
 |-------|-----------|-----------------|------------|--------|
 | Phase 1 | 5 | 55 | Medium | ✅ Complete |
 | Phase 2 | 5 | 29 | Medium | ✅ Complete |
-| Phase 3 | 3 | 20-30 | High | Not Started |
+| Phase 3 | 6 | 24 | High | ✅ Complete |
 | Phase 4 | 4 | 25-35 | Medium | Not Started |
 | Phase 5 | 4 | 15-20 | Low | Not Started |
-| **Total** | **21** | **144-169** | | **2/5 Complete** |
+| **Total** | **24** | **163-178** | | **3/5 Complete** |
 
 ---
 

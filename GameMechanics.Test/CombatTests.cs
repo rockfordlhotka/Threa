@@ -1010,4 +1010,885 @@ public class CombatTests
   }
 
   #endregion
+
+  #region ArmorInfo Tests
+
+  [TestMethod]
+  public void ArmorInfo_CoversLocation_ReturnsTrueForCoveredLocation()
+  {
+    var armor = new ArmorInfo
+    {
+      Name = "Chainmail",
+      CoveredLocations = [HitLocation.Torso, HitLocation.LeftArm, HitLocation.RightArm]
+    };
+
+    Assert.IsTrue(armor.CoversLocation(HitLocation.Torso));
+    Assert.IsTrue(armor.CoversLocation(HitLocation.LeftArm));
+    Assert.IsFalse(armor.CoversLocation(HitLocation.Head));
+    Assert.IsFalse(armor.CoversLocation(HitLocation.LeftLeg));
+  }
+
+  [TestMethod]
+  public void ArmorInfo_GetAbsorption_ReturnsCorrectValue()
+  {
+    var armor = new ArmorInfo
+    {
+      Absorption = new()
+      {
+        { DamageType.Cutting, 4 },
+        { DamageType.Piercing, 2 },
+        { DamageType.Bashing, 5 }
+      }
+    };
+
+    Assert.AreEqual(4, armor.GetAbsorption(DamageType.Cutting));
+    Assert.AreEqual(2, armor.GetAbsorption(DamageType.Piercing));
+    Assert.AreEqual(0, armor.GetAbsorption(DamageType.Energy)); // Not defined
+  }
+
+  [TestMethod]
+  public void ArmorInfo_ReduceDurability_DecreasesCorrectly()
+  {
+    var armor = new ArmorInfo
+    {
+      CurrentDurability = 50,
+      MaxDurability = 100
+    };
+
+    int reduced = armor.ReduceDurability(10);
+
+    Assert.AreEqual(10, reduced);
+    Assert.AreEqual(40, armor.CurrentDurability);
+    Assert.IsTrue(armor.IsIntact);
+  }
+
+  [TestMethod]
+  public void ArmorInfo_ReduceDurability_CapsAtZero()
+  {
+    var armor = new ArmorInfo
+    {
+      CurrentDurability = 5,
+      MaxDurability = 100
+    };
+
+    int reduced = armor.ReduceDurability(10);
+
+    Assert.AreEqual(5, reduced); // Only 5 was available
+    Assert.AreEqual(0, armor.CurrentDurability);
+    Assert.IsFalse(armor.IsIntact);
+  }
+
+  [TestMethod]
+  public void ArmorInfo_IsIntact_FalseWhenDurabilityZero()
+  {
+    var armor = new ArmorInfo
+    {
+      CurrentDurability = 0,
+      MaxDurability = 100
+    };
+
+    Assert.IsFalse(armor.IsIntact);
+  }
+
+  #endregion
+
+  #region ShieldInfo Tests
+
+  [TestMethod]
+  public void ShieldInfo_GetAbsorption_ReturnsCorrectValue()
+  {
+    var shield = new ShieldInfo
+    {
+      Absorption = new()
+      {
+        { DamageType.Bashing, 5 },
+        { DamageType.Cutting, 4 },
+        { DamageType.Projectile, 6 }
+      }
+    };
+
+    Assert.AreEqual(5, shield.GetAbsorption(DamageType.Bashing));
+    Assert.AreEqual(6, shield.GetAbsorption(DamageType.Projectile));
+    Assert.AreEqual(0, shield.GetAbsorption(DamageType.Energy));
+  }
+
+  [TestMethod]
+  public void ShieldInfo_ReduceDurability_WorksCorrectly()
+  {
+    var shield = new ShieldInfo
+    {
+      CurrentDurability = 30,
+      MaxDurability = 50
+    };
+
+    shield.ReduceDurability(15);
+
+    Assert.AreEqual(15, shield.CurrentDurability);
+    Assert.IsTrue(shield.IsIntact);
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Basic
+
+  [TestMethod]
+  public void DamageResolver_NoDefense_FullDamage()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0); // Armor skill check
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 6,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 10,
+      ArmorPieces = new()
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(6, result.IncomingSV);
+    Assert.AreEqual(6, result.PenetratingSV);
+    Assert.AreEqual(0, result.TotalAbsorbed);
+    Assert.IsTrue(result.CausedWound);
+  }
+
+  [TestMethod]
+  public void DamageResolver_ArmorAbsorbs_ReducesSV()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0); // Armor skill check
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "chainmail-1",
+      Name = "Chainmail",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 4 } },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8, // AS 8 + roll 0 = 8, RV = 0, no bonus
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(8, result.IncomingSV);
+    Assert.AreEqual(4, result.TotalAbsorbed);
+    Assert.AreEqual(4, result.PenetratingSV);
+    Assert.AreEqual(96, armor.CurrentDurability); // 4 durability lost
+  }
+
+  [TestMethod]
+  public void DamageResolver_ArmorSkillBonus_IncreasesAbsorption()
+  {
+    // Armor AS 12 + roll 2 = 14, RV = 6, gives +2 absorption
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "plate-1",
+      Name = "Plate",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 10,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 12,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(2, result.ArmorSkillBonus);
+    Assert.AreEqual(7, result.TotalAbsorbed); // 5 base + 2 skill
+    Assert.AreEqual(3, result.PenetratingSV);
+  }
+
+  [TestMethod]
+  public void DamageResolver_ArmorSkillPenalty_DecreasesAbsorption()
+  {
+    // Armor AS 5 + roll -3 = 2, RV = -6, gives -2 absorption
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(-3);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "leather-1",
+      Name = "Leather",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 3 } },
+      CurrentDurability = 50,
+      MaxDurability = 50,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 5,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 5,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(-2, result.ArmorSkillBonus);
+    Assert.AreEqual(1, result.TotalAbsorbed); // 3 - 2 = 1
+    Assert.AreEqual(4, result.PenetratingSV);
+  }
+
+  [TestMethod]
+  public void DamageResolver_FullAbsorption_NoDamage()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "plate-1",
+      Name = "Full Plate",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 10 } },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 5,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(5, result.TotalAbsorbed);
+    Assert.IsTrue(result.FullyAbsorbed);
+    Assert.AreEqual(0, result.FinalDamage.FatigueDamage);
+    Assert.AreEqual(0, result.FinalDamage.VitalityDamage);
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Shield
+
+  [TestMethod]
+  public void DamageResolver_ShieldBlock_AbsorbsFirst()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0); // Armor skill check
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var shield = new ShieldInfo
+    {
+      ItemId = "shield-1",
+      Name = "Round Shield",
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 50,
+      MaxDurability = 50
+    };
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "chainmail-1",
+      Name = "Chainmail",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 4 } },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 12,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ShieldBlockSucceeded = true,
+      ShieldBlockRV = 4, // Gives +2 bonus
+      Shield = shield,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(2, result.AbsorptionSteps.Count);
+    Assert.IsTrue(result.AbsorptionSteps[0].IsShield);
+    Assert.IsFalse(result.AbsorptionSteps[1].IsShield);
+
+    // Shield: base 5 + bonus 2 = 7
+    Assert.AreEqual(7, result.AbsorptionSteps[0].TotalAbsorbed);
+    Assert.AreEqual(43, shield.CurrentDurability);
+
+    // Armor: 12 - 7 = 5 remaining, absorbs 4
+    Assert.AreEqual(4, result.AbsorptionSteps[1].TotalAbsorbed);
+    Assert.AreEqual(96, armor.CurrentDurability);
+
+    // Final: 12 - 7 - 4 = 1
+    Assert.AreEqual(1, result.PenetratingSV);
+  }
+
+  [TestMethod]
+  public void DamageResolver_ShieldBlockFailed_NoShieldAbsorption()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var shield = new ShieldInfo
+    {
+      ItemId = "shield-1",
+      Name = "Shield",
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 50,
+      MaxDurability = 50
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ShieldBlockSucceeded = false, // Failed shield block
+      Shield = shield,
+      ArmorPieces = new()
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(0, result.AbsorptionSteps.Count);
+    Assert.AreEqual(50, shield.CurrentDurability); // Shield not damaged
+    Assert.AreEqual(8, result.PenetratingSV);
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Layered Armor
+
+  [TestMethod]
+  public void DamageResolver_MultipleArmorLayers_AbsorbOuterFirst()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var gambeson = new ArmorInfo
+    {
+      ItemId = "gambeson-1",
+      Name = "Gambeson",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 2 } },
+      CurrentDurability = 30,
+      MaxDurability = 30,
+      LayerOrder = 1 // Inner
+    };
+
+    var chainmail = new ArmorInfo
+    {
+      ItemId = "chainmail-1",
+      Name = "Chainmail",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 4 } },
+      CurrentDurability = 80,
+      MaxDurability = 100,
+      LayerOrder = 0 // Outer
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 10,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { gambeson, chainmail } // Wrong order in list
+    };
+
+    var result = resolver.Resolve(request);
+
+    // Should process in layer order (chainmail first, then gambeson)
+    Assert.AreEqual(2, result.AbsorptionSteps.Count);
+    Assert.AreEqual("Chainmail", result.AbsorptionSteps[0].ItemName);
+    Assert.AreEqual("Gambeson", result.AbsorptionSteps[1].ItemName);
+
+    Assert.AreEqual(4, result.AbsorptionSteps[0].TotalAbsorbed);
+    Assert.AreEqual(2, result.AbsorptionSteps[1].TotalAbsorbed);
+    Assert.AreEqual(4, result.PenetratingSV);
+  }
+
+  [TestMethod]
+  public void DamageResolver_ArmorSkillBonus_OnlyFirstLayer()
+  {
+    // Armor AS 12 + roll 2 = 14, RV = 6, gives +2 absorption (first layer only)
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var outer = new ArmorInfo
+    {
+      ItemId = "outer-1",
+      Name = "Outer Layer",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 3 } },
+      CurrentDurability = 50,
+      MaxDurability = 50,
+      LayerOrder = 0
+    };
+
+    var inner = new ArmorInfo
+    {
+      ItemId = "inner-1",
+      Name = "Inner Layer",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 2 } },
+      CurrentDurability = 30,
+      MaxDurability = 30,
+      LayerOrder = 1
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 10,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 12,
+      ArmorPieces = new() { outer, inner }
+    };
+
+    var result = resolver.Resolve(request);
+
+    // Outer: 3 base + 2 skill = 5
+    Assert.AreEqual(5, result.AbsorptionSteps[0].TotalAbsorbed);
+    Assert.AreEqual(2, result.AbsorptionSteps[0].SkillBonus);
+
+    // Inner: 2 base + 0 skill = 2
+    Assert.AreEqual(2, result.AbsorptionSteps[1].TotalAbsorbed);
+    Assert.AreEqual(0, result.AbsorptionSteps[1].SkillBonus);
+
+    Assert.AreEqual(3, result.PenetratingSV);
+  }
+
+  [TestMethod]
+  public void DamageResolver_ArmorNotCoveringLocation_NotUsed()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "greaves-1",
+      Name = "Leg Greaves",
+      CoveredLocations = [HitLocation.LeftLeg, HitLocation.RightLeg],
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 50,
+      MaxDurability = 50,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 6,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso, // Armor doesn't cover torso
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(0, result.AbsorptionSteps.Count);
+    Assert.AreEqual(6, result.PenetratingSV);
+    Assert.AreEqual(50, armor.CurrentDurability); // Not damaged
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Equipment Destruction
+
+  [TestMethod]
+  public void DamageResolver_ArmorDestroyed_MarkedInRecord()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "worn-leather-1",
+      Name = "Worn Leather",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 10 } },
+      CurrentDurability = 3, // Low durability
+      MaxDurability = 50,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(1, result.AbsorptionSteps.Count);
+    Assert.IsTrue(result.AbsorptionSteps[0].ItemDestroyed);
+    Assert.AreEqual(3, result.AbsorptionSteps[0].DurabilityLost);
+    Assert.AreEqual(3, result.AbsorptionSteps[0].TotalAbsorbed); // Limited by durability
+    Assert.AreEqual(0, armor.CurrentDurability);
+    Assert.IsFalse(armor.IsIntact);
+  }
+
+  [TestMethod]
+  public void DamageResolver_DestroyedArmorNotUsed_InSubsequentCalls()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0, 0); // Two calls
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "fragile-1",
+      Name = "Fragile Armor",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 2,
+      MaxDurability = 50,
+      LayerOrder = 0
+    };
+
+    // First hit destroys armor
+    var request1 = new DamageRequest
+    {
+      IncomingSV = 6,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result1 = resolver.Resolve(request1);
+    Assert.IsFalse(armor.IsIntact);
+
+    // Second hit - armor no longer provides protection
+    var request2 = new DamageRequest
+    {
+      IncomingSV = 4,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result2 = resolver.Resolve(request2);
+
+    Assert.AreEqual(0, result2.AbsorptionSteps.Count);
+    Assert.AreEqual(4, result2.PenetratingSV);
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Damage Type Matching
+
+  [TestMethod]
+  public void DamageResolver_DifferentDamageTypes_UseCorrectAbsorption()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0, 0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "mixed-1",
+      Name = "Mixed Armor",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new()
+      {
+        { DamageType.Cutting, 5 },
+        { DamageType.Piercing, 2 },
+        { DamageType.Bashing, 6 }
+      },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    // Test cutting
+    var cutRequest = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var cutResult = resolver.Resolve(cutRequest);
+    Assert.AreEqual(5, cutResult.TotalAbsorbed);
+
+    // Reset durability for next test
+    armor.CurrentDurability = 100;
+
+    // Test piercing
+    var pierceRequest = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Piercing,
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var pierceResult = resolver.Resolve(pierceRequest);
+    Assert.AreEqual(2, pierceResult.TotalAbsorbed);
+  }
+
+  [TestMethod]
+  public void DamageResolver_UnknownDamageType_ZeroAbsorption()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "metal-1",
+      Name = "Metal Armor",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new()
+      {
+        { DamageType.Cutting, 5 },
+        { DamageType.Piercing, 3 }
+        // No Energy absorption defined
+      },
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 6,
+      DamageType = DamageType.Energy, // Not defined for this armor
+      DamageClass = 1,
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    Assert.AreEqual(0, result.TotalAbsorbed);
+    Assert.AreEqual(6, result.PenetratingSV);
+  }
+
+  #endregion
+
+  #region DamageResolver Tests - Damage Class
+
+  [TestMethod]
+  public void DamageResolver_HigherClassArmor_AbsorbsMoreLowerClassDamage()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    // Class 2 armor vs Class 1 attack
+    var armor = new ArmorInfo
+    {
+      ItemId = "heavy-1",
+      Name = "Heavy Plate",
+      CoveredLocations = [HitLocation.Torso],
+      DamageClass = 2,
+      Absorption = new() { { DamageType.Cutting, 5 } },
+      CurrentDurability = 200,
+      MaxDurability = 200,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 1, // Lower class attack
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    // Class 2 armor absorbs class 1 damage at 10x effectiveness
+    Assert.IsTrue(result.FullyAbsorbed);
+  }
+
+  [TestMethod]
+  public void DamageResolver_LowerClassArmor_AbsorbsLessHigherClassDamage()
+  {
+    var diceRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0);
+
+    var resolver = new DamageResolver(diceRoller);
+
+    // Class 1 armor vs Class 2 attack
+    var armor = new ArmorInfo
+    {
+      ItemId = "light-1",
+      Name = "Light Armor",
+      CoveredLocations = [HitLocation.Torso],
+      DamageClass = 1,
+      Absorption = new() { { DamageType.Cutting, 30 } }, // High absorption
+      CurrentDurability = 100,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var request = new DamageRequest
+    {
+      IncomingSV = 8,
+      DamageType = DamageType.Cutting,
+      DamageClass = 2, // Higher class attack
+      HitLocation = HitLocation.Torso,
+      DefenderArmorAS = 8,
+      ArmorPieces = new() { armor }
+    };
+
+    var result = resolver.Resolve(request);
+
+    // Class 1 armor only absorbs 3 from class 2 (30 / 10 = 3)
+    Assert.AreEqual(3, result.TotalAbsorbed);
+    Assert.AreEqual(5, result.PenetratingSV);
+  }
+
+  #endregion
+
+  #region Integration Tests - Full Combat Flow
+
+  [TestMethod]
+  public void Integration_FullCombatFlow_AttackDefenseDamage()
+  {
+    // Attacker hits defender, damage goes through shield and armor
+    var attackRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(2, 0)  // Attack roll, Physicality
+      .QueueDiceRolls(5);         // Hit location (torso)
+
+    var attackResolver = new AttackResolver(attackRoller);
+    var attackResult = attackResolver.Resolve(AttackRequest.Create(
+      attackerAS: 14,
+      attackerPhysicalityAS: 10,
+      defenderDodgeAS: 8)); // Passive TV = 7
+
+    Assert.IsTrue(attackResult.IsHit);
+    Assert.AreEqual(HitLocation.Torso, attackResult.HitLocation);
+
+    // Defender resolves shield block (succeeded in Phase 2)
+    var shield = new ShieldInfo
+    {
+      ItemId = "shield-1",
+      Name = "Round Shield",
+      Absorption = new() { { DamageType.Cutting, 4 } },
+      CurrentDurability = 50,
+      MaxDurability = 50
+    };
+
+    var armor = new ArmorInfo
+    {
+      ItemId = "chainmail-1",
+      Name = "Chainmail",
+      CoveredLocations = [HitLocation.Torso],
+      Absorption = new() { { DamageType.Cutting, 3 } },
+      CurrentDurability = 80,
+      MaxDurability = 100,
+      LayerOrder = 0
+    };
+
+    var damageRoller = new DeterministicDiceRoller()
+      .Queue4dFPlusResults(0); // Armor skill
+
+    var damageResolver = new DamageResolver(damageRoller);
+    var damageRequest = DamageRequest.FromAttack(
+      attackResult,
+      DamageType.Cutting,
+      damageClass: 1,
+      defenderArmorAS: 10,
+      armorPieces: new() { armor },
+      shield: shield,
+      shieldBlockSucceeded: true,
+      shieldBlockRV: 2); // +1 bonus
+
+    var damageResult = damageResolver.Resolve(damageRequest);
+
+    // Verify the full chain
+    Assert.AreEqual(attackResult.FinalSV, damageResult.IncomingSV);
+    Assert.AreEqual(2, damageResult.AbsorptionSteps.Count);
+    Assert.IsTrue(damageResult.AbsorptionSteps[0].IsShield);
+    Assert.IsFalse(damageResult.AbsorptionSteps[1].IsShield);
+
+    // Shield absorbed some, armor absorbed some, rest penetrates
+    Assert.IsTrue(damageResult.PenetratingSV < damageResult.IncomingSV);
+  }
+
+  #endregion
 }

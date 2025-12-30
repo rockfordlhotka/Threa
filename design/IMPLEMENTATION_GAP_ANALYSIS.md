@@ -16,7 +16,7 @@ This document compares the design specifications in the `/design` folder against
 | Skills | ✅ Complete | ✅ Implemented | None |
 | Wounds | ✅ Complete | ✅ Implemented | Minor |
 | Actions System | ✅ Complete | ✅ Implemented | None |
-| Combat System | ✅ Complete | ⚠️ Phase 2 Complete | Medium |
+| Combat System | ✅ Complete | ⚠️ Phase 3 Complete | Medium |
 | Equipment/Items | ✅ Complete | ✅ DAL Implemented | Low |
 | Inventory/Carrying Capacity | ✅ Complete | ✅ DAL Implemented | Low |
 | Currency | ✅ Complete | ✅ Implemented | None |
@@ -185,7 +185,7 @@ This document compares the design specifications in the `/design` folder against
 
 ---
 
-### 7. Combat System (PHASE 2 COMPLETE)
+### 7. Combat System (PHASE 3 COMPLETE)
 
 **Design Spec** ([COMBAT_SYSTEM.md](COMBAT_SYSTEM.md)):
 - Initiative by Available AP (highest first)
@@ -225,11 +225,25 @@ This document compares the design specifications in the `/design` folder against
 - ✅ Shield block: Shield AS + 4dF+ vs TV 8 (free action)
 - ✅ Parry cannot block ranged attacks
 - ✅ Combat state tracking per-character
-- ✅ 84 total combat tests passing
+- ✅ 29 additional tests (84 total)
 
-**Remaining (Phases 3-5)**:
-- ❌ Damage absorption sequence (Shield → Armor → Character)
-- ❌ Armor/shield durability degradation
+**Phase 3 Implementation (Damage Resolution)** ✅:
+- ✅ `Combat/DamageType.cs` - Enum: Bashing, Cutting, Piercing, Projectile, Energy
+- ✅ `Combat/ArmorInfo.cs` - Armor/Shield properties for damage resolution
+- ✅ `Combat/AbsorptionRecord.cs` - Record of each absorption step
+- ✅ `Combat/DamageRequest.cs` - Input for damage resolution
+- ✅ `Combat/DamageResolutionResult.cs` - Output with full damage breakdown
+- ✅ `Combat/DamageResolver.cs` - Main damage resolution service
+- ✅ Defense sequence: Shield → Armor layers → Character
+- ✅ Armor skill check (free action) for absorption bonus
+- ✅ Absorption by damage type (5 types defined)
+- ✅ Durability reduction 1:1 with absorbed damage
+- ✅ Equipment destruction at durability 0
+- ✅ Damage class interactions (higher class absorbs lower at 10×)
+- ✅ Location-based armor (only covering armor applies)
+- ✅ 24 additional tests (108 total combat tests)
+
+**Remaining (Phases 4-5)**:
 - ❌ Ranged combat with TV modifiers
 - ❌ Aim and Prep actions
 - ❌ Ranged cooldowns by skill level
@@ -241,7 +255,7 @@ This document compares the design specifications in the `/design` folder against
 | ~~Critical~~ | ~~Create attack resolution~~ | ✅ `Combat/AttackResolver.cs` |
 | ~~Critical~~ | ~~Implement defense options~~ | ✅ `Combat/DefenseResolver.cs` |
 | ~~High~~ | ~~Implement parry mode system~~ | ✅ `Combat/CombatState.cs` |
-| High | Implement damage absorption sequence | New `Combat/DamageResolver.cs` |
+| ~~High~~ | ~~Implement damage absorption sequence~~ | ✅ `Combat/DamageResolver.cs` |
 | High | Implement ranged combat with modifiers | New `Combat/RangedAttackResolver.cs` |
 | Medium | Implement special combat actions | New `Combat/SpecialActions/` |
 
