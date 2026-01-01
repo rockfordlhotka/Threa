@@ -41,7 +41,8 @@ namespace GameMechanics.Player
         [Fetch]
         private async Task Fetch(int id, [Inject] IPlayerDal dal)
         {
-            var data = await dal.GetPlayerAsync(id);
+            var data = await dal.GetPlayerAsync(id) 
+                ?? throw new InvalidOperationException($"Player {id} not found");
             LoadProperties(data);
         }
 

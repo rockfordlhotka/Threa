@@ -73,7 +73,7 @@ public class TimeSystemTests
         Assert.AreEqual(3.0, cooldown.RemainingSeconds);
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(0, 6.0)]
     [DataRow(1, 5.0)]
     [DataRow(2, 4.0)]

@@ -20,7 +20,7 @@ namespace Threa.Dal.MockDb
             }
         }
 
-        public Task<Player> GetPlayerAsync(int id)
+        public Task<Player?> GetPlayerAsync(int id)
         {
             lock (MockDb.Players)
             {

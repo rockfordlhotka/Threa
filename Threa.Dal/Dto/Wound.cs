@@ -2,7 +2,7 @@
 
 public class Wound
 {
-    public string Location { get; set; }
+    public string Location { get; set; } = string.Empty;
     public int MaxWounds { get; set; }
     public int LightWounds { get; set; }
     public int SeriousWounds { get; set; }

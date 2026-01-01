@@ -10,17 +10,17 @@ public class Species
     /// <summary>
     /// Unique identifier for the species.
     /// </summary>
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// Display name of the species.
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// Description of the species.
     /// </summary>
-    public string Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>
     /// Attribute modifiers for this species.
@@ -37,7 +37,7 @@ public class SpeciesAttributeModifier
     /// <summary>
     /// The attribute name (STR, DEX, END, INT, ITT, WIL, PHY).
     /// </summary>
-    public string AttributeName { get; set; }
+    public string AttributeName { get; set; } = string.Empty;
 
     /// <summary>
     /// The modifier value (positive or negative).

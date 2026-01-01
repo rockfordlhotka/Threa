@@ -276,7 +276,7 @@ namespace GameMechanics
       CreateInternal(playerId, species, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
-    private void CreateInternal(int playerId, Reference.SpeciesInfo species,
+    private void CreateInternal(int playerId, Reference.SpeciesInfo? species,
       IChildDataPortal<AttributeEditList> attributePortal,
       IChildDataPortal<SkillEditList> skillPortal,
       IChildDataPortal<WoundList> woundPortal,

@@ -13,11 +13,11 @@ namespace GameMechanics.Test
     [TestClass]
     public class EffectsSystemTests
     {
-        private IEffectDefinitionDal _definitionDal;
-        private ICharacterEffectDal _characterEffectDal;
-        private IItemEffectDal _itemEffectDal;
-        private ICharacterItemDal _itemDal;
-        private EffectCalculator _calculator;
+        private IEffectDefinitionDal _definitionDal = null!;
+        private ICharacterEffectDal _characterEffectDal = null!;
+        private IItemEffectDal _itemEffectDal = null!;
+        private ICharacterItemDal _itemDal = null!;
+        private EffectCalculator _calculator = null!;
 
         [TestInitialize]
         public void Setup()

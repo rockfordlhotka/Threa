@@ -46,7 +46,7 @@ namespace Threa.Dal.MockDb
       }
       else
       {
-        Character existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
+        Character? existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
         if (existing == null)
           throw new NotFoundException(nameof(character));
         MockDb.Characters.Remove(existing);

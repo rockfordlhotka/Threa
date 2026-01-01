@@ -152,7 +152,7 @@ namespace GameMechanics.Test
         {
             var currency = new Currency();
             var changedProperties = new System.Collections.Generic.List<string>();
-            currency.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName);
+            currency.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName ?? string.Empty);
             
             currency.Copper = 10;
             

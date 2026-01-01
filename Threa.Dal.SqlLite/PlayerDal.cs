@@ -65,7 +65,7 @@ public class PlayerDal : IPlayerDal
         }
     }
 
-    public async Task<Player> GetPlayerAsync(int id)
+    public async Task<Player?> GetPlayerAsync(int id)
     {
         try
         {
@@ -75,7 +75,7 @@ public class PlayerDal : IPlayerDal
             command.Parameters.AddWithValue("@Id", id);
             using var reader = await command.ExecuteReaderAsync();
             if (!reader.Read())
-                throw new NotFoundException($"{nameof(Player)} {id}");
+                return null;
             string json = reader.GetString(0);
             var result = System.Text.Json.JsonSerializer.Deserialize<Player>(json);
             return result ?? throw new OperationFailedException($"Player {id} not found");
@@ -158,7 +158,8 @@ public class PlayerDal : IPlayerDal
 
     public async Task ChangePassword(int id, string oldPassword, string newPassword)
     {
-        var existingPlayer = await GetPlayerAsync(id);
+        var existingPlayer = await GetPlayerAsync(id) 
+            ?? throw new NotFoundException($"{nameof(Player)} {id}");
         try
         {
             if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
