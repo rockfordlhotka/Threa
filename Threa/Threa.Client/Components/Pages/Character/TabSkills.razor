@@ -1,4 +1,7 @@
-﻿@if (vm == null || vm.Model == null)
+﻿@inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
+@inject IChildDataPortal<GameMechanics.SkillEdit> skillPortal
+
+@if (vm == null || vm.Model == null)
 {
     <p>Loading...</p>
     return;
@@ -7,12 +10,264 @@
 <div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+    <span style="margin-left: 2rem;"><strong>Total XP:</strong> @vm.Model.XPTotal</span>
+    <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span style="font-weight: bold; color: @(vm.Model.XPBanked > 0 ? "green" : "red")">@vm.Model.XPBanked</span></span>
 </div>
 
-<h2>Tab 3 Content</h2>
-<p>This is the content of Tab 3.</p>
+@if (!vm.Model.IsPlayable)
+{
+    <div class="alert alert-info">
+        <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your skills.</p>
+        <p>Once the character is activated, you can continue to advance skills with earned XP.</p>
+    </div>
+}
+
+<h4>Current Skills</h4>
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Skill Name</th>
+            <th>Primary Attribute</th>
+            <th>Level</th>
+            <th>Bonus</th>
+            <th>Ability Score</th>
+            <th>XP Cost to Next Level</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var skill in vm.Model.Skills.OrderBy(s => s.Name))
+        {
+            var xpCostToNextLevel = skill.Level < 10 ? GetXPCostToNextLevel(skill) : 0;
+            var isNewSkill = IsNewSkill(skill);
+            <tr>
+                <td>@skill.Name</td>
+                <td>@skill.PrimaryAttribute</td>
+                <td>@skill.Level</td>
+                <td>@skill.Bonus</td>
+                <td>@skill.AbilityScore</td>
+                <td>
+                    @if (skill.Level < 10)
+                    {
+                        @xpCostToNextLevel
+                    }
+                    else
+                    {
+                        <span style="color: gray;">MAX</span>
+                    }
+                </td>
+                <td>
+                    @if (skill.Level < 10 && vm.Model.XPBanked >= xpCostToNextLevel)
+                    {
+                        <button class="btn btn-sm btn-success" @onclick="() => IncreaseSkillLevel(skill)">
+                            Level Up (@xpCostToNextLevel XP)
+                        </button>
+                    }
+                    @if (isNewSkill && skill.Level > 0)
+                    {
+                        <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
+                            Decrease
+                        </button>
+                    }
+                    @if (isNewSkill && skill.Level == 0)
+                    {
+                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
+                            Remove
+                        </button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h4>Add New Skill</h4>
+@if (availableSkills != null && availableSkills.Any())
+{
+    <div style="margin-bottom: 1rem;">
+        <select class="form-select" @bind="selectedSkillId" style="width: 300px; display: inline-block;">
+            <option value="">-- Select a skill to add --</option>
+            @foreach (var availableSkill in availableSkills)
+            {
+                <option value="@availableSkill.Id">@availableSkill.Name (@availableSkill.Category)</option>
+            }
+        </select>
+        <button class="btn btn-primary" @onclick="AddNewSkillAsync" disabled="@(string.IsNullOrEmpty(selectedSkillId))">
+            Add Skill
+        </button>
+    </div>
+}
+else
+{
+    <p>Loading available skills...</p>
+}
 
 @code {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
+
+    private GameMechanics.Reference.SkillList? allSkills;
+    private IEnumerable<GameMechanics.Reference.SkillInfo>? availableSkills;
+    private string? selectedSkillId;
+    private string? errorMessage;
+    private Dictionary<string, int> originalSkillLevels = new Dictionary<string, int>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (vm?.Model != null)
+        {
+            // Load all skills
+            allSkills = await skillListPortal.FetchAsync();
+            
+            // Track original skill levels to know which are "new"
+            foreach (var skill in vm.Model.Skills)
+            {
+                if (!originalSkillLevels.ContainsKey(skill.Id))
+                {
+                    originalSkillLevels[skill.Id] = skill.Level;
+                }
+            }
+            
+            UpdateAvailableSkills();
+        }
+    }
+
+    private void UpdateAvailableSkills()
+    {
+        if (allSkills == null) return;
+        
+        // Filter out skills that are already in the character's skill list
+        var existingSkillIds = vm!.Model!.Skills.Select(s => s.Id).ToHashSet();
+        availableSkills = allSkills.Where(s => !existingSkillIds.Contains(s.Id) && !s.IsStandard);
+    }
+
+    private double GetXPCostToNextLevel(GameMechanics.SkillEdit skill)
+    {
+        // Find the skill info to get the difficulty (Trained value)
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        if (skillInfo == null)
+        {
+            // Default to difficulty 5 if not found
+            return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, 5);
+        }
+        
+        // Use Trained as the difficulty level
+        var difficulty = skillInfo.Trained;
+        return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, difficulty);
+    }
+
+    private bool IsNewSkill(GameMechanics.SkillEdit skill)
+    {
+        // A skill is "new" if it wasn't in the original list or its level has increased
+        if (!originalSkillLevels.ContainsKey(skill.Id))
+        {
+            return true;
+        }
+        return skill.Level > originalSkillLevels[skill.Id];
+    }
+
+    private void IncreaseSkillLevel(GameMechanics.SkillEdit skill)
+    {
+        errorMessage = null;
+        
+        if (skill.Level >= 10)
+        {
+            errorMessage = "Skill is already at maximum level.";
+            return;
+        }
+
+        var xpCost = GetXPCostToNextLevel(skill);
+        
+        if (vm!.Model!.XPBanked < xpCost)
+        {
+            errorMessage = $"Not enough XP. Need {xpCost} XP but only have {vm.Model.XPBanked} XP.";
+            return;
+        }
+
+        // Spend XP and increase level
+        vm.Model.XPBanked -= xpCost;
+        skill.Level++;
+        
+        StateHasChanged();
+    }
+
+    private void DecreaseSkillLevel(GameMechanics.SkillEdit skill)
+    {
+        errorMessage = null;
+        
+        // Check if this is a new level increase
+        var originalLevel = originalSkillLevels.ContainsKey(skill.Id) ? originalSkillLevels[skill.Id] : 0;
+        
+        if (skill.Level <= originalLevel)
+        {
+            errorMessage = "Cannot reduce skill level below its original value.";
+            return;
+        }
+
+        // Refund XP and decrease level
+        skill.Level--;
+        var xpRefund = GetXPCostToNextLevel(skill);
+        vm!.Model!.XPBanked += xpRefund;
+        
+        StateHasChanged();
+    }
+
+    private async Task AddNewSkillAsync()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrEmpty(selectedSkillId))
+        {
+            errorMessage = "Please select a skill to add.";
+            return;
+        }
+
+        try
+        {
+            // Add the skill using the SkillEditList method
+            await vm!.Model!.Skills.AddSkillAsync(selectedSkillId, skillListPortal, skillPortal);
+            
+            UpdateAvailableSkills();
+            selectedSkillId = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding skill: {ex.Message}";
+        }
+    }
+
+    private void RemoveSkill(GameMechanics.SkillEdit skill)
+    {
+        errorMessage = null;
+        
+        // Check if this is a new skill (not in original list)
+        var originalLevel = originalSkillLevels.ContainsKey(skill.Id) ? originalSkillLevels[skill.Id] : -1;
+        
+        if (originalLevel >= 0)
+        {
+            errorMessage = "Cannot remove existing skills. You can only remove newly added skills.";
+            return;
+        }
+
+        // Refund all XP spent on this skill
+        for (int i = 0; i < skill.Level; i++)
+        {
+            var tempSkillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+            var difficulty = tempSkillInfo?.Trained ?? 5;
+            vm!.Model!.XPBanked += GameMechanics.SkillCost.GetLevelUpCost(i, difficulty);
+        }
+
+        // Remove the skill
+        vm!.Model!.Skills.Remove(skill);
+        
+        UpdateAvailableSkills();
+        selectedSkillId = null;
+        StateHasChanged();
+    }
 }
