@@ -255,6 +255,7 @@ namespace GameMechanics
       base.AddBusinessRules();
       BusinessRules.AddRule(new FatigueBase());
       BusinessRules.AddRule(new VitalityBase());
+      BusinessRules.AddRule(new AttributeSumValidation());
     }
 
     [Create]
@@ -458,6 +459,29 @@ namespace GameMechanics
       {
         var target = (CharacterEdit)context.Target;
         target.Vitality.CalculateBase(target);
+      }
+    }
+
+    private class AttributeSumValidation : BusinessRule
+    {
+      public AttributeSumValidation() : base(AttributeListProperty)
+      {
+        InputProperties.Add(AttributeListProperty);
+      }
+
+      protected override void Execute(IRuleContext context)
+      {
+        var target = (CharacterEdit)context.Target;
+        
+        // Only validate if character is not playable yet
+        if (!target.IsPlayable)
+        {
+          var attributeList = target.AttributeList;
+          if (attributeList.CurrentSum != attributeList.InitialSum)
+          {
+            context.AddErrorResult("The sum of attribute values must equal " + attributeList.InitialSum);
+          }
+        }
       }
     }
   }

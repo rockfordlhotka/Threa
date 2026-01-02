@@ -2,6 +2,7 @@
 using GameMechanics.Reference;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Threa.Dal.Dto;
 
 namespace GameMechanics
@@ -10,6 +11,10 @@ namespace GameMechanics
   public class AttributeEditList : BusinessListBase<AttributeEditList, AttributeEdit>
   {
     private static readonly string[] AttributeNames = ["STR", "DEX", "END", "INT", "ITT", "WIL", "PHY"];
+
+    public int InitialSum => this.Sum(a => a.BaseValue);
+
+    public int CurrentSum => this.Sum(a => a.Value);
 
     /// <summary>
     /// Creates attributes with no species modifiers (Human baseline).
