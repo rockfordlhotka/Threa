@@ -395,6 +395,7 @@ namespace GameMechanics
         nameof(Threa.Dal.Dto.Character.VitPendingHealing),
         nameof(Threa.Dal.Dto.Character.Items),
         nameof(Threa.Dal.Dto.Character.Effects),
+        nameof(TotalCopperValue),
         nameof(Threa.Dal.Dto.Character.TotalCopperValue),
       ];
 
