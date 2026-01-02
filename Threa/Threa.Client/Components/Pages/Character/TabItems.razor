@@ -9,14 +9,83 @@
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
 </div>
 
-<div class="items-placeholder">
-    <h4>Items & Currency</h4>
-    <p><em>This tab is under construction.</em></p>
-    <p>Future features:</p>
+<h4>Currency</h4>
+<div style="margin-bottom: 2rem;">
+    <table class="table table-sm" style="max-width: 500px;">
+        <thead>
+            <tr>
+                <th>Denomination</th>
+                <th>Amount</th>
+                <th>Value (cp)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Platinum (pp)</td>
+                <td>
+                    <input type="number" 
+                           class="form-control form-control-sm" 
+                           style="width: 100px;" 
+                           min="0" 
+                           @bind="vm.Model.PlatinumCoins" />
+                </td>
+                <td>@(vm.Model.PlatinumCoins * 8000)</td>
+            </tr>
+            <tr>
+                <td>Gold (gp)</td>
+                <td>
+                    <input type="number" 
+                           class="form-control form-control-sm" 
+                           style="width: 100px;" 
+                           min="0" 
+                           @bind="vm.Model.GoldCoins" />
+                </td>
+                <td>@(vm.Model.GoldCoins * 400)</td>
+            </tr>
+            <tr>
+                <td>Silver (sp)</td>
+                <td>
+                    <input type="number" 
+                           class="form-control form-control-sm" 
+                           style="width: 100px;" 
+                           min="0" 
+                           @bind="vm.Model.SilverCoins" />
+                </td>
+                <td>@(vm.Model.SilverCoins * 20)</td>
+            </tr>
+            <tr>
+                <td>Copper (cp)</td>
+                <td>
+                    <input type="number" 
+                           class="form-control form-control-sm" 
+                           style="width: 100px;" 
+                           min="0" 
+                           @bind="vm.Model.CopperCoins" />
+                </td>
+                <td>@vm.Model.CopperCoins</td>
+            </tr>
+            <tr style="font-weight: bold; background-color: #f8f9fa;">
+                <td colspan="2">Total Value</td>
+                <td>@vm.Model.TotalCopperValue cp</td>
+            </tr>
+            <tr style="font-style: italic; color: #6c757d;">
+                <td colspan="3">
+                    Exchange rates: 1 pp = 8,000 cp | 1 gp = 400 cp | 1 sp = 20 cp
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h4>Items & Equipment</h4>
+<div class="items-section">
+    <p><em>Item inventory management coming soon.</em></p>
+    <p>Planned features:</p>
     <ul>
-        <li>Character inventory management</li>
-        <li>Currency (Copper, Silver, Gold, Platinum)</li>
-        <li>Equipment slots</li>
+        <li>View and manage inventory items</li>
+        <li>Equip and unequip weapons and armor</li>
+        <li>Track item durability and condition</li>
+        <li>Container management (backpacks, pouches, etc.)</li>
         <li>Item effects and bonuses</li>
     </ul>
 </div>
