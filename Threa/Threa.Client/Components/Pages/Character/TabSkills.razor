@@ -49,7 +49,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var skill in vm.Model.Skills.OrderBy(s => s.Name))
+        @foreach (var skill in vm.Model.Skills.Where(s => !IsSkillMagic(s)).OrderBy(s => s.Name))
         {
             var xpCostToNextLevel = skill.Level < 10 ? GetXPCostToNextLevel(skill) : 0;
             var isNewSkill = IsNewSkill(skill);
@@ -160,8 +160,16 @@ else
         
         // Filter out skills that are already in the character's skill list
         // Use Name instead of Id since standard skills have empty Id
+        // Also filter out magic skills from the regular skills tab
         var existingSkillNames = vm!.Model!.Skills.Select(s => s.Name).ToHashSet();
-        availableSkills = allSkills.Where(s => !existingSkillNames.Contains(s.Name) && !s.IsStandard);
+        availableSkills = allSkills.Where(s => !existingSkillNames.Contains(s.Name) && !s.IsStandard && !s.IsMagic);
+    }
+
+    private bool IsSkillMagic(GameMechanics.SkillEdit skill)
+    {
+        // Check if this skill is a magic skill by looking it up in allSkills
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        return skillInfo?.IsMagic ?? false;
     }
 
     private double GetXPCostToNextLevel(GameMechanics.SkillEdit skill)

@@ -22,6 +22,17 @@ namespace GameMechanics.Reference
         
         // Movement skills
         Add(skillPortal.FetchChild("Sprint"));
+        
+        // Magic: Mana skills
+        Add(skillPortal.FetchChild("Fire Mana"));
+        Add(skillPortal.FetchChild("Water Mana"));
+        Add(skillPortal.FetchChild("Light Mana"));
+        Add(skillPortal.FetchChild("Life Mana"));
+        
+        // Magic: Spell skills
+        Add(skillPortal.FetchChild("Fire Bolt"));
+        Add(skillPortal.FetchChild("Heal"));
+        Add(skillPortal.FetchChild("Illuminate"));
       }
     }
   }
@@ -189,6 +200,83 @@ namespace GameMechanics.Reference
           Untrained = 5;
           Trained = 2;
           PrimaryAttribute = "DEX";
+          break;
+        case "Fire Mana":
+          Id = "fire-mana";
+          Name = skillName;
+          Category = "Mana";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 7;
+          Trained = 4;
+          PrimaryAttribute = "WIL";
+          break;
+        case "Water Mana":
+          Id = "water-mana";
+          Name = skillName;
+          Category = "Mana";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 7;
+          Trained = 4;
+          PrimaryAttribute = "WIL";
+          break;
+        case "Light Mana":
+          Id = "light-mana";
+          Name = skillName;
+          Category = "Mana";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 7;
+          Trained = 4;
+          PrimaryAttribute = "WIL";
+          break;
+        case "Life Mana":
+          Id = "life-mana";
+          Name = skillName;
+          Category = "Mana";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 7;
+          Trained = 4;
+          PrimaryAttribute = "WIL";
+          break;
+        case "Fire Bolt":
+          Id = "fire-bolt";
+          Name = skillName;
+          Category = "Fire Spell";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 8;
+          Trained = 5;
+          PrimaryAttribute = "INT";
+          break;
+        case "Heal":
+          Id = "heal";
+          Name = skillName;
+          Category = "Life Spell";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 8;
+          Trained = 5;
+          PrimaryAttribute = "WIL";
+          break;
+        case "Illuminate":
+          Id = "illuminate";
+          Name = skillName;
+          Category = "Light Spell";
+          IsStandard = false;
+          IsSpecialized = false;
+          IsMagic = true;
+          Untrained = 7;
+          Trained = 4;
+          PrimaryAttribute = "INT";
           break;
         default:
           break;

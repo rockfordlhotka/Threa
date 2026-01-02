@@ -33,6 +33,7 @@ else
         <button class="tab-link @(activeTab == tabNames[1] ? "active" : "")" @onclick="() => SelectTab(tabNames[1])">@tabNames[1]</button>
         <button class="tab-link @(activeTab == tabNames[2] ? "active" : "")" @onclick="() => SelectTab(tabNames[2])">@tabNames[2]</button>
         <button class="tab-link @(activeTab == tabNames[3] ? "active" : "")" @onclick="() => SelectTab(tabNames[3])">@tabNames[3]</button>
+        <button class="tab-link @(activeTab == tabNames[4] ? "active" : "")" @onclick="() => SelectTab(tabNames[4])">@tabNames[4]</button>
     </div>
 
     @if (activeTab == tabNames[0])
@@ -59,6 +60,13 @@ else
     @if (activeTab == tabNames[3])
     {
         <div class="tab-content">
+            <TabMagic vm="vm" />
+        </div>
+    }
+
+    @if (activeTab == tabNames[4])
+    {
+        <div class="tab-content">
             <TabItems vm="vm" />
         </div>
     }
@@ -77,7 +85,7 @@ else
     [Parameter]
     public int id { get; set; }
 
-    private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills", "Items" };
+    private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills", "Magic", "Items" };
     private string activeTab = tabNames[0];
 
     private void SelectTab(string tabName)
