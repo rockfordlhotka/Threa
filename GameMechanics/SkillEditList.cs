@@ -30,6 +30,23 @@ namespace GameMechanics
       }
     }
 
+    /// <summary>
+    /// Adds a new skill from the skill reference list.
+    /// </summary>
+    public async Task<SkillEdit> AddSkillAsync(string skillIdentifier, IDataPortal<Reference.SkillList> skillListPortal, IChildDataPortal<SkillEdit> skillPortal)
+    {
+      var allSkills = await skillListPortal.FetchAsync();
+      // Try to find by Id first, then by Name
+      var skillInfo = allSkills.FirstOrDefault(s => s.Id == skillIdentifier) 
+                   ?? allSkills.FirstOrDefault(s => s.Name == skillIdentifier);
+      if (skillInfo == null)
+        throw new ArgumentException($"Skill with identifier '{skillIdentifier}' not found", nameof(skillIdentifier));
+      
+      var newSkill = skillPortal.CreateChild(skillInfo);
+      Add(newSkill);
+      return newSkill;
+    }
+
     [CreateChild]
     private async Task Create([Inject] IDataPortal<Reference.SkillList> skillListPortal, [Inject] IChildDataPortal<SkillEdit> skillPortal)
     {
