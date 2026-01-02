@@ -7,7 +7,9 @@ public class Character
     public int Id { get; set; }
     public int PlayerId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string TrueName { get; set; } = string.Empty;
     public string Aliases { get; set; } = string.Empty;
+    public bool IsPlayable { get; set; }
     public string Species { get; set; } = string.Empty;
     public int DamageClass { get; set; }
     public string Height { get; set; } = string.Empty;

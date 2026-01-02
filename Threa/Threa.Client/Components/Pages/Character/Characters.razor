@@ -27,8 +27,23 @@ else
     <QuickGrid Items="characters">
         <PropertyColumn Title="Name" Property="@(p => p.Name)" />
         <PropertyColumn Title="Species" Property="@(p => p.Species)" />
+        <TemplateColumn Title="Status">
+            @if (context.IsPlayable)
+            {
+                <span class="badge bg-success">Active</span>
+            }
+            else
+            {
+                <span class="badge bg-warning">Creating</span>
+            }
+        </TemplateColumn>
         <TemplateColumn>
             <a href="player/character/@context.Id">Details</a>
+            @if (!context.IsPlayable)
+            {
+                <span> | </span>
+                <a href="player/character/activate/@context.Id">Activate</a>
+            }
         </TemplateColumn>
     </QuickGrid>
 }

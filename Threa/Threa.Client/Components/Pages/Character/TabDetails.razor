@@ -10,6 +10,7 @@
     </thead>
     <tbody>
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
         <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
@@ -17,6 +18,11 @@
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Height)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Weight)" />
+        <TextInputRow Property="vm.GetPropertyInfo<long>(() => vm.Model.Birthdate)" />
+        <TextInputRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DamageClass)" />
+        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ImageUrl)" />
+        <LabelRow Property="vm.GetPropertyInfo<double>(() => vm.Model.XPTotal)" />
+        <TextInputRow Property="vm.GetPropertyInfo<double>(() => vm.Model.XPBanked)" />
         <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
         <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Notes)" />
     </tbody>

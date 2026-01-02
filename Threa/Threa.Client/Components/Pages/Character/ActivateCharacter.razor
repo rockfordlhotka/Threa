@@ -1,0 +1,113 @@
+@page "/player/character/activate/{id:int}"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+
+@using Threa.Services
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject ViewModel<GameMechanics.CharacterEdit> vm
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject NavigationManager NavigationManager
+
+<h3>Activate Character</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (vm.Exception != null)
+{
+    <div class="alert-danger">@vm.Exception.ToString()</div>
+}
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else if (vm.Model.IsPlayable)
+{
+    <div class="alert alert-info">
+        <p>This character is already active and playable.</p>
+    </div>
+    <a href="player/characters" class="btn btn-secondary">Back to Characters</a>
+}
+else
+{
+    <div class="alert alert-warning">
+        <h4>Warning: This action cannot be undone!</h4>
+        <p>You are about to activate <strong>@vm.Model.Name</strong>.</p>
+        <p>Once a character is activated:</p>
+        <ul>
+            <li>The character becomes playable in the game</li>
+            <li>Attributes and other creation-only values become read-only</li>
+            <li>This change is permanent</li>
+        </ul>
+    </div>
+
+    <div class="mb-3">
+        <h5>Character Summary</h5>
+        <table class="table table-sm">
+            <tr>
+                <th>Name</th>
+                <td>@vm.Model.Name</td>
+            </tr>
+            <tr>
+                <th>Species</th>
+                <td>@vm.Model.Species</td>
+            </tr>
+            <tr>
+                <th>Height</th>
+                <td>@vm.Model.Height</td>
+            </tr>
+            <tr>
+                <th>Weight</th>
+                <td>@vm.Model.Weight</td>
+            </tr>
+        </table>
+    </div>
+
+    @if (isActivating)
+    {
+        <button disabled class="btn btn-danger">Activating...</button>
+        <img src="images/busy.gif" class="busy-animation" />
+    }
+    else
+    {
+        <button @onclick="ActivateAsync" class="btn btn-danger">Activate Character</button>
+        <a href="player/characters" class="btn btn-secondary">Cancel</a>
+    }
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private bool isActivating = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            await vm.RefreshAsync(() => characterPortal.FetchAsync(id));
+        }
+    }
+
+    private async void ActivateAsync()
+    {
+        isActivating = true;
+        StateHasChanged();
+
+        vm.Model.Activate();
+        await vm.SaveAsync();
+
+        isActivating = false;
+        StateHasChanged();
+    }
+}

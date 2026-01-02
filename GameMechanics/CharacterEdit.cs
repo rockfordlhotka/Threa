@@ -50,6 +50,14 @@ namespace GameMechanics
       set => SetProperty(NameProperty, value);
     }
 
+    public static readonly PropertyInfo<string> TrueNameProperty = RegisterProperty<string>(nameof(TrueName));
+    [Display(Name = "True name")]
+    public string TrueName
+    {
+      get => GetProperty(TrueNameProperty);
+      set => SetProperty(TrueNameProperty, value);
+    }
+
     public static readonly PropertyInfo<string> AliasesProperty = RegisterProperty<string>(nameof(Aliases));
     public string Aliases
     {
@@ -157,6 +165,26 @@ namespace GameMechanics
     {
       get => GetProperty(IsPassedOutProperty);
       set => SetProperty(IsPassedOutProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsPlayableProperty = RegisterProperty<bool>(nameof(IsPlayable));
+    [Display(Name = "Is playable")]
+    public bool IsPlayable
+    {
+      get => GetProperty(IsPlayableProperty);
+      private set => LoadProperty(IsPlayableProperty, value);
+    }
+
+    /// <summary>
+    /// Activates the character, making it playable. This is a one-way operation.
+    /// Once activated, certain properties like attributes become read-only.
+    /// </summary>
+    public void Activate()
+    {
+      if (!IsPlayable)
+      {
+        IsPlayable = true;
+      }
     }
 
     public static readonly PropertyInfo<ActionPoints> ActionPointsProperty = RegisterProperty<ActionPoints>(nameof(ActionPoints));
@@ -326,6 +354,13 @@ namespace GameMechanics
         nameof(Threa.Dal.Dto.Character.VitBaseValue),
         nameof(Threa.Dal.Dto.Character.VitPendingDamage),
         nameof(Threa.Dal.Dto.Character.VitPendingHealing),
+        nameof(Threa.Dal.Dto.Character.Items),
+        nameof(Threa.Dal.Dto.Character.Effects),
+        nameof(Threa.Dal.Dto.Character.CopperCoins),
+        nameof(Threa.Dal.Dto.Character.SilverCoins),
+        nameof(Threa.Dal.Dto.Character.GoldCoins),
+        nameof(Threa.Dal.Dto.Character.PlatinumCoins),
+        nameof(Threa.Dal.Dto.Character.TotalCopperValue),
       ];
 
     [Fetch]

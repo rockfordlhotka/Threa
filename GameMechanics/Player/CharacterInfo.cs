@@ -28,12 +28,20 @@ namespace GameMechanics.Player
       private set => LoadProperty(SpeciesProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsPlayableProperty = RegisterProperty<bool>(nameof(IsPlayable));
+    public bool IsPlayable
+    {
+      get => GetProperty(IsPlayableProperty);
+      private set => LoadProperty(IsPlayableProperty, value);
+    }
+
     [FetchChild]
     private void Fetch(Character character)
     {
       Id = character.Id;
       Name = character.Name;
       Species = character.Species;
+      IsPlayable = character.IsPlayable;
     }
   }
 }

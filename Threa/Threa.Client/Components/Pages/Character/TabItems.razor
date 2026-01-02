@@ -1,0 +1,23 @@
+@if (vm == null || vm.Model == null)
+{
+    <p>Loading...</p>
+    return;
+}
+
+<div class="items-placeholder">
+    <h4>Items & Currency</h4>
+    <p><em>This tab is under construction.</em></p>
+    <p>Future features:</p>
+    <ul>
+        <li>Character inventory management</li>
+        <li>Currency (Copper, Silver, Gold, Platinum)</li>
+        <li>Equipment slots</li>
+        <li>Item effects and bonuses</li>
+    </ul>
+</div>
+
+@code 
+{
+    [Parameter]
+    public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
+}

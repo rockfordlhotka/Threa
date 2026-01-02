@@ -8,7 +8,8 @@ public static class MockDb
 {
     public static readonly List<Player> Players =
     [
-      new Player { Id = 42, Name = "Rocky", Email = "rocky@lhotka.net" }
+      new Player { Id = 42, Name = "Rocky", Email = "rocky@lhotka.net" },
+      new Player { Id = 43, Name = "Illiante", Email = "illiante@yahoo.com" }
     ];
 
     public static readonly List<string> Images = [];
