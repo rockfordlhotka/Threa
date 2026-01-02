@@ -7,6 +7,14 @@
     return;
 }
 
+@if (initError != null)
+{
+    <div class="alert alert-danger">
+        <strong>Initialization Error:</strong> @initError
+    </div>
+    return;
+}
+
 <div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
@@ -94,7 +102,7 @@
             <option value="">-- Select a skill to add --</option>
             @foreach (var availableSkill in availableSkills)
             {
-                <option value="@availableSkill.Id">@availableSkill.Name (@availableSkill.Category)</option>
+                <option value="@availableSkill.Name">@availableSkill.Name @(!string.IsNullOrEmpty(availableSkill.Category) ? $"({availableSkill.Category})" : "")</option>
             }
         </select>
         <button class="btn btn-primary" @onclick="AddNewSkillAsync" disabled="@(string.IsNullOrEmpty(selectedSkillId))">
@@ -115,25 +123,34 @@ else
     private IEnumerable<GameMechanics.Reference.SkillInfo>? availableSkills;
     private string? selectedSkillId;
     private string? errorMessage;
+    private string? initError;
     private Dictionary<string, int> originalSkillLevels = new Dictionary<string, int>();
 
     protected override async Task OnInitializedAsync()
     {
-        if (vm?.Model != null)
+        try
         {
-            // Load all skills
-            allSkills = await skillListPortal.FetchAsync();
-            
-            // Track original skill levels to know which are "new"
-            foreach (var skill in vm.Model.Skills)
+            if (vm?.Model != null)
             {
-                if (!originalSkillLevels.ContainsKey(skill.Id))
+                // Load all skills
+                allSkills = await skillListPortal.FetchAsync();
+                
+                // Track original skill levels to know which are "new"
+                // Use Name as the key since Id may be empty for standard skills
+                foreach (var skill in vm.Model.Skills)
                 {
-                    originalSkillLevels[skill.Id] = skill.Level;
+                    if (!originalSkillLevels.ContainsKey(skill.Name))
+                    {
+                        originalSkillLevels[skill.Name] = skill.Level;
+                    }
                 }
+                
+                UpdateAvailableSkills();
             }
-            
-            UpdateAvailableSkills();
+        }
+        catch (Exception ex)
+        {
+            initError = ex.ToString();
         }
     }
 
@@ -142,8 +159,9 @@ else
         if (allSkills == null) return;
         
         // Filter out skills that are already in the character's skill list
-        var existingSkillIds = vm!.Model!.Skills.Select(s => s.Id).ToHashSet();
-        availableSkills = allSkills.Where(s => !existingSkillIds.Contains(s.Id) && !s.IsStandard);
+        // Use Name instead of Id since standard skills have empty Id
+        var existingSkillNames = vm!.Model!.Skills.Select(s => s.Name).ToHashSet();
+        availableSkills = allSkills.Where(s => !existingSkillNames.Contains(s.Name) && !s.IsStandard);
     }
 
     private double GetXPCostToNextLevel(GameMechanics.SkillEdit skill)
@@ -164,11 +182,11 @@ else
     private bool IsNewSkill(GameMechanics.SkillEdit skill)
     {
         // A skill is "new" if it wasn't in the original list or its level has increased
-        if (!originalSkillLevels.ContainsKey(skill.Id))
+        if (!originalSkillLevels.ContainsKey(skill.Name))
         {
             return true;
         }
-        return skill.Level > originalSkillLevels[skill.Id];
+        return skill.Level > originalSkillLevels[skill.Name];
     }
 
     private void IncreaseSkillLevel(GameMechanics.SkillEdit skill)
@@ -201,7 +219,7 @@ else
         errorMessage = null;
         
         // Check if this is a new level increase
-        var originalLevel = originalSkillLevels.ContainsKey(skill.Id) ? originalSkillLevels[skill.Id] : 0;
+        var originalLevel = originalSkillLevels.ContainsKey(skill.Name) ? originalSkillLevels[skill.Name] : 0;
         
         if (skill.Level <= originalLevel)
         {
@@ -229,8 +247,19 @@ else
 
         try
         {
+            // selectedSkillId is actually the skill name
+            // Find the skill by name
+            var skillInfo = allSkills?.FirstOrDefault(s => s.Name == selectedSkillId);
+            if (skillInfo == null)
+            {
+                errorMessage = "Selected skill not found.";
+                return;
+            }
+
             // Add the skill using the SkillEditList method
-            await vm!.Model!.Skills.AddSkillAsync(selectedSkillId, skillListPortal, skillPortal);
+            // Use the Id if available, otherwise use the Name
+            string skillIdentifier = !string.IsNullOrEmpty(skillInfo.Id) ? skillInfo.Id : skillInfo.Name;
+            await vm!.Model!.Skills.AddSkillAsync(skillIdentifier, skillListPortal, skillPortal);
             
             UpdateAvailableSkills();
             selectedSkillId = null;
@@ -247,7 +276,7 @@ else
         errorMessage = null;
         
         // Check if this is a new skill (not in original list)
-        var originalLevel = originalSkillLevels.ContainsKey(skill.Id) ? originalSkillLevels[skill.Id] : -1;
+        var originalLevel = originalSkillLevels.ContainsKey(skill.Name) ? originalSkillLevels[skill.Name] : -1;
         
         if (originalLevel >= 0)
         {
