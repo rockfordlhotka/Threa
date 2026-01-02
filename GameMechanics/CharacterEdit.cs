@@ -226,6 +226,44 @@ namespace GameMechanics
       set => SetProperty(DamageClassProperty, value);
     }
 
+    public static readonly PropertyInfo<int> CopperCoinsProperty = RegisterProperty<int>(nameof(CopperCoins));
+    [Display(Name = "Copper coins")]
+    public int CopperCoins
+    {
+      get => GetProperty(CopperCoinsProperty);
+      set => SetProperty(CopperCoinsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> SilverCoinsProperty = RegisterProperty<int>(nameof(SilverCoins));
+    [Display(Name = "Silver coins")]
+    public int SilverCoins
+    {
+      get => GetProperty(SilverCoinsProperty);
+      set => SetProperty(SilverCoinsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> GoldCoinsProperty = RegisterProperty<int>(nameof(GoldCoins));
+    [Display(Name = "Gold coins")]
+    public int GoldCoins
+    {
+      get => GetProperty(GoldCoinsProperty);
+      set => SetProperty(GoldCoinsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PlatinumCoinsProperty = RegisterProperty<int>(nameof(PlatinumCoins));
+    [Display(Name = "Platinum coins")]
+    public int PlatinumCoins
+    {
+      get => GetProperty(PlatinumCoinsProperty);
+      set => SetProperty(PlatinumCoinsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the total currency value in copper pieces.
+    /// 1 sp = 20 cp, 1 gp = 400 cp, 1 pp = 8000 cp
+    /// </summary>
+    public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
+
     public int GetAttribute(string attributeName)
     {
       var result = AttributeList.Where(r => r.Name == attributeName).FirstOrDefault();
@@ -357,10 +395,6 @@ namespace GameMechanics
         nameof(Threa.Dal.Dto.Character.VitPendingHealing),
         nameof(Threa.Dal.Dto.Character.Items),
         nameof(Threa.Dal.Dto.Character.Effects),
-        nameof(Threa.Dal.Dto.Character.CopperCoins),
-        nameof(Threa.Dal.Dto.Character.SilverCoins),
-        nameof(Threa.Dal.Dto.Character.GoldCoins),
-        nameof(Threa.Dal.Dto.Character.PlatinumCoins),
         nameof(Threa.Dal.Dto.Character.TotalCopperValue),
       ];
 
