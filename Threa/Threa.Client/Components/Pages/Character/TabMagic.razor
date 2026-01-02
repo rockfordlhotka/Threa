@@ -49,9 +49,12 @@
 
 @* Group magic skills by category *@
 @{
-    var manaSkills = vm.Model.Skills.Where(s => IsSkillMagic(s) && IsManaSkill(s)).OrderBy(s => s.Name).ToList();
-    var spellSkills = vm.Model.Skills.Where(s => IsSkillMagic(s) && !IsManaSkill(s) && !IsMetaMagicSkill(s)).OrderBy(s => s.Name).ToList();
-    var metaMagicSkills = vm.Model.Skills.Where(s => IsSkillMagic(s) && IsMetaMagicSkill(s)).OrderBy(s => s.Name).ToList();
+    // Filter magic skills once for better performance
+    var magicSkills = vm.Model.Skills.Where(s => IsSkillMagic(s)).ToList();
+    
+    var manaSkills = magicSkills.Where(s => IsManaSkill(s)).OrderBy(s => s.Name).ToList();
+    var spellSkills = magicSkills.Where(s => !IsManaSkill(s) && !IsMetaMagicSkill(s)).OrderBy(s => s.Name).ToList();
+    var metaMagicSkills = magicSkills.Where(s => IsMetaMagicSkill(s)).OrderBy(s => s.Name).ToList();
 }
 
 @if (manaSkills.Any())
@@ -324,7 +327,12 @@ else
 
     private bool IsManaSkill(GameMechanics.SkillEdit skill)
     {
-        // Mana skills typically have "Mana" in their name
+        // Check category first for more reliable detection
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        if (skillInfo?.Category?.Equals("Mana", StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        
+        // Fallback to name-based detection for backward compatibility
         return skill.Name.Contains("Mana", StringComparison.OrdinalIgnoreCase);
     }
 
