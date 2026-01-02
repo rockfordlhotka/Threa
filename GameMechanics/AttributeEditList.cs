@@ -16,6 +16,17 @@ namespace GameMechanics
 
     public int CurrentSum => this.Sum(a => a.Value);
 
+    protected override void OnChildChanged(Csla.Core.ChildChangedEventArgs e)
+    {
+      base.OnChildChanged(e);
+      // Notify parent (CharacterEdit) to recalculate FAT/VIT when attributes change
+      if (Parent is CharacterEdit character)
+      {
+        character.Fatigue.CalculateBase(character);
+        character.Vitality.CalculateBase(character);
+      }
+    }
+
     /// <summary>
     /// Creates attributes with no species modifiers (Human baseline).
     /// </summary>

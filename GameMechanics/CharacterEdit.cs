@@ -436,9 +436,9 @@ namespace GameMechanics
 
     private class FatigueBase : PropertyRule
     {
-        public FatigueBase() : base(FatigueProperty)
+        public FatigueBase() : base(AttributeListProperty)
         {
-            InputProperties.Add(FatigueProperty);
+            InputProperties.Add(AttributeListProperty);
             AffectedProperties.Add(FatigueProperty);
         }
 
@@ -453,9 +453,9 @@ namespace GameMechanics
 
     private class VitalityBase : PropertyRule
     {
-      public VitalityBase() : base(VitalityProperty)
+      public VitalityBase() : base(AttributeListProperty)
       {
-        InputProperties.Add(VitalityProperty);
+        InputProperties.Add(AttributeListProperty);
         AffectedProperties.Add(VitalityProperty);
       }
 
