@@ -52,7 +52,7 @@ namespace GameMechanics
       using (BypassPropertyChecks)
       {
         Name = attribute.Name;
-        Value = attribute.BaseValue;
+        Value = BaseValue = attribute.BaseValue;
       }
     }
 
