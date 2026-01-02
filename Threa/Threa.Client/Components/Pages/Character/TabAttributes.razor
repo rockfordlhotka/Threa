@@ -40,7 +40,6 @@ else
                         <input type="number" 
                                @bind="item.Value" 
                                @bind:event="oninput"
-                               @onchange="() => OnAttributeChanged()"
                                min="1" 
                                max="20"
                                style="width: 80px;" />
@@ -93,12 +92,6 @@ else
             "PHY" => "Bearing (PHY)",
             _ => name
         };
-    }
-
-    private void OnAttributeChanged()
-    {
-        // This triggers a UI refresh after attribute changes
-        StateHasChanged();
     }
 
     private string GetSumValidationStyle()

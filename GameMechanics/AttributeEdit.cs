@@ -30,8 +30,6 @@ namespace GameMechanics
       set => LoadProperty(BaseValueProperty, value);
     }
 
-
-
     [CreateChild]
     private void Create(string name)
     {
