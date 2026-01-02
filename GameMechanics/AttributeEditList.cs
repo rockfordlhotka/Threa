@@ -42,6 +42,12 @@ namespace GameMechanics
     [FetchChild]
     private void Fetch(List<CharacterAttribute> list, [Inject] IChildDataPortal<AttributeEdit> attributePortal)
     {
+      Fetch(list, null, attributePortal);
+    }
+
+    [FetchChild]
+    private void Fetch(List<CharacterAttribute> list, Reference.SpeciesInfo? species, [Inject] IChildDataPortal<AttributeEdit> attributePortal)
+    {
       if (list == null)
       {
         Create(attributePortal);
@@ -51,7 +57,7 @@ namespace GameMechanics
         using (LoadListMode)
         {
           foreach (var item in list)
-            Add(attributePortal.FetchChild(item));
+            Add(attributePortal.FetchChild(item, species));
         }
       }
     }

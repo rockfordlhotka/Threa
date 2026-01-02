@@ -26,7 +26,9 @@ else
     <thead>
         <tr>
             <th>Attribute</th>
-            <th>Value</th>
+            <th>Base</th>
+            <th>Modifier</th>
+            <th>Final Value</th>
         </tr>
     </thead>
     <tbody>
@@ -38,16 +40,31 @@ else
                     @if (!vm.Model.IsPlayable)
                     {
                         <input type="number" 
-                               @bind="item.Value" 
+                               @bind="item.BaseValue" 
                                @bind:event="oninput"
-                               min="1" 
-                               max="20"
-                               style="width: 80px;" />
+                               min="6" 
+                               max="14"
+                               style="width: 60px;" />
                     }
                     else
                     {
-                        @item.Value
+                        @item.BaseValue
                     }
+                </td>
+                <td style="text-align: center;">
+                    @if (item.SpeciesModifier != 0)
+                    {
+                        <span style="color: @(item.SpeciesModifier > 0 ? "green" : "red");">
+                            @(item.SpeciesModifier > 0 ? "+" : "")@item.SpeciesModifier
+                        </span>
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </td>
+                <td style="font-weight: bold;">
+                    @item.Value
                 </td>
             </tr>
         }

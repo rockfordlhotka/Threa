@@ -369,7 +369,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
@@ -377,7 +378,12 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
         Fatigue = fatPortal.FetchChild(existing);
         Vitality = vitPortal.FetchChild(existing);
-        AttributeList = attributePortal.FetchChild(existing.AttributeList);
+        
+        // Load species info to pass modifiers to AttributeList
+        var speciesList = await speciesPortal.FetchAsync();
+        var speciesInfo = speciesList.FirstOrDefault(s => s.Id == existing.Species);
+        AttributeList = attributePortal.FetchChild(existing.AttributeList, speciesInfo);
+        
         Skills = skillPortal.FetchChild(existing.Skills);
       }
       BusinessRules.CheckRules();

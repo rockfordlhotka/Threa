@@ -27,7 +27,38 @@ namespace GameMechanics
     public int BaseValue
     {
       get => GetProperty(BaseValueProperty);
-      set => LoadProperty(BaseValueProperty, value);
+      set => SetProperty(BaseValueProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> SpeciesModifierProperty = RegisterProperty<int>(nameof(SpeciesModifier));
+    public int SpeciesModifier
+    {
+      get => GetProperty(SpeciesModifierProperty);
+      private set => LoadProperty(SpeciesModifierProperty, value);
+    }
+
+    protected override void AddBusinessRules()
+    {
+      base.AddBusinessRules();
+      // Recalculate Value when BaseValue changes
+      BusinessRules.AddRule(new RecalculateValue());
+    }
+
+    private class RecalculateValue : Csla.Rules.BusinessRule
+    {
+      public RecalculateValue() : base(BaseValueProperty)
+      {
+        InputProperties.Add(BaseValueProperty);
+        InputProperties.Add(SpeciesModifierProperty);
+        AffectedProperties.Add(ValueProperty);
+      }
+
+      protected override void Execute(Csla.Rules.IRuleContext context)
+      {
+        var target = (AttributeEdit)context.Target;
+        var newValue = target.BaseValue + target.SpeciesModifier;
+        context.AddOutValue(ValueProperty, newValue);
+      }
     }
 
     [CreateChild]
@@ -39,18 +70,34 @@ namespace GameMechanics
     [CreateChild]
     private void Create(string name, int speciesModifier)
     {
-      Name = name;
-      // Per design: Attribute = 4dF + 10 + species modifier
-      Value = BaseValue = 10 + Dice.Roll(4, "F") + speciesModifier;
+      using (BypassPropertyChecks)
+      {
+        Name = name;
+        LoadProperty(SpeciesModifierProperty, speciesModifier);
+        // Roll base value: 4dF + 10 (no modifier)
+        LoadProperty(BaseValueProperty, 10 + Dice.Roll(4, "F"));
+        // Apply species modifier to get actual value
+        LoadProperty(ValueProperty, BaseValue + SpeciesModifier);
+      }
     }
 
     [FetchChild]
     private void Fetch(CharacterAttribute attribute)
     {
+      Fetch(attribute, null);
+    }
+
+    [FetchChild]
+    private void Fetch(CharacterAttribute attribute, Reference.SpeciesInfo? species)
+    {
       using (BypassPropertyChecks)
       {
         Name = attribute.Name;
-        Value = BaseValue = attribute.BaseValue;
+        // The stored value includes species modifiers
+        LoadProperty(ValueProperty, attribute.BaseValue);
+        // Back out the species modifier to get the base rolled value
+        LoadProperty(SpeciesModifierProperty, species?.GetModifier(Name) ?? 0);
+        LoadProperty(BaseValueProperty, Value - SpeciesModifier);
       }
     }
 
