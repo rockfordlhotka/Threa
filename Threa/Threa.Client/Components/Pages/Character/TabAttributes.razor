@@ -4,25 +4,89 @@
     return;
 }
 
+<div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
+    <strong>Character:</strong> @vm.Model.Name
+    <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+</div>
+
+@if (!vm.Model.IsPlayable)
+{
+    <div class="alert alert-info">
+        You can adjust attribute values during character creation, but the total sum must remain @vm.Model.AttributeList.InitialSum.
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        This character is playable. Attributes cannot be changed.
+    </div>
+}
+
 <table>
     <thead>
-        <tr><th></th><th></th></tr>
+        <tr>
+            <th>Attribute</th>
+            <th>Base</th>
+            <th>Modifier</th>
+            <th>Final Value</th>
+        </tr>
     </thead>
     <tbody>
         @foreach (var item in vm.Model.AttributeList)
         {
             <tr>
-                <td>@item.Name</td>
-                <td><TextInput Property="new Csla.Blazor.PropertyInfo(item, nameof(item.Value))" /></td>
+                <td>@GetAttributeDisplayName(item.Name)</td>
+                <td>
+                    @if (!vm.Model.IsPlayable)
+                    {
+                        <input type="number" 
+                               @bind="item.BaseValue" 
+                               @bind:event="oninput"
+                               min="6" 
+                               max="14"
+                               style="width: 60px;" />
+                    }
+                    else
+                    {
+                        @item.BaseValue
+                    }
+                </td>
+                <td style="text-align: center;">
+                    @if (item.SpeciesModifier != 0)
+                    {
+                        <span style="color: @(item.SpeciesModifier > 0 ? "green" : "red");">
+                            @(item.SpeciesModifier > 0 ? "+" : "")@item.SpeciesModifier
+                        </span>
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </td>
+                <td style="font-weight: bold;">
+                    @item.Value
+                </td>
             </tr>
         }
-        <tr>
-            <td>Fatigue</td>
-            <td>@vm.Model.Fatigue.Value</td>
+        <tr style="font-weight: bold; border-top: 2px solid #000;">
+            <td>Total</td>
+            <td>
+                <span style="@(GetSumValidationStyle())">
+                    @vm.Model.AttributeList.CurrentSum
+                    @if (!vm.Model.IsPlayable && vm.Model.AttributeList.CurrentSum != vm.Model.AttributeList.InitialSum)
+                    {
+                        <span> (must be @vm.Model.AttributeList.InitialSum)</span>
+                    }
+                </span>
+            </td>
         </tr>
         <tr>
-            <td>Vitality</td>
-            <td>@vm.Model.Vitality.Value</td>
+            <td>Fatigue (FAT)</td>
+            <td>@vm.Model.Fatigue.BaseValue / @vm.Model.Fatigue.Value</td>
+        </tr>
+        <tr>
+            <td>Vitality (VIT)</td>
+            <td>@vm.Model.Vitality.BaseValue / @vm.Model.Vitality.Value</td>
         </tr>
     </tbody>
 </table>
@@ -31,4 +95,28 @@
 {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
+
+    private string GetAttributeDisplayName(string name)
+    {
+        return name switch
+        {
+            "STR" => "Physicality (STR)",
+            "DEX" => "Dodge (DEX)",
+            "END" => "Drive (END)",
+            "INT" => "Reasoning (INT)",
+            "ITT" => "Awareness (ITT)",
+            "WIL" => "Focus (WIL)",
+            "PHY" => "Bearing (PHY)",
+            _ => name
+        };
+    }
+
+    private string GetSumValidationStyle()
+    {
+        if (vm?.Model == null || vm.Model.IsPlayable)
+            return "";
+        
+        var isValid = vm.Model.AttributeList.CurrentSum == vm.Model.AttributeList.InitialSum;
+        return isValid ? "color: green;" : "color: red; font-weight: bold;";
+    }
 }

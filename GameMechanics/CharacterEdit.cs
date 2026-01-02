@@ -255,6 +255,7 @@ namespace GameMechanics
       base.AddBusinessRules();
       BusinessRules.AddRule(new FatigueBase());
       BusinessRules.AddRule(new VitalityBase());
+      BusinessRules.AddRule(new AttributeSumValidation());
     }
 
     [Create]
@@ -368,7 +369,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
@@ -376,7 +378,12 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
         Fatigue = fatPortal.FetchChild(existing);
         Vitality = vitPortal.FetchChild(existing);
-        AttributeList = attributePortal.FetchChild(existing.AttributeList);
+        
+        // Load species info to pass modifiers to AttributeList
+        var speciesList = await speciesPortal.FetchAsync();
+        var speciesInfo = speciesList.FirstOrDefault(s => s.Id == existing.Species);
+        AttributeList = attributePortal.FetchChild(existing.AttributeList, speciesInfo);
+        
         Skills = skillPortal.FetchChild(existing.Skills);
       }
       BusinessRules.CheckRules();
@@ -429,9 +436,9 @@ namespace GameMechanics
 
     private class FatigueBase : PropertyRule
     {
-        public FatigueBase() : base(FatigueProperty)
+        public FatigueBase() : base(AttributeListProperty)
         {
-            InputProperties.Add(FatigueProperty);
+            InputProperties.Add(AttributeListProperty);
             AffectedProperties.Add(FatigueProperty);
         }
 
@@ -446,9 +453,9 @@ namespace GameMechanics
 
     private class VitalityBase : PropertyRule
     {
-      public VitalityBase() : base(VitalityProperty)
+      public VitalityBase() : base(AttributeListProperty)
       {
-        InputProperties.Add(VitalityProperty);
+        InputProperties.Add(AttributeListProperty);
         AffectedProperties.Add(VitalityProperty);
       }
 
@@ -458,6 +465,29 @@ namespace GameMechanics
       {
         var target = (CharacterEdit)context.Target;
         target.Vitality.CalculateBase(target);
+      }
+    }
+
+    private class AttributeSumValidation : BusinessRule
+    {
+      public AttributeSumValidation() : base(AttributeListProperty)
+      {
+        InputProperties.Add(AttributeListProperty);
+      }
+
+      protected override void Execute(IRuleContext context)
+      {
+        var target = (CharacterEdit)context.Target;
+        
+        // Only validate if character is not playable yet
+        if (!target.IsPlayable)
+        {
+          var attributeList = target.AttributeList;
+          if (attributeList.CurrentSum != attributeList.InitialSum)
+          {
+            context.AddErrorResult("The sum of attribute values must equal " + attributeList.InitialSum);
+          }
+        }
       }
     }
   }

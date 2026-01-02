@@ -1,4 +1,15 @@
-﻿<h2>Tab 3 Content</h2>
+﻿@if (vm == null || vm.Model == null)
+{
+    <p>Loading...</p>
+    return;
+}
+
+<div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
+    <strong>Character:</strong> @vm.Model.Name
+    <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+</div>
+
+<h2>Tab 3 Content</h2>
 <p>This is the content of Tab 3.</p>
 
 @code {
