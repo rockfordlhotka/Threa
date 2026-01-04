@@ -4,6 +4,25 @@
 
 Threa is a **TTRPG (tabletop role-playing game) Character Sheet Assistant** built with .NET 10, CSLA.NET 9.1 business objects, and Blazor WebAssembly. It implements a skill-based RPG system using **4dF+ (exploding Fudge dice)** mechanics.
 
+## Prerequisites
+
+Before contributing to this project, ensure you have:
+
+- **.NET 10 SDK** (version 10.0.101 or later) - [Download here](https://dotnet.microsoft.com/download/dotnet/10.0)
+- **IDE**: Visual Studio 2022 (version 17.12+), Visual Studio Code, or JetBrains Rider
+- **Git** for version control
+- **Optional**: RabbitMQ for testing time event messaging (not required for core development)
+
+### Verify Prerequisites
+
+```bash
+# Check .NET SDK version
+dotnet --version  # Should be 10.0.101 or higher
+
+# Check git
+git --version
+```
+
 ## Architecture
 
 | Layer | Project | Purpose |
@@ -61,17 +80,52 @@ private set => LoadProperty(AttributeListProperty, value);
 private async Task FetchAsync(int id, [Inject] ICharacterDal dal, ...) { ... }
 ```
 
-## Build & Test
+## Getting Started
+
+### Initial Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/rockfordlhotka/Threa.git
+cd Threa
+
+# Restore dependencies
+dotnet restore Threa.sln
+
+# Build the solution
+dotnet build Threa.sln
+```
+
+### Running the Application
+
+The application is a Blazor WebAssembly app with an ASP.NET Core host:
+
+```bash
+# Run the web application (from repository root)
+cd Threa/Threa
+dotnet run
+
+# The app will be available at:
+# - HTTPS: https://localhost:7133
+# - HTTP: http://localhost:5181
+```
+
+The application uses the **MockDb** data access layer by default for development (no database setup required).
+
+### Build & Test
 
 ```bash
 # Build solution
 dotnet build Threa.sln
 
-# Run tests
+# Run all tests
 dotnet test GameMechanics.Test/GameMechanics.Test.csproj
 
 # Run specific test class
 dotnet test --filter "FullyQualifiedName~CombatTests"
+
+# Run tests with detailed output
+dotnet test GameMechanics.Test/GameMechanics.Test.csproj --verbosity normal
 ```
 
 ## Key Files Reference
@@ -94,6 +148,19 @@ dotnet test --filter "FullyQualifiedName~CombatTests"
 - **Use `[DataRow]`** for parameterized tests on result tables
 - **Inject `IDiceRoller`** in any class needing randomness for testability
 
+### Dependency Management
+
+Key dependencies and their purposes:
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `Csla` | 9.1.0 | Core business object framework |
+| `Csla.AspNetCore` | 9.1.0 | ASP.NET Core integration |
+| `Csla.Blazor.WebAssembly` | 9.1.0 | Blazor WASM data portal |
+| `Radzen.Blazor` | 8.4.2 | UI component library |
+
+**Important**: When updating CSLA packages, update all CSLA packages together to maintain version compatibility.
+
 ## Common Tasks
 
 ### Adding a new skill check
@@ -114,3 +181,51 @@ Use the CSLA MCP server for guidance on CSLA-specific patterns and best practice
 ### Modifying game rules
 
 Update the corresponding `design/*.md` document first, then implement matching code changes.
+
+## Debugging & Troubleshooting
+
+### Common Issues
+
+**Build Errors with .NET 10**
+- Ensure you have .NET 10 SDK installed (check `global.json` for required version)
+- Run `dotnet --list-sdks` to verify available SDKs
+- The project uses `rollForward: latestFeature` in `global.json`
+
+**CSLA Business Object Errors**
+- Verify all CSLA packages are version 9.1.0
+- Check that `[Inject]` attributes are used correctly in data portal methods
+- Use CSLA MCP server for guidance on CSLA-specific patterns
+
+**Test Failures**
+- Tests use `DeterministicDiceRoller` for predictable outcomes
+- Check that dice roll values match expected results in test setup
+- Review `CombatResultTables` for correct damage values
+
+### Debugging Blazor WASM
+
+```bash
+# Run with detailed logging
+dotnet run --project Threa/Threa/Threa.csproj --verbosity detailed
+
+# Debug in browser
+# 1. Run the application
+# 2. Press Shift+Alt+D in the browser
+# 3. Follow the browser-specific debugging instructions
+```
+
+## Security Considerations
+
+- **Never commit secrets** to source control (connection strings, API keys, passwords)
+- **Validate all user input** in business objects using CSLA validation rules
+- **Use parameterized queries** in DAL implementations to prevent SQL injection
+- **Nullable reference types** are enabled project-wide - handle null cases explicitly
+- **CSLA authorization** rules should be applied to sensitive business operations
+
+### Security Testing
+
+Before committing changes that affect:
+- Data access (DAL implementations)
+- User input handling
+- Authentication/authorization
+
+Run the test suite and manually verify input validation and error handling.
