@@ -1,3 +1,5 @@
+@inject ICharacterItemDal itemDal
+
 @if (vm == null || vm.Model == null)
 {
     <p>Loading...</p>
@@ -8,6 +10,17 @@
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
 </div>
+
+@if (isLoadingItems)
+{
+    <p>Loading items...</p>
+    return;
+}
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
 
 <h4>Currency</h4>
 <div style="margin-bottom: 2rem;">
@@ -77,21 +90,279 @@
     </table>
 </div>
 
-<h4>Items & Equipment</h4>
-<div class="items-section">
-    <p><em>Item inventory management coming soon.</em></p>
-    <p>Planned features:</p>
-    <ul>
-        <li>View and manage inventory items</li>
-        <li>Equip and unequip weapons and armor</li>
-        <li>Track item durability and condition</li>
-        <li>Container management (backpacks, pouches, etc.)</li>
-        <li>Item effects and bonuses</li>
-    </ul>
-</div>
+<h4>Equipped Items</h4>
+@if (equippedItems == null || !equippedItems.Any())
+{
+    <p><em>No items equipped.</em></p>
+}
+else
+{
+    <div class="equipped-items" style="margin-bottom: 2rem;">
+        @foreach (var item in equippedItems.OrderBy(i => i.EquippedSlot))
+        {
+            <div style="margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px;">
+                <div style="font-weight: bold;">
+                    @GetEquippedSlotName(item.EquippedSlot): @(item.Template?.Name ?? "Unknown Item")
+                    @if (item.CustomName != null)
+                    {
+                        <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                    }
+                </div>
+                
+                @if (item.Template != null)
+                {
+                    <div style="font-size: 0.9em; color: #6c757d; margin-top: 0.25rem;">
+                        @item.Template.ShortDescription
+                    </div>
+                    
+                    @* Show weapon combat stats *@
+                    @if (item.Template.ItemType == Threa.Dal.Dto.ItemType.Weapon)
+                    {
+                        <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
+                            <strong>Weapon Stats:</strong>
+                            Damage Class: @item.Template.DamageClass
+                            | Type: @item.Template.DamageType
+                            @if (item.Template.SVModifier != 0)
+                            {
+                                <span>| SV Modifier: @(item.Template.SVModifier > 0 ? "+" : "")@item.Template.SVModifier</span>
+                            }
+                            @if (item.Template.AVModifier != 0)
+                            {
+                                <span>| AV Modifier: @(item.Template.AVModifier > 0 ? "+" : "")@item.Template.AVModifier</span>
+                            }
+                            @if (item.Template.Range.HasValue)
+                            {
+                                <span>| Range: @item.Template.Range ft</span>
+                            }
+                            @if (!string.IsNullOrEmpty(item.Template.RelatedSkill))
+                            {
+                                <span>| Skill: @item.Template.RelatedSkill</span>
+                            }
+                        </div>
+                    }
+                    
+                    @* Show armor combat stats *@
+                    @if (item.Template.ItemType == Threa.Dal.Dto.ItemType.Armor)
+                    {
+                        <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
+                            <strong>Armor Stats:</strong>
+                            @if (!string.IsNullOrEmpty(item.Template.ArmorAbsorption))
+                            {
+                                <span>Absorption: @item.Template.ArmorAbsorption</span>
+                            }
+                            @if (item.Template.DodgeModifier != 0)
+                            {
+                                <span>| Dodge Modifier: @(item.Template.DodgeModifier > 0 ? "+" : "")@item.Template.DodgeModifier</span>
+                            }
+                        </div>
+                    }
+                    
+                    @* Show durability if applicable *@
+                    @if (item.Template.HasDurability && item.CurrentDurability.HasValue)
+                    {
+                        var durabilityPercent = item.Template.MaxDurability > 0 
+                            ? (int)((double)item.CurrentDurability.Value / item.Template.MaxDurability.Value * 100) 
+                            : 100;
+                        var durabilityColor = durabilityPercent > 75 ? "green" : durabilityPercent > 25 ? "orange" : "red";
+                        <div style="font-size: 0.85em; margin-top: 0.25rem; color: @durabilityColor;">
+                            Durability: @item.CurrentDurability/@item.Template.MaxDurability (@durabilityPercent%)
+                        </div>
+                    }
+                    
+                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                        Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<h4>Inventory Items</h4>
+@if (inventoryItems == null || !inventoryItems.Any())
+{
+    <p><em>No items in inventory.</em></p>
+}
+else
+{
+    <div class="inventory-items">
+        @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
+        {
+            <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
+                <div style="font-weight: bold;">
+                    @(item.Template?.Name ?? "Unknown Item")
+                    @if (item.StackSize > 1)
+                    {
+                        <span style="color: #6c757d;"> x@item.StackSize</span>
+                    }
+                    @if (item.CustomName != null)
+                    {
+                        <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                    }
+                </div>
+                
+                @if (item.Template != null)
+                {
+                    <div style="font-size: 0.9em; color: #6c757d;">
+                        @item.Template.ShortDescription
+                    </div>
+                    
+                    @* Show items inside containers *@
+                    @if (item.Template.IsContainer)
+                    {
+                        var containerContents = GetContainerContents(item.Id);
+                        if (containerContents.Any())
+                        {
+                            <div style="margin-top: 0.5rem; margin-left: 1rem; padding: 0.5rem; background-color: #fff; border-left: 3px solid #dee2e6;">
+                                <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 0.25rem;">Contents:</div>
+                                @foreach (var containerItem in containerContents)
+                                {
+                                    <div style="font-size: 0.85em; margin-bottom: 0.25rem;">
+                                        • @(containerItem.Template?.Name ?? "Unknown")
+                                        @if (containerItem.StackSize > 1)
+                                        {
+                                            <span> x@containerItem.StackSize</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    
+                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                        Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
 
 @code 
 {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
+    
+    private List<Threa.Dal.Dto.CharacterItem>? allItems;
+    private List<Threa.Dal.Dto.CharacterItem>? equippedItems;
+    private List<Threa.Dal.Dto.CharacterItem>? inventoryItems;
+    private bool isLoadingItems = true;
+    private string? errorMessage;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadItemsAsync();
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        // Reload items if the character changes
+        if (vm?.Model?.Id > 0)
+        {
+            await LoadItemsAsync();
+        }
+    }
+    
+    private async Task LoadItemsAsync()
+    {
+        try
+        {
+            if (vm?.Model?.Id > 0)
+            {
+                isLoadingItems = true;
+                errorMessage = null;
+                
+                allItems = await itemDal.GetCharacterItemsAsync(vm.Model.Id);
+                
+                // Separate equipped items from inventory items
+                // Inventory items are those not equipped and not inside a container
+                equippedItems = allItems.Where(i => i.IsEquipped).ToList();
+                inventoryItems = allItems.Where(i => !i.IsEquipped && !i.ContainerItemId.HasValue).ToList();
+                
+                isLoadingItems = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading items: {ex.Message}";
+            isLoadingItems = false;
+        }
+    }
+    
+    private List<Threa.Dal.Dto.CharacterItem> GetContainerContents(Guid containerId)
+    {
+        if (allItems == null)
+            return new List<Threa.Dal.Dto.CharacterItem>();
+        
+        return allItems.Where(i => i.ContainerItemId == containerId).ToList();
+    }
+    
+    private string GetEquippedSlotName(Threa.Dal.Dto.EquipmentSlot slot)
+    {
+        return slot switch
+        {
+            Threa.Dal.Dto.EquipmentSlot.Head => "Head",
+            Threa.Dal.Dto.EquipmentSlot.Face => "Face",
+            Threa.Dal.Dto.EquipmentSlot.Ears => "Ears",
+            Threa.Dal.Dto.EquipmentSlot.Neck => "Neck",
+            Threa.Dal.Dto.EquipmentSlot.Shoulders => "Shoulders",
+            Threa.Dal.Dto.EquipmentSlot.Back => "Back",
+            Threa.Dal.Dto.EquipmentSlot.Chest => "Chest",
+            Threa.Dal.Dto.EquipmentSlot.ArmLeft => "Left Arm",
+            Threa.Dal.Dto.EquipmentSlot.ArmRight => "Right Arm",
+            Threa.Dal.Dto.EquipmentSlot.WristLeft => "Left Wrist",
+            Threa.Dal.Dto.EquipmentSlot.WristRight => "Right Wrist",
+            Threa.Dal.Dto.EquipmentSlot.HandLeft => "Left Hand",
+            Threa.Dal.Dto.EquipmentSlot.HandRight => "Right Hand",
+            Threa.Dal.Dto.EquipmentSlot.Waist => "Waist",
+            Threa.Dal.Dto.EquipmentSlot.Legs => "Legs",
+            Threa.Dal.Dto.EquipmentSlot.AnkleLeft => "Left Ankle",
+            Threa.Dal.Dto.EquipmentSlot.AnkleRight => "Right Ankle",
+            Threa.Dal.Dto.EquipmentSlot.FootLeft => "Left Foot",
+            Threa.Dal.Dto.EquipmentSlot.FootRight => "Right Foot",
+            Threa.Dal.Dto.EquipmentSlot.MainHand => "Main Hand",
+            Threa.Dal.Dto.EquipmentSlot.OffHand => "Off Hand",
+            Threa.Dal.Dto.EquipmentSlot.TwoHand => "Two Hands",
+            Threa.Dal.Dto.EquipmentSlot.FingerLeft1 => "Left Ring Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerLeft2 => "Left Middle Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerLeft3 => "Left Index Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerLeft4 => "Left Thumb",
+            Threa.Dal.Dto.EquipmentSlot.FingerLeft5 => "Left Pinky",
+            Threa.Dal.Dto.EquipmentSlot.FingerRight1 => "Right Ring Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerRight2 => "Right Middle Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerRight3 => "Right Index Finger",
+            Threa.Dal.Dto.EquipmentSlot.FingerRight4 => "Right Thumb",
+            Threa.Dal.Dto.EquipmentSlot.FingerRight5 => "Right Pinky",
+            _ => slot.ToString()
+        };
+    }
+    
+    private string FormatCurrency(int copperValue)
+    {
+        if (copperValue >= 8000)
+        {
+            var pp = copperValue / 8000;
+            var remainder = copperValue % 8000;
+            if (remainder == 0)
+                return $"{pp} pp";
+            return $"{pp} pp, {FormatCurrency(remainder)}";
+        }
+        if (copperValue >= 400)
+        {
+            var gp = copperValue / 400;
+            var remainder = copperValue % 400;
+            if (remainder == 0)
+                return $"{gp} gp";
+            return $"{gp} gp, {FormatCurrency(remainder)}";
+        }
+        if (copperValue >= 20)
+        {
+            var sp = copperValue / 20;
+            var remainder = copperValue % 20;
+            if (remainder == 0)
+                return $"{sp} sp";
+            return $"{sp} sp, {FormatCurrency(remainder)}";
+        }
+        return $"{copperValue} cp";
+    }
 }
