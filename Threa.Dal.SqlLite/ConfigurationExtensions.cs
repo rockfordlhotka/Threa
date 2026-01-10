@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Threa.Dal.Sqlite;
 
@@ -16,9 +17,11 @@ public static class SqliteConfigurationExtensions
         services.AddTransient<IEffectDefinitionDal, EffectDefinitionDal>();
         services.AddTransient<ICharacterEffectDal, CharacterEffectDal>();
         services.AddTransient<IItemEffectDal, ItemEffectDal>();
-        services.AddScoped<SqliteConnection>(provider => 
+        services.AddScoped<SqliteConnection>(provider =>
         {
-            var conn = new SqliteConnection("Data Source=threa.db");
+            var config = provider.GetService<IConfiguration>();
+            var dbPath = config?["ConnectionStrings:Sqlite"] ?? "threa.db";
+            var conn = new SqliteConnection($"Data Source={dbPath}");
             conn.Open();
             return conn;
         });

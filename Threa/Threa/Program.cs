@@ -28,7 +28,7 @@ builder.Services.AddCsla(o => o
     .AddAspNetCore()
     .AddServerSideBlazor(o => o.UseInMemoryApplicationContextManager = false));
 
-builder.Services.AddMockDb();
+builder.Services.AddSqlite();
 
 var app = builder.Build();
 

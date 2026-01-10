@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.Sqlite;
-using System.Numerics;
 using Threa.Dal.Dto;
 
 namespace Threa.Dal.Sqlite;
@@ -30,18 +29,6 @@ public class PlayerDal : IPlayerDal
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             command.ExecuteNonQuery();
-
-            sql = @"INSERT INTO Players (Email, Json) VALUES (@Email, @Json)";
-            using var insertCommand = Connection.CreateCommand();
-            insertCommand.CommandText = sql;
-            insertCommand.Parameters.AddWithValue("@Email", "admin@admin.admin");
-            Player player = new()
-            {
-                Email = "admin@admin.admin",
-                HashedPassword = ""
-            };
-            insertCommand.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(player));
-            insertCommand.ExecuteNonQuery();
         }
         catch (Exception ex)
         {
@@ -138,7 +125,7 @@ public class PlayerDal : IPlayerDal
         }
     }
 
-    public async Task<Player> GetPlayerByEmailAsync(string email, string hashedPassword)
+    public async Task<Player> GetPlayerByEmailAsync(string email, string password)
     {
         try
         {
@@ -155,14 +142,23 @@ public class PlayerDal : IPlayerDal
             if (result != null)
             {
                 result.Id = id;
-                if (!string.IsNullOrEmpty(hashedPassword) && hashedPassword != result.HashedPassword)
-                    throw new NotFoundException($"{nameof(Player)} {email}");
+                if (!string.IsNullOrEmpty(password))
+                {
+                    // Verify the password using BCrypt
+                    if (string.IsNullOrEmpty(result.HashedPassword) || 
+                        !BCrypt.Net.BCrypt.Verify(password, result.HashedPassword))
+                        throw new NotFoundException($"{nameof(Player)} {email}");
+                }
                 return result;
             }
             else
             {
                 throw new NotFoundException($"{nameof(Player)} {email}");
             }
+        }
+        catch (NotFoundException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -178,35 +174,34 @@ public class PlayerDal : IPlayerDal
             using var command = Connection.CreateCommand();
             if (player.Id < 0)
             {
-                sql = "INSERT INTO Players (Id, Email, Json) VALUES (@Id, @Email, @Json)";
-                command.Parameters.AddWithValue("@Id", player.Id);
+                sql = "INSERT INTO Players (Email, Json) VALUES (@Email, @Json)";
                 command.Parameters.AddWithValue("@Email", player.Email);
             }
             else
             {
                 sql = "UPDATE Players SET Json = @Json WHERE Id = @Id";
+                command.Parameters.AddWithValue("@Id", player.Id);
             }
             command.CommandText = sql;
             command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(player));
             await command.ExecuteNonQueryAsync();
 
-            if (player.Id == 0)
+            if (player.Id < 0)
             {
                 sql = "SELECT last_insert_rowid()";
                 using var idCommand = Connection.CreateCommand();
+                idCommand.CommandText = sql;
+                long? lastInsertId = (long?)idCommand.ExecuteScalar();
+                if (lastInsertId.HasValue)
                 {
-                    long? lastInsertId = (long?)idCommand.ExecuteScalar();
-                    if (lastInsertId.HasValue)
-                    {
-                        player.Id = (int)lastInsertId.Value;
-                    }
+                    player.Id = (int)lastInsertId.Value;
                 }
             }
             return player;
         }
         catch (Exception ex)
         {
-            throw new OperationFailedException("Error saving player", ex);
+            throw new OperationFailedException($"Error saving player: {ex.Message}", ex);
         }
     }
 
