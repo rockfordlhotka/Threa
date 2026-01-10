@@ -24,6 +24,10 @@ class Program
                 .WithDescription("Add a role to a user");
             config.AddCommand<RevokeCommand>("revoke")
                 .WithDescription("Remove a role from a user");
+            config.AddCommand<EnableCommand>("enable")
+                .WithDescription("Enable a user account");
+            config.AddCommand<DisableCommand>("disable")
+                .WithDescription("Disable a user account");
         });
         return app.Run(args);
     }
@@ -70,16 +74,19 @@ public class ListCommand : AsyncCommand<CommonSettings>
         table.AddColumn("Email");
         table.AddColumn("Name");
         table.AddColumn("Roles");
+        table.AddColumn("Status");
 
         foreach (var player in players)
         {
             var roles = string.IsNullOrEmpty(player.Roles)
                 ? "[grey](none)[/]"
                 : FormatRoles(player.Roles);
+            var status = player.IsEnabled ? "[green]Enabled[/]" : "[red]Disabled[/]";
             table.AddRow(
                 Markup.Escape(player.Email),
                 Markup.Escape(player.Name ?? ""),
-                roles
+                roles,
+                status
             );
         }
 
@@ -120,6 +127,7 @@ public class RolesCommand : AsyncCommand<EmailSettings>
         table.AddRow("Email", Markup.Escape(player.Email));
         table.AddRow("Name", Markup.Escape(player.Name ?? "(not set)"));
         table.AddRow("Roles", FormatRoles(player.Roles));
+        table.AddRow("Status", player.IsEnabled ? "[green]Enabled[/]" : "[red]Disabled[/]");
 
         AnsiConsole.Write(table);
         return 0;
@@ -256,5 +264,59 @@ public class RevokeCommand : AsyncCommand<RoleSettings>
             _ => Markup.Escape(r)
         });
         return string.Join(", ", formatted);
+    }
+}
+
+public class EnableCommand : AsyncCommand<EmailSettings>
+{
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings)
+    {
+        var dal = settings.CreateDal();
+        var player = await dal.GetPlayerByEmailAsync(settings.Email);
+
+        if (player == null)
+        {
+            AnsiConsole.MarkupLine($"[red]User not found:[/] {Markup.Escape(settings.Email)}");
+            return 1;
+        }
+
+        if (player.IsEnabled)
+        {
+            AnsiConsole.MarkupLine($"[yellow]User is already enabled:[/] {Markup.Escape(settings.Email)}");
+            return 0;
+        }
+
+        player.IsEnabled = true;
+        await dal.SavePlayerAsync(player);
+
+        AnsiConsole.MarkupLine($"[green]Enabled user:[/] {Markup.Escape(settings.Email)}");
+        return 0;
+    }
+}
+
+public class DisableCommand : AsyncCommand<EmailSettings>
+{
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings)
+    {
+        var dal = settings.CreateDal();
+        var player = await dal.GetPlayerByEmailAsync(settings.Email);
+
+        if (player == null)
+        {
+            AnsiConsole.MarkupLine($"[red]User not found:[/] {Markup.Escape(settings.Email)}");
+            return 1;
+        }
+
+        if (!player.IsEnabled)
+        {
+            AnsiConsole.MarkupLine($"[yellow]User is already disabled:[/] {Markup.Escape(settings.Email)}");
+            return 0;
+        }
+
+        player.IsEnabled = false;
+        await dal.SavePlayerAsync(player);
+
+        AnsiConsole.MarkupLine($"[green]Disabled user:[/] {Markup.Escape(settings.Email)}");
+        return 0;
     }
 }

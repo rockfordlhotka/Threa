@@ -81,7 +81,8 @@ namespace Threa.Dal.MockDb
                         Email = obj.Email,
                         HashedPassword = hashedPassword,
                         Salt = salt,
-                        Roles = obj.Roles
+                        Roles = obj.Roles,
+                        IsEnabled = obj.IsEnabled
                     };
                     MockDb.Players.Add(existingPlayer);
                 }
@@ -89,6 +90,7 @@ namespace Threa.Dal.MockDb
                 {
                     existingPlayer.Name = obj.Name;
                     existingPlayer.Roles = obj.Roles;
+                    existingPlayer.IsEnabled = obj.IsEnabled;
                     if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
                         existingPlayer.Salt = BCrypt.Net.BCrypt.GenerateSalt(12);
                     var hashedPassword = BCrypt.Net.BCrypt.HashPassword(obj.HashedPassword, existingPlayer.Salt);

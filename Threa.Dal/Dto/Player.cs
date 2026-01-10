@@ -9,4 +9,5 @@ public class Player
     public string Email { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
     public string? Roles { get; set; }
+    public bool IsEnabled { get; set; } = true;
 }

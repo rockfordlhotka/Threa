@@ -1,0 +1,79 @@
+@page "/admin/users/{Id:int}"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "Administrator")]
+
+@using GameMechanics.Player
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<AdminUserEdit> userPortal
+@inject ViewModel<AdminUserEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<h3>Edit User</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th></th><th></th></tr>
+        </thead>
+        <tbody>
+            <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Email)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsEnabled)" />
+            <tr>
+                <td colspan="2"><strong>Roles</strong></td>
+            </tr>
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsAdministrator)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsGameMaster)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPlayer)" />
+            <tr>
+                <td colspan="2"><strong>Reset Password</strong></td>
+            </tr>
+            <tr>
+                <td>New Password</td>
+                <td>
+                    <input type="password" @bind="vm.Model.NewPassword" class="form-control" placeholder="Leave blank to keep current" />
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="mt-3">
+        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+        vm.Saved += () => NavigationManager.NavigateTo("/admin/users");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+        await vm.RefreshAsync(() => userPortal.FetchAsync(Id));
+    }
+
+    private async Task SaveData()
+    {
+        await vm.SaveAsync();
+        NavigationManager.NavigateTo("/admin/users");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/admin/users");
+    }
+}

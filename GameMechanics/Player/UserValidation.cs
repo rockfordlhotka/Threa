@@ -21,6 +21,8 @@ public class UserValidation : CommandBase<UserValidation>
     private async Task Execute(string username, string password, [Inject] IPlayerDal dal)
     {
         var player = await dal.GetPlayerByEmailAsync(username, password);
+        if (!player.IsEnabled)
+            throw new InvalidOperationException("Account is disabled");
         Principal = GetPrincipal(player);
     }
 

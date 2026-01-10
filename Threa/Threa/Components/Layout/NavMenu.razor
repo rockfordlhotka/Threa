@@ -35,6 +35,19 @@
                 </div>
             </Authorized>
         </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+
+        <Microsoft.AspNetCore.Components.Authorization.AuthorizeView Roles="Administrator">
+            <Authorized>
+                <div class="nav-item px-3 mt-3">
+                    <strong class="text-light">Admin</strong>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/users">
+                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Manage Users
+                    </NavLink>
+                </div>
+            </Authorized>
+        </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
     </nav>
 </div>
 

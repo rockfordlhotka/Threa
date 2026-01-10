@@ -1,0 +1,53 @@
+@page "/admin/users"
+
+@using GameMechanics.Player
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<AdminUserList> userListPortal
+@inject ViewModel<AdminUserList> vm
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize(Roles = "Administrator")]
+
+<h3>Manage Users</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <QuickGrid Items="users">
+        <PropertyColumn Title="Email" Property="@(p => p.Email)" />
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" />
+        <PropertyColumn Title="Roles" Property="@(p => p.Roles)" />
+        <TemplateColumn Title="Status">
+            @if (context.IsEnabled)
+            {
+                <span class="badge bg-success">Enabled</span>
+            }
+            else
+            {
+                <span class="badge bg-danger">Disabled</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn>
+            <a href="admin/users/@context.Id">Edit</a>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<AdminUserInfo>? users;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => userListPortal.FetchAsync());
+        users = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+}
