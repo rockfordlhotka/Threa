@@ -46,7 +46,7 @@ public class SprintResolver
         {
             Id = "sprint",
             Name = "Sprint",
-            Category = "Movement",
+            Category = SkillCategory.Movement,
             PrimaryAttribute = "DEX",
             ActionType = ActionType.Movement,
             TargetValueType = TargetValueType.Fixed,

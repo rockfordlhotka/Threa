@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Actions;
@@ -157,9 +158,11 @@ public class ActionResolver
         {
             cost = ActionCost.Free();
         }
-        else if (request.Skill.ManaCost > 0)
+        else if (request.Skill.IsSpell && request.Skill.ManaRequirements?.Any() == true)
         {
-            cost = ActionCost.Spell(request.Skill.ManaCost);
+            // Sum total mana required across all mana types
+            var totalMana = request.Skill.ManaRequirements.Sum(mr => mr.MinimumMana);
+            cost = ActionCost.Spell(totalMana);
         }
         else if (request.UseFatigueFree)
         {

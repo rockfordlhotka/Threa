@@ -6,10 +6,12 @@
 
 @using GameMechanics.Items
 @using GameMechanics.Combat
+@using GameMechanics.Reference
 @using Threa.Dal.Dto
 @using Microsoft.AspNetCore.Authorization
 
 @inject IDataPortal<ItemTemplateEdit> itemPortal
+@inject IDataPortal<SkillNameList> skillListPortal
 @inject ViewModel<ItemTemplateEdit> vm
 @inject Threa.Services.RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
@@ -92,7 +94,21 @@ else
             <hr />
             <tr><td colspan="2"><strong>Weapon/Armor Properties</strong></td></tr>
 
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.RelatedSkill)" />
+            <tr>
+                <td>Related Skill</td>
+                <td>
+                    <select @bind="vm.Model.RelatedSkill" class="form-control">
+                        <option value="">-- None --</option>
+                        @if (availableSkills != null)
+                        {
+                            @foreach (var skill in availableSkills)
+                            {
+                                <option value="@skill.Name">@skill.Name</option>
+                            }
+                        }
+                    </select>
+                </td>
+            </tr>
             <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MinSkillLevel)" />
 
             <tr>
@@ -132,29 +148,33 @@ else
 }
 
 @code {
-    [Parameter]
-    public string? Id { get; set; }
+[Parameter]
+public string? Id { get; set; }
 
-    private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
+private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
+private SkillNameList? availableSkills;
 
-    protected override async Task OnInitializedAsync()
+protected override async Task OnInitializedAsync()
+{
+    if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+        return;
+
+    vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/items");
+    vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+    vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+    // Load available skills for the dropdown
+    availableSkills = await skillListPortal.FetchAsync();
+
+    if (IsNewItem)
     {
-        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
-            return;
-
-        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/items");
-        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
-        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
-
-        if (IsNewItem)
-        {
-            await vm.RefreshAsync(() => itemPortal.CreateAsync());
-        }
-        else if (int.TryParse(Id, out int itemId))
-        {
-            await vm.RefreshAsync(() => itemPortal.FetchAsync(itemId));
-        }
+        await vm.RefreshAsync(() => itemPortal.CreateAsync());
     }
+    else if (int.TryParse(Id, out int itemId))
+    {
+        await vm.RefreshAsync(() => itemPortal.FetchAsync(itemId));
+    }
+}
 
     private async Task SaveData()
     {

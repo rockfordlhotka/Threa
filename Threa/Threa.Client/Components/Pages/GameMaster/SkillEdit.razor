@@ -1,0 +1,215 @@
+@page "/gamemaster/skills/{Id}"
+@page "/gamemaster/skills/new"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics.Skills
+@using Threa.Dal.Dto
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<SkillDefinitionEdit> skillPortal
+@inject ViewModel<SkillDefinitionEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<h3>@(IsNewSkill ? "Add New Skill" : "Edit Skill")</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th></th><th></th></tr>
+        </thead>
+        <tbody>
+            <!-- Common Properties (All Skills) -->
+            <tr><td colspan="2"><h4>Basic Information</h4></td></tr>
+            
+            @if (IsNewSkill)
+            {
+                <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Id)" />
+            }
+            else
+            {
+                <tr>
+                    <td>Id</td>
+                    <td>
+                        <input type="text" value="@vm.Model.Id" class="form-control" readonly disabled />
+                        @if (!vm.Model.CanBeDeleted)
+                        {
+                            <small class="text-warning d-block mt-1">? Core attribute skill - cannot be deleted</small>
+                        }
+                    </td>
+                </tr>
+            }
+            
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+            
+            <tr>
+                <td>Category</td>
+                <td>
+                    <select @bind="vm.Model.Category" class="form-control">
+                        @foreach (SkillCategory category in Enum.GetValues(typeof(SkillCategory)))
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsSpecialized)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsMagic)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsTheology)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPsionic)" />
+
+            <tr><td colspan="2"><hr /></td></tr>
+            <tr><td colspan="2"><h4>Attributes & Training Costs</h4></td></tr>
+
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PrimaryAttribute)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.SecondaryAttribute)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.TertiaryAttribute)" />
+            
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Untrained)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Trained)" />
+
+            <tr><td colspan="2"><hr /></td></tr>
+            <tr><td colspan="2"><h4>Action Properties</h4></td></tr>
+
+            <tr>
+                <td>Action Type</td>
+                <td>
+                    <select @bind="vm.Model.ActionType" class="form-control">
+                        @foreach (ActionType actionType in Enum.GetValues(typeof(ActionType)))
+                        {
+                            <option value="@actionType">@actionType</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Target Value Type</td>
+                <td>
+                    <select @bind="vm.Model.TargetValueType" class="form-control">
+                        @foreach (TargetValueType tvType in Enum.GetValues(typeof(TargetValueType)))
+                        {
+                            <option value="@tvType">@tvType</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DefaultTV)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.OpposedSkillId)" />
+
+            <tr>
+                <td>Result Table</td>
+                <td>
+                    <select @bind="vm.Model.ResultTable" class="form-control">
+                        @foreach (ResultTableType resultTable in Enum.GetValues(typeof(ResultTableType)))
+                        {
+                            <option value="@resultTable">@resultTable</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.RequiresTarget)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.RequiresLineOfSight)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsFreeAction)" />
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsPassive)" />
+            <TextAreaRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.ActionDescription)" />
+
+            <!-- Combat-Specific Properties -->
+            @if (vm.Model.IsCombatSkill)
+            {
+                <tr><td colspan="2"><hr /></td></tr>
+                <tr><td colspan="2"><h4>Combat Properties</h4></td></tr>
+                <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.AppliesPhysicalityBonus)" />
+            }
+
+            <!-- Spell-Specific Properties -->
+            @if (vm.Model.IsActiveSpell)
+            {
+                <tr><td colspan="2"><hr /></td></tr>
+                <tr><td colspan="2"><h4>Spell Properties</h4></td></tr>
+                
+                <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.CanPumpWithFatigue)" />
+                <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.CanPumpWithMana)" />
+                
+                @if (vm.Model.CanPumpWithFatigue || vm.Model.CanPumpWithMana)
+                {
+                    <TextAreaRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.PumpDescription)" />
+                }
+
+                <tr>
+                    <td colspan="2">
+                        <em>Note: Mana requirements are managed separately through the spell definition system.</em>
+                    </td>
+                </tr>
+            }
+
+            <!-- Mana Skill Properties -->
+            @if (vm.Model.IsManaSkill)
+            {
+                <tr><td colspan="2"><hr /></td></tr>
+                <tr><td colspan="2"><h4>Mana Channeling Properties</h4></td></tr>
+                
+                <tr>
+                    <td colspan="2">
+                        <em>Mana channeling skills focus on gathering and storing mana for spell use.</em>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <div class="mt-3">
+        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNewSkill => Id == "new" || string.IsNullOrEmpty(Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/skills");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        if (IsNewSkill)
+        {
+            await vm.RefreshAsync(() => skillPortal.CreateAsync());
+        }
+        else if (!string.IsNullOrEmpty(Id) && Id != "new")
+        {
+            await vm.RefreshAsync(() => skillPortal.FetchAsync(Id));
+        }
+    }
+
+    private async Task SaveData()
+    {
+        await vm.SaveAsync();
+        NavigationManager.NavigateTo("/gamemaster/skills");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/gamemaster/skills");
+    }
+}
+

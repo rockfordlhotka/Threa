@@ -11,9 +11,10 @@ public class Skill
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// Category grouping for the skill (Combat, Social, Crafting, etc.)
+    /// Category classification for UI filtering and display logic.
+    /// Determines which controls and properties are shown in the UI.
     /// </summary>
-    public string Category { get; set; } = string.Empty;
+    public SkillCategory Category { get; set; } = SkillCategory.Other;
 
     /// <summary>
     /// Display name of the skill.
@@ -57,14 +58,14 @@ public class Skill
     public string PrimaryAttribute { get; set; } = string.Empty;
 
     /// <summary>
-    /// Secondary skill for cascading bonuses (if applicable).
+    /// Secondary attribute for cascading bonuses (if applicable).
     /// </summary>
-    public string? SecondarySkill { get; set; }
+    public string? SecondaryAttribute { get; set; }
 
     /// <summary>
-    /// Tertiary skill for cascading bonuses (if applicable).
+    /// Tertiary attribute for cascading bonuses (if applicable).
     /// </summary>
-    public string? TertiarySkill { get; set; }
+    public string? TertiaryAttribute { get; set; }
 
     /// <summary>
     /// URL to skill icon/image.
@@ -126,10 +127,58 @@ public class Skill
     /// </summary>
     public bool RequiresLineOfSight { get; set; } = false;
 
+    // === Spell-Specific Properties ===
+
     /// <summary>
-    /// Mana cost for spells (0 for non-spell skills).
+    /// Whether this is a spell skill.
     /// </summary>
-    public int ManaCost { get; set; } = 0;
+    public bool IsSpell => IsMagic || IsTheology || IsPsionic;
+
+    /// <summary>
+    /// Whether this is a mana channeling/gathering skill.
+    /// UI should show mana-related controls.
+    /// </summary>
+    public bool IsManaSkill => Category == SkillCategory.Mana;
+
+    /// <summary>
+    /// Whether this is an active spell that requires mana and casting.
+    /// UI should show spell-specific controls (mana requirements, pumping options).
+    /// </summary>
+    public bool IsActiveSpell => Category == SkillCategory.Spell || Category == SkillCategory.Theology || Category == SkillCategory.Psionic;
+
+    /// <summary>
+    /// Whether this is a combat skill.
+    /// UI should show combat-related controls (damage, weapon properties).
+    /// </summary>
+    public bool IsCombatSkill => Category == SkillCategory.Combat;
+
+    /// <summary>
+    /// Whether this skill can be deleted.
+    /// Standard attribute skills cannot be deleted as they are core to the game system.
+    /// </summary>
+    public bool CanBeDeleted => Category != SkillCategory.Standard;
+
+    /// <summary>
+    /// Mana requirements for activating this spell (for spell skills only).
+    /// A spell can require multiple mana types with minimum amounts.
+    /// </summary>
+    public List<SkillManaRequirement>? ManaRequirements { get; set; }
+
+    /// <summary>
+    /// Whether this spell can be pumped with additional FAT to boost its effect.
+    /// </summary>
+    public bool CanPumpWithFatigue { get; set; } = false;
+
+    /// <summary>
+    /// Whether this spell can be pumped with any color of mana to boost its effect.
+    /// </summary>
+    public bool CanPumpWithMana { get; set; } = false;
+
+    /// <summary>
+    /// Description of what pumping does to this spell's effect.
+    /// Example: "Each additional mana increases damage by 1 class"
+    /// </summary>
+    public string? PumpDescription { get; set; }
 
     /// <summary>
     /// Whether this skill is a free action (no AP/FAT cost).

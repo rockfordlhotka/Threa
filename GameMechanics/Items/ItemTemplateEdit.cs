@@ -121,8 +121,8 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(IsActiveProperty, value);
     }
 
-    public static readonly PropertyInfo<string> RelatedSkillProperty = RegisterProperty<string>(nameof(RelatedSkill));
-    public string RelatedSkill
+    public static readonly PropertyInfo<string?> RelatedSkillProperty = RegisterProperty<string?>(nameof(RelatedSkill));
+    public string? RelatedSkill
     {
         get => GetProperty(RelatedSkillProperty);
         set => SetProperty(RelatedSkillProperty, value);
@@ -191,7 +191,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = 0;
             Rarity = ItemRarity.Common;
             IsActive = true;
-            RelatedSkill = string.Empty;
+            RelatedSkill = null;
             MinSkillLevel = 0;
             DamageClass = 1;
             DamageType = string.Empty;
@@ -231,7 +231,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = data.MaxDurability;
             Rarity = data.Rarity;
             IsActive = data.IsActive;
-            RelatedSkill = data.RelatedSkill ?? string.Empty;
+            RelatedSkill = data.RelatedSkill;
             MinSkillLevel = data.MinSkillLevel;
             DamageClass = data.DamageClass;
             DamageType = data.DamageType ?? string.Empty;

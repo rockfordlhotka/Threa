@@ -19,5 +19,7 @@ public static class ConfigurationExtensions
         services.AddTransient<IManaDal, ManaDal>();
         services.AddTransient<ISpellDefinitionDal, SpellDefinitionDal>();
         services.AddTransient<ILocationEffectDal, LocationEffectDal>();
+        services.AddTransient<ISkillDal, SkillDal>();
+        services.AddTransient<IMagicSchoolDal, MagicSchoolDal>();
     }
 }

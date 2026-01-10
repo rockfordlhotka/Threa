@@ -59,6 +59,328 @@ public static class MockDb
     /// </summary>
     public static readonly List<LocationEffect> LocationEffects = [];
 
+    /// <summary>
+    /// Skill definitions - all available skills in the game.
+    /// </summary>
+    public static readonly List<Skill> Skills = CreateSkills();
+
+    /// <summary>
+    /// Magic school definitions - schools of magic available in the game world.
+    /// </summary>
+    public static readonly List<MagicSchoolDefinition> MagicSchools = CreateMagicSchools();
+
+    private static List<MagicSchoolDefinition> CreateMagicSchools()
+    {
+        return
+        [
+            new MagicSchoolDefinition
+            {
+                Id = "fire",
+                Name = "Fire",
+                Description = "Fire magic channels the raw power of flame and heat. Practitioners can create fire, manipulate heat, and unleash devastating offensive spells. Fire magic is associated with passion, destruction, and transformation.",
+                ShortDescription = "Offensive magic of flame and heat",
+                ColorCode = "#FF4500",
+                IsActive = true,
+                IsCore = true,
+                ManaSkillId = "fire-mana",
+                DisplayOrder = 1,
+                TypicalSpellTypes = "Offensive damage, area control, illumination through flame"
+            },
+            new MagicSchoolDefinition
+            {
+                Id = "water",
+                Name = "Water",
+                Description = "Water magic encompasses the fluid nature of water and ice. Practitioners can freeze, heal, purify, and manipulate the flow of water. Water magic embodies adaptability, healing, and cleansing.",
+                ShortDescription = "Ice, healing, and purification",
+                ColorCode = "#4169E1",
+                IsActive = true,
+                IsCore = true,
+                ManaSkillId = "water-mana",
+                DisplayOrder = 2,
+                TypicalSpellTypes = "Healing, ice attacks, purification, water manipulation"
+            },
+            new MagicSchoolDefinition
+            {
+                Id = "light",
+                Name = "Light",
+                Description = "Light magic harnesses the power of illumination and truth. Practitioners can create light, reveal truth, protect against darkness, and banish evil. Light magic represents clarity, protection, and revelation.",
+                ShortDescription = "Illumination, truth, and protection",
+                ColorCode = "#FFD700",
+                IsActive = true,
+                IsCore = true,
+                ManaSkillId = "light-mana",
+                DisplayOrder = 3,
+                TypicalSpellTypes = "Illumination, truth detection, protection, banishment"
+            },
+            new MagicSchoolDefinition
+            {
+                Id = "life",
+                Name = "Life",
+                Description = "Life magic taps into the vital force that animates all living things. Practitioners can heal wounds, promote growth, enhance vitality, and commune with nature. Life magic embodies healing, growth, and renewal.",
+                ShortDescription = "Healing, growth, and vitality",
+                ColorCode = "#32CD32",
+                IsActive = true,
+                IsCore = true,
+                ManaSkillId = "life-mana",
+                DisplayOrder = 4,
+                TypicalSpellTypes = "Healing, growth enhancement, vitality buffs, nature communion"
+            }
+        ];
+    }
+
+    private static List<Skill> CreateSkills()
+    {
+        return
+        [
+            // === STANDARD ATTRIBUTE SKILLS ===
+            new Skill
+            {
+                Id = "physicality",
+                Name = "Physicality",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 3,
+                Trained = 1,
+                PrimaryAttribute = "STR"
+            },
+            new Skill
+            {
+                Id = "dodge",
+                Name = "Dodge",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 6,
+                Trained = 4,
+                PrimaryAttribute = "DEX/ITT"
+            },
+            new Skill
+            {
+                Id = "drive",
+                Name = "Drive",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 5,
+                Trained = 3,
+                PrimaryAttribute = "WIL/END"
+            },
+            new Skill
+            {
+                Id = "reasoning",
+                Name = "Reasoning",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 5,
+                Trained = 3,
+                PrimaryAttribute = "INT"
+            },
+            new Skill
+            {
+                Id = "awareness",
+                Name = "Awareness",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 5,
+                Trained = 2,
+                PrimaryAttribute = "ITT"
+            },
+            new Skill
+            {
+                Id = "focus",
+                Name = "Focus",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 5,
+                Trained = 2,
+                PrimaryAttribute = "WIL"
+            },
+            new Skill
+            {
+                Id = "bearing",
+                Name = "Bearing",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 4,
+                Trained = 2,
+                PrimaryAttribute = "SOC/INT"
+            },
+
+            // === WEAPON COMBAT SKILLS ===
+            new Skill
+            {
+                Id = "swords",
+                Name = "Swords",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
+                Id = "axes",
+                Name = "Axes",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "STR"
+            },
+            new Skill
+            {
+                Id = "daggers",
+                Name = "Daggers",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 6,
+                Trained = 3,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
+                Id = "bows",
+                Name = "Bows",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
+                Id = "crossbows",
+                Name = "Crossbows",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 6,
+                Trained = 3,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
+                Id = "spears",
+                Name = "Spears",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 6,
+                Trained = 3,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
+                Id = "polearms",
+                Name = "Polearms",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "STR"
+            },
+            new Skill
+            {
+                Id = "unarmed-combat",
+                Name = "Unarmed Combat",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 6,
+                Trained = 3,
+                PrimaryAttribute = "DEX"
+            },
+
+            // === MOVEMENT SKILLS ===
+            new Skill
+            {
+                Id = "sprint",
+                Name = "Sprint",
+                Category = SkillCategory.Movement,
+                IsSpecialized = false,
+                Untrained = 5,
+                Trained = 2,
+                PrimaryAttribute = "DEX"
+            },
+
+            // === MAGIC: MANA SKILLS ===
+            new Skill
+            {
+                Id = "fire-mana",
+                Name = "Fire Mana",
+                Category = SkillCategory.Mana,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "WIL"
+            },
+            new Skill
+            {
+                Id = "water-mana",
+                Name = "Water Mana",
+                Category = SkillCategory.Mana,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "WIL"
+            },
+            new Skill
+            {
+                Id = "light-mana",
+                Name = "Light Mana",
+                Category = SkillCategory.Mana,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "WIL"
+            },
+            new Skill
+            {
+                Id = "life-mana",
+                Name = "Life Mana",
+                Category = SkillCategory.Mana,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "WIL"
+            },
+
+            // === MAGIC: SPELL SKILLS ===
+            new Skill
+            {
+                Id = "fire-bolt",
+                Name = "Fire Bolt",
+                Category = SkillCategory.Spell,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 8,
+                Trained = 5,
+                PrimaryAttribute = "INT"
+            },
+            new Skill
+            {
+                Id = "heal",
+                Name = "Heal",
+                Category = SkillCategory.Spell,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 8,
+                Trained = 5,
+                PrimaryAttribute = "WIL"
+            },
+            new Skill
+            {
+                Id = "illuminate",
+                Name = "Illuminate",
+                Category = SkillCategory.Spell,
+                IsSpecialized = false,
+                IsMagic = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "INT"
+            }
+        ];
+    }
+
     private static List<SpellDefinition> CreateSpellDefinitions()
     {
         return

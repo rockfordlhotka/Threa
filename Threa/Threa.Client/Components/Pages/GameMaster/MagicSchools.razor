@@ -1,0 +1,77 @@
+@page "/gamemaster/magicschools"
+
+@using GameMechanics.Magic
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<MagicSchoolInfoList> schoolListPortal
+@inject ViewModel<MagicSchoolInfoList> vm
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<h3>Manage Magic Schools</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <a href="/gamemaster/magicschools/new" class="btn btn-primary mb-3">Add New School</a>
+    
+    <QuickGrid Items="schools">
+        <TemplateColumn Title="Color">
+            <div style="width: 30px; height: 30px; background-color: @context.ColorCode; border: 1px solid #ccc; border-radius: 4px;"></div>
+        </TemplateColumn>
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Title="Description" Property="@(p => p.ShortDescription)" />
+        <PropertyColumn Title="Order" Property="@(p => p.DisplayOrder)" Sortable="true" />
+        <TemplateColumn Title="Type">
+            @if (context.IsCore)
+            {
+                <span class="badge bg-primary">Core</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Custom</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Status">
+            @if (context.IsActive)
+            {
+                <span class="badge bg-success">Active</span>
+            }
+            else
+            {
+                <span class="badge bg-warning">Inactive</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Actions">
+            <a href="/gamemaster/magicschools/@context.Id">Edit</a>
+            @if (context.CanBeDeleted)
+            {
+                <text> | </text>
+                <a href="/gamemaster/magicschools/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
+            }
+            else
+            {
+                <text> | </text>
+                <span class="text-muted" title="Core magic schools cannot be deleted">Delete</span>
+            }
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<MagicSchoolInfo>? schools;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => schoolListPortal.FetchAsync());
+        schools = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+}

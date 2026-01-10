@@ -1,0 +1,65 @@
+@page "/gamemaster/skills"
+
+@using GameMechanics.Skills
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+@using Threa.Dal.Dto
+
+@inject IDataPortal<SkillInfoList> skillListPortal
+@inject ViewModel<SkillInfoList> vm
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<h3>Manage Skills</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <a href="/gamemaster/skills/new" class="btn btn-primary mb-3">Add New Skill</a>
+    
+    <QuickGrid Items="skills">
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Title="Category" Property="@(p => p.Category)" Sortable="true" />
+        <PropertyColumn Title="Type" Property="@(p => GetSkillType(p))" />
+        <PropertyColumn Title="Primary Attribute" Property="@(p => p.PrimaryAttribute)" />
+        <PropertyColumn Title="Untrained XP" Property="@(p => p.Untrained)" />
+        <PropertyColumn Title="Trained XP" Property="@(p => p.Trained)" />
+        <TemplateColumn Title="Actions">
+            <a href="/gamemaster/skills/@context.Id">Edit</a>
+            @if (context.CanBeDeleted)
+            {
+                <text> | </text>
+                <a href="/gamemaster/skills/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
+            }
+            else
+            {
+                <text> | </text>
+                <span class="text-muted" title="Core attribute skills cannot be deleted">Delete</span>
+            }
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<SkillInfo>? skills;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => skillListPortal.FetchAsync());
+        skills = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+
+    private string GetSkillType(SkillInfo skill)
+    {
+        if (skill.IsSpecialized) return "Specialized";
+        if (skill.IsMagic) return "Magic";
+        return "Standard";
+    }
+}

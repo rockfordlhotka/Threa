@@ -23,7 +23,7 @@ public class ActionResolverTests
         {
             Id = "swords",
             Name = "Swords",
-            Category = "Combat",
+            Category = SkillCategory.Combat,
             PrimaryAttribute = "STR",
             ActionType = ActionType.Attack,
             TargetValueType = TargetValueType.Fixed,
@@ -183,7 +183,15 @@ public class ActionResolverTests
     {
         var skill = CreateBasicSkill();
         skill.ActionType = ActionType.Spell;
-        skill.ManaCost = 5;
+        skill.ManaRequirements = 
+        [
+            new SkillManaRequirement 
+            { 
+                SkillId = skill.Id, 
+                MagicSchool = MagicSchool.Fire, 
+                MinimumMana = 5 
+            }
+        ];
         var request = new ActionRequest
         {
             Skill = skill,
