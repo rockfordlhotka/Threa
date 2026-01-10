@@ -1,0 +1,48 @@
+@page "/gamemaster/items"
+
+@using GameMechanics.Items
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<ItemTemplateList> itemListPortal
+@inject ViewModel<ItemTemplateList> vm
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<h3>Manage Items</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <a href="/gamemaster/items/new" class="btn btn-primary mb-3">Add New Item</a>
+    
+    <QuickGrid Items="items">
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" />
+        <PropertyColumn Title="Type" Property="@(p => p.ItemType)" />
+        <PropertyColumn Title="Description" Property="@(p => p.ShortDescription)" />
+        <PropertyColumn Title="Weight" Property="@(p => p.Weight)" />
+        <PropertyColumn Title="Value" Property="@(p => p.Value)" />
+        <PropertyColumn Title="Rarity" Property="@(p => p.Rarity)" />
+        <TemplateColumn Title="Actions">
+            <a href="/gamemaster/items/@context.Id">Edit</a> | 
+            <a href="/gamemaster/items/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<ItemTemplateInfo>? items;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => itemListPortal.FetchAsync());
+        items = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+}

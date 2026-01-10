@@ -44,17 +44,22 @@ public class ItemTemplateDal : IItemTemplateDal
     {
         try
         {
-            var sql = "SELECT Json FROM ItemTemplates";
+            var sql = "SELECT Id, Json FROM ItemTemplates";
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             using var reader = await command.ExecuteReaderAsync();
             var templates = new List<ItemTemplate>();
             while (reader.Read())
             {
-                string json = reader.GetString(0);
+                int dbId = reader.GetInt32(0);
+                string json = reader.GetString(1);
                 var template = JsonSerializer.Deserialize<ItemTemplate>(json);
                 if (template != null && template.IsActive)
+                {
+                    // Ensure the ID from the database is set
+                    template.Id = dbId;
                     templates.Add(template);
+                }
             }
             return templates;
         }
@@ -74,17 +79,20 @@ public class ItemTemplateDal : IItemTemplateDal
     {
         try
         {
-            var sql = "SELECT Json FROM ItemTemplates WHERE Id = @Id";
+            var sql = "SELECT Id, Json FROM ItemTemplates WHERE Id = @Id";
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddWithValue("@Id", id);
             using var reader = await command.ExecuteReaderAsync();
             if (!reader.Read())
                 throw new NotFoundException($"ItemTemplate {id}");
-            string json = reader.GetString(0);
+            int dbId = reader.GetInt32(0);
+            string json = reader.GetString(1);
             var template = JsonSerializer.Deserialize<ItemTemplate>(json);
             if (template == null)
                 throw new OperationFailedException($"ItemTemplate {id} deserialization failed");
+            // Ensure the ID from the database is set
+            template.Id = dbId;
             return template;
         }
         catch (NotFoundException)
@@ -122,7 +130,10 @@ public class ItemTemplateDal : IItemTemplateDal
             
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
-            command.Parameters.AddWithValue("@Id", template.Id);
+            if (template.Id != 0)
+            {
+                command.Parameters.AddWithValue("@Id", template.Id);
+            }
             command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(template));
             await command.ExecuteNonQueryAsync();
 

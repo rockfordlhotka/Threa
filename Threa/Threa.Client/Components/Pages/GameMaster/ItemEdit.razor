@@ -1,0 +1,169 @@
+@page "/gamemaster/items/{Id}"
+@page "/gamemaster/items/new"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics.Items
+@using GameMechanics.Combat
+@using Threa.Dal.Dto
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<ItemTemplateEdit> itemPortal
+@inject ViewModel<ItemTemplateEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<h3>@(IsNewItem ? "Add New Item" : "Edit Item")</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th></th><th></th></tr>
+        </thead>
+        <tbody>
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ShortDescription)" />
+            
+            <tr>
+                <td>Item Type</td>
+                <td>
+                    <select @bind="vm.Model.ItemType" class="form-control">
+                        @foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Equipment Slot</td>
+                <td>
+                    <select @bind="vm.Model.EquipmentSlot" class="form-control">
+                        @foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
+                        {
+                            <option value="@slot">@slot</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Weight)" />
+            <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Volume)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Value)" />
+
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsStackable)" />
+            
+            @if (vm.Model.IsStackable)
+            {
+                <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MaxStackSize)" />
+            }
+
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.HasDurability)" />
+            
+            @if (vm.Model.HasDurability)
+            {
+                <NumericSelectorRow Property="vm.GetPropertyInfo<int?>(() => vm.Model.MaxDurability)" />
+            }
+
+            <tr>
+                <td>Rarity</td>
+                <td>
+                    <select @bind="vm.Model.Rarity" class="form-control">
+                        @foreach (ItemRarity rarity in Enum.GetValues(typeof(ItemRarity)))
+                        {
+                            <option value="@rarity">@rarity</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsActive)" />
+
+            <hr />
+            <tr><td colspan="2"><strong>Weapon/Armor Properties</strong></td></tr>
+
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.RelatedSkill)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MinSkillLevel)" />
+
+            <tr>
+                <td>Damage Class (1-4)</td>
+                <td>
+                    <select @bind="vm.Model.DamageClass" class="form-control">
+                        <option value="1">1 - Normal weapons, human-scale combat</option>
+                        <option value="2">2 - Vehicles, giant creatures (10× Class 1)</option>
+                        <option value="3">3 - Armored vehicles, structures, dragons (10× Class 2)</option>
+                        <option value="4">4 - Armored structures, high-end magic (10× Class 3)</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Damage Type</td>
+                <td>
+                    <select @bind="vm.Model.DamageType" class="form-control">
+                        <option value="">-- None --</option>
+                        @foreach (DamageType type in Enum.GetValues(typeof(DamageType)))
+                        {
+                            <option value="@type.ToString()">@type.ToString()</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SVModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.AVModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DodgeModifier)" />
+        </tbody>
+    </table>
+    <div class="mt-3">
+        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/items");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        if (IsNewItem)
+        {
+            await vm.RefreshAsync(() => itemPortal.CreateAsync());
+        }
+        else if (int.TryParse(Id, out int itemId))
+        {
+            await vm.RefreshAsync(() => itemPortal.FetchAsync(itemId));
+        }
+    }
+
+    private async Task SaveData()
+    {
+        await vm.SaveAsync();
+        NavigationManager.NavigateTo("/gamemaster/items");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/gamemaster/items");
+    }
+}

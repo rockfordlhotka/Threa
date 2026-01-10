@@ -1,0 +1,43 @@
+<div class="input-group" style="max-width: 150px;">
+  <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="DecrementValue" 
+          disabled="@(Property == null || !Property.CanWrite)">-</button>
+  <input @bind-value="NumericValue" @bind-value:event="oninput" type="number"
+         class="form-control form-control-sm text-center" style="min-width: 60px;"
+         disabled="@(Property == null || !Property.CanWrite)" />
+  <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="IncrementValue"
+          disabled="@(Property == null || !Property.CanWrite)">+</button>
+</div>
+<span class="text-danger d-block">@Property?.ErrorText</span>
+<span class="text-warning d-block">@Property?.WarningText</span>
+<span class="text-info d-block">@Property?.InformationText</span>
+
+@code {
+    [Parameter]
+    public Csla.Blazor.IPropertyInfo? Property { get; set; }
+
+    [Parameter]
+    public int Step { get; set; } = 1;
+
+    private string? NumericValue
+    {
+        get => Property?.Value.ToString();
+        set => Property!.Value =
+            Utilities.CoerceValue(Property.Value.GetType(), value?.GetType(), Property.Value, value);
+    }
+
+    private void IncrementValue()
+    {
+        if (Property?.Value is int intValue)
+        {
+            Property.Value = intValue + Step;
+        }
+    }
+
+    private void DecrementValue()
+    {
+        if (Property?.Value is int intValue)
+        {
+            Property.Value = intValue - Step;
+        }
+    }
+}

@@ -1,0 +1,17 @@
+@if (Property != null && Property.CanRead)
+{
+  <tr>
+    <td>@(Property.FriendlyName)</td>
+    <td>
+      <NumericSelector Property="@Property" Step="@Step" />
+    </td>
+  </tr>
+}
+
+@code {
+  [Parameter]
+  public Csla.Blazor.IPropertyInfo? Property { get; set; }
+
+  [Parameter]
+  public int Step { get; set; } = 1;
+}
