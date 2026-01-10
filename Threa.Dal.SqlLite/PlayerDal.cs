@@ -49,6 +49,34 @@ public class PlayerDal : IPlayerDal
         }
     }
 
+    public async Task<IEnumerable<Player>> GetAllPlayersAsync()
+    {
+        try
+        {
+            var sql = "SELECT Id, Json FROM Players";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            using var reader = await command.ExecuteReaderAsync();
+            var players = new List<Player>();
+            while (reader.Read())
+            {
+                var id = reader.GetInt32(0);
+                var json = reader.GetString(1);
+                var player = System.Text.Json.JsonSerializer.Deserialize<Player>(json);
+                if (player != null)
+                {
+                    player.Id = id;
+                    players.Add(player);
+                }
+            }
+            return players;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error getting all players", ex);
+        }
+    }
+
     public async Task DeletePlayerAsync(int id)
     {
         try
@@ -86,21 +114,47 @@ public class PlayerDal : IPlayerDal
         }
     }
 
+    public async Task<Player?> GetPlayerByEmailAsync(string email)
+    {
+        try
+        {
+            var sql = "SELECT Id, Json FROM Players WHERE Email = @Email";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@Email", email);
+            using var reader = await command.ExecuteReaderAsync();
+            if (!reader.Read())
+                return null;
+            var id = reader.GetInt32(0);
+            var json = reader.GetString(1);
+            var result = System.Text.Json.JsonSerializer.Deserialize<Player>(json);
+            if (result != null)
+                result.Id = id;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException($"Error getting player {email}", ex);
+        }
+    }
+
     public async Task<Player> GetPlayerByEmailAsync(string email, string hashedPassword)
     {
         try
         {
-            var sql = "SELECT Json FROM Players WHERE Email = @Email";
+            var sql = "SELECT Id, Json FROM Players WHERE Email = @Email";
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddWithValue("@Email", email);
             using var reader = await command.ExecuteReaderAsync();
             if (!reader.Read())
                 throw new NotFoundException($"{nameof(Player)} {email}");
-            string json = reader.GetString(0);
+            var id = reader.GetInt32(0);
+            var json = reader.GetString(1);
             var result = System.Text.Json.JsonSerializer.Deserialize<Player>(json);
             if (result != null)
             {
+                result.Id = id;
                 if (!string.IsNullOrEmpty(hashedPassword) && hashedPassword != result.HashedPassword)
                     throw new NotFoundException($"{nameof(Player)} {email}");
                 return result;

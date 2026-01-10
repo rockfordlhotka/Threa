@@ -8,6 +8,14 @@ namespace Threa.Dal.MockDb
 {
     public class PlayerDal : IPlayerDal
     {
+        public Task<IEnumerable<Player>> GetAllPlayersAsync()
+        {
+            lock (MockDb.Players)
+            {
+                return Task.FromResult<IEnumerable<Player>>(MockDb.Players.ToList());
+            }
+        }
+
         public Task DeletePlayerAsync(int id)
         {
             lock (MockDb.Players)
@@ -29,11 +37,20 @@ namespace Threa.Dal.MockDb
             }
         }
 
+        public Task<Player?> GetPlayerByEmailAsync(string email)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.Where(r => r.Email == email).FirstOrDefault();
+                return Task.FromResult(player);
+            }
+        }
+
         public Task<Player> GetPlayerByEmailAsync(string email, string password)
         {
             lock (MockDb.Players)
             {
-                var existingPlayer = MockDb.Players.Where(r => r.Email == email).FirstOrDefault() 
+                var existingPlayer = MockDb.Players.Where(r => r.Email == email).FirstOrDefault()
                     ?? throw new NotFoundException($"{nameof(Player)} {email}");
                 if (!string.IsNullOrWhiteSpace(existingPlayer.HashedPassword))
                 {
@@ -63,13 +80,15 @@ namespace Threa.Dal.MockDb
                         Name = obj.Name,
                         Email = obj.Email,
                         HashedPassword = hashedPassword,
-                        Salt = salt
+                        Salt = salt,
+                        Roles = obj.Roles
                     };
                     MockDb.Players.Add(existingPlayer);
                 }
                 else
                 {
                     existingPlayer.Name = obj.Name;
+                    existingPlayer.Roles = obj.Roles;
                     if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
                         existingPlayer.Salt = BCrypt.Net.BCrypt.GenerateSalt(12);
                     var hashedPassword = BCrypt.Net.BCrypt.HashPassword(obj.HashedPassword, existingPlayer.Salt);

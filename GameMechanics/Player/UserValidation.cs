@@ -33,6 +33,13 @@ public class UserValidation : CommandBase<UserValidation>
             new(ClaimTypes.GivenName, user.Name),
             new(ClaimTypes.Email, user.Email)
         };
+        if (!string.IsNullOrEmpty(user.Roles))
+        {
+            foreach (var role in user.Roles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
         var identity = new ClaimsIdentity(claims, "password");
         return new ClaimsPrincipal(identity);
     }

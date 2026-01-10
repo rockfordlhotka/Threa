@@ -5,7 +5,9 @@ namespace Threa.Dal;
 
 public interface IPlayerDal
 {
+    Task<IEnumerable<Player>> GetAllPlayersAsync();
     Task<Player?> GetPlayerAsync(int id);
+    Task<Player?> GetPlayerByEmailAsync(string email);
     Task<Player> GetPlayerByEmailAsync(string email, string password);
     Task<Player> SavePlayerAsync(Player obj);
     Task ChangePassword(int id, string oldPassword, string newPassword);
