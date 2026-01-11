@@ -46,5 +46,84 @@ public enum EquipmentSlot
     FingerRight2 = 41,
     FingerRight3 = 42,
     FingerRight4 = 43,
-    FingerRight5 = 44
+    FingerRight5 = 44,
+
+    // Implant Slots (require surgery/procedure to equip/unequip)
+    // These represent cybernetic/biotech enhancements
+    
+    /// <summary>
+    /// Neural interface, brain implant.
+    /// </summary>
+    ImplantNeural = 100,
+
+    /// <summary>
+    /// Cybernetic eye replacement or enhancement.
+    /// </summary>
+    ImplantOpticLeft = 101,
+
+    /// <summary>
+    /// Cybernetic eye replacement or enhancement.
+    /// </summary>
+    ImplantOpticRight = 102,
+
+    /// <summary>
+    /// Ear/hearing enhancement implant.
+    /// </summary>
+    ImplantAuralLeft = 103,
+
+    /// <summary>
+    /// Ear/hearing enhancement implant.
+    /// </summary>
+    ImplantAuralRight = 104,
+
+    /// <summary>
+    /// Heart or circulatory system enhancement.
+    /// </summary>
+    ImplantCardiac = 105,
+
+    /// <summary>
+    /// Spinal enhancement or neural booster.
+    /// </summary>
+    ImplantSpine = 106,
+
+    /// <summary>
+    /// Cybernetic arm replacement or enhancement.
+    /// </summary>
+    ImplantArmLeft = 107,
+
+    /// <summary>
+    /// Cybernetic arm replacement or enhancement.
+    /// </summary>
+    ImplantArmRight = 108,
+
+    /// <summary>
+    /// Cybernetic leg replacement or enhancement.
+    /// </summary>
+    ImplantLegLeft = 109,
+
+    /// <summary>
+    /// Cybernetic leg replacement or enhancement.
+    /// </summary>
+    ImplantLegRight = 110,
+
+    /// <summary>
+    /// Subdermal armor, sensors, or other under-skin implants.
+    /// </summary>
+    ImplantSubdermal = 111,
+
+    /// <summary>
+    /// Internal organ replacement or enhancement.
+    /// </summary>
+    ImplantOrgan = 112,
+
+    /// <summary>
+    /// Hand/finger enhancement (separate from arm).
+    /// </summary>
+    ImplantHandLeft = 113,
+
+    /// <summary>
+    /// Hand/finger enhancement (separate from arm).
+    /// </summary>
+    ImplantHandRight = 114
 }
+

@@ -173,4 +173,10 @@ public class ItemTemplate
     /// Attribute modifiers provided by this item when equipped.
     /// </summary>
     public List<ItemAttributeModifier> AttributeModifiers { get; set; } = [];
+
+    /// <summary>
+    /// Magic/tech effects that this item can apply to a character.
+    /// These are applied based on their trigger conditions (equipped, possessed, used, etc.).
+    /// </summary>
+    public List<ItemEffectDefinition> Effects { get; set; } = [];
 }

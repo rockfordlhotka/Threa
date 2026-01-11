@@ -59,6 +59,16 @@ public class CharacterEffect
     public Guid? SourceItemId { get; set; }
 
     /// <summary>
+    /// If this effect is from an item, specifies when the effect activates/deactivates.
+    /// </summary>
+    public ItemEffectTrigger ItemEffectTrigger { get; set; }
+
+    /// <summary>
+    /// Whether this effect is cursed and prevents removing the source item.
+    /// </summary>
+    public bool IsCursed { get; set; }
+
+    /// <summary>
     /// For wounds: the specific body location.
     /// </summary>
     public string? WoundLocation { get; set; }

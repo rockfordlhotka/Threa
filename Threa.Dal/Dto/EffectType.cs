@@ -48,5 +48,10 @@ public enum EffectType
     /// <summary>
     /// Environmental effect (weather, terrain, magical zone).
     /// </summary>
-    Environmental = 8
+    Environmental = 8,
+
+    /// <summary>
+    /// Effect from a magic or tech item (equipment, implants, etc.).
+    /// </summary>
+    ItemEffect = 9
 }

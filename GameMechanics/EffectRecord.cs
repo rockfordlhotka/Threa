@@ -138,9 +138,66 @@ public class EffectRecord : BusinessBase<EffectRecord>
     set => SetProperty(SourceProperty, value);
   }
 
+  public static readonly PropertyInfo<Guid?> SourceItemIdProperty = RegisterProperty<Guid?>(nameof(SourceItemId));
+  /// <summary>
+  /// If this effect was created by an item, the ID of that CharacterItem instance.
+  /// Used to remove effects when items are unequipped or dropped.
+  /// </summary>
+  public Guid? SourceItemId
+  {
+    get => GetProperty(SourceItemIdProperty);
+    set => SetProperty(SourceItemIdProperty, value);
+  }
+
+  public static readonly PropertyInfo<ItemEffectTrigger> ItemEffectTriggerProperty = RegisterProperty<ItemEffectTrigger>(nameof(ItemEffectTrigger));
+  /// <summary>
+  /// If this effect is from an item, specifies when the effect activates/deactivates.
+  /// </summary>
+  public ItemEffectTrigger ItemEffectTrigger
+  {
+    get => GetProperty(ItemEffectTriggerProperty);
+    set => SetProperty(ItemEffectTriggerProperty, value);
+  }
+
+  public static readonly PropertyInfo<bool> IsCursedProperty = RegisterProperty<bool>(nameof(IsCursed));
+  /// <summary>
+  /// Whether this effect is cursed and prevents unequipping the source item.
+  /// </summary>
+  public bool IsCursed
+  {
+    get => GetProperty(IsCursedProperty);
+    set => SetProperty(IsCursedProperty, value);
+  }
+
   #endregion
 
   #region Computed Properties
+
+  /// <summary>
+  /// Whether this effect originated from an item.
+  /// </summary>
+  public bool IsFromItem => SourceItemId.HasValue;
+
+  /// <summary>
+  /// Whether this effect is currently blocking item unequip (cursed, active, and triggered by equip).
+  /// </summary>
+  public bool IsBlockingUnequip => IsFromItem 
+    && IsCursed 
+    && IsActive 
+    && ItemEffectTrigger == ItemEffectTrigger.WhileEquipped;
+
+  /// <summary>
+  /// Whether this effect is currently blocking item drop (cursed, active, and triggered by possession).
+  /// </summary>
+  public bool IsBlockingDrop => IsFromItem 
+    && IsCursed 
+    && IsActive 
+    && (ItemEffectTrigger == ItemEffectTrigger.WhilePossessed || ItemEffectTrigger == ItemEffectTrigger.OnPickup);
+
+  /// <summary>
+  /// Whether this effect is blocking any form of item removal (unequip or drop).
+  /// </summary>
+  public bool IsBlockingItemRemoval => IsBlockingUnequip || IsBlockingDrop;
 
   /// <summary>
   /// Remaining duration in rounds, or null if permanent.
@@ -219,6 +276,33 @@ public class EffectRecord : BusinessBase<EffectRecord>
     }
   }
 
+  /// <summary>
+  /// Creates an effect from an item effect definition.
+  /// </summary>
+  [CreateChild]
+  private void CreateFromItem(ItemEffectDefinition definition, Guid sourceItemId)
+  {
+    using (BypassPropertyChecks)
+    {
+      Id = Guid.NewGuid();
+      EffectType = definition.EffectType;
+      Name = definition.Name;
+      Description = definition.Description;
+      IconName = definition.IconName;
+      DurationRounds = definition.DurationRounds; // null = permanent while trigger active
+      BehaviorState = definition.BehaviorState;
+      ElapsedRounds = 0;
+      CurrentStacks = 1;
+      IsActive = true;
+      
+      // Item-specific properties
+      SourceItemId = sourceItemId;
+      ItemEffectTrigger = definition.Trigger;
+      IsCursed = definition.IsCursed;
+      Source = definition.Name; // Use effect name as source description
+    }
+  }
+
   [FetchChild]
   private void Fetch(CharacterEffect dto)
   {
@@ -240,6 +324,11 @@ public class EffectRecord : BusinessBase<EffectRecord>
       IsActive = dto.IsActive;
       BehaviorState = dto.CustomProperties;
       Source = dto.Definition?.Source;
+      
+      // Item effect properties
+      SourceItemId = dto.SourceItemId;
+      ItemEffectTrigger = dto.ItemEffectTrigger;
+      IsCursed = dto.IsCursed;
     }
   }
 
@@ -273,6 +362,11 @@ public class EffectRecord : BusinessBase<EffectRecord>
       dto.IsActive = IsActive;
       dto.CustomProperties = BehaviorState;
       dto.EffectDefinitionId = GetEffectDefinitionId(EffectType);
+      
+      // Item effect properties
+      dto.SourceItemId = SourceItemId;
+      dto.ItemEffectTrigger = ItemEffectTrigger;
+      dto.IsCursed = IsCursed;
     }
   }
 

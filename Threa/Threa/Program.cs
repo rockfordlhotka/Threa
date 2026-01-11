@@ -1,4 +1,5 @@
 using Csla.Configuration;
+using GameMechanics;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Threa.Components;
@@ -29,6 +30,7 @@ builder.Services.AddCsla(o => o
     .AddServerSideBlazor(o => o.UseInMemoryApplicationContextManager = false));
 
 builder.Services.AddSqlite();
+builder.Services.AddGameMechanics();
 
 var app = builder.Build();
 

@@ -103,6 +103,157 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
   #endregion
 
+  #region Item Effect Management
+
+  /// <summary>
+  /// Gets all effects that originated from a specific item.
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>Effects from that item.</returns>
+  public IEnumerable<EffectRecord> GetEffectsFromItem(Guid itemId)
+  {
+    return this.Where(e => e.SourceItemId == itemId);
+  }
+
+  /// <summary>
+  /// Gets all effects that are from items with a specific trigger type.
+  /// </summary>
+  /// <param name="trigger">The trigger type to filter by.</param>
+  /// <returns>Effects with that trigger.</returns>
+  public IEnumerable<EffectRecord> GetEffectsByTrigger(ItemEffectTrigger trigger)
+  {
+    return this.Where(e => e.ItemEffectTrigger == trigger);
+  }
+
+  /// <summary>
+  /// Removes all effects from a specific item, typically when unequipping or dropping.
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <param name="trigger">Optional: only remove effects with this trigger type.</param>
+  /// <returns>True if any effects were removed.</returns>
+  public bool RemoveEffectsFromItem(Guid itemId, ItemEffectTrigger? trigger = null)
+  {
+    var toRemove = this
+      .Where(e => e.SourceItemId == itemId)
+      .Where(e => trigger == null || e.ItemEffectTrigger == trigger)
+      .ToList();
+
+    foreach (var effect in toRemove)
+    {
+      effect.Behavior.OnRemove(effect, Character);
+      Remove(effect);
+    }
+
+    return toRemove.Count > 0;
+  }
+
+  /// <summary>
+  /// Removes effects triggered by equipping when an item is unequipped.
+  /// Does not remove possession-based effects.
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if any effects were removed.</returns>
+  public bool RemoveEquipEffects(Guid itemId)
+  {
+    return RemoveEffectsFromItem(itemId, ItemEffectTrigger.WhileEquipped);
+  }
+
+  /// <summary>
+  /// Removes effects triggered by possession when an item is dropped or transferred.
+  /// Also removes equip effects since the item is leaving inventory entirely.
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if any effects were removed.</returns>
+  public bool RemovePossessionEffects(Guid itemId)
+  {
+    // When dropping, remove both possession AND equip effects
+    var toRemove = this
+      .Where(e => e.SourceItemId == itemId)
+      .Where(e => e.ItemEffectTrigger == ItemEffectTrigger.WhilePossessed 
+               || e.ItemEffectTrigger == ItemEffectTrigger.WhileEquipped
+               || e.ItemEffectTrigger == ItemEffectTrigger.OnPickup)
+      .ToList();
+
+    foreach (var effect in toRemove)
+    {
+      effect.Behavior.OnRemove(effect, Character);
+      Remove(effect);
+    }
+
+    return toRemove.Count > 0;
+  }
+
+  /// <summary>
+  /// Checks if any effect from a specific item is blocking unequip (cursed equip effect).
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if there's an active curse preventing unequip.</returns>
+  public bool IsItemBlockingUnequip(Guid itemId)
+  {
+    return this.Any(e => e.SourceItemId == itemId && e.IsBlockingUnequip);
+  }
+
+  /// <summary>
+  /// Checks if any effect from a specific item is blocking drop (cursed possession effect).
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if there's an active curse preventing drop.</returns>
+  public bool IsItemBlockingDrop(Guid itemId)
+  {
+    return this.Any(e => e.SourceItemId == itemId && e.IsBlockingDrop);
+  }
+
+  /// <summary>
+  /// Checks if any effect from a specific item is blocking any removal (unequip or drop).
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if there's any active curse on this item.</returns>
+  public bool IsItemCursed(Guid itemId)
+  {
+    return this.Any(e => e.SourceItemId == itemId && e.IsBlockingItemRemoval);
+  }
+
+  /// <summary>
+  /// Determines if an item can be unequipped (not blocked by curses).
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if the item can be unequipped.</returns>
+  public bool CanUnequipItem(Guid itemId)
+  {
+    return !IsItemBlockingUnequip(itemId);
+  }
+
+  /// <summary>
+  /// Determines if an item can be dropped or transferred (not blocked by curses).
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>True if the item can be dropped.</returns>
+  public bool CanDropItem(Guid itemId)
+  {
+    return !IsItemBlockingDrop(itemId);
+  }
+
+  /// <summary>
+  /// Gets cursed effects from a specific item.
+  /// </summary>
+  /// <param name="itemId">The CharacterItem ID.</param>
+  /// <returns>Cursed effects from that item.</returns>
+  public IEnumerable<EffectRecord> GetCursedEffectsFromItem(Guid itemId)
+  {
+    return this.Where(e => e.SourceItemId == itemId && e.IsCursed && e.IsActive);
+  }
+
+  /// <summary>
+  /// Gets all currently active item-based effects.
+  /// </summary>
+  /// <returns>All effects that originated from items.</returns>
+  public IEnumerable<EffectRecord> GetAllItemEffects()
+  {
+    return this.Where(e => e.IsFromItem);
+  }
+
+  #endregion
+
   #region Lifecycle
 
   /// <summary>
