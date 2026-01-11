@@ -27,7 +27,7 @@
             <td>
                 @if (speciesList != null)
                 {
-                    <select @bind="vm.Model.Species" class="form-control">
+                    <select @bind="vm.Model.Species" @bind:after="OnSpeciesChanged" class="form-control">
                         @foreach (var species in speciesList)
                         {
                             <option value="@species.Id">@species.Name</option>
@@ -94,5 +94,16 @@
     {
         var species = speciesList?.FirstOrDefault(s => s.Id == speciesId);
         return species?.Name ?? speciesId;
+    }
+
+    private void OnSpeciesChanged()
+    {
+        if (vm?.Model == null || speciesList == null) return;
+        
+        // Find the new species info
+        var newSpeciesInfo = speciesList.FirstOrDefault(s => s.Id == vm.Model.Species);
+        
+        // Update attribute modifiers based on new species
+        vm.Model.UpdateSpeciesModifiers(newSpeciesInfo);
     }
 }

@@ -38,19 +38,22 @@ namespace Threa.Dal.MockDb
 
     public Task<Character> SaveCharacterAsync(Character character)
     {
-      if (character.Id == 0)
+      lock (MockDb.Characters)
       {
-        character.Id = MockDb.Characters.Count == 0 ? 
-          1 : MockDb.Characters.Max(r => r.Id) + 1;
-        MockDb.Characters.Add(character);
-      }
-      else
-      {
-        Character? existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
-        if (existing == null)
-          throw new NotFoundException(nameof(character));
-        MockDb.Characters.Remove(existing);
-        MockDb.Characters.Add(character);
+        if (character.Id == 0)
+        {
+          character.Id = MockDb.Characters.Count == 0 ? 
+            1 : MockDb.Characters.Max(r => r.Id) + 1;
+          MockDb.Characters.Add(character);
+        }
+        else
+        {
+          Character? existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
+          if (existing == null)
+            throw new NotFoundException(nameof(character));
+          MockDb.Characters.Remove(existing);
+          MockDb.Characters.Add(character);
+        }
       }
       return Task.FromResult(character);
     }

@@ -20,9 +20,13 @@ public class CharacterEffectDal : ICharacterEffectDal
 
     public async Task<List<CharacterEffect>> GetCharacterEffectsAsync(int characterId)
     {
-        var effects = MockDb.CharacterEffects
-            .Where(e => e.CharacterId == characterId && e.IsActive)
-            .ToList();
+        List<CharacterEffect> effects;
+        lock (MockDb.CharacterEffects)
+        {
+            effects = MockDb.CharacterEffects
+                .Where(e => e != null && e.CharacterId == characterId && e.IsActive)
+                .ToList();
+        }
 
         // Populate definitions
         foreach (var effect in effects)
@@ -35,9 +39,13 @@ public class CharacterEffectDal : ICharacterEffectDal
 
     public async Task<List<CharacterEffect>> GetCharacterEffectsByTypeAsync(int characterId, EffectType effectType)
     {
-        var effects = MockDb.CharacterEffects
-            .Where(e => e.CharacterId == characterId && e.IsActive)
-            .ToList();
+        List<CharacterEffect> effects;
+        lock (MockDb.CharacterEffects)
+        {
+            effects = MockDb.CharacterEffects
+                .Where(e => e != null && e.CharacterId == characterId && e.IsActive)
+                .ToList();
+        }
 
         var result = new List<CharacterEffect>();
         foreach (var effect in effects)
@@ -52,7 +60,11 @@ public class CharacterEffectDal : ICharacterEffectDal
 
     public async Task<CharacterEffect?> GetEffectAsync(Guid id)
     {
-        var effect = MockDb.CharacterEffects.FirstOrDefault(e => e.Id == id);
+        CharacterEffect? effect;
+        lock (MockDb.CharacterEffects)
+        {
+            effect = MockDb.CharacterEffects.FirstOrDefault(e => e != null && e.Id == id);
+        }
         if (effect != null)
         {
             effect.Definition = await _definitionDal.GetDefinitionAsync(effect.EffectDefinitionId);
@@ -89,9 +101,12 @@ public class CharacterEffectDal : ICharacterEffectDal
             {
                 case StackBehavior.Replace:
                     // Remove old, add new
-                    foreach (var existing in existingEffects)
+                    lock (MockDb.CharacterEffects)
                     {
-                        MockDb.CharacterEffects.Remove(existing);
+                        foreach (var existing in existingEffects)
+                        {
+                            MockDb.CharacterEffects.Remove(existing);
+                        }
                     }
                     break;
 
@@ -118,6 +133,17 @@ public class CharacterEffectDal : ICharacterEffectDal
         }
         else if (existingEffects.Count > 0 && definition.IsStackable)
         {
+            // For Intensify behavior, always increment stacks on existing effect
+            if (definition.StackBehavior == StackBehavior.Intensify && existingEffects.Count > 0)
+            {
+                var toIntensify = existingEffects.First();
+                if (toIntensify.CurrentStacks < definition.MaxStacks)
+                {
+                    toIntensify.CurrentStacks++;
+                }
+                return toIntensify;
+            }
+            
             // Stackable - check if under max stacks
             if (existingEffects.Count >= definition.MaxStacks)
             {
@@ -127,7 +153,10 @@ public class CharacterEffectDal : ICharacterEffectDal
                     case StackBehavior.Replace:
                         // Remove oldest
                         var oldest = existingEffects.OrderBy(e => e.StartTime).First();
-                        MockDb.CharacterEffects.Remove(oldest);
+                        lock (MockDb.CharacterEffects)
+                        {
+                            MockDb.CharacterEffects.Remove(oldest);
+                        }
                         break;
                     case StackBehavior.Extend:
                     case StackBehavior.Intensify:
@@ -154,27 +183,36 @@ public class CharacterEffectDal : ICharacterEffectDal
         if (effect.Id == Guid.Empty)
             effect.Id = Guid.NewGuid();
 
-        MockDb.CharacterEffects.Add(effect);
+        lock (MockDb.CharacterEffects)
+        {
+            MockDb.CharacterEffects.Add(effect);
+        }
         return effect;
     }
 
     public Task<CharacterEffect> UpdateEffectAsync(CharacterEffect effect)
     {
-        var existing = MockDb.CharacterEffects.FirstOrDefault(e => e.Id == effect.Id);
-        if (existing == null)
-            throw new NotFoundException($"CharacterEffect {effect.Id}");
+        lock (MockDb.CharacterEffects)
+        {
+            var existing = MockDb.CharacterEffects.FirstOrDefault(e => e != null && e.Id == effect.Id);
+            if (existing == null)
+                throw new NotFoundException($"CharacterEffect {effect.Id}");
 
-        MockDb.CharacterEffects.Remove(existing);
-        MockDb.CharacterEffects.Add(effect);
+            MockDb.CharacterEffects.Remove(existing);
+            MockDb.CharacterEffects.Add(effect);
+        }
         return Task.FromResult(effect);
     }
 
     public Task RemoveEffectAsync(Guid id)
     {
-        var effect = MockDb.CharacterEffects.FirstOrDefault(e => e.Id == id);
-        if (effect != null)
+        lock (MockDb.CharacterEffects)
         {
-            MockDb.CharacterEffects.Remove(effect);
+            var effect = MockDb.CharacterEffects.FirstOrDefault(e => e != null && e.Id == id);
+            if (effect != null)
+            {
+                MockDb.CharacterEffects.Remove(effect);
+            }
         }
         return Task.CompletedTask;
     }
@@ -182,22 +220,29 @@ public class CharacterEffectDal : ICharacterEffectDal
     public async Task RemoveEffectsByTypeAsync(int characterId, EffectType effectType)
     {
         var effects = await GetCharacterEffectsByTypeAsync(characterId, effectType);
-        foreach (var effect in effects)
+        lock (MockDb.CharacterEffects)
         {
-            MockDb.CharacterEffects.Remove(effect);
+            foreach (var effect in effects)
+            {
+                MockDb.CharacterEffects.Remove(effect);
+            }
         }
     }
 
     public Task RemoveExpiredEffectsAsync(int characterId)
     {
-        var now = DateTime.UtcNow;
-        var expired = MockDb.CharacterEffects
-            .Where(e => e.CharacterId == characterId && e.EndTime.HasValue && e.EndTime < now)
-            .ToList();
-
-        foreach (var effect in expired)
+        List<CharacterEffect> expired;
+        lock (MockDb.CharacterEffects)
         {
-            MockDb.CharacterEffects.Remove(effect);
+            var now = DateTime.UtcNow;
+            expired = MockDb.CharacterEffects
+                .Where(e => e != null && e.CharacterId == characterId && e.EndTime.HasValue && e.EndTime < now)
+                .ToList();
+
+            foreach (var effect in expired)
+            {
+                MockDb.CharacterEffects.Remove(effect);
+            }
         }
 
         return Task.CompletedTask;

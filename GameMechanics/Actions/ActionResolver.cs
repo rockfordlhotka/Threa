@@ -158,7 +158,8 @@ public class ActionResolver
         {
             cost = ActionCost.Free();
         }
-        else if (request.Skill.IsSpell && request.Skill.ManaRequirements?.Any() == true)
+        else if ((request.Skill.IsSpell || request.Skill.ActionType == ActionType.Spell) 
+                 && request.Skill.ManaRequirements?.Any() == true)
         {
             // Sum total mana required across all mana types
             var totalMana = request.Skill.ManaRequirements.Sum(mr => mr.MinimumMana);

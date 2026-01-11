@@ -273,6 +273,29 @@ namespace GameMechanics
         return result.Value;
     }
 
+    /// <summary>
+    /// Updates attribute modifiers when species changes.
+    /// Maintains base values and recalculates final values with new species modifiers.
+    /// </summary>
+    /// <param name="newSpeciesInfo">The new species information with modifiers.</param>
+    public void UpdateSpeciesModifiers(Reference.SpeciesInfo? newSpeciesInfo)
+    {
+      if (AttributeList == null) return;
+      
+      foreach (var attribute in AttributeList)
+      {
+        // Get new modifier for this attribute
+        int newModifier = newSpeciesInfo?.GetModifier(attribute.Name) ?? 0;
+        
+        // Update the species modifier (this will trigger recalculation via business rule)
+        attribute.UpdateSpeciesModifier(newModifier);
+      }
+      
+      // Recalculate health pools with new attribute values
+      BusinessRules.CheckRules(FatigueProperty);
+      BusinessRules.CheckRules(VitalityProperty);
+    }
+
     public void EndOfRound()
     {
       Fatigue.EndOfRound();

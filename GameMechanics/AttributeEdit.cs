@@ -37,6 +37,20 @@ namespace GameMechanics
       private set => LoadProperty(SpeciesModifierProperty, value);
     }
 
+    /// <summary>
+    /// Updates the species modifier and recalculates the final value.
+    /// This is called when the character's species changes.
+    /// </summary>
+    internal void UpdateSpeciesModifier(int newModifier)
+    {
+      using (BypassPropertyChecks)
+      {
+        LoadProperty(SpeciesModifierProperty, newModifier);
+      }
+      // Trigger recalculation of Value
+      BusinessRules.CheckRules();
+    }
+
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();
@@ -93,11 +107,12 @@ namespace GameMechanics
       using (BypassPropertyChecks)
       {
         Name = attribute.Name;
-        // The stored value includes species modifiers
-        LoadProperty(ValueProperty, attribute.BaseValue);
-        // Back out the species modifier to get the base rolled value
+        // Load the base value (without species modifier)
+        LoadProperty(BaseValueProperty, attribute.BaseValue);
+        // Load or calculate species modifier
         LoadProperty(SpeciesModifierProperty, species?.GetModifier(Name) ?? 0);
-        LoadProperty(BaseValueProperty, Value - SpeciesModifier);
+        // Calculate final value
+        LoadProperty(ValueProperty, attribute.Value);
       }
     }
 
@@ -107,16 +122,20 @@ namespace GameMechanics
     {
       using (BypassPropertyChecks)
       {
-        var item = attributes.Where(r => r.Name == Name).FirstOrDefault();
+        // Find or create the attribute entry
+        var item = attributes.FirstOrDefault(r => r.Name == Name);
         if (item == null)
         {
-          item = new Threa.Dal.Dto.CharacterAttribute
+          item = new CharacterAttribute
           {
             Name = Name
           };
           attributes.Add(item);
         }
-        item.BaseValue = Value;
+        
+        // Save both base value and final calculated value
+        item.BaseValue = BaseValue;
+        item.Value = Value;
       }
     }
 

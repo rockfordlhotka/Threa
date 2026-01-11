@@ -227,5 +227,105 @@ namespace GameMechanics.Test
       // Total = 25 + (10 * 20) + (3 * 400) + (1 * 8000) = 25 + 200 + 1200 + 8000 = 9425
       Assert.AreEqual(9425, fetched.TotalCopperValue, "Fetched total copper value");
     }
+
+    [TestMethod]
+    public async Task CharacterSpeciesChange_UpdatesAttributeModifiers()
+    {
+      var provider = InitServices();
+      var characterPortal = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var speciesListPortal = provider.GetRequiredService<IDataPortal<SpeciesList>>();
+      
+      // Create character as Human (no modifiers)
+      var character = characterPortal.Create(42);
+      character.Name = "Test Character";
+      
+      // Record base values
+      var strBaseValue = character.AttributeList.First(a => a.Name == "STR").BaseValue;
+      var intBaseValue = character.AttributeList.First(a => a.Name == "INT").BaseValue;
+      
+      // Initial values should equal base values for Human (no modifiers)
+      Assert.AreEqual(strBaseValue, character.AttributeList.First(a => a.Name == "STR").Value);
+      Assert.AreEqual(intBaseValue, character.AttributeList.First(a => a.Name == "INT").Value);
+      
+      // Change species to Elf (INT +1, STR -1)
+      var speciesList = await speciesListPortal.FetchAsync();
+      var elfSpecies = speciesList.First(s => s.Id == "Elf");
+      character.Species = "Elf";
+      character.UpdateSpeciesModifiers(elfSpecies);
+      
+      // Base values should remain unchanged
+      Assert.AreEqual(strBaseValue, character.AttributeList.First(a => a.Name == "STR").BaseValue, "STR base value should not change");
+      Assert.AreEqual(intBaseValue, character.AttributeList.First(a => a.Name == "INT").BaseValue, "INT base value should not change");
+      
+      // Final values should reflect modifiers
+      Assert.AreEqual(strBaseValue - 1, character.AttributeList.First(a => a.Name == "STR").Value, "STR final value with Elf modifier");
+      Assert.AreEqual(intBaseValue + 1, character.AttributeList.First(a => a.Name == "INT").Value, "INT final value with Elf modifier");
+      
+      // Species modifiers should be set correctly
+      Assert.AreEqual(-1, character.AttributeList.First(a => a.Name == "STR").SpeciesModifier, "STR modifier");
+      Assert.AreEqual(1, character.AttributeList.First(a => a.Name == "INT").SpeciesModifier, "INT modifier");
+      
+      // Change species to Orc (STR +2, END +1, INT -1, PHY -1)
+      var orcSpecies = speciesList.First(s => s.Id == "Orc");
+      character.Species = "Orc";
+      character.UpdateSpeciesModifiers(orcSpecies);
+      
+      // Base values should still remain unchanged
+      Assert.AreEqual(strBaseValue, character.AttributeList.First(a => a.Name == "STR").BaseValue, "STR base value should not change after second species change");
+      Assert.AreEqual(intBaseValue, character.AttributeList.First(a => a.Name == "INT").BaseValue, "INT base value should not change after second species change");
+      
+      // Final values should reflect new modifiers
+      Assert.AreEqual(strBaseValue + 2, character.AttributeList.First(a => a.Name == "STR").Value, "STR final value with Orc modifier");
+      Assert.AreEqual(intBaseValue - 1, character.AttributeList.First(a => a.Name == "INT").Value, "INT final value with Orc modifier");
+      
+      // Species modifiers should be updated
+      Assert.AreEqual(2, character.AttributeList.First(a => a.Name == "STR").SpeciesModifier, "STR modifier for Orc");
+      Assert.AreEqual(-1, character.AttributeList.First(a => a.Name == "INT").SpeciesModifier, "INT modifier for Orc");
+    }
+
+    [TestMethod]
+    public async Task CharacterSpeciesChange_PersistsCorrectly()
+    {
+      var provider = InitServices();
+      var characterPortal = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var speciesListPortal = provider.GetRequiredService<IDataPortal<SpeciesList>>();
+      
+      // Create character as Human
+      var character = characterPortal.Create(42);
+      character.Name = "Species Persistence Test";
+      
+      // Save initial character
+      character = await character.SaveAsync();
+      var characterId = character.Id;
+      
+      // Record base values
+      var strBaseValue = character.AttributeList.First(a => a.Name == "STR").BaseValue;
+      var intBaseValue = character.AttributeList.First(a => a.Name == "INT").BaseValue;
+      
+      // Change species to Elf and save
+      var speciesList = await speciesListPortal.FetchAsync();
+      var elfSpecies = speciesList.First(s => s.Id == "Elf");
+      character.Species = "Elf";
+      character.UpdateSpeciesModifiers(elfSpecies);
+      character = await character.SaveAsync();
+      
+      // Fetch the character again
+      var fetched = await characterPortal.FetchAsync(characterId);
+      
+      // Verify species is persisted
+      Assert.AreEqual("Elf", fetched.Species);
+      
+      // Verify base values are unchanged
+      Assert.AreEqual(strBaseValue, fetched.AttributeList.First(a => a.Name == "STR").BaseValue, "Fetched STR base value");
+      Assert.AreEqual(intBaseValue, fetched.AttributeList.First(a => a.Name == "INT").BaseValue, "Fetched INT base value");
+      
+      // Verify final values include species modifiers
+      Assert.AreEqual(strBaseValue - 1, fetched.AttributeList.First(a => a.Name == "STR").Value, "Fetched STR final value");
+      Assert.AreEqual(intBaseValue + 1, fetched.AttributeList.First(a => a.Name == "INT").Value, "Fetched INT final value");
+      
+      // Verify species modifiers are correct
+      Assert.AreEqual(-1, fetched.AttributeList.First(a => a.Name == "STR").SpeciesModifier, "Fetched STR modifier");
+      Assert.AreEqual(1, fetched.AttributeList.First(a => a.Name == "INT").SpeciesModifier, "Fetched INT modifier");
+    }
   }
 }
