@@ -50,6 +50,11 @@ public class EffectAddResult
   public List<EffectCreateRequest> SideEffects { get; set; } = [];
 
   /// <summary>
+  /// Generic side effect data (for drug interactions, etc.).
+  /// </summary>
+  public object? SideEffectData { get; set; }
+
+  /// <summary>
   /// Optional message explaining the result (for logging/display).
   /// </summary>
   public string? Message { get; set; }
@@ -85,6 +90,16 @@ public class EffectAddResult
   {
     Outcome = EffectAddOutcome.AddWithSideEffects,
     SideEffects = sideEffects,
+    Message = message
+  };
+
+  /// <summary>
+  /// Creates a result indicating the effect should be added along with side effect data.
+  /// </summary>
+  public static EffectAddResult AddWithSideEffects(string? message, object? sideEffectData) => new()
+  {
+    Outcome = EffectAddOutcome.AddWithSideEffects,
+    SideEffectData = sideEffectData,
     Message = message
   };
 }

@@ -1383,6 +1383,314 @@ public class EffectsTests
   }
 
   #endregion
+
+  #region DrugState Tests
+
+  [TestMethod]
+  public void DrugState_Serialize_RoundTrips()
+  {
+    var state = new DrugState
+    {
+      DrugName = "Test Drug",
+      Description = "A test drug",
+      Category = DrugCategory.Stimulant,
+      TotalDurationRounds = 60,
+      ElapsedRounds = 10,
+      SafeDoses = 2,
+      CurrentDoses = 1,
+      RemovalDifficulty = 10,
+      Tags = ["Drug", "Combat"],
+      Modifiers =
+      [
+        new BuffModifier { Type = BuffModifierType.AbilityScoreGlobal, Value = 2 }
+      ]
+    };
+
+    var json = state.Serialize();
+    var restored = DrugState.Deserialize(json);
+
+    Assert.AreEqual(state.DrugName, restored.DrugName);
+    Assert.AreEqual(state.Category, restored.Category);
+    Assert.AreEqual(state.TotalDurationRounds, restored.TotalDurationRounds);
+    Assert.AreEqual(state.SafeDoses, restored.SafeDoses);
+    Assert.AreEqual(2, restored.Tags.Count);
+  }
+
+  [TestMethod]
+  public void DrugState_IsOverSafeLimit_CalculatesCorrectly()
+  {
+    var state = new DrugState
+    {
+      SafeDoses = 2,
+      CurrentDoses = 2
+    };
+
+    Assert.IsFalse(state.IsOverSafeLimit);
+
+    state.CurrentDoses = 3;
+    Assert.IsTrue(state.IsOverSafeLimit);
+  }
+
+  [TestMethod]
+  public void DrugState_CreateStimulant_HasCorrectConfiguration()
+  {
+    var drug = DrugState.CreateStimulant("Caffeine", asBonus: 1, durationRounds: 60);
+
+    Assert.AreEqual("Caffeine", drug.DrugName);
+    Assert.AreEqual(DrugCategory.Stimulant, drug.Category);
+    Assert.AreEqual(1, drug.SafeDoses);
+    Assert.IsNotNull(drug.Crash);
+    Assert.IsNotNull(drug.Overdose);
+    Assert.IsTrue(drug.Interactions.Any(i => i.IncompatibleCategory == DrugCategory.Sedative));
+  }
+
+  [TestMethod]
+  public void DrugState_CreateSedative_HasCorrectConfiguration()
+  {
+    var drug = DrugState.CreateSedative("Morphine", painReduction: 3, durationRounds: 120);
+
+    Assert.AreEqual(DrugCategory.Sedative, drug.Category);
+    Assert.IsNotNull(drug.Crash);
+    Assert.AreEqual(CrashType.LingeringDebuff, drug.Crash.Type);
+  }
+
+  [TestMethod]
+  public void DrugState_CreateCombatDrug_HasCorrectConfiguration()
+  {
+    var drug = DrugState.CreateCombatDrug("Rage Serum", strBonus: 3, dexBonus: 2, durationRounds: 30);
+
+    Assert.AreEqual(DrugCategory.PerformanceEnhancer, drug.Category);
+    Assert.IsNotNull(drug.Crash);
+    Assert.AreEqual(CrashType.Wound, drug.Crash.Type);
+    Assert.AreEqual(2, drug.Modifiers.Count);
+  }
+
+  [TestMethod]
+  public void DrugState_CreateHealingPotion_HasHealingModifiers()
+  {
+    var drug = DrugState.CreateHealingPotion("Health Potion", healPerTick: 2, tickInterval: 5, durationRounds: 30);
+
+    Assert.AreEqual(DrugCategory.Healing, drug.Category);
+    Assert.AreEqual(2, drug.SafeDoses);
+    Assert.IsTrue(drug.Modifiers.Any(m => m.Type == BuffModifierType.HealingOverTime && m.Target == "FAT"));
+    Assert.IsTrue(drug.Modifiers.Any(m => m.Type == BuffModifierType.HealingOverTime && m.Target == "VIT"));
+  }
+
+  [TestMethod]
+  public void DrugState_CreateHallucinogen_HasCorrectInteractions()
+  {
+    var drug = DrugState.CreateHallucinogen("Dream Dust", ittBonus: 2, awarenessBonus: 3, durationRounds: 100);
+
+    Assert.AreEqual(DrugCategory.Hallucinogen, drug.Category);
+    Assert.IsTrue(drug.Interactions.Any(i => i.IncompatibleCategory == DrugCategory.Hallucinogen));
+  }
+
+  #endregion
+
+  #region DrugBehavior Tests
+
+  [TestMethod]
+  public void DrugBehavior_ApplyDrug_CreatesEffect()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = DrugState.CreateStimulant("Caffeine", 1, 60);
+    var (success, message) = c.Effects.ApplyDrug(drug, effectPortal);
+
+    Assert.IsTrue(success, message);
+    Assert.IsTrue(c.Effects.IsUnderInfluence);
+  }
+
+  [TestMethod]
+  public void DrugBehavior_ApplyDrug_SameDrugIncreasesDoses()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug1 = DrugState.CreateHealingPotion("Health Potion", 2, 5, 30);
+    var drug2 = DrugState.CreateHealingPotion("Health Potion", 2, 5, 30);
+
+    var (success1, _) = c.Effects.ApplyDrug(drug1, effectPortal);
+    var (success2, message2) = c.Effects.ApplyDrug(drug2, effectPortal);
+
+    Assert.IsTrue(success1);
+    Assert.IsFalse(success2); // Rejected but dose increased
+    Assert.IsTrue(message2.Contains("dose increased"));
+  }
+
+  [TestMethod]
+  public void DrugBehavior_Overdose_TriggersWhenExceedingSafeDoses()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Create stimulant with SafeDoses = 1
+    var drug = DrugState.CreateStimulant("Strong Coffee", 2, 60);
+
+    // First dose - OK
+    c.Effects.ApplyDrug(drug, effectPortal);
+    Assert.IsFalse(c.Effects.HasOverdosed);
+
+    // Second dose - should trigger overdose
+    var (_, message) = c.Effects.ApplyDrug(drug, effectPortal);
+    Assert.IsTrue(message.Contains("Overdose"));
+  }
+
+  [TestMethod]
+  public void DrugBehavior_GetAbilityScoreModifiers_AppliesBonus()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = DrugState.CreateStimulant("Focus Pill", asBonus: 2, durationRounds: 60);
+    c.Effects.ApplyDrug(drug, effectPortal);
+
+    var modifier = c.Effects.GetAbilityScoreModifier("Any Skill", "INT", 10);
+    Assert.AreEqual(2, modifier);
+  }
+
+  [TestMethod]
+  public void DrugBehavior_GetAttributeModifiers_AppliesBonus()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = DrugState.CreateCombatDrug("Rage Serum", strBonus: 3, dexBonus: 2, durationRounds: 30);
+    c.Effects.ApplyDrug(drug, effectPortal);
+
+    Assert.AreEqual(3, c.Effects.GetAttributeModifier("STR", 10));
+    Assert.AreEqual(2, c.Effects.GetAttributeModifier("DEX", 10));
+  }
+
+  [TestMethod]
+  public void DrugBehavior_HealingPotion_AppliesHealingOverTime()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = DrugState.CreateHealingPotion("Health Potion", healPerTick: 3, tickInterval: 5, durationRounds: 30);
+    c.Effects.ApplyDrug(drug, effectPortal);
+
+    var initialHeal = c.Fatigue.PendingHealing;
+
+    // Run 4 rounds - no healing yet
+    for (int i = 0; i < 4; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+    Assert.AreEqual(initialHeal, c.Fatigue.PendingHealing);
+
+    // 5th round triggers healing
+    c.Effects.EndOfRound();
+    Assert.IsTrue(c.Fatigue.PendingHealing > initialHeal);
+  }
+
+  [TestMethod]
+  public void DrugBehavior_Crash_DealsDamageOnExpiration()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = DrugState.CreateStimulant("Quick Stim", asBonus: 2, durationRounds: 5);
+    c.Effects.ApplyDrug(drug, effectPortal);
+
+    var initialFat = c.Fatigue.PendingDamage;
+
+    // Run through duration
+    for (int i = 0; i < 5; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    // Should have taken crash damage
+    Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "Crash should have dealt damage");
+    Assert.IsFalse(c.Effects.IsUnderInfluence, "Drug should have expired");
+  }
+
+  [TestMethod]
+  public void DrugBehavior_TryNeutralize_SucceedsWithSufficientPower()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var drug = new DrugState
+    {
+      DrugName = "Test Drug",
+      TotalDurationRounds = 100,
+      RemovalDifficulty = 8,
+      Tags = ["Drug"]
+    };
+    c.Effects.ApplyDrug(drug, effectPortal);
+
+    // Weak antidote fails
+    var failResult = c.Effects.TryNeutralizeDrug("Test Drug", 5);
+    Assert.IsFalse(failResult);
+    Assert.IsTrue(c.Effects.IsUnderInfluence);
+
+    // Strong antidote succeeds
+    var successResult = c.Effects.TryNeutralizeDrug("Test Drug", 10);
+    Assert.IsTrue(successResult);
+    Assert.IsFalse(c.Effects.IsUnderInfluence);
+  }
+
+  [TestMethod]
+  public void DrugBehavior_DrugInteraction_CreatesAdverseReaction()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Apply stimulant first
+    var stimulant = DrugState.CreateStimulant("Upper", 2, 60);
+    c.Effects.ApplyDrug(stimulant, effectPortal);
+
+    var initialFat = c.Fatigue.PendingDamage;
+
+    // Apply sedative (incompatible)
+    var sedative = DrugState.CreateSedative("Downer", 3, 60);
+    var (success, message) = c.Effects.ApplyDrug(sedative, effectPortal);
+
+    // Both drugs should be applied, but with adverse reaction
+    Assert.IsTrue(success);
+    Assert.IsTrue(message.Contains("adverse reaction"));
+    Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "Adverse reaction should deal damage");
+  }
+
+  [TestMethod]
+  public void DrugBehavior_GetActiveDrugs_ReturnsAllDrugs()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    c.Effects.ApplyDrug(DrugState.CreateStimulant("Drug A", 1, 60), effectPortal);
+    c.Effects.ApplyDrug(DrugState.CreateHealingPotion("Drug B", 2, 5, 30), effectPortal);
+
+    var activeDrugs = c.Effects.GetActiveDrugs().ToList();
+    Assert.AreEqual(2, activeDrugs.Count);
+  }
+
+  #endregion
 }
+
 
 

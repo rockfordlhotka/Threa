@@ -405,7 +405,54 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
   #endregion
 
+  #region Drug Helpers
+
+  /// <summary>
+  /// Applies a drug to the character.
+  /// </summary>
+  /// <param name="drugState">The drug configuration.</param>
+  /// <param name="effectPortal">Portal for creating the effect.</param>
+  /// <returns>Tuple of (success, message) indicating result and any warnings.</returns>
+  public (bool Success, string Message) ApplyDrug(DrugState drugState, IChildDataPortal<EffectRecord> effectPortal)
+  {
+    return DrugBehavior.ApplyDrug(Character, drugState, effectPortal);
+  }
+
+  /// <summary>
+  /// Checks if the character is under the influence of any drug.
+  /// </summary>
+  public bool IsUnderInfluence => DrugBehavior.IsUnderInfluence(Character);
+
+  /// <summary>
+  /// Checks if the character has overdosed on any drug.
+  /// </summary>
+  public bool HasOverdosed => DrugBehavior.HasOverdosed(Character);
+
+  /// <summary>
+  /// Gets all active drugs.
+  /// </summary>
+  public IEnumerable<(string Name, DrugState State)> GetActiveDrugs()
+  {
+    return DrugBehavior.GetActiveDrugs(Character);
+  }
+
+  /// <summary>
+  /// Attempts to neutralize a drug with an antidote.
+  /// </summary>
+  /// <param name="drugName">The name of the drug to neutralize.</param>
+  /// <param name="antidotePower">The power/quality of the antidote.</param>
+  /// <returns>True if the drug was neutralized.</returns>
+  public bool TryNeutralizeDrug(string drugName, int antidotePower)
+  {
+    return DrugBehavior.TryNeutralize(Character, drugName, antidotePower);
+  }
+
+  #endregion
+
   #region Query Helpers
+
+
+
 
 
 
