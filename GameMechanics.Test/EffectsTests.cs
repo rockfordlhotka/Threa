@@ -462,6 +462,13 @@ public class EffectsTests
   }
 
   [TestMethod]
+  public void EffectBehaviorFactory_GetBehavior_ReturnsPoisonBehavior()
+  {
+    var behavior = EffectBehaviorFactory.GetBehavior(EffectType.Poison);
+    Assert.IsInstanceOfType(behavior, typeof(PoisonBehavior));
+  }
+
+  [TestMethod]
   public void EffectBehaviorFactory_GetBehavior_ReturnsDefaultForUnknown()
   {
     var behavior = EffectBehaviorFactory.GetBehavior(EffectType.Environmental);
@@ -469,4 +476,513 @@ public class EffectsTests
   }
 
   #endregion
+
+  #region PoisonState Tests
+
+  [TestMethod]
+  public void PoisonState_Serialize_RoundTrips()
+  {
+    var state = new PoisonState
+    {
+      PoisonName = "Test Poison",
+      DamageType = PoisonDamageType.Combined,
+      BaseFatigueDamage = 3,
+      BaseVitalityDamage = 2,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 5,
+      TotalDurationRounds = 100,
+      ElapsedRounds = 20,
+      BaseASPenalty = -3,
+      CanCreateWounds = true,
+      WoundThreshold = 0.3,
+      Stacks = 2,
+      MaxStacks = 5
+    };
+
+    var json = state.Serialize();
+    var restored = PoisonState.Deserialize(json);
+
+    Assert.AreEqual(state.PoisonName, restored.PoisonName);
+    Assert.AreEqual(state.DamageType, restored.DamageType);
+    Assert.AreEqual(state.BaseFatigueDamage, restored.BaseFatigueDamage);
+    Assert.AreEqual(state.BaseVitalityDamage, restored.BaseVitalityDamage);
+    Assert.AreEqual(state.TickIntervalRounds, restored.TickIntervalRounds);
+    Assert.AreEqual(state.RoundsUntilNextTick, restored.RoundsUntilNextTick);
+    Assert.AreEqual(state.TotalDurationRounds, restored.TotalDurationRounds);
+    Assert.AreEqual(state.ElapsedRounds, restored.ElapsedRounds);
+    Assert.AreEqual(state.BaseASPenalty, restored.BaseASPenalty);
+    Assert.AreEqual(state.CanCreateWounds, restored.CanCreateWounds);
+    Assert.AreEqual(state.WoundThreshold, restored.WoundThreshold);
+    Assert.AreEqual(state.Stacks, restored.Stacks);
+    Assert.AreEqual(state.MaxStacks, restored.MaxStacks);
+  }
+
+  [TestMethod]
+  public void PoisonState_EffectivenessMultiplier_DecreasesOverTime()
+  {
+    var state = new PoisonState
+    {
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0
+    };
+
+    // At start, effectiveness is 100%
+    Assert.AreEqual(1.0, state.EffectivenessMultiplier);
+
+    // At 50% elapsed, effectiveness is 50%
+    state.ElapsedRounds = 50;
+    Assert.AreEqual(0.5, state.EffectivenessMultiplier);
+
+    // At 90% elapsed, effectiveness is 10%
+    state.ElapsedRounds = 90;
+    Assert.AreEqual(0.1, state.EffectivenessMultiplier, 0.001);
+
+    // At 100% elapsed, effectiveness is 0%
+    state.ElapsedRounds = 100;
+    Assert.AreEqual(0.0, state.EffectivenessMultiplier);
+  }
+
+  [TestMethod]
+  public void PoisonState_CurrentDamage_ScalesWithEffectiveness()
+  {
+    var state = new PoisonState
+    {
+      BaseFatigueDamage = 4,
+      BaseVitalityDamage = 2,
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0,
+      Stacks = 1
+    };
+
+    // At start, full damage
+    Assert.AreEqual(4, state.CurrentFatigueDamage);
+    Assert.AreEqual(2, state.CurrentVitalityDamage);
+
+    // At 50% elapsed, half damage (ceiling)
+    state.ElapsedRounds = 50;
+    Assert.AreEqual(2, state.CurrentFatigueDamage); // ceil(4 * 0.5) = 2
+    Assert.AreEqual(1, state.CurrentVitalityDamage); // ceil(2 * 0.5) = 1
+
+    // Near end, minimal damage
+    state.ElapsedRounds = 95;
+    Assert.AreEqual(1, state.CurrentFatigueDamage); // ceil(4 * 0.05) = 1
+    Assert.AreEqual(1, state.CurrentVitalityDamage); // ceil(2 * 0.05) = 1
+  }
+
+  [TestMethod]
+  public void PoisonState_CurrentDamage_ScalesWithStacks()
+  {
+    var state = new PoisonState
+    {
+      BaseFatigueDamage = 2,
+      BaseVitalityDamage = 1,
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0,
+      Stacks = 3
+    };
+
+    // Stacks multiply base damage
+    Assert.AreEqual(6, state.CurrentFatigueDamage); // 2 * 3
+    Assert.AreEqual(3, state.CurrentVitalityDamage); // 1 * 3
+  }
+
+  [TestMethod]
+  public void PoisonState_CurrentASPenalty_DiminishesOverTime()
+  {
+    var state = new PoisonState
+    {
+      BaseASPenalty = -4,
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0,
+      Stacks = 1
+    };
+
+    // At start, full penalty
+    Assert.AreEqual(-4, state.CurrentASPenalty);
+
+    // At 50% elapsed, half penalty
+    state.ElapsedRounds = 50;
+    Assert.AreEqual(-2, state.CurrentASPenalty); // ceil(4 * 0.5) = 2, negated = -2
+
+    // Near end, minimal penalty
+    state.ElapsedRounds = 90;
+    Assert.AreEqual(-1, state.CurrentASPenalty);
+  }
+
+  [TestMethod]
+  public void PoisonState_IsInWoundPhase_TrueWhenFresh()
+  {
+    var state = new PoisonState
+    {
+      CanCreateWounds = true,
+      WoundThreshold = 0.25,
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0
+    };
+
+    // At start (effectiveness 1.0), should be in wound phase
+    Assert.IsTrue(state.IsInWoundPhase);
+
+    // At 20% elapsed (effectiveness 0.8), still in wound phase
+    state.ElapsedRounds = 20;
+    Assert.IsTrue(state.IsInWoundPhase);
+
+    // At 30% elapsed (effectiveness 0.7), past wound phase
+    state.ElapsedRounds = 30;
+    Assert.IsFalse(state.IsInWoundPhase);
+  }
+
+  [TestMethod]
+  public void PoisonState_CreateWeakPoison_HasCorrectDefaults()
+  {
+    var poison = PoisonState.CreateWeakPoison();
+
+    Assert.AreEqual("Weak Poison", poison.PoisonName);
+    Assert.AreEqual(PoisonDamageType.FatigueOnly, poison.DamageType);
+    Assert.AreEqual(2, poison.BaseFatigueDamage);
+    Assert.AreEqual(0, poison.BaseVitalityDamage);
+    Assert.IsFalse(poison.CanCreateWounds);
+  }
+
+  [TestMethod]
+  public void PoisonState_CreateStrongPoison_HasCorrectDefaults()
+  {
+    var poison = PoisonState.CreateStrongPoison();
+
+    Assert.AreEqual("Strong Poison", poison.PoisonName);
+    Assert.AreEqual(PoisonDamageType.VitalityOnly, poison.DamageType);
+    Assert.AreEqual(0, poison.BaseFatigueDamage);
+    Assert.AreEqual(2, poison.BaseVitalityDamage);
+    Assert.IsTrue(poison.CanCreateWounds);
+  }
+
+  [TestMethod]
+  public void PoisonState_CreateDeadlyPoison_HasCorrectDefaults()
+  {
+    var poison = PoisonState.CreateDeadlyPoison();
+
+    Assert.AreEqual("Deadly Poison", poison.PoisonName);
+    Assert.AreEqual(PoisonDamageType.Combined, poison.DamageType);
+    Assert.IsTrue(poison.BaseFatigueDamage > 0);
+    Assert.IsTrue(poison.BaseVitalityDamage > 0);
+    Assert.IsTrue(poison.CanCreateWounds);
+  }
+
+  [TestMethod]
+  public void PoisonState_CreateSleepPoison_HasCorrectDefaults()
+  {
+    var poison = PoisonState.CreateSleepPoison();
+
+    Assert.AreEqual("Sleep Poison", poison.PoisonName);
+    Assert.AreEqual(PoisonDamageType.FatigueOnly, poison.DamageType);
+    Assert.IsTrue(poison.BaseFatigueDamage > 0);
+    Assert.AreEqual(0, poison.BaseVitalityDamage);
+    Assert.IsFalse(poison.CanCreateWounds);
+  }
+
+  #endregion
+
+  #region PoisonBehavior Tests
+
+  [TestMethod]
+  public void PoisonBehavior_ApplyPoison_CreatesEffect()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = PoisonState.CreateWeakPoison();
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    Assert.AreEqual(1, c.Effects.Count);
+    Assert.IsTrue(c.Effects.IsPoisoned);
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_ApplyPoison_SameNameStacks()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison1 = PoisonState.CreateWeakPoison();
+    var poison2 = PoisonState.CreateWeakPoison();
+
+    c.Effects.ApplyPoison(poison1, effectPortal);
+    c.Effects.ApplyPoison(poison2, effectPortal);
+
+    // Should still be one effect, but stacked
+    Assert.AreEqual(1, c.Effects.Count);
+
+    var activePoisons = c.Effects.GetActivePoisons().ToList();
+    Assert.AreEqual(1, activePoisons.Count);
+    Assert.AreEqual(2, activePoisons[0].State.Stacks);
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_ApplyPoison_DifferentNamesDoNotStack()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var weak = PoisonState.CreateWeakPoison();
+    var strong = PoisonState.CreateStrongPoison();
+
+    c.Effects.ApplyPoison(weak, effectPortal);
+    c.Effects.ApplyPoison(strong, effectPortal);
+
+    Assert.AreEqual(2, c.Effects.Count);
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_OnTick_DealsFatigueDamage()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Create a poison with short tick interval
+    var poison = new PoisonState
+    {
+      PoisonName = "Quick Test Poison",
+      DamageType = PoisonDamageType.FatigueOnly,
+      BaseFatigueDamage = 3,
+      TickIntervalRounds = 5,
+      RoundsUntilNextTick = 5,
+      TotalDurationRounds = 50
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    var initialFat = c.Fatigue.PendingDamage;
+
+    // Run 4 rounds - no damage yet
+    for (int i = 0; i < 4; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+    Assert.AreEqual(initialFat, c.Fatigue.PendingDamage, "No damage before tick");
+
+    // 5th round triggers damage
+    c.Effects.EndOfRound();
+    Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "Damage should be dealt on tick");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_OnTick_DealsVitalityDamage()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "VIT Test Poison",
+      DamageType = PoisonDamageType.VitalityOnly,
+      BaseVitalityDamage = 2,
+      TickIntervalRounds = 3,
+      RoundsUntilNextTick = 3,
+      TotalDurationRounds = 30
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    var initialVit = c.Vitality.PendingDamage;
+
+    // Run to tick
+    for (int i = 0; i < 3; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    Assert.IsTrue(c.Vitality.PendingDamage > initialVit, "VIT damage should be dealt");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_OnTick_DealsCombinedDamage()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "Combined Test Poison",
+      DamageType = PoisonDamageType.Combined,
+      BaseFatigueDamage = 2,
+      BaseVitalityDamage = 1,
+      TickIntervalRounds = 2,
+      RoundsUntilNextTick = 2,
+      TotalDurationRounds = 20
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    var initialFat = c.Fatigue.PendingDamage;
+    var initialVit = c.Vitality.PendingDamage;
+
+    // Run to tick
+    c.Effects.EndOfRound();
+    c.Effects.EndOfRound();
+
+    Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "FAT damage should be dealt");
+    Assert.IsTrue(c.Vitality.PendingDamage > initialVit, "VIT damage should be dealt");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_GetAbilityScoreModifiers_AppliesPenalty()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "Penalty Test Poison",
+      BaseASPenalty = -3,
+      TotalDurationRounds = 100,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 10
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    var modifier = c.Effects.GetAbilityScoreModifier("Any Skill", "DEX", 10);
+    Assert.AreEqual(-3, modifier);
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_PenaltyDiminishesOverTime()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "Diminishing Test",
+      BaseASPenalty = -4,
+      TotalDurationRounds = 100,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 10
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+
+    // Initial penalty
+    var initialPenalty = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+    Assert.AreEqual(-4, initialPenalty);
+
+    // Advance 50 rounds (50% through)
+    for (int i = 0; i < 50; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    var halfwayPenalty = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+    Assert.AreEqual(-2, halfwayPenalty); // ceil(4 * 0.5) = 2
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_ExpiresAfterDuration()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "Short Poison",
+      TotalDurationRounds = 10,
+      TickIntervalRounds = 5,
+      RoundsUntilNextTick = 5
+    };
+
+    c.Effects.ApplyPoison(poison, effectPortal);
+    Assert.IsTrue(c.Effects.IsPoisoned);
+
+    // Run through duration
+    for (int i = 0; i < 10; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    Assert.IsFalse(c.Effects.IsPoisoned, "Poison should have expired");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_StackingIncreasesEffect()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison = new PoisonState
+    {
+      PoisonName = "Stackable Poison",
+      BaseASPenalty = -2,
+      TotalDurationRounds = 100,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 10,
+      MaxStacks = 3
+    };
+
+    // Apply once
+    c.Effects.ApplyPoison(poison, effectPortal);
+    var penalty1 = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+
+    // Apply again (stacks)
+    c.Effects.ApplyPoison(poison, effectPortal);
+    var penalty2 = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+
+    // Penalty should be worse with stacks
+    Assert.IsTrue(penalty2 < penalty1, $"Stacked penalty {penalty2} should be worse than {penalty1}");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_TotalPoisonPenalty_SumsAllPoisons()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var poison1 = new PoisonState
+    {
+      PoisonName = "Poison A",
+      BaseASPenalty = -2,
+      TotalDurationRounds = 100,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 10
+    };
+
+    var poison2 = new PoisonState
+    {
+      PoisonName = "Poison B",
+      BaseASPenalty = -3,
+      TotalDurationRounds = 100,
+      TickIntervalRounds = 10,
+      RoundsUntilNextTick = 10
+    };
+
+    c.Effects.ApplyPoison(poison1, effectPortal);
+    c.Effects.ApplyPoison(poison2, effectPortal);
+
+    // Total should sum both penalties
+    Assert.AreEqual(-5, c.Effects.TotalPoisonPenalty);
+  }
+
+  #endregion
 }
+

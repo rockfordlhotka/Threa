@@ -329,6 +329,38 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
   #endregion
 
+  #region Poison Helpers
+
+  /// <summary>
+  /// Applies a poison to the character.
+  /// </summary>
+  /// <param name="poisonState">The poison configuration.</param>
+  /// <param name="effectPortal">Portal for creating the effect.</param>
+  public void ApplyPoison(PoisonState poisonState, IChildDataPortal<EffectRecord> effectPortal)
+  {
+    PoisonBehavior.ApplyPoison(Character, poisonState, effectPortal);
+  }
+
+  /// <summary>
+  /// Checks if the character is currently poisoned.
+  /// </summary>
+  public bool IsPoisoned => PoisonBehavior.IsPoisoned(Character);
+
+  /// <summary>
+  /// Gets all active poison states.
+  /// </summary>
+  public IEnumerable<(string Name, PoisonState State)> GetActivePoisons()
+  {
+    return PoisonBehavior.GetActivePoisons(Character);
+  }
+
+  /// <summary>
+  /// Gets the total AS penalty from all active poisons.
+  /// </summary>
+  public int TotalPoisonPenalty => PoisonBehavior.GetTotalPoisonPenalty(Character);
+
+  #endregion
+
   #region Query Helpers
 
   /// <summary>

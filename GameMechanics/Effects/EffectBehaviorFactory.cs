@@ -10,7 +10,8 @@ public static class EffectBehaviorFactory
 {
   private static readonly Dictionary<EffectType, IEffectBehavior> _behaviors = new()
   {
-    { EffectType.Wound, new Behaviors.WoundBehavior() }
+    { EffectType.Wound, new Behaviors.WoundBehavior() },
+    { EffectType.Poison, new Behaviors.PoisonBehavior() }
   };
 
   private static readonly IEffectBehavior _defaultBehavior = new Behaviors.DefaultEffectBehavior();
