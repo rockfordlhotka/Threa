@@ -361,7 +361,53 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
   #endregion
 
+  #region Spell Buff Helpers
+
+  /// <summary>
+  /// Applies a spell buff to the character.
+  /// </summary>
+  /// <param name="buffState">The buff configuration.</param>
+  /// <param name="effectPortal">Portal for creating the effect.</param>
+  /// <returns>True if the buff was applied, false if it failed (e.g., already active).</returns>
+  public bool ApplySpellBuff(SpellBuffState buffState, IChildDataPortal<EffectRecord> effectPortal)
+  {
+    return SpellBuffBehavior.ApplyBuff(Character, buffState, effectPortal);
+  }
+
+  /// <summary>
+  /// Checks if a specific buff is active.
+  /// </summary>
+  /// <param name="buffName">The name of the buff.</param>
+  /// <returns>True if the buff is active.</returns>
+  public bool HasBuff(string buffName)
+  {
+    return SpellBuffBehavior.HasBuff(Character, buffName);
+  }
+
+  /// <summary>
+  /// Gets all active spell buffs.
+  /// </summary>
+  public IEnumerable<(string Name, SpellBuffState State)> GetActiveBuffs()
+  {
+    return SpellBuffBehavior.GetActiveBuffs(Character);
+  }
+
+  /// <summary>
+  /// Attempts to dispel a buff.
+  /// </summary>
+  /// <param name="buffName">The name of the buff to dispel.</param>
+  /// <param name="dispelPower">The power of the dispel attempt.</param>
+  /// <returns>True if the buff was dispelled.</returns>
+  public bool TryDispelBuff(string buffName, int dispelPower)
+  {
+    return SpellBuffBehavior.TryDispel(Character, buffName, dispelPower);
+  }
+
+  #endregion
+
   #region Query Helpers
+
+
 
   /// <summary>
   /// Gets effects at a specific body location.

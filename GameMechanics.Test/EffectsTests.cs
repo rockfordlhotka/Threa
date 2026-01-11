@@ -984,5 +984,405 @@ public class EffectsTests
   }
 
   #endregion
+
+  #region SpellBuffState Tests
+
+  [TestMethod]
+  public void SpellBuffState_Serialize_RoundTrips()
+  {
+    var state = new SpellBuffState
+    {
+      BuffName = "Test Buff",
+      Description = "A test buff",
+      Source = "Test Spell",
+      TotalDurationRounds = 50,
+      ElapsedRounds = 10,
+      DiminishesOverTime = true,
+      CasterLevel = 5,
+      Modifiers =
+      [
+        new BuffModifier { Type = BuffModifierType.Attribute, Target = "STR", Value = 2 },
+        new BuffModifier { Type = BuffModifierType.AbilityScoreGlobal, Target = "All", Value = 1 }
+      ]
+    };
+
+    var json = state.Serialize();
+    var restored = SpellBuffState.Deserialize(json);
+
+    Assert.AreEqual(state.BuffName, restored.BuffName);
+    Assert.AreEqual(state.Description, restored.Description);
+    Assert.AreEqual(state.Source, restored.Source);
+    Assert.AreEqual(state.TotalDurationRounds, restored.TotalDurationRounds);
+    Assert.AreEqual(state.ElapsedRounds, restored.ElapsedRounds);
+    Assert.AreEqual(state.DiminishesOverTime, restored.DiminishesOverTime);
+    Assert.AreEqual(state.CasterLevel, restored.CasterLevel);
+    Assert.AreEqual(2, restored.Modifiers.Count);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_EffectivenessMultiplier_ConstantWhenNotDiminishing()
+  {
+    var state = new SpellBuffState
+    {
+      TotalDurationRounds = 100,
+      ElapsedRounds = 50,
+      DiminishesOverTime = false
+    };
+
+    Assert.AreEqual(1.0, state.EffectivenessMultiplier);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_EffectivenessMultiplier_DiminishesOverTime()
+  {
+    var state = new SpellBuffState
+    {
+      TotalDurationRounds = 100,
+      ElapsedRounds = 0,
+      DiminishesOverTime = true
+    };
+
+    Assert.AreEqual(1.0, state.EffectivenessMultiplier);
+
+    state.ElapsedRounds = 50;
+    Assert.AreEqual(0.5, state.EffectivenessMultiplier);
+
+    state.ElapsedRounds = 90;
+    Assert.AreEqual(0.1, state.EffectivenessMultiplier, 0.001);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_GetEffectiveValue_ConstantWhenNotDiminishing()
+  {
+    var state = new SpellBuffState
+    {
+      TotalDurationRounds = 100,
+      ElapsedRounds = 50,
+      DiminishesOverTime = false
+    };
+
+    var modifier = new BuffModifier { Value = 4 };
+    Assert.AreEqual(4, state.GetEffectiveValue(modifier));
+  }
+
+  [TestMethod]
+  public void SpellBuffState_GetEffectiveValue_ScalesWhenDiminishing()
+  {
+    var state = new SpellBuffState
+    {
+      TotalDurationRounds = 100,
+      ElapsedRounds = 50,
+      DiminishesOverTime = true
+    };
+
+    var modifier = new BuffModifier { Value = 4 };
+    Assert.AreEqual(2, state.GetEffectiveValue(modifier)); // ceil(4 * 0.5) = 2
+  }
+
+  [TestMethod]
+  public void SpellBuffState_CreateAttributeBuff_HasCorrectModifier()
+  {
+    var buff = SpellBuffState.CreateAttributeBuff("Strength", "STR", 3, 60);
+
+    Assert.AreEqual("Strength", buff.BuffName);
+    Assert.AreEqual(60, buff.TotalDurationRounds);
+    Assert.AreEqual(1, buff.Modifiers.Count);
+    Assert.AreEqual(BuffModifierType.Attribute, buff.Modifiers[0].Type);
+    Assert.AreEqual("STR", buff.Modifiers[0].Target);
+    Assert.AreEqual(3, buff.Modifiers[0].Value);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_CreateGlobalASBuff_HasCorrectModifier()
+  {
+    var buff = SpellBuffState.CreateGlobalASBuff("Heroism", 2, 100);
+
+    Assert.AreEqual(1, buff.Modifiers.Count);
+    Assert.AreEqual(BuffModifierType.AbilityScoreGlobal, buff.Modifiers[0].Type);
+    Assert.AreEqual(2, buff.Modifiers[0].Value);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_CreateSkillBuff_HasCorrectModifier()
+  {
+    var buff = SpellBuffState.CreateSkillBuff("Cat's Grace", "Dodge", 3, 60);
+
+    Assert.AreEqual(1, buff.Modifiers.Count);
+    Assert.AreEqual(BuffModifierType.AbilityScoreSkill, buff.Modifiers[0].Type);
+    Assert.AreEqual("Dodge", buff.Modifiers[0].Target);
+    Assert.AreEqual(3, buff.Modifiers[0].Value);
+  }
+
+  [TestMethod]
+  public void SpellBuffState_CreateHealingBuff_HasCorrectModifiers()
+  {
+    var buff = SpellBuffState.CreateHealingBuff("Regeneration", 2, 5, 60, healsFatigue: true, healsVitality: true);
+
+    Assert.AreEqual(2, buff.Modifiers.Count);
+    Assert.IsTrue(buff.Modifiers.Any(m => m.Target == "FAT" && m.Value == 2));
+    Assert.IsTrue(buff.Modifiers.Any(m => m.Target == "VIT" && m.Value == 2));
+  }
+
+  [TestMethod]
+  public void SpellBuffState_CreateCombatBuff_HasMultipleModifiers()
+  {
+    var buff = SpellBuffState.CreateCombatBuff("Battle Fury", strBonus: 2, dexBonus: 1, asBonus: 1, durationRounds: 30);
+
+    Assert.AreEqual(3, buff.Modifiers.Count);
+    Assert.IsTrue(buff.Modifiers.Any(m => m.Type == BuffModifierType.Attribute && m.Target == "STR"));
+    Assert.IsTrue(buff.Modifiers.Any(m => m.Type == BuffModifierType.Attribute && m.Target == "DEX"));
+    Assert.IsTrue(buff.Modifiers.Any(m => m.Type == BuffModifierType.AbilityScoreGlobal));
+  }
+
+  #endregion
+
+  #region SpellBuffBehavior Tests
+
+  [TestMethod]
+  public void SpellBuffBehavior_ApplyBuff_CreatesEffect()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateGlobalASBuff("Test Buff", 2, 60);
+    var result = c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    Assert.IsTrue(result, "Buff should be applied");
+    Assert.AreEqual(1, c.Effects.Count);
+    Assert.IsTrue(c.Effects.HasBuff("Test Buff"));
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_ApplyBuff_SameNameFails()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff1 = SpellBuffState.CreateGlobalASBuff("Heroism", 2, 60);
+    var buff2 = SpellBuffState.CreateGlobalASBuff("Heroism", 3, 120);
+
+    var result1 = c.Effects.ApplySpellBuff(buff1, effectPortal);
+    var result2 = c.Effects.ApplySpellBuff(buff2, effectPortal);
+
+    Assert.IsTrue(result1, "First buff should apply");
+    Assert.IsFalse(result2, "Second buff with same name should fail");
+    Assert.AreEqual(1, c.Effects.Count);
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_ApplyBuff_DifferentNamesSucceed()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff1 = SpellBuffState.CreateGlobalASBuff("Heroism", 2, 60);
+    var buff2 = SpellBuffState.CreateAttributeBuff("Bull's Strength", "STR", 3, 60);
+
+    c.Effects.ApplySpellBuff(buff1, effectPortal);
+    c.Effects.ApplySpellBuff(buff2, effectPortal);
+
+    Assert.AreEqual(2, c.Effects.Count);
+    Assert.IsTrue(c.Effects.HasBuff("Heroism"));
+    Assert.IsTrue(c.Effects.HasBuff("Bull's Strength"));
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_GetAttributeModifiers_AppliesBonus()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateAttributeBuff("Bull's Strength", "STR", 3, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    var modifier = c.Effects.GetAttributeModifier("STR", 10);
+    Assert.AreEqual(3, modifier);
+
+    // Other attributes unaffected
+    var dexModifier = c.Effects.GetAttributeModifier("DEX", 10);
+    Assert.AreEqual(0, dexModifier);
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_GetAbilityScoreModifiers_GlobalApplies()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateGlobalASBuff("Heroism", 2, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    var modifier = c.Effects.GetAbilityScoreModifier("Any Skill", "DEX", 10);
+    Assert.AreEqual(2, modifier);
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_GetAbilityScoreModifiers_SkillSpecificApplies()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateSkillBuff("Cat's Grace", "Dodge", 3, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Dodge should get bonus
+    var dodgeModifier = c.Effects.GetAbilityScoreModifier("Dodge", "DEX", 10);
+    Assert.AreEqual(3, dodgeModifier);
+
+    // Other skills should not
+    var meleeModifier = c.Effects.GetAbilityScoreModifier("Melee", "STR", 10);
+    Assert.AreEqual(0, meleeModifier);
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_OnTick_HealingAppliesAtInterval()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateHealingBuff("Regeneration", healPerTick: 3, tickIntervalRounds: 5, durationRounds: 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    var initialHeal = c.Fatigue.PendingHealing;
+
+    // Run 4 rounds - no healing yet
+    for (int i = 0; i < 4; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+    Assert.AreEqual(initialHeal, c.Fatigue.PendingHealing);
+
+    // 5th round triggers healing
+    c.Effects.EndOfRound();
+    Assert.AreEqual(initialHeal + 3, c.Fatigue.PendingHealing);
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_ExpiresAfterDuration()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateGlobalASBuff("Short Buff", 2, 10);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    Assert.IsTrue(c.Effects.HasBuff("Short Buff"));
+
+    // Run through duration
+    for (int i = 0; i < 10; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    Assert.IsFalse(c.Effects.HasBuff("Short Buff"), "Buff should have expired");
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_DiminishingBuff_ReducesOverTime()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateGlobalASBuff("Fading Heroism", 4, 100, diminishes: true);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Initial bonus
+    var initialModifier = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+    Assert.AreEqual(4, initialModifier);
+
+    // Advance 50 rounds
+    for (int i = 0; i < 50; i++)
+    {
+      c.Effects.EndOfRound();
+    }
+
+    var halfwayModifier = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
+    Assert.AreEqual(2, halfwayModifier); // ceil(4 * 0.5) = 2
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_TryDispel_SucceedsWithSufficientPower()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = new SpellBuffState
+    {
+      BuffName = "Protected Buff",
+      CasterLevel = 5,
+      TotalDurationRounds = 100,
+      Modifiers = [new BuffModifier { Type = BuffModifierType.AbilityScoreGlobal, Value = 2 }]
+    };
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Dispel with insufficient power fails
+    var failedDispel = c.Effects.TryDispelBuff("Protected Buff", 4);
+    Assert.IsFalse(failedDispel);
+    Assert.IsTrue(c.Effects.HasBuff("Protected Buff"));
+
+    // Dispel with sufficient power succeeds
+    var successDispel = c.Effects.TryDispelBuff("Protected Buff", 5);
+    Assert.IsTrue(successDispel);
+    Assert.IsFalse(c.Effects.HasBuff("Protected Buff"));
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_GetActiveBuffs_ReturnsAllBuffs()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    c.Effects.ApplySpellBuff(SpellBuffState.CreateGlobalASBuff("Buff A", 1, 60), effectPortal);
+    c.Effects.ApplySpellBuff(SpellBuffState.CreateAttributeBuff("Buff B", "STR", 2, 60), effectPortal);
+
+    var activeBuffs = c.Effects.GetActiveBuffs().ToList();
+    Assert.AreEqual(2, activeBuffs.Count);
+    Assert.IsTrue(activeBuffs.Any(b => b.Name == "Buff A"));
+    Assert.IsTrue(activeBuffs.Any(b => b.Name == "Buff B"));
+  }
+
+  [TestMethod]
+  public void SpellBuffBehavior_MultipleModifiers_AllApply()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var buff = SpellBuffState.CreateCombatBuff("Battle Fury", strBonus: 2, dexBonus: 1, asBonus: 1, durationRounds: 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Attribute modifiers
+    Assert.AreEqual(2, c.Effects.GetAttributeModifier("STR", 10));
+    Assert.AreEqual(1, c.Effects.GetAttributeModifier("DEX", 10));
+
+    // AS modifier
+    Assert.AreEqual(1, c.Effects.GetAbilityScoreModifier("Any", "STR", 10));
+  }
+
+  #endregion
 }
+
 
