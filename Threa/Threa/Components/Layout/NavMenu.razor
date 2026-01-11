@@ -17,6 +17,12 @@
         <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="play">
+                        <span class="bi bi-play-fill-nav-menu" aria-hidden="true"></span> Play
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="player/characters">
                         <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My characters
                     </NavLink>
@@ -40,6 +46,16 @@
             <Authorized>
                 <div class="nav-item px-3 mt-3">
                     <strong class="text-light">Game Master</strong>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="gamemaster/tables">
+                        <span class="bi bi-table-nav-menu" aria-hidden="true"></span> Game Tables
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="gamemaster/characters">
+                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Manage Characters
+                    </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="gamemaster/items">

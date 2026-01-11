@@ -10,6 +10,7 @@
 @inject RenderModeProvider RenderModeProvider
 @inject ViewModel<GameMechanics.CharacterEdit> vm
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject IDataPortal<GameMechanics.CharacterActivator> activatorPortal
 @inject NavigationManager NavigationManager
 
 <h3>Activate Character</h3>
@@ -80,34 +81,39 @@ else
 }
 
 @code {
-    [Parameter]
-    public int id { get; set; }
+[Parameter]
+public int id { get; set; }
 
-    private bool isActivating = false;
+private bool isActivating = false;
 
-    protected override async Task OnInitializedAsync()
+protected override async Task OnInitializedAsync()
+{
+    await StateManager.InitializeAsync();
+
+    vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+    vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+    if (RenderModeProvider.GetRenderMode(this).IsInteractive())
     {
-        await StateManager.InitializeAsync();
-
-        vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
-        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
-        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
-
-        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
-        {
-            await vm.RefreshAsync(() => characterPortal.FetchAsync(id));
-        }
+        await vm.RefreshAsync(() => characterPortal.FetchAsync(id));
     }
+}
 
-    private async void ActivateAsync()
+    private async Task ActivateAsync()
     {
         isActivating = true;
         StateHasChanged();
 
-        vm.Model.Activate();
-        await vm.SaveAsync();
+        // Execute the activation command, passing characterId directly
+        var command = await activatorPortal.ExecuteAsync(id);
 
+        // Refresh the character to show updated state
+        await vm.RefreshAsync(() => characterPortal.FetchAsync(id));
+        
         isActivating = false;
         StateHasChanged();
+        
+        // Navigate back to character list
+        NavigationManager.NavigateTo("/player/characters");
     }
 }

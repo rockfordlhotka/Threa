@@ -59,18 +59,30 @@ namespace Threa.Dal.Sqlite
         {
             try
             {
-                var sql = "SELECT Json FROM Characters WHERE Id = @Id";
+                var sql = "SELECT Id, PlayerId, Json FROM Characters WHERE Id = @Id";
                 using var command = Connection.CreateCommand();
                 command.CommandText = sql;
                 command.Parameters.AddWithValue("@Id", id);
                 using var reader = await command.ExecuteReaderAsync();
                 if (!reader.Read())
                     throw new NotFoundException($"{nameof(Character)} {id}");
-                string json = reader.GetString(0);
+                int characterId = reader.GetInt32(0);
+                int playerId = reader.GetInt32(1);
+                string json = reader.GetString(2);
                 var result = System.Text.Json.JsonSerializer.Deserialize<Character>(json);
                 if (result == null)
                     throw new OperationFailedException($"Character {id} not found");
+                result.Id = characterId;
+                result.PlayerId = playerId;
                 return result;
+            }
+            catch (NotFoundException)
+            {
+                throw;
+            }
+            catch (OperationFailedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -82,7 +94,7 @@ namespace Threa.Dal.Sqlite
         {
             try
             {
-                var sql = "SELECT Json FROM Characters WHERE PlayerId = @PlayerId";
+                var sql = "SELECT Id, PlayerId, Json FROM Characters WHERE PlayerId = @PlayerId";
                 using var command = Connection.CreateCommand();
                 command.CommandText = sql;
                 command.Parameters.AddWithValue("@PlayerId", playerId);
@@ -90,16 +102,52 @@ namespace Threa.Dal.Sqlite
                 List<Character> characters = new();
                 while (reader.Read())
                 {
-                    string json = reader.GetString(0);
+                    int characterId = reader.GetInt32(0);
+                    int characterPlayerId = reader.GetInt32(1);
+                    string json = reader.GetString(2);
                     var obj = System.Text.Json.JsonSerializer.Deserialize<Character>(json);
                     if (obj != null)
+                    {
+                        obj.Id = characterId;
+                        obj.PlayerId = characterPlayerId;
                         characters.Add(obj);
+                    }
                 }
                 return characters;
             }
             catch (Exception ex)
             {
                 throw new OperationFailedException("Error getting characters", ex);
+            }
+        }
+
+        public async Task<List<Character>> GetAllCharactersAsync()
+        {
+            try
+            {
+                var sql = "SELECT Id, PlayerId, Json FROM Characters";
+                using var command = Connection.CreateCommand();
+                command.CommandText = sql;
+                using var reader = await command.ExecuteReaderAsync();
+                List<Character> characters = new();
+                while (reader.Read())
+                {
+                    int characterId = reader.GetInt32(0);
+                    int playerId = reader.GetInt32(1);
+                    string json = reader.GetString(2);
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<Character>(json);
+                    if (obj != null)
+                    {
+                        obj.Id = characterId;
+                        obj.PlayerId = playerId;
+                        characters.Add(obj);
+                    }
+                }
+                return characters;
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting all characters", ex);
             }
         }
 
@@ -127,12 +175,11 @@ namespace Threa.Dal.Sqlite
                 {
                     sql = "SELECT last_insert_rowid()";
                     using var idCommand = Connection.CreateCommand();
+                    idCommand.CommandText = sql;
+                    long? lastInsertId = (long?)await idCommand.ExecuteScalarAsync();
+                    if (lastInsertId.HasValue)
                     {
-                        long? lastInsertId = (long?)idCommand.ExecuteScalar();
-                        if (lastInsertId.HasValue)
-                        {
-                            character.Id = (int)lastInsertId.Value;
-                        }
+                        character.Id = (int)lastInsertId.Value;
                     }
                 }
                 return character;

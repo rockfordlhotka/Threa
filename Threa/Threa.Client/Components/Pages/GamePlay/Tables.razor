@@ -1,0 +1,200 @@
+@page "/gamemaster/tables"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Threa.Services
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+@inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
+
+<PageTitle>Game Tables</PageTitle>
+
+<h3>Game Tables</h3>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="CreateNewTable">
+        Create New Table
+    </button>
+</div>
+
+@if (tables == null)
+{
+    <p>Loading tables...</p>
+}
+else if (!tables.Any())
+{
+    <div class="alert alert-info">
+        <p>You don't have any game tables yet.</p>
+        <p>Create a table to start a gaming session with your players.</p>
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Round</th>
+                <th>Created</th>
+                <th>Last Activity</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var table in tables)
+            {
+                <tr>
+                    <td>@table.Name</td>
+                    <td>
+                        <span class="badge @GetStatusBadgeClass(table.Status)">
+                            @table.StatusDisplay
+                        </span>
+                    </td>
+                    <td>@table.CurrentRound</td>
+                    <td>@table.CreatedAt.ToString("g")</td>
+                    <td>@(table.LastActivityAt?.ToString("g") ?? "-")</td>
+                    <td>
+                        @if (table.Status != Threa.Dal.Dto.TableStatus.Ended)
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="() => OpenTable(table.Id)">
+                                Manage
+                            </button>
+                        }
+                        <button class="btn btn-sm btn-danger ms-1" @onclick="() => DeleteTable(table.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showCreateDialog)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Table</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCreateDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Table Name</label>
+                        <input type="text" class="form-control" @bind="newTableName"
+                               placeholder="e.g., Saturday Night Campaign" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCreateDialog">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveNewTable"
+                            disabled="@(string.IsNullOrWhiteSpace(newTableName))">
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IEnumerable<GameMechanics.GamePlay.TableInfo>? tables;
+    private string? errorMessage;
+    private bool showCreateDialog;
+    private string newTableName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            await LoadTables();
+        }
+    }
+
+    private async Task LoadTables()
+    {
+        try
+        {
+            var tableList = await tableListPortal.FetchAsync();
+            tables = tableList.AsEnumerable();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load tables: {ex.Message}";
+        }
+    }
+
+    private void CreateNewTable()
+    {
+        newTableName = "";
+        showCreateDialog = true;
+    }
+
+    private void CloseCreateDialog()
+    {
+        showCreateDialog = false;
+    }
+
+    private async Task SaveNewTable()
+    {
+        try
+        {
+            var newTable = await tablePortal.CreateAsync();
+            newTable.Name = newTableName;
+            await tablePortal.UpdateAsync(newTable);
+
+            showCreateDialog = false;
+            await LoadTables();
+
+            // Navigate to the new table
+            NavigationManager.NavigateTo($"/gamemaster/table/{newTable.Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create table: {ex.Message}";
+        }
+    }
+
+    private void OpenTable(Guid tableId)
+    {
+        NavigationManager.NavigateTo($"/gamemaster/table/{tableId}");
+    }
+
+    private async Task DeleteTable(Guid tableId)
+    {
+        try
+        {
+            await tablePortal.DeleteAsync(tableId);
+            await LoadTables();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete table: {ex.Message}";
+        }
+    }
+
+    private string GetStatusBadgeClass(Threa.Dal.Dto.TableStatus status) =>
+        status switch
+        {
+            Threa.Dal.Dto.TableStatus.Lobby => "bg-info",
+            Threa.Dal.Dto.TableStatus.Active => "bg-success",
+            Threa.Dal.Dto.TableStatus.Paused => "bg-warning",
+            Threa.Dal.Dto.TableStatus.Ended => "bg-secondary",
+            _ => "bg-secondary"
+        };
+}

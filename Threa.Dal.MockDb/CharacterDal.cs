@@ -36,6 +36,11 @@ namespace Threa.Dal.MockDb
       return Task.FromResult(character.ToList());
     }
 
+    public Task<List<Character>> GetAllCharactersAsync()
+    {
+      return Task.FromResult(MockDb.Characters.ToList());
+    }
+
     public Task<Character> SaveCharacterAsync(Character character)
     {
       lock (MockDb.Characters)

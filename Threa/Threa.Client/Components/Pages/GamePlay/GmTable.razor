@@ -1,0 +1,506 @@
+@page "/gamemaster/table/{TableId:guid}"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Threa.Services
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+@inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
+
+<PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (table == null)
+{
+    <div>Loading table...</div>
+}
+else
+{
+    <!-- Header Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-dark text-white rounded">
+        <div>
+            <h4 class="mb-0">@table.Name</h4>
+            <span class="badge @GetStatusBadgeClass()">@table.StatusDisplay</span>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-info fs-5">Round @table.CurrentRound</span>
+            @if (table.IsInCombat)
+            {
+                <span class="badge bg-danger">COMBAT</span>
+            }
+            @if (table.Status == Threa.Dal.Dto.TableStatus.Active)
+            {
+                <button class="btn btn-warning btn-sm" @onclick="PauseSession">Pause</button>
+            }
+            else if (table.Status == Threa.Dal.Dto.TableStatus.Paused)
+            {
+                <button class="btn btn-success btn-sm" @onclick="ResumeSession">Resume</button>
+            }
+            <button class="btn btn-danger btn-sm" @onclick="EndSession"
+                    disabled="@(table.Status == Threa.Dal.Dto.TableStatus.Ended)">
+                End Session
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Panel: Characters/NPCs -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Characters at Table</strong>
+                    <span class="badge bg-primary">@(tableCharacters?.Count() ?? 0)</span>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    @if (tableCharacters == null || !tableCharacters.Any())
+                    {
+                        <p class="text-muted">No characters have joined yet.</p>
+                        <p class="small">Share this link with players:</p>
+                        <code>@GetPlayerJoinLink()</code>
+                    }
+                    else
+                    {
+                        @foreach (var character in tableCharacters)
+                        {
+                            <div class="card mb-2 @(selectedCharacter?.CharacterId == character.CharacterId ? "border-primary" : "")"
+                                 @onclick="() => SelectCharacter(character)"
+                                 style="cursor: pointer;">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@character.CharacterName</strong>
+                                        <span class="badge @GetConnectionBadgeClass(character.ConnectionStatus)">
+                                            @character.ConnectionStatusDisplay
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-3 mt-1">
+                                        <small>
+                                            FAT: @character.FatValue/@character.FatMax
+                                            <div class="progress" style="height: 4px; width: 50px; display: inline-block;">
+                                                <div class="progress-bar bg-info" style="width: @GetPercent(character.FatValue, character.FatMax)%"></div>
+                                            </div>
+                                        </small>
+                                        <small>
+                                            VIT: @character.VitValue/@character.VitMax
+                                            <div class="progress" style="height: 4px; width: 50px; display: inline-block;">
+                                                <div class="progress-bar bg-danger" style="width: @GetPercent(character.VitValue, character.VitMax)%"></div>
+                                            </div>
+                                        </small>
+                                    </div>
+                                    <div class="mt-1">
+                                        <button class="btn btn-sm btn-outline-success" @onclick:stopPropagation="true"
+                                                @onclick="() => QuickHeal(character)">Heal</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick:stopPropagation="true"
+                                                @onclick="() => QuickDamage(character)">Damage</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- NPCs Panel -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>NPCs</strong>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="AddNpc">+ Add NPC</button>
+                </div>
+                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                    @if (npcs == null || !npcs.Any())
+                    {
+                        <p class="text-muted small">No NPCs at this table.</p>
+                    }
+                    else
+                    {
+                        @foreach (var npc in npcs)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>@npc.Name</span>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => RemoveNpc(npc.Id)">Remove</button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Selected Entity Details -->
+        <div class="col-md-4">
+            @if (selectedCharacter != null)
+            {
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <strong>@selectedCharacter.CharacterName</strong>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Species:</strong> @selectedCharacter.Species</p>
+                        <p><strong>FAT:</strong> @selectedCharacter.FatValue / @selectedCharacter.FatMax</p>
+                        <p><strong>VIT:</strong> @selectedCharacter.VitValue / @selectedCharacter.VitMax</p>
+                        <p><strong>AP:</strong> @selectedCharacter.ActionPoints / @selectedCharacter.ActionPointMax</p>
+
+                        <hr />
+
+                        <h6>Apply Damage</h6>
+                        <div class="input-group mb-2">
+                            <input type="number" class="form-control" placeholder="Amount" @bind="damageAmount" min="1" />
+                            <select class="form-select" @bind="damageType" style="max-width: 120px;">
+                                <option value="FAT">FAT</option>
+                                <option value="VIT">VIT</option>
+                            </select>
+                            <button class="btn btn-danger" @onclick="ApplyDamage">Apply</button>
+                        </div>
+
+                        <h6>Apply Healing</h6>
+                        <div class="input-group mb-2">
+                            <input type="number" class="form-control" placeholder="Amount" @bind="healAmount" min="1" />
+                            <select class="form-select" @bind="healType" style="max-width: 120px;">
+                                <option value="FAT">FAT</option>
+                                <option value="VIT">VIT</option>
+                            </select>
+                            <button class="btn btn-success" @onclick="ApplyHealing">Apply</button>
+                        </div>
+
+                        <h6>Apply Effect</h6>
+                        <div class="input-group mb-2">
+                            <select class="form-select" @bind="selectedEffect">
+                                <option value="">Select effect...</option>
+                                <option value="Stunned">Stunned</option>
+                                <option value="Blinded">Blinded</option>
+                                <option value="Prone">Prone</option>
+                            </select>
+                            <button class="btn btn-warning" @onclick="ApplyEffect"
+                                    disabled="@(string.IsNullOrEmpty(selectedEffect))">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body text-center text-muted">
+                        <p>Select a character to view details and apply actions.</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right Panel: Time Controls & Activity -->
+        <div class="col-md-4">
+            <!-- Time Controls -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <strong>Time Controls</strong>
+                </div>
+                <div class="card-body">
+                    @if (table.Status == Threa.Dal.Dto.TableStatus.Lobby)
+                    {
+                        <button class="btn btn-success btn-lg w-100" @onclick="StartSession">
+                            Start Session
+                        </button>
+                    }
+                    else if (table.Status == Threa.Dal.Dto.TableStatus.Active)
+                    {
+                        <div class="d-grid gap-2 mb-3">
+                            <button class="btn btn-primary" @onclick="AdvanceRound">
+                                Advance Round
+                            </button>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="roundsToAdvance"
+                                       min="1" max="100" />
+                                <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
+                                    Advance
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <h6>Combat Mode</h6>
+                        @if (table.IsInCombat)
+                        {
+                            <button class="btn btn-outline-success w-100" @onclick="ExitCombat">
+                                Exit Combat
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-danger w-100" @onclick="EnterCombat">
+                                Enter Combat
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- GM Announcement -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Send Announcement</strong>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" @bind="announcementText"
+                               placeholder="Message to all players..." />
+                        <button class="btn btn-primary" @onclick="SendAnnouncement"
+                                disabled="@(string.IsNullOrWhiteSpace(announcementText))">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card">
+                <div class="card-header">
+                    <strong>Activity Log</strong>
+                </div>
+                <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                    @if (activityLog.Count == 0)
+                    {
+                        <p class="text-muted small">No activity yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var entry in activityLog.TakeLast(20).Reverse())
+                        {
+                            <div class="small mb-1">
+                                <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                                @entry.Message
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    private GameMechanics.GamePlay.TableEdit? table;
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo>? tableCharacters;
+    private GameMechanics.GamePlay.TableCharacterInfo? selectedCharacter;
+    private List<NpcInfo>? npcs;
+    private string? errorMessage;
+    private List<ActivityLogEntry> activityLog = new();
+
+    // Form fields
+    private int damageAmount = 1;
+    private string damageType = "FAT";
+    private int healAmount = 1;
+    private string healType = "FAT";
+    private string selectedEffect = "";
+    private int roundsToAdvance = 5;
+    private string announcementText = "";
+
+    private record NpcInfo(Guid Id, string Name);
+    private record ActivityLogEntry(DateTime Timestamp, string Message);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            await LoadTable();
+        }
+    }
+
+    private async Task LoadTable()
+    {
+        try
+        {
+            table = await tablePortal.FetchAsync(TableId);
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
+            npcs = new List<NpcInfo>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load table: {ex.Message}";
+        }
+    }
+
+    private void AddLogEntry(string message)
+    {
+        activityLog.Add(new ActivityLogEntry(DateTime.Now, message));
+        if (activityLog.Count > 100) activityLog.RemoveAt(0);
+    }
+
+    private async Task StartSession()
+    {
+        if (table == null) return;
+        table.StartSession();
+        await SaveTable();
+        AddLogEntry("Session started");
+    }
+
+    private async Task PauseSession()
+    {
+        if (table == null) return;
+        table.PauseSession();
+        await SaveTable();
+        AddLogEntry("Session paused");
+    }
+
+    private async Task ResumeSession()
+    {
+        if (table == null) return;
+        table.ResumeSession();
+        await SaveTable();
+        AddLogEntry("Session resumed");
+    }
+
+    private async Task EndSession()
+    {
+        if (table == null) return;
+        table.EndSession();
+        await SaveTable();
+        AddLogEntry("Session ended");
+    }
+
+    private async Task AdvanceRound()
+    {
+        if (table == null) return;
+        table.AdvanceRound();
+        await SaveTable();
+        AddLogEntry($"Advanced to round {table.CurrentRound}");
+        // TODO: Publish RabbitMQ message for round advance
+    }
+
+    private async Task AdvanceMultipleRounds()
+    {
+        if (table == null) return;
+        table.AdvanceRounds(roundsToAdvance);
+        await SaveTable();
+        AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}");
+        // TODO: Publish RabbitMQ message for round advance
+    }
+
+    private async Task EnterCombat()
+    {
+        if (table == null) return;
+        table.EnterCombat();
+        await SaveTable();
+        AddLogEntry("Combat started!");
+        // TODO: Publish RabbitMQ message for combat state change
+    }
+
+    private async Task ExitCombat()
+    {
+        if (table == null) return;
+        table.ExitCombat();
+        await SaveTable();
+        AddLogEntry("Combat ended");
+        // TODO: Publish RabbitMQ message for combat state change
+    }
+
+    private void SendAnnouncement()
+    {
+        if (string.IsNullOrWhiteSpace(announcementText)) return;
+        AddLogEntry($"Announcement: {announcementText}");
+        // TODO: Publish RabbitMQ message for GM announcement
+        announcementText = "";
+    }
+
+    private async Task SaveTable()
+    {
+        if (table == null) return;
+        try
+        {
+            await tablePortal.UpdateAsync(table);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save: {ex.Message}";
+        }
+    }
+
+    private void SelectCharacter(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        selectedCharacter = character;
+    }
+
+    private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        AddLogEntry($"Quick healed {character.CharacterName}");
+        // TODO: Publish RabbitMQ message for healing
+    }
+
+    private void QuickDamage(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        AddLogEntry($"Quick damaged {character.CharacterName}");
+        // TODO: Publish RabbitMQ message for damage
+    }
+
+    private void ApplyDamage()
+    {
+        if (selectedCharacter == null) return;
+        AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}");
+        // TODO: Publish RabbitMQ message for damage
+    }
+
+    private void ApplyHealing()
+    {
+        if (selectedCharacter == null) return;
+        AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}");
+        // TODO: Publish RabbitMQ message for healing
+    }
+
+    private void ApplyEffect()
+    {
+        if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect)) return;
+        AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}");
+        // TODO: Publish RabbitMQ message for effect
+        selectedEffect = "";
+    }
+
+    private void AddNpc()
+    {
+        AddLogEntry("NPC creation not yet implemented");
+    }
+
+    private void RemoveNpc(Guid npcId)
+    {
+        npcs?.RemoveAll(n => n.Id == npcId);
+        AddLogEntry("NPC removed");
+    }
+
+    private string GetPlayerJoinLink() =>
+        NavigationManager.ToAbsoluteUri($"/play/{TableId}").ToString();
+
+    private string GetStatusBadgeClass() =>
+        table?.Status switch
+        {
+            Threa.Dal.Dto.TableStatus.Lobby => "bg-info",
+            Threa.Dal.Dto.TableStatus.Active => "bg-success",
+            Threa.Dal.Dto.TableStatus.Paused => "bg-warning",
+            Threa.Dal.Dto.TableStatus.Ended => "bg-secondary",
+            _ => "bg-secondary"
+        };
+
+    private string GetConnectionBadgeClass(Threa.Dal.Dto.ConnectionStatus status) =>
+        status switch
+        {
+            Threa.Dal.Dto.ConnectionStatus.Connected => "bg-success",
+            Threa.Dal.Dto.ConnectionStatus.Disconnected => "bg-danger",
+            Threa.Dal.Dto.ConnectionStatus.Away => "bg-warning",
+            _ => "bg-secondary"
+        };
+
+    private int GetPercent(int value, int max) =>
+        max > 0 ? (value * 100 / max) : 0;
+}

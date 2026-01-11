@@ -1,0 +1,197 @@
+@* Inventory Tab for gameplay - Quick-use items and equipment *@
+
+<div class="row">
+    <!-- Quick Use Items -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <strong>Quick Use Items</strong>
+            </div>
+            <div class="card-body">
+                @if (quickUseItems == null || !quickUseItems.Any())
+                {
+                    <p class="text-muted">No consumable items available.</p>
+                }
+                else
+                {
+                    <div class="d-grid gap-2">
+                        @foreach (var item in quickUseItems)
+                        {
+                            <button class="btn btn-outline-success d-flex justify-content-between align-items-center"
+                                    @onclick="() => UseItem(item)">
+                                <span>@item.Name</span>
+                                <span class="badge bg-secondary">x@item.Quantity</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Currency -->
+        <div class="card">
+            <div class="card-header">
+                <strong>Currency</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td>Platinum</td>
+                            <td class="text-end"><strong>@Character?.PlatinumCoins</strong> pp</td>
+                        </tr>
+                        <tr>
+                            <td>Gold</td>
+                            <td class="text-end"><strong>@Character?.GoldCoins</strong> gp</td>
+                        </tr>
+                        <tr>
+                            <td>Silver</td>
+                            <td class="text-end"><strong>@Character?.SilverCoins</strong> sp</td>
+                        </tr>
+                        <tr>
+                            <td>Copper</td>
+                            <td class="text-end"><strong>@Character?.CopperCoins</strong> cp</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipped Items -->
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <strong>Equipped Items</strong>
+            </div>
+            <div class="card-body">
+                @if (equippedItems == null || !equippedItems.Any())
+                {
+                    <p class="text-muted">No items equipped.</p>
+                }
+                else
+                {
+                    <div class="row">
+                        @foreach (var slot in GetEquipmentSlots())
+                        {
+                            var item = equippedItems.FirstOrDefault(i => i.Slot == slot);
+                            <div class="col-md-4 mb-2">
+                                <div class="card @(item != null ? "" : "bg-light")">
+                                    <div class="card-body py-2 px-3">
+                                        <small class="text-muted">@slot</small>
+                                        @if (item != null)
+                                        {
+                                            <div class="fw-bold">@item.Name</div>
+                                            @if (item.HasDurability)
+                                            {
+                                                <div class="progress" style="height: 5px;">
+                                                    <div class="progress-bar @GetDurabilityColor(item.DurabilityPercent)"
+                                                         style="width: @item.DurabilityPercent%">
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-muted">Empty</div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Combat Items -->
+        <div class="card">
+            <div class="card-header">
+                <strong>Combat Items</strong>
+            </div>
+            <div class="card-body">
+                @if (combatItems == null || !combatItems.Any())
+                {
+                    <p class="text-muted">No combat items in inventory.</p>
+                }
+                else
+                {
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in combatItems)
+                            {
+                                <tr>
+                                    <td>
+                                        @item.Name
+                                        @if (item.Quantity > 1)
+                                        {
+                                            <span class="badge bg-secondary">x@item.Quantity</span>
+                                        }
+                                    </td>
+                                    <td>@item.Type</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => ActivateItem(item)">
+                                            Use
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    private List<QuickUseItem>? quickUseItems;
+    private List<EquippedItem>? equippedItems;
+    private List<CombatItem>? combatItems;
+
+    private record QuickUseItem(string Name, int Quantity, string Effect);
+    private record EquippedItem(string Slot, string Name, bool HasDurability, int DurabilityPercent);
+    private record CombatItem(string Name, string Type, int Quantity);
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load items from character inventory
+        quickUseItems = new List<QuickUseItem>();
+        equippedItems = new List<EquippedItem>();
+        combatItems = new List<CombatItem>();
+    }
+
+    private string[] GetEquipmentSlots() => new[]
+    {
+        "Head", "Neck", "Chest", "Back",
+        "Main Hand", "Off Hand",
+        "Hands", "Waist", "Feet"
+    };
+
+    private string GetDurabilityColor(int percent) =>
+        percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+
+    private void UseItem(QuickUseItem item)
+    {
+        // TODO: Use the item - send to server
+    }
+
+    private void ActivateItem(CombatItem item)
+    {
+        // TODO: Activate the combat item - send to server
+    }
+}

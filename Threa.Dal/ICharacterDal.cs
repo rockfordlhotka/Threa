@@ -8,6 +8,7 @@ public interface ICharacterDal
 {
     Character GetBlank();
     Task<List<Character>> GetCharactersAsync(int playerId);
+    Task<List<Character>> GetAllCharactersAsync();
     Task<Character> GetCharacterAsync(int id);
     Task<Character> SaveCharacterAsync(Character character);
     Task DeleteCharacterAsync(int id);

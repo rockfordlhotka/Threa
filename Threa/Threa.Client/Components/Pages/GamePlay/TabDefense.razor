@@ -1,0 +1,245 @@
+@* Defense Tab - Defensive modes, armor, and defense skills *@
+
+<div class="row">
+    <!-- Defensive Modes -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+                <strong>Defensive Stance</strong>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn @(currentStance == "normal" ? "btn-primary" : "btn-outline-primary")"
+                            @onclick="@(() => SetStance("normal"))">
+                        Normal Stance
+                    </button>
+                    <button class="btn @(currentStance == "parry" ? "btn-warning" : "btn-outline-warning")"
+                            @onclick="@(() => SetStance("parry"))">
+                        Parry Mode
+                        <small class="d-block">Free parry reactions</small>
+                    </button>
+                    <button class="btn @(currentStance == "dodge" ? "btn-info" : "btn-outline-info")"
+                            @onclick="@(() => SetStance("dodge"))">
+                        Dodge Focus
+                        <small class="d-block">+2 to dodge checks</small>
+                    </button>
+                    <button class="btn @(currentStance == "block" ? "btn-success" : "btn-outline-success")"
+                            disabled="@(!HasShield())"
+                            @onclick="@(() => SetStance("block"))">
+                        Block with Shield
+                        <small class="d-block">Use shield actively</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <strong>Defense Skills</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Dodge</td>
+                            <td><strong>@GetSkillAS("Dodge")</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Parry (Weapon)</td>
+                            <td><strong>@GetWeaponParryAS()</strong></td>
+                        </tr>
+                        @if (HasShield())
+                        {
+                            <tr>
+                                <td>Shield Block</td>
+                                <td><strong>@GetSkillAS("Shield")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Armor Summary -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">
+                <strong>Equipped Armor</strong>
+            </div>
+            <div class="card-body">
+                @if (equippedArmor == null || !equippedArmor.Any())
+                {
+                    <p class="text-muted">No armor equipped</p>
+                }
+                else
+                {
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Slot</th>
+                                <th>Item</th>
+                                <th>Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var armor in equippedArmor)
+                            {
+                                <tr>
+                                    <td>@armor.Slot</td>
+                                    <td>@armor.Name</td>
+                                    <td>
+                                        <div class="progress" style="height: 10px; width: 60px;">
+                                            <div class="progress-bar @GetDurabilityColor(armor.DurabilityPercent)"
+                                                 style="width: @armor.DurabilityPercent%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <strong>Damage Absorption</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Absorb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cutting</td>
+                            <td>@totalAbsorption.Cutting</td>
+                        </tr>
+                        <tr>
+                            <td>Piercing</td>
+                            <td>@totalAbsorption.Piercing</td>
+                        </tr>
+                        <tr>
+                            <td>Blunt</td>
+                            <td>@totalAbsorption.Blunt</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incoming Attack Response -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <strong>Defend Against Attack</strong>
+            </div>
+            <div class="card-body">
+                @if (incomingAttack != null)
+                {
+                    <div class="alert alert-danger">
+                        <strong>Incoming Attack!</strong>
+                        <p>@incomingAttack.AttackerName attacks with @incomingAttack.WeaponName</p>
+                        <p>Attack SV: @incomingAttack.AttackSV</p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-info" @onclick="@(() => DefendWith("dodge"))">
+                            Dodge (AS: @GetSkillAS("Dodge"))
+                        </button>
+                        <button class="btn btn-warning" @onclick="@(() => DefendWith("parry"))">
+                            Parry (AS: @GetWeaponParryAS())
+                        </button>
+                        @if (HasShield())
+                        {
+                            <button class="btn btn-success" @onclick="@(() => DefendWith("block"))">
+                                Block (AS: @GetSkillAS("Shield"))
+                            </button>
+                        }
+                        <button class="btn btn-secondary" @onclick="@(() => DefendWith("none"))">
+                            Take the Hit
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No incoming attacks.</p>
+                    <p class="small">When you're attacked, defense options will appear here.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    private string currentStance = "normal";
+    private List<ArmorInfo>? equippedArmor;
+    private Absorption totalAbsorption = new(0, 0, 0);
+    private IncomingAttack? incomingAttack;
+
+    private record ArmorInfo(string Slot, string Name, int DurabilityPercent);
+    private record Absorption(int Cutting, int Piercing, int Blunt);
+    private record IncomingAttack(string AttackerName, string WeaponName, int AttackSV);
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load equipped armor from character inventory
+        equippedArmor = new List<ArmorInfo>();
+
+        // TODO: Calculate total absorption from all equipped armor
+        totalAbsorption = new Absorption(0, 0, 0);
+    }
+
+    private void SetStance(string stance)
+    {
+        currentStance = stance;
+        // TODO: Send stance change to server
+    }
+
+    private int GetSkillAS(string skillName)
+    {
+        var skill = Character?.Skills.FirstOrDefault(s => s.Name == skillName);
+        return skill?.AbilityScore ?? 0;
+    }
+
+    private int GetWeaponParryAS()
+    {
+        // TODO: Get the parry AS based on equipped weapon
+        // For now, return 0 or find a weapon skill
+        var weaponSkills = new[] { "Swords", "Axes", "Daggers", "Spears", "Polearms" };
+        foreach (var weaponSkill in weaponSkills)
+        {
+            var skill = Character?.Skills.FirstOrDefault(s => s.Name == weaponSkill);
+            if (skill != null && skill.Level > 0)
+                return skill.AbilityScore;
+        }
+        return 0;
+    }
+
+    private bool HasShield()
+    {
+        // TODO: Check if character has a shield equipped
+        return false;
+    }
+
+    private string GetDurabilityColor(int percent) =>
+        percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+
+    private void DefendWith(string defenseType)
+    {
+        // TODO: Send defense choice to server
+        incomingAttack = null;
+    }
+}

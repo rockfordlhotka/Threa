@@ -1,0 +1,213 @@
+@* Magic Tab for gameplay - Mana pools, gathering, and spell casting *@
+
+<div class="row">
+    <!-- Mana Pools -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-purple text-white" style="background-color: #6f42c1;">
+                <strong>Mana Pools</strong>
+            </div>
+            <div class="card-body">
+                @if (manaPools == null || !manaPools.Any())
+                {
+                    <p class="text-muted">No mana pools available. Learn a mana skill to begin.</p>
+                }
+                else
+                {
+                    @foreach (var pool in manaPools)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong style="color: @pool.Color;">@pool.SchoolName</strong>
+                                <span>@pool.Current / @pool.Max</span>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" style="width: @GetManaPercent(pool)%; background-color: @pool.Color;">
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary mt-1 w-100"
+                                    disabled="@(!CanGatherMana())">
+                                Gather @pool.SchoolName Mana
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <strong>Gather Mana</strong>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Gathering mana requires a skill check and takes time based on the amount gathered.
+                </p>
+                @if (!CanGatherMana())
+                {
+                    <div class="alert alert-warning py-1">
+                        Need 1 AP to gather mana
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Spell List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <strong>Known Spells</strong>
+            </div>
+            <div class="card-body">
+                @if (knownSpells == null || !knownSpells.Any())
+                {
+                    <p class="text-muted">No spells known. Learn spell skills to cast magic.</p>
+                }
+                else
+                {
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Spell</th>
+                                <th>School</th>
+                                <th>Cost</th>
+                                <th>Range</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var spell in knownSpells)
+                            {
+                                <tr>
+                                    <td>@spell.Name</td>
+                                    <td style="color: @spell.SchoolColor;">@spell.School</td>
+                                    <td>@spell.ManaCost</td>
+                                    <td>@spell.Range</td>
+                                    <td>@spell.Type</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary"
+                                                disabled="@(!CanCastSpell(spell))"
+                                                @onclick="() => CastSpell(spell)">
+                                            Cast
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        @if (selectedSpell != null)
+        {
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <strong>Cast: @selectedSpell.Name</strong>
+                </div>
+                <div class="card-body">
+                    <p>@selectedSpell.Description</p>
+                    <p><strong>Mana Cost:</strong> @selectedSpell.ManaCost @selectedSpell.School</p>
+                    <p><strong>Range:</strong> @selectedSpell.Range</p>
+
+                    <button class="btn btn-primary"
+                            disabled="@(!CanCastSpell(selectedSpell))">
+                        Confirm Cast
+                    </button>
+                    <button class="btn btn-secondary" @onclick="() => selectedSpell = null">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    private List<ManaPool>? manaPools;
+    private List<SpellInfo>? knownSpells;
+    private SpellInfo? selectedSpell;
+
+    private record ManaPool(string SchoolName, string Color, int Current, int Max);
+    private record SpellInfo(string Name, string School, string SchoolColor, int ManaCost, string Range, string Type, string Description);
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load actual mana pools from character
+        manaPools = new List<ManaPool>
+        {
+            // Placeholder data - would come from character's mana skills
+        };
+
+        // TODO: Load actual spells from character's spell skills
+        knownSpells = new List<SpellInfo>
+        {
+            // Placeholder data
+        };
+
+        // Try to populate from character skills
+        if (Character?.Skills != null)
+        {
+            // Look for mana skills and create pools
+            var manaSkills = Character.Skills.Where(s => s.Name.EndsWith("Mana"));
+            manaPools = manaSkills.Select(s => new ManaPool(
+                s.Name.Replace(" Mana", ""),
+                GetSchoolColor(s.Name),
+                0, // Would come from mana tracker
+                s.Level * 2 // Example calculation
+            )).ToList();
+
+            // Look for spell skills
+            var spellSkills = Character.Skills.Where(s =>
+                !s.Name.EndsWith("Mana") &&
+                !IsStandardSkill(s.Name));
+            knownSpells = spellSkills.Select(s => new SpellInfo(
+                s.Name,
+                "Unknown",
+                "#666",
+                1,
+                "Touch",
+                "Targeted",
+                $"Cast {s.Name}"
+            )).ToList();
+        }
+    }
+
+    private bool IsStandardSkill(string name) =>
+        new[] { "Physicality", "Dodge", "Drive", "Reasoning", "Awareness", "Focus", "Bearing" }
+            .Contains(name);
+
+    private string GetSchoolColor(string skillName) =>
+        skillName switch
+        {
+            "Fire Mana" => "#FF4500",
+            "Water Mana" => "#4169E1",
+            "Light Mana" => "#FFD700",
+            "Life Mana" => "#32CD32",
+            _ => "#666"
+        };
+
+    private int GetManaPercent(ManaPool pool) =>
+        pool.Max > 0 ? (pool.Current * 100 / pool.Max) : 0;
+
+    private bool CanGatherMana() =>
+        Character?.ActionPoints.Available >= 1 && !Character.IsPassedOut;
+
+    private bool CanCastSpell(SpellInfo spell) =>
+        Character?.ActionPoints.Available >= 1 &&
+        Character?.Fatigue.Value >= 1 &&
+        !Character.IsPassedOut;
+
+    private void CastSpell(SpellInfo spell)
+    {
+        selectedSpell = spell;
+    }
+}

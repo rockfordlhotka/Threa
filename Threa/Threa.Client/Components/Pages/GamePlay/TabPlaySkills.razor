@@ -1,0 +1,189 @@
+@* Skills Tab for gameplay - Using skills during play *@
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <strong>Available Skills</strong>
+            </div>
+            <div class="card-body">
+                @if (Character?.Skills == null || !Character.Skills.Any())
+                {
+                    <p class="text-muted">No skills available.</p>
+                }
+                else
+                {
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Search skills..."
+                               @bind="searchFilter" @bind:event="oninput" />
+                    </div>
+
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Skill</th>
+                                <th>Level</th>
+                                <th>AS</th>
+                                <th>Attribute</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var skill in FilteredSkills())
+                            {
+                                <tr>
+                                    <td>@skill.Name</td>
+                                    <td>@skill.Level</td>
+                                    <td><strong>@skill.AbilityScore</strong></td>
+                                    <td>@skill.PrimaryAttribute</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary"
+                                                disabled="@(!CanUseSkill())"
+                                                @onclick="() => UseSkill(skill)">
+                                            Use
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <strong>Skill Check</strong>
+            </div>
+            <div class="card-body">
+                @if (selectedSkill != null)
+                {
+                    <h5>@selectedSkill.Name</h5>
+                    <p class="mb-2">Ability Score: <strong>@selectedSkill.AbilityScore</strong></p>
+
+                    <div class="mb-3">
+                        <label class="form-label">Target Value (TV)</label>
+                        <input type="number" class="form-control" @bind="targetValue" min="1" max="20" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Action Type</label>
+                        <select class="form-select" @bind="actionType">
+                            <option value="standard">Standard (1 AP, 1 FAT)</option>
+                            <option value="fatiguefree">Fatigue-Free (2 AP, 0 FAT)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary w-100"
+                            disabled="@(!CanPerformCheck())"
+                            @onclick="PerformCheck">
+                        Roll Check
+                    </button>
+                }
+                else
+                {
+                    <p class="text-muted">Select a skill to use.</p>
+                }
+            </div>
+        </div>
+
+        @if (lastCheckResult != null)
+        {
+            <div class="card">
+                <div class="card-header @(lastCheckResult.Success ? "bg-success" : "bg-danger") text-white">
+                    <strong>Result: @(lastCheckResult.Success ? "Success" : "Failure")</strong>
+                </div>
+                <div class="card-body">
+                    <p>AS: @lastCheckResult.AbilityScore vs TV: @lastCheckResult.TargetValue</p>
+                    <p>Success Value: <strong>@lastCheckResult.SuccessValue</strong></p>
+                    <p class="text-muted small">@lastCheckResult.Outcome</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    private string searchFilter = "";
+    private GameMechanics.SkillEdit? selectedSkill;
+    private int targetValue = 8;
+    private string actionType = "standard";
+    private CheckResult? lastCheckResult;
+
+    private record CheckResult(bool Success, int AbilityScore, int TargetValue, int SuccessValue, string Outcome);
+
+    private IEnumerable<GameMechanics.SkillEdit> FilteredSkills()
+    {
+        if (Character?.Skills == null) return Enumerable.Empty<GameMechanics.SkillEdit>();
+
+        var skills = Character.Skills.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(searchFilter))
+        {
+            skills = skills.Where(s => s.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
+        }
+        return skills.OrderBy(s => s.Name);
+    }
+
+    private bool CanUseSkill()
+    {
+        if (Character == null || Character.IsPassedOut) return false;
+        return Character.ActionPoints.Available >= 1;
+    }
+
+    private bool CanPerformCheck()
+    {
+        if (selectedSkill == null || Character == null) return false;
+        if (Character.IsPassedOut) return false;
+
+        if (actionType == "standard")
+            return Character.ActionPoints.Available >= 1 && Character.Fatigue.Value >= 1;
+        else
+            return Character.ActionPoints.Available >= 2;
+    }
+
+    private void UseSkill(GameMechanics.SkillEdit skill)
+    {
+        selectedSkill = skill;
+    }
+
+    private void PerformCheck()
+    {
+        if (selectedSkill == null) return;
+
+        // Simulate a check - in real implementation this would go through the hub
+        var successValue = selectedSkill.AbilityScore - targetValue;
+        var success = successValue >= 0;
+        var outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
+
+        lastCheckResult = new CheckResult(success, selectedSkill.AbilityScore, targetValue, successValue, outcome);
+    }
+
+    private string GetSuccessOutcome(int sv)
+    {
+        return sv switch
+        {
+            >= 10 => "Critical Success!",
+            >= 5 => "Great Success",
+            >= 0 => "Success",
+            _ => "Failure"
+        };
+    }
+
+    private string GetFailureOutcome(int sv)
+    {
+        return sv switch
+        {
+            <= -10 => "Critical Failure!",
+            <= -5 => "Bad Failure",
+            _ => "Failure"
+        };
+    }
+}

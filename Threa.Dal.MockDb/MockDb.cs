@@ -60,6 +60,21 @@ public static class MockDb
     public static readonly List<LocationEffect> LocationEffects = [];
 
     /// <summary>
+    /// Game tables (active sessions).
+    /// </summary>
+    public static readonly List<GameTable> Tables = [];
+
+    /// <summary>
+    /// Characters connected to tables.
+    /// </summary>
+    public static readonly List<TableCharacter> TableCharacters = [];
+
+    /// <summary>
+    /// NPCs at tables.
+    /// </summary>
+    public static readonly List<TableNpc> TableNpcs = [];
+
+    /// <summary>
     /// Skill definitions - all available skills in the game.
     /// </summary>
     public static readonly List<Skill> Skills = CreateSkills();

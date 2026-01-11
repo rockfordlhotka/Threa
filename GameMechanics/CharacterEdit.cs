@@ -192,7 +192,7 @@ namespace GameMechanics
     public ActionPoints ActionPoints
     {
       get => GetProperty(ActionPointsProperty);
-      set => SetProperty(ActionPointsProperty, value);
+      private set => LoadProperty(ActionPointsProperty, value);
     }
 
     public static readonly PropertyInfo<SkillEditList> SkillsProperty = RegisterProperty<SkillEditList>(nameof(Skills));
@@ -428,6 +428,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal,
       [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
@@ -436,6 +438,8 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(existing, this, mapIgnore);
         Fatigue = fatPortal.FetchChild(existing);
         Vitality = vitPortal.FetchChild(existing);
+        ActionPoints = actionPointsPortal.FetchChild(existing);
+        Wounds = woundPortal.FetchChild(existing.Wounds);
         
         // Load species info to pass modifiers to AttributeList
         var speciesList = await speciesPortal.FetchAsync();
@@ -452,7 +456,9 @@ namespace GameMechanics
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal)
     {
       var toSave = dal.GetBlank();
       using (BypassPropertyChecks)
@@ -460,6 +466,8 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(this, toSave, mapIgnore);
         fatPortal.UpdateChild(Fatigue, toSave);
         vitPortal.UpdateChild(Vitality, toSave);
+        actionPointsPortal.UpdateChild(ActionPoints, toSave);
+        woundPortal.UpdateChild(Wounds, toSave.Wounds);
         attributePortal.UpdateChild(AttributeList, toSave.AttributeList);
         skillPortal.UpdateChild(Skills, toSave.Skills);
       }
@@ -472,7 +480,9 @@ namespace GameMechanics
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
+      [Inject] IChildDataPortal<WoundList> woundPortal)
     {
       using (BypassPropertyChecks)
       {
@@ -480,6 +490,8 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(this, existing, mapIgnore);
         fatPortal.UpdateChild(Fatigue, existing);
         vitPortal.UpdateChild(Vitality, existing);
+        actionPointsPortal.UpdateChild(ActionPoints, existing);
+        woundPortal.UpdateChild(Wounds, existing.Wounds);
         attributePortal.UpdateChild(AttributeList, existing.AttributeList);
         skillPortal.UpdateChild(Skills, existing.Skills);
         await dal.SaveCharacterAsync(existing);

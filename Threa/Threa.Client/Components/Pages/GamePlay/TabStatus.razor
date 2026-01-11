@@ -1,0 +1,259 @@
+@* Status Tab - Shows character portrait, health pools, effects, and quick status *@
+
+<div class="row">
+    <!-- Left Column: Portrait and Basic Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                @if (!string.IsNullOrEmpty(Character?.ImageUrl))
+                {
+                    <img src="@Character.ImageUrl" alt="@Character.Name" class="img-fluid rounded mb-3" style="max-height: 200px;" />
+                }
+                else
+                {
+                    <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px; font-size: 4rem;">
+                        @(Character?.Name.FirstOrDefault())
+                    </div>
+                }
+                <h5>@Character?.Name</h5>
+                <p class="text-muted mb-1">@Character?.Species</p>
+                <p class="text-muted mb-0">Damage Class: @Character?.DamageClass</p>
+            </div>
+        </div>
+
+        <!-- Quick Status -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <strong>Status</strong>
+            </div>
+            <div class="card-body">
+                @if (Character?.IsPassedOut == true)
+                {
+                    <div class="alert alert-danger mb-2 py-1">
+                        <strong>Unconscious</strong>
+                    </div>
+                }
+                else if (Character?.Fatigue.Value <= 0)
+                {
+                    <div class="alert alert-warning mb-2 py-1">
+                        <strong>Exhausted</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-success mb-2 py-1">
+                        <strong>Conscious</strong>
+                    </div>
+                }
+
+                @if (Character?.Wounds.Any() == true)
+                {
+                    <div class="alert alert-warning mb-2 py-1">
+                        <strong>Wounded</strong> (@Character.Wounds.Count() wound(s))
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle Column: Health Pools -->
+    <div class="col-md-4">
+        <!-- Fatigue Pool -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <strong>Fatigue (FAT)</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-2">
+                    <span class="display-6">@Character?.Fatigue.Value</span>
+                    <span class="text-muted">/ @Character?.Fatigue.BaseValue</span>
+                </div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar @GetFatBarColor()" style="width: @GetFatPercent()%">
+                        @GetFatPercent()%
+                    </div>
+                </div>
+                @if (Character?.Fatigue.PendingHealing > 0)
+                {
+                    <small class="text-success">+@Character.Fatigue.PendingHealing pending healing</small>
+                }
+                @if (Character?.Fatigue.PendingDamage > 0)
+                {
+                    <small class="text-danger">-@Character.Fatigue.PendingDamage pending damage</small>
+                }
+            </div>
+        </div>
+
+        <!-- Vitality Pool -->
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                <strong>Vitality (VIT)</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-2">
+                    <span class="display-6">@Character?.Vitality.Value</span>
+                    <span class="text-muted">/ @Character?.Vitality.BaseValue</span>
+                </div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar @GetVitBarColor()" style="width: @GetVitPercent()%">
+                        @GetVitPercent()%
+                    </div>
+                </div>
+                @if (Character?.Vitality.PendingHealing > 0)
+                {
+                    <small class="text-success">+@Character.Vitality.PendingHealing pending healing</small>
+                }
+                @if (Character?.Vitality.PendingDamage > 0)
+                {
+                    <small class="text-danger">-@Character.Vitality.PendingDamage pending damage</small>
+                }
+            </div>
+        </div>
+
+        <!-- Action Points -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <strong>Action Points (AP)</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-2">
+                    <span class="display-6">@Character?.ActionPoints.Available</span>
+                    <span class="text-muted">/ @Character?.ActionPoints.Max</span>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    @for (int i = 0; i < (Character?.ActionPoints.Max ?? 0); i++)
+                    {
+                        var isAvailable = i < (Character?.ActionPoints.Available ?? 0);
+                        <div class="rounded-circle @(isAvailable ? "bg-primary" : "bg-secondary")"
+                             style="width: 30px; height: 30px;">
+                        </div>
+                    }
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">Recovery: @Character?.ActionPoints.Recovery AP/round</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Active Effects and Wounds -->
+    <div class="col-md-4">
+        <!-- Active Effects -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Active Effects</strong>
+            </div>
+            <div class="card-body">
+                @if (activeEffects == null || !activeEffects.Any())
+                {
+                    <p class="text-muted mb-0">No active effects</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var effect in activeEffects)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <strong>@effect.Name</strong>
+                                    <br />
+                                    <small class="text-muted">@effect.Source</small>
+                                </div>
+                                @if (effect.RemainingDuration.HasValue)
+                                {
+                                    <span class="badge bg-info">@effect.RemainingDuration rounds</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Permanent</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <!-- Wounds -->
+        <div class="card">
+            <div class="card-header">
+                <strong>Wounds</strong>
+            </div>
+            <div class="card-body">
+                @if (Character?.Wounds == null || !Character.Wounds.Any(w => w.TotalWounds > 0))
+                {
+                    <p class="text-muted mb-0">No wounds</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var wound in Character.Wounds.Where(w => w.TotalWounds > 0))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <strong>@wound.Location</strong>
+                                    <br />
+                                    <small class="text-muted">
+                                        @if (wound.SeriousWounds > 0)
+                                        {
+                                            <span class="text-danger">Serious: @wound.SeriousWounds</span>
+                                        }
+                                        @if (wound.LightWounds > 0)
+                                        {
+                                            <span class="text-warning ms-1">Light: @wound.LightWounds</span>
+                                        }
+                                    </small>
+                                </div>
+                                @if (wound.IsCrippled)
+                                {
+                                    <span class="badge bg-danger">CRIPPLED</span>
+                                }
+                                else if (wound.IsDisabled)
+                                {
+                                    <span class="badge bg-warning">Disabled</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    // Placeholder for active effects - would be loaded from character/table
+    private List<ActiveEffect>? activeEffects;
+
+    private record ActiveEffect(string Name, string Source, int? RemainingDuration);
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load active effects from character or table state
+        activeEffects = new List<ActiveEffect>();
+    }
+
+    private int GetFatPercent() => Character?.Fatigue.BaseValue > 0
+        ? (int)((double)Character.Fatigue.Value / Character.Fatigue.BaseValue * 100) : 0;
+
+    private int GetVitPercent() => Character?.Vitality.BaseValue > 0
+        ? (int)((double)Character.Vitality.Value / Character.Vitality.BaseValue * 100) : 0;
+
+    private string GetFatBarColor()
+    {
+        var percent = GetFatPercent();
+        return percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+    }
+
+    private string GetVitBarColor()
+    {
+        var percent = GetVitPercent();
+        return percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+    }
+}

@@ -101,5 +101,22 @@ namespace GameMechanics
           Add(woundPortal.FetchChild(item));
       }
     }
+
+    [UpdateChild]
+    private void Update(List<Wound> wounds, [Inject] IChildDataPortal<WoundRecord> woundPortal)
+    {
+      if (wounds == null) return;
+      
+      // Clear the existing wounds list
+      wounds.Clear();
+      
+      // Add updated wounds from the business object
+      foreach (var item in this)
+      {
+        var wound = new Wound();
+        woundPortal.UpdateChild(item, wound);
+        wounds.Add(wound);
+      }
+    }
   }
 }

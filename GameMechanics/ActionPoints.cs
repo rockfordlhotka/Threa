@@ -128,6 +128,7 @@ namespace GameMechanics
       Available = Max;
     }
 
+
     [FetchChild]
     private void Fetch(Character character)
     {
@@ -145,6 +146,17 @@ namespace GameMechanics
           Max = character.ActionPointMax;
           Available = character.ActionPointAvailable;
         }
+      }
+    }
+
+    [UpdateChild]
+    private void Update(Character character)
+    {
+      using (BypassPropertyChecks)
+      {
+        character.ActionPointRecovery = Recovery;
+        character.ActionPointMax = Max;
+        character.ActionPointAvailable = Available;
       }
     }
   }

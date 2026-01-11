@@ -1,0 +1,60 @@
+@page "/gamemaster/characters"
+
+@using GameMechanics.GameMaster
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<GmCharacterList> characterListPortal
+@inject ViewModel<GmCharacterList> vm
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<h3>Manage Characters</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <div class="alert alert-info mb-3">
+        <strong>GM Character Management</strong>: Use this page to manage character XP.
+        Grant experience points to reward player achievements.
+    </div>
+
+    <QuickGrid Items="characters">
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Title="Species" Property="@(p => p.Species)" Sortable="true" />
+        <TemplateColumn Title="Status">
+            @if (context.IsPlayable)
+            {
+                <span class="badge bg-success">Active</span>
+            }
+            else
+            {
+                <span class="badge bg-warning">Creating</span>
+            }
+        </TemplateColumn>
+        <PropertyColumn Title="XP Total" Property="@(p => p.XPTotal)" Sortable="true" />
+        <TemplateColumn Title="XP Banked">
+            <span style="font-weight: bold; color: @(context.XPBanked > 0 ? "green" : "gray")">@context.XPBanked</span>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions">
+            <a href="/gamemaster/characters/@context.Id">Edit XP</a>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<GmCharacterInfo>? characters;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => characterListPortal.FetchAsync());
+        characters = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+}

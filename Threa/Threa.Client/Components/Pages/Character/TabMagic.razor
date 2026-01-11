@@ -25,8 +25,16 @@
 @if (!vm.Model.IsPlayable)
 {
     <div class="alert alert-info">
-        <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your skills.</p>
-        <p>Once the character is activated, you can continue to advance skills with earned XP.</p>
+        <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your magic skills.</p>
+        <p>You can also <strong>decrease</strong> skill levels to return XP to your bank if you change your mind.</p>
+        <p><em>Once the character is activated, you can only advance skills with earned XP (no decreasing).</em></p>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary">
+        <p>Your character is <strong>active</strong>. Spend XP from your bank to improve your magic skills.</p>
+        <p>You have <strong>@vm.Model.XPBanked XP</strong> available to spend.</p>
     </div>
 }
 
@@ -102,13 +110,13 @@
                                 Level Up (@xpCostToNextLevel XP)
                             </button>
                         }
-                        @if (isNewSkill && skill.Level > 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level > 0)
                         {
                             <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
                                 Decrease
                             </button>
                         }
-                        @if (isNewSkill && skill.Level == 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level == 0)
                         {
                             <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
                                 Remove
@@ -164,13 +172,13 @@
                                 Level Up (@xpCostToNextLevel XP)
                             </button>
                         }
-                        @if (isNewSkill && skill.Level > 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level > 0)
                         {
                             <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
                                 Decrease
                             </button>
                         }
-                        @if (isNewSkill && skill.Level == 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level == 0)
                         {
                             <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
                                 Remove
@@ -226,13 +234,13 @@
                                 Level Up (@xpCostToNextLevel XP)
                             </button>
                         }
-                        @if (isNewSkill && skill.Level > 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level > 0)
                         {
                             <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
                                 Decrease
                             </button>
                         }
-                        @if (isNewSkill && skill.Level == 0)
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level == 0)
                         {
                             <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
                                 Remove

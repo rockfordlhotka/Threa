@@ -127,5 +127,14 @@ namespace GameMechanics
         Csla.Data.DataMapper.Map(wound, this);
       }
     }
+
+    [UpdateChild]
+    private void Update(Wound wound)
+    {
+      using (BypassPropertyChecks)
+      {
+        Csla.Data.DataMapper.Map(this, wound);
+      }
+    }
   }
 }

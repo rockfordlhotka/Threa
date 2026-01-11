@@ -1,4 +1,5 @@
 @inject ICharacterItemDal itemDal
+@inject IItemTemplateDal itemTemplateDal
 
 @if (vm == null || vm.Model == null)
 {
@@ -22,6 +23,20 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
+@if (!vm.Model.IsPlayable)
+{
+    <div class="alert alert-info">
+        <p>During character creation, you can add/remove items and adjust currency.</p>
+        <p><em>Once the character is activated, inventory changes are managed by the GM during play.</em></p>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary">
+        <p>Your character is <strong>active</strong>. Inventory changes are managed by the GM during play.</p>
+    </div>
+}
+
 <h4>Currency</h4>
 <div style="margin-bottom: 2rem;">
     <table class="table table-sm" style="max-width: 500px;">
@@ -36,44 +51,48 @@
             <tr>
                 <td>Platinum (pp)</td>
                 <td>
-                    <input type="number" 
-                           class="form-control form-control-sm" 
-                           style="width: 100px;" 
-                           min="0" 
-                           @bind="vm.Model.PlatinumCoins" />
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           style="width: 100px;"
+                           min="0"
+                           @bind="vm.Model.PlatinumCoins"
+                           disabled="@vm.Model.IsPlayable" />
                 </td>
                 <td>@(vm.Model.PlatinumCoins * 8000)</td>
             </tr>
             <tr>
                 <td>Gold (gp)</td>
                 <td>
-                    <input type="number" 
-                           class="form-control form-control-sm" 
-                           style="width: 100px;" 
-                           min="0" 
-                           @bind="vm.Model.GoldCoins" />
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           style="width: 100px;"
+                           min="0"
+                           @bind="vm.Model.GoldCoins"
+                           disabled="@vm.Model.IsPlayable" />
                 </td>
                 <td>@(vm.Model.GoldCoins * 400)</td>
             </tr>
             <tr>
                 <td>Silver (sp)</td>
                 <td>
-                    <input type="number" 
-                           class="form-control form-control-sm" 
-                           style="width: 100px;" 
-                           min="0" 
-                           @bind="vm.Model.SilverCoins" />
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           style="width: 100px;"
+                           min="0"
+                           @bind="vm.Model.SilverCoins"
+                           disabled="@vm.Model.IsPlayable" />
                 </td>
                 <td>@(vm.Model.SilverCoins * 20)</td>
             </tr>
             <tr>
                 <td>Copper (cp)</td>
                 <td>
-                    <input type="number" 
-                           class="form-control form-control-sm" 
-                           style="width: 100px;" 
-                           min="0" 
-                           @bind="vm.Model.CopperCoins" />
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           style="width: 100px;"
+                           min="0"
+                           @bind="vm.Model.CopperCoins"
+                           disabled="@vm.Model.IsPlayable" />
                 </td>
                 <td>@vm.Model.CopperCoins</td>
             </tr>
@@ -178,6 +197,37 @@ else
     </div>
 }
 
+@if (!vm.Model.IsPlayable)
+{
+    <h4>Add New Item</h4>
+    @if (itemTemplates != null && itemTemplates.Any())
+    {
+        <div style="margin-bottom: 2rem;">
+            <select class="form-select" @bind="selectedItemTemplateId" style="width: 400px; display: inline-block;">
+                <option value="0">-- Select an item to add --</option>
+                @foreach (var template in itemTemplates.OrderBy(t => t.ItemType).ThenBy(t => t.Name))
+                {
+                    <option value="@template.Id">@template.Name (@template.ItemType) - @FormatCurrency(template.Value)</option>
+                }
+            </select>
+            <button class="btn btn-primary" @onclick="AddItemAsync" disabled="@(selectedItemTemplateId == 0 || isAddingItem)">
+                @if (isAddingItem)
+                {
+                    <span>Adding...</span>
+                }
+                else
+                {
+                    <span>Add Item</span>
+                }
+            </button>
+        </div>
+    }
+    else
+    {
+        <p>Loading available items...</p>
+    }
+}
+
 <h4>Inventory Items</h4>
 @if (inventoryItems == null || !inventoryItems.Any())
 {
@@ -189,24 +239,32 @@ else
         @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
         {
             <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
-                <div style="font-weight: bold;">
-                    @(item.Template?.Name ?? "Unknown Item")
-                    @if (item.StackSize > 1)
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="font-weight: bold;">
+                        @(item.Template?.Name ?? "Unknown Item")
+                        @if (item.StackSize > 1)
+                        {
+                            <span style="color: #6c757d;"> x@item.StackSize</span>
+                        }
+                        @if (item.CustomName != null)
+                        {
+                            <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                        }
+                    </div>
+                    @if (!vm.Model.IsPlayable)
                     {
-                        <span style="color: #6c757d;"> x@item.StackSize</span>
-                    }
-                    @if (item.CustomName != null)
-                    {
-                        <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveItemAsync(item.Id)" disabled="@isRemovingItem">
+                            Remove
+                        </button>
                     }
                 </div>
-                
+
                 @if (item.Template != null)
                 {
                     <div style="font-size: 0.9em; color: #6c757d;">
                         @item.Template.ShortDescription
                     </div>
-                    
+
                     @* Show items inside containers *@
                     @if (item.Template.IsContainer)
                     {
@@ -228,7 +286,7 @@ else
                             </div>
                         }
                     }
-                    
+
                     <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
                         Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
                     </div>
@@ -238,22 +296,27 @@ else
     </div>
 }
 
-@code 
+@code
 {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
-    
+
     private List<Threa.Dal.Dto.CharacterItem>? allItems;
     private List<Threa.Dal.Dto.CharacterItem>? equippedItems;
     private List<Threa.Dal.Dto.CharacterItem>? inventoryItems;
+    private List<Threa.Dal.Dto.ItemTemplate>? itemTemplates;
+    private int selectedItemTemplateId;
     private bool isLoadingItems = true;
+    private bool isAddingItem = false;
+    private bool isRemovingItem = false;
     private string? errorMessage;
-    
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadItemTemplatesAsync();
         await LoadItemsAsync();
     }
-    
+
     protected override async Task OnParametersSetAsync()
     {
         // Reload items if the character changes
@@ -262,7 +325,19 @@ else
             await LoadItemsAsync();
         }
     }
-    
+
+    private async Task LoadItemTemplatesAsync()
+    {
+        try
+        {
+            itemTemplates = await itemTemplateDal.GetAllTemplatesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading item templates: {ex.Message}";
+        }
+    }
+
     private async Task LoadItemsAsync()
     {
         try
@@ -271,14 +346,14 @@ else
             {
                 isLoadingItems = true;
                 errorMessage = null;
-                
+
                 allItems = await itemDal.GetCharacterItemsAsync(vm.Model.Id);
-                
+
                 // Separate equipped items from inventory items
                 // Inventory items are those not equipped and not inside a container
                 equippedItems = allItems.Where(i => i.IsEquipped).ToList();
                 inventoryItems = allItems.Where(i => !i.IsEquipped && !i.ContainerItemId.HasValue).ToList();
-                
+
                 isLoadingItems = false;
             }
         }
@@ -286,6 +361,71 @@ else
         {
             errorMessage = $"Error loading items: {ex.Message}";
             isLoadingItems = false;
+        }
+    }
+
+    private async Task AddItemAsync()
+    {
+        if (selectedItemTemplateId == 0 || vm?.Model == null || vm.Model.Id == 0)
+            return;
+
+        try
+        {
+            isAddingItem = true;
+            errorMessage = null;
+            StateHasChanged();
+
+            var template = itemTemplates?.FirstOrDefault(t => t.Id == selectedItemTemplateId);
+            if (template == null)
+            {
+                errorMessage = "Selected item template not found.";
+                return;
+            }
+
+            var newItem = new Threa.Dal.Dto.CharacterItem
+            {
+                Id = Guid.NewGuid(),
+                ItemTemplateId = selectedItemTemplateId,
+                OwnerCharacterId = vm.Model!.Id,
+                StackSize = 1,
+                CurrentDurability = template.HasDurability ? template.MaxDurability : null,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await itemDal.AddItemAsync(newItem);
+            await LoadItemsAsync();
+            selectedItemTemplateId = 0;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding item: {ex.Message}";
+        }
+        finally
+        {
+            isAddingItem = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveItemAsync(Guid itemId)
+    {
+        try
+        {
+            isRemovingItem = true;
+            errorMessage = null;
+            StateHasChanged();
+
+            await itemDal.DeleteItemAsync(itemId);
+            await LoadItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error removing item: {ex.Message}";
+        }
+        finally
+        {
+            isRemovingItem = false;
+            StateHasChanged();
         }
     }
     

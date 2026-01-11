@@ -1,0 +1,130 @@
+@page "/gamemaster/characters/{Id:int}"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject ViewModel<GameMechanics.CharacterEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<h3>Edit Character XP</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>@vm.Model.Name</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th style="width: 200px;">Species</th>
+                        <td>@vm.Model.Species</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>
+                            @if (vm.Model.IsPlayable)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">Creating</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>XP Total</th>
+                        <td>@vm.Model.XPTotal</td>
+                    </tr>
+                    <tr>
+                        <th>XP Banked</th>
+                        <td>
+                            <div class="input-group" style="max-width: 300px;">
+                                <input type="number" class="form-control" step="0.1"
+                                       @bind="vm.Model.XPBanked" @bind:event="oninput" />
+                                <span class="input-group-text">XP</span>
+                            </div>
+                            <small class="text-muted">
+                                Modify this value to grant or remove XP from the character's bank.
+                            </small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success">@successMessage</div>
+            }
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable || isSaving)">
+            @if (isSaving)
+            {
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Save</span>
+            }
+        </button>
+        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool isSaving = false;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/characters");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        await vm.RefreshAsync(() => characterPortal.FetchAsync(Id));
+    }
+
+    private async Task SaveData()
+    {
+        isSaving = true;
+        successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await vm.SaveAsync();
+            successMessage = "XP updated successfully!";
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/gamemaster/characters");
+    }
+}
