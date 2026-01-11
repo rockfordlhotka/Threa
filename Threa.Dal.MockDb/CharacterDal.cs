@@ -51,8 +51,14 @@ namespace Threa.Dal.MockDb
           Character? existing = MockDb.Characters.Where(r => r.Id == character.Id).FirstOrDefault();
           if (existing == null)
             throw new NotFoundException(nameof(character));
-          MockDb.Characters.Remove(existing);
-          MockDb.Characters.Add(character);
+          
+          // Only remove/add if they're different objects
+          // If they're the same reference, the object is already modified in place
+          if (!ReferenceEquals(existing, character))
+          {
+            MockDb.Characters.Remove(existing);
+            MockDb.Characters.Add(character);
+          }
         }
       }
       return Task.FromResult(character);

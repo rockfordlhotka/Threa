@@ -236,7 +236,12 @@ namespace GameMechanics
         }
         else
         {
-          skill = skills.Where(r => r.Name == Name).First();
+          skill = skills.Where(r => r.Name == Name).FirstOrDefault();
+          if (skill == null)
+          {
+            skill = new Threa.Dal.Dto.CharacterSkill();
+            skills.Add(skill);
+          }
         }
 
         skill.Id = Id;
