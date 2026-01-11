@@ -1,0 +1,128 @@
+@page "/gamemaster/species/{Id}"
+@page "/gamemaster/species/new"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics.Reference
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<GameMechanics.Reference.SpeciesEdit> speciesPortal
+@inject ViewModel<GameMechanics.Reference.SpeciesEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<h3>@(IsNewSpecies ? "Add New Species" : "Edit Species")</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th></th><th></th></tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="2"><h4>Basic Information</h4></td></tr>
+            
+            @if (IsNewSpecies)
+            {
+                <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Id)" />
+            }
+            else
+            {
+                <tr>
+                    <td>Id</td>
+                    <td>
+                        <input type="text" value="@vm.Model.Id" class="form-control" readonly disabled />
+                        @if (!vm.Model.CanBeDeleted)
+                        {
+                            <small class="text-warning d-block mt-1">? Human is the baseline species - cannot be deleted</small>
+                        }
+                    </td>
+                </tr>
+            }
+            
+            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+
+            <tr><td colspan="2"><hr /></td></tr>
+            <tr><td colspan="2"><h4>Attribute Modifiers</h4></td></tr>
+
+            <tr><td colspan="2">
+                <div class="alert alert-info">
+                    <strong>Note:</strong> These modifiers are applied during character creation.
+                    Human has no modifiers (all 0), serving as the baseline species.
+                    Positive values increase attributes, negative values decrease them.
+                </div>
+            </td></tr>
+
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.StrModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DexModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.EndModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.IntModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.IttModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.WilModifier)" />
+            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PhyModifier)" />
+
+            <tr><td colspan="2"><hr /></td></tr>
+            <tr><td colspan="2">
+                <div class="alert alert-secondary">
+                    <strong>Common Patterns:</strong>
+                    <ul class="mb-0">
+                        <li><strong>Elves:</strong> +DEX, +ITT, -END (agile, perceptive, delicate)</li>
+                        <li><strong>Dwarves:</strong> +END, +STR, -DEX (hardy, strong, less agile)</li>
+                        <li><strong>Halflings:</strong> +DEX, +ITT, -STR (nimble, aware, small)</li>
+                        <li><strong>Orcs:</strong> +STR, +END, -INT (powerful, tough, less educated)</li>
+                    </ul>
+                </div>
+            </td></tr>
+        </tbody>
+    </table>
+    
+    <div class="mt-3">
+        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNewSpecies => Id == "new" || string.IsNullOrEmpty(Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/species");
+        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        if (IsNewSpecies)
+        {
+            await vm.RefreshAsync(() => speciesPortal.CreateAsync());
+        }
+        else if (!string.IsNullOrEmpty(Id) && Id != "new")
+        {
+            await vm.RefreshAsync(() => speciesPortal.FetchAsync(Id));
+        }
+    }
+
+    private async Task SaveData()
+    {
+        await vm.SaveAsync();
+        NavigationManager.NavigateTo("/gamemaster/species");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/gamemaster/species");
+    }
+}

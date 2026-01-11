@@ -26,6 +26,12 @@ public class Species
     /// Attribute modifiers for this species.
     /// </summary>
     public List<SpeciesAttributeModifier> AttributeModifiers { get; set; } = [];
+
+    /// <summary>
+    /// Whether this species can be deleted.
+    /// Human cannot be deleted as it's the baseline species.
+    /// </summary>
+    public bool CanBeDeleted => !Id.Equals("Human", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>

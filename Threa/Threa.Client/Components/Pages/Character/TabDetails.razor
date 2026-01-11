@@ -1,4 +1,7 @@
-﻿@if (vm == null || vm.Model == null)
+﻿@using GameMechanics.Reference
+@inject IDataPortal<SpeciesList> speciesListPortal
+
+@if (vm == null || vm.Model == null)
 {
     <p>Loading...</p>
     return;
@@ -6,7 +9,7 @@
 
 <div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
     <strong>Character:</strong> @vm.Model.Name
-    <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+    <span style="margin-left: 2rem;"><strong>Species:</strong> @GetSpeciesName(vm.Model.Species)</span>
 </div>
 
 <table>
@@ -18,7 +21,40 @@
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.TrueName)" />
         <LabelRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PlayerId)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Aliases)" />
-        <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Species)" />
+        
+        <tr>
+            <td>Species</td>
+            <td>
+                @if (speciesList != null)
+                {
+                    <select @bind="vm.Model.Species" class="form-control">
+                        @foreach (var species in speciesList)
+                        {
+                            <option value="@species.Id">@species.Name</option>
+                        }
+                    </select>
+                    <small class="text-muted d-block mt-1">
+                        @{
+                            var selectedSpecies = speciesList.FirstOrDefault(s => s.Id == vm.Model.Species);
+                            if (selectedSpecies != null && selectedSpecies.AttributeModifiers.Any())
+                            {
+                                <text>Modifiers: @string.Join(", ", selectedSpecies.AttributeModifiers.Select(m => $"{m.AttributeName} {(m.Modifier >= 0 ? "+" : "")}{m.Modifier}"))</text>
+                            }
+                            else
+                            {
+                                <text>No attribute modifiers (baseline species)</text>
+                            }
+                        }
+                    </small>
+                }
+                else
+                {
+                    <input type="text" value="@vm.Model.Species" class="form-control" disabled />
+                    <small class="text-muted">Loading species...</small>
+                }
+            </td>
+        </tr>
+        
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.SkinDescription)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.HairDescription)" />
         <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Height)" />
@@ -37,4 +73,26 @@
 {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
+
+    private List<SpeciesInfo>? speciesList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var list = await speciesListPortal.FetchAsync();
+            speciesList = list.ToList();
+        }
+        catch
+        {
+            // Handle error - species list couldn't be loaded
+            speciesList = null;
+        }
+    }
+
+    private string GetSpeciesName(string speciesId)
+    {
+        var species = speciesList?.FirstOrDefault(s => s.Id == speciesId);
+        return species?.Name ?? speciesId;
+    }
 }

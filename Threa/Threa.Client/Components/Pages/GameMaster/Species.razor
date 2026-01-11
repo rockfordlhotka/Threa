@@ -1,0 +1,73 @@
+@page "/gamemaster/species"
+
+@using GameMechanics.Reference
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<SpeciesList> speciesListPortal
+@inject ViewModel<SpeciesList> vm
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<h3>Manage Species</h3>
+
+<div class="alert-danger">@vm.ViewModelErrorText</div>
+
+@if (vm.Model == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else
+{
+    <a href="/gamemaster/species/new" class="btn btn-primary mb-3">Add New Species</a>
+    
+    <QuickGrid Items="species">
+        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Title="Description" Property="@(p => p.Description)" />
+        <TemplateColumn Title="Attribute Modifiers">
+            @if (context.AttributeModifiers.Any())
+            {
+                @string.Join(", ", context.AttributeModifiers.Select(m => $"{m.AttributeName} {(m.Modifier >= 0 ? "+" : "")}{m.Modifier}"))
+            }
+            else
+            {
+                <span class="text-muted">None</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Type">
+            @if (context.Id.Equals("Human", StringComparison.OrdinalIgnoreCase))
+            {
+                <span class="badge bg-primary">Baseline</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Custom</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Actions">
+            <a href="/gamemaster/species/@context.Id">Edit</a>
+            @if (context.CanBeDeleted)
+            {
+                <text> | </text>
+                <a href="/gamemaster/species/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
+            }
+            else
+            {
+                <text> | </text>
+                <span class="text-muted" title="Human is the baseline species and cannot be deleted">Delete</span>
+            }
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private IQueryable<SpeciesInfo>? species;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => speciesListPortal.FetchAsync());
+        species = vm.Model?.AsQueryable();
+        StateHasChanged();
+    }
+}

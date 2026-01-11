@@ -12,6 +12,7 @@ public static class SqliteConfigurationExtensions
         services.AddTransient<IPlayerDal, PlayerDal>();
         services.AddTransient<ICharacterDal, CharacterDal>();
         services.AddTransient<IImageDal, ImageDal>();
+        services.AddTransient<ISpeciesDal, SpeciesDal>();
         services.AddTransient<IItemTemplateDal, ItemTemplateDal>();
         services.AddTransient<ICharacterItemDal, CharacterItemDal>();
         services.AddTransient<IEffectDefinitionDal, EffectDefinitionDal>();

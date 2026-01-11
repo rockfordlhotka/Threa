@@ -16,11 +16,32 @@ namespace GameMechanics.Reference
         [Fetch]
         private async Task Fetch([Inject] ISpeciesDal dal, [Inject] IChildDataPortal<SpeciesInfo> childPortal)
         {
-            var species = await dal.GetAllSpeciesAsync();
-            using (LoadListMode)
+            if (dal == null)
+                throw new ArgumentNullException(nameof(dal), "ISpeciesDal was not injected");
+            if (childPortal == null)
+                throw new ArgumentNullException(nameof(childPortal), "IChildDataPortal<SpeciesInfo> was not injected");
+
+             var species = await dal.GetAllSpeciesAsync();
+            if (species != null)
             {
-                foreach (var item in species)
-                    Add(childPortal.FetchChild(item));
+                using (LoadListMode)
+                {
+                    foreach (var item in species)
+                    {
+                        if (item != null)
+                        {
+                            try
+                            {
+                                Add(childPortal.FetchChild(item));
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log the specific item that failed
+                                throw new InvalidOperationException($"Failed to fetch child for species '{item.Id}' ('{item.Name}')", ex);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -61,10 +82,19 @@ namespace GameMechanics.Reference
         }
 
         /// <summary>
+        /// Whether this species can be deleted.
+        /// Human cannot be deleted.
+        /// </summary>
+        public bool CanBeDeleted => !Id.Equals("Human", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Gets the modifier for a specific attribute, or 0 if none.
         /// </summary>
         public int GetModifier(string attributeName)
         {
+            if (AttributeModifiers == null || string.IsNullOrEmpty(attributeName))
+                return 0;
+                
             var modifier = AttributeModifiers.FirstOrDefault(m => m.AttributeName == attributeName);
             return modifier?.Modifier ?? 0;
         }
@@ -72,10 +102,23 @@ namespace GameMechanics.Reference
         [FetchChild]
         private void Fetch(Threa.Dal.Dto.Species species, [Inject] IChildDataPortal<SpeciesAttributeModifierList> modifiersPortal)
         {
-            Id = species.Id;
-            Name = species.Name;
-            Description = species.Description;
-            AttributeModifiers = modifiersPortal.FetchChild(species.AttributeModifiers);
+            if (species == null)
+                throw new ArgumentNullException(nameof(species));
+            if (modifiersPortal == null)
+                throw new ArgumentNullException(nameof(modifiersPortal), "IChildDataPortal<SpeciesAttributeModifierList> was not injected");
+
+            Id = species.Id ?? string.Empty;
+            Name = species.Name ?? string.Empty;
+            Description = species.Description ?? string.Empty;
+            
+            try
+            {
+                AttributeModifiers = modifiersPortal.FetchChild(species.AttributeModifiers ?? new List<Threa.Dal.Dto.SpeciesAttributeModifier>());
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to fetch attribute modifiers for species '{species.Id}' ('{species.Name}')", ex);
+            }
         }
     }
 
@@ -89,10 +132,16 @@ namespace GameMechanics.Reference
         private void Fetch(List<Threa.Dal.Dto.SpeciesAttributeModifier> modifiers, 
             [Inject] IChildDataPortal<SpeciesAttributeModifierInfo> childPortal)
         {
-            using (LoadListMode)
+            if (modifiers != null)
             {
-                foreach (var item in modifiers)
-                    Add(childPortal.FetchChild(item));
+                using (LoadListMode)
+                {
+                    foreach (var item in modifiers)
+                    {
+                        if (item != null)
+                            Add(childPortal.FetchChild(item));
+                    }
+                }
             }
         }
     }
@@ -120,8 +169,8 @@ namespace GameMechanics.Reference
         [FetchChild]
         private void Fetch(Threa.Dal.Dto.SpeciesAttributeModifier modifier)
         {
-            AttributeName = modifier.AttributeName;
-            Modifier = modifier.Modifier;
+            AttributeName = modifier?.AttributeName ?? string.Empty;
+            Modifier = modifier?.Modifier ?? 0;
         }
     }
 }

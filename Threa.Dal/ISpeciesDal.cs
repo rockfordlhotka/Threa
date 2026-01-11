@@ -19,4 +19,16 @@ public interface ISpeciesDal
     /// </summary>
     /// <param name="id">The species ID.</param>
     Task<Species> GetSpeciesAsync(string id);
+
+    /// <summary>
+    /// Saves a species (insert or update).
+    /// </summary>
+    Task<Species> SaveSpeciesAsync(Species species);
+
+    /// <summary>
+    /// Deletes a species.
+    /// Cannot delete Human species.
+    /// </summary>
+    Task DeleteSpeciesAsync(string id);
 }
+
