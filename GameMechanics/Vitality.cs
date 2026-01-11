@@ -1,4 +1,5 @@
 ﻿using Csla;
+using GameMechanics.Effects;
 using GameMechanics.Reference;
 using System;
 using Threa.Dal.Dto;
@@ -41,7 +42,7 @@ namespace GameMechanics
       get => (CharacterEdit)Parent;
     }
 
-    public void EndOfRound()
+    public void EndOfRound(Csla.IChildDataPortal<EffectRecord>? effectPortal = null)
     {
       if (Value < BaseValue)
       {
@@ -79,7 +80,14 @@ namespace GameMechanics
         {
           var overflow = -Value;
           Value = 0;
-          Character.Wounds.TakeWound(overflow);
+          if (effectPortal != null)
+          {
+            for (int i = 0; i < overflow; i++)
+            {
+              var location = EffectList.GetRandomLocation();
+              Effects.Behaviors.WoundBehavior.TakeWound(Character, location, effectPortal);
+            }
+          }
         }
       }
     }

@@ -41,8 +41,8 @@ namespace GameMechanics.Test
       var strAttr = character.AttributeList.First(a => a.Name == "STR");
       strAttr.BaseValue = 12;
       
-      // Modify a skill
-      var skill = character.Skills.FirstOrDefault(s => s.Name == "Melee");
+      // Modify a skill (using a standard skill that always exists)
+      var skill = character.Skills.FirstOrDefault(s => s.Name == "Physicality");
       if (skill != null)
       {
         skill.Level = 5;
@@ -74,8 +74,8 @@ namespace GameMechanics.Test
       Assert.AreEqual(12, loadedStrAttr.BaseValue, "STR BaseValue should persist");
       
       // Verify skill
-      var loadedSkill = loaded.Skills.FirstOrDefault(s => s.Name == "Melee");
-      Assert.IsNotNull(loadedSkill, "Melee skill should exist");
+      var loadedSkill = loaded.Skills.FirstOrDefault(s => s.Name == "Physicality");
+      Assert.IsNotNull(loadedSkill, "Physicality skill should exist");
       Assert.AreEqual(5, loadedSkill.Level, "Skill level should persist");
       Assert.AreEqual(10, loadedSkill.XPBanked, "Skill XPBanked should persist");
     }
@@ -91,7 +91,7 @@ namespace GameMechanics.Test
       character.Name = "Original Name";
       character.Species = "Human";
       
-      var skill = character.Skills.FirstOrDefault(s => s.Name == "Melee");
+      var skill = character.Skills.FirstOrDefault(s => s.Name == "Physicality");
       if (skill != null)
       {
         skill.Level = 3;
@@ -105,7 +105,7 @@ namespace GameMechanics.Test
       fetched.Name = "Updated Name";
       fetched.Species = "Dwarf";
       
-      var fetchedSkill = fetched.Skills.FirstOrDefault(s => s.Name == "Melee");
+      var fetchedSkill = fetched.Skills.FirstOrDefault(s => s.Name == "Physicality");
       if (fetchedSkill != null)
       {
         fetchedSkill.Level = 7;
@@ -119,8 +119,8 @@ namespace GameMechanics.Test
       Assert.AreEqual("Updated Name", reloaded.Name, "Updated name should persist");
       Assert.AreEqual("Dwarf", reloaded.Species, "Updated species should persist");
       
-      var reloadedSkill = reloaded.Skills.FirstOrDefault(s => s.Name == "Melee");
-      Assert.IsNotNull(reloadedSkill, "Melee skill should still exist");
+      var reloadedSkill = reloaded.Skills.FirstOrDefault(s => s.Name == "Physicality");
+      Assert.IsNotNull(reloadedSkill, "Physicality skill should still exist");
       Assert.AreEqual(7, reloadedSkill.Level, "Updated skill level should persist");
     }
   }

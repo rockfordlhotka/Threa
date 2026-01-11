@@ -152,11 +152,14 @@ namespace GameMechanics
       private set => LoadProperty(VitalityProperty, value);
     }
 
-    public static readonly PropertyInfo<WoundList> WoundsProperty = RegisterProperty<WoundList>(nameof(Wounds));
-    public WoundList Wounds
+    public static readonly PropertyInfo<EffectList> EffectsProperty = RegisterProperty<EffectList>(nameof(Effects));
+    /// <summary>
+    /// All active effects on this character (wounds, buffs, debuffs, poisons, spells, etc.).
+    /// </summary>
+    public EffectList Effects
     {
-      get => GetProperty(WoundsProperty);
-      private set => LoadProperty(WoundsProperty, value);
+      get => GetProperty(EffectsProperty);
+      private set => LoadProperty(EffectsProperty, value);
     }
 
     public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
@@ -264,6 +267,11 @@ namespace GameMechanics
     /// </summary>
     public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
 
+    /// <summary>
+    /// Gets the raw/base attribute value without effect modifiers.
+    /// </summary>
+    /// <param name="attributeName">The attribute name (STR, DEX, END, INT, ITT, WIL, PHY).</param>
+    /// <returns>The base attribute value.</returns>
     public int GetAttribute(string attributeName)
     {
       var result = AttributeList.Where(r => r.Name == attributeName).FirstOrDefault();
@@ -271,6 +279,19 @@ namespace GameMechanics
         return 0;
       else
         return result.Value;
+    }
+
+    /// <summary>
+    /// Gets the effective attribute value including all active effect modifiers.
+    /// Use this for game mechanics calculations (combat, skills, etc.).
+    /// </summary>
+    /// <param name="attributeName">The attribute name (STR, DEX, END, INT, ITT, WIL, PHY).</param>
+    /// <returns>The effective attribute value after effect modifiers.</returns>
+    public int GetEffectiveAttribute(string attributeName)
+    {
+      var baseValue = GetAttribute(attributeName);
+      var modifier = Effects.GetAttributeModifier(attributeName, baseValue);
+      return baseValue + modifier;
     }
 
     /// <summary>
@@ -296,19 +317,19 @@ namespace GameMechanics
       BusinessRules.CheckRules(VitalityProperty);
     }
 
-    public void EndOfRound()
+    public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
       Fatigue.EndOfRound();
-      Vitality.EndOfRound();
-      Wounds.EndOfRound();
+      Vitality.EndOfRound(effectPortal);
+      Effects.EndOfRound();
       ActionPoints.EndOfRound();
     }
 
-    public void TakeDamage(DamageValue damageValue)
+    public void TakeDamage(DamageValue damageValue, IChildDataPortal<EffectRecord> effectPortal)
     {
       Fatigue.TakeDamage(damageValue);
       Vitality.TakeDamage(damageValue);
-      Wounds.TakeDamage(damageValue);
+      Effects.TakeDamage(damageValue, effectPortal);
     }
 
     protected override void AddBusinessRules()
@@ -324,7 +345,7 @@ namespace GameMechanics
     private void Create([Inject] ApplicationContext applicationContext,
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal)
@@ -332,7 +353,7 @@ namespace GameMechanics
       var ci = (System.Security.Claims.ClaimsIdentity?)applicationContext.User.Identity ?? 
         throw new InvalidOperationException("User not authenticated");
       var playerId = int.Parse(ci.Claims.Where(r => r.Type == ClaimTypes.NameIdentifier).First().Value);
-      CreateInternal(playerId, null, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
     [Create]
@@ -340,12 +361,12 @@ namespace GameMechanics
     private void Create(int playerId, 
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal)
     {
-      CreateInternal(playerId, null, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
     /// <summary>
@@ -358,18 +379,18 @@ namespace GameMechanics
     private void Create(int playerId, Reference.SpeciesInfo species,
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal)
     {
-      CreateInternal(playerId, species, attributePortal, skillPortal, woundPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, species, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
     }
 
     private void CreateInternal(int playerId, Reference.SpeciesInfo? species,
       IChildDataPortal<AttributeEditList> attributePortal,
       IChildDataPortal<SkillEditList> skillPortal,
-      IChildDataPortal<WoundList> woundPortal,
+      IChildDataPortal<EffectList> effectPortal,
       IChildDataPortal<ActionPoints> actionPointsPortal,
       IChildDataPortal<Fatigue> fatPortal,
       IChildDataPortal<Vitality> vitPortal)
@@ -387,7 +408,7 @@ namespace GameMechanics
           AttributeList = attributePortal.CreateChild();
         
         Skills = skillPortal.CreateChild();
-        Wounds = woundPortal.CreateChild();
+        Effects = effectPortal.CreateChild();
         Fatigue = fatPortal.CreateChild(this);
         Vitality = vitPortal.CreateChild(this);
         ActionPoints = actionPointsPortal.CreateChild(this);
@@ -402,9 +423,9 @@ namespace GameMechanics
         nameof(Skills),
         nameof(Fatigue),
         nameof(Vitality),
+        nameof(Effects),
         nameof(IsPassedOut),
         nameof(IsBeingSaved),
-        nameof(Threa.Dal.Dto.Character.Wounds),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
         nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
@@ -429,7 +450,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal,
+      [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
@@ -439,7 +460,7 @@ namespace GameMechanics
         Fatigue = fatPortal.FetchChild(existing);
         Vitality = vitPortal.FetchChild(existing);
         ActionPoints = actionPointsPortal.FetchChild(existing);
-        Wounds = woundPortal.FetchChild(existing.Wounds);
+        Effects = effectPortal.FetchChild(existing.Effects);
         
         // Load species info to pass modifiers to AttributeList
         var speciesList = await speciesPortal.FetchAsync();
@@ -458,7 +479,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal)
+      [Inject] IChildDataPortal<EffectList> effectPortal)
     {
       var toSave = dal.GetBlank();
       using (BypassPropertyChecks)
@@ -467,7 +488,7 @@ namespace GameMechanics
         fatPortal.UpdateChild(Fatigue, toSave);
         vitPortal.UpdateChild(Vitality, toSave);
         actionPointsPortal.UpdateChild(ActionPoints, toSave);
-        woundPortal.UpdateChild(Wounds, toSave.Wounds);
+        effectPortal.UpdateChild(Effects, toSave.Effects);
         attributePortal.UpdateChild(AttributeList, toSave.AttributeList);
         skillPortal.UpdateChild(Skills, toSave.Skills);
       }
@@ -482,7 +503,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
-      [Inject] IChildDataPortal<WoundList> woundPortal)
+      [Inject] IChildDataPortal<EffectList> effectPortal)
     {
       using (BypassPropertyChecks)
       {
@@ -491,7 +512,7 @@ namespace GameMechanics
         fatPortal.UpdateChild(Fatigue, existing);
         vitPortal.UpdateChild(Vitality, existing);
         actionPointsPortal.UpdateChild(ActionPoints, existing);
-        woundPortal.UpdateChild(Wounds, existing.Wounds);
+        effectPortal.UpdateChild(Effects, existing.Effects);
         attributePortal.UpdateChild(AttributeList, existing.AttributeList);
         skillPortal.UpdateChild(Skills, existing.Skills);
         await dal.SaveCharacterAsync(existing);

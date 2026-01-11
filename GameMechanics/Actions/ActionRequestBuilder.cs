@@ -24,7 +24,7 @@ public static class ActionRequestBuilder
         int attributeValue = SkillEdit.GetAttributeBase(character, skillEdit.PrimaryAttribute);
         
         // Count wounds for penalty calculation
-        int woundCount = character.Wounds?.Count ?? 0;
+        int woundCount = character.Effects?.TotalWoundCount ?? 0;
 
         return new ActionRequest
         {

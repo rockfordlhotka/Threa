@@ -40,11 +40,12 @@ namespace GameMechanics.Test
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
       var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       var dmg = rv.CalculateDamageValue(0, 1);
       var result = DamageSheet.GetDamageResult(dmg.Damage);
-      c.TakeDamage(dmg);
+      c.TakeDamage(dmg, effectPortal);
       Assert.AreEqual(result.Fatigue, c.Fatigue.PendingDamage);
       Assert.AreEqual(result.Vitality, c.Vitality.PendingDamage);
     }
@@ -54,6 +55,7 @@ namespace GameMechanics.Test
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
       var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       DamageValue dmg = new DamageValue(rv, 5, 1);
@@ -61,13 +63,13 @@ namespace GameMechanics.Test
         dmg = new DamageValue(rv, 5, 1);
 
       // use damage value
-      c.TakeDamage(dmg);
-      c.EndOfRound();
+      c.TakeDamage(dmg, effectPortal);
+      c.EndOfRound(effectPortal);
       Assert.IsTrue(c.Fatigue.BaseValue > c.Fatigue.Value, $"no initial damage {dmg.Damage}");
       while (c.Fatigue.Value < c.Fatigue.BaseValue)
-        c.EndOfRound();
+        c.EndOfRound(effectPortal);
       Assert.AreEqual(c.Fatigue.BaseValue, c.Fatigue.Value, "improper healing");
-      c.EndOfRound();
+      c.EndOfRound(effectPortal);
       Assert.AreEqual(c.Fatigue.BaseValue, c.Fatigue.Value, "improper noop");
     }
 
@@ -76,6 +78,7 @@ namespace GameMechanics.Test
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
       var c = dp.Create(42);
       var rv = ResultValues.GetResult(5);
       // get a positive damage value
@@ -86,11 +89,11 @@ namespace GameMechanics.Test
       } while (dmg.Damage < 7);
 
       // use damage value
-      c.TakeDamage(dmg);
-      c.EndOfRound();
+      c.TakeDamage(dmg, effectPortal);
+      c.EndOfRound(effectPortal);
       Assert.IsTrue(c.Vitality.BaseValue > c.Vitality.Value, $"no initial damage {dmg.Damage}");
       while (c.Vitality.Value < c.Vitality.BaseValue)
-        c.EndOfRound();
+        c.EndOfRound(effectPortal);
       Assert.IsTrue(c.Vitality.Value >= c.Vitality.BaseValue, "improper healing");
     }
 

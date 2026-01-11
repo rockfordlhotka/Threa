@@ -35,7 +35,6 @@ public class Character
     public string ImageUrl { get; set; } = string.Empty;
     public List<CharacterAttribute> AttributeList { get; set; } = [];
     public List<CharacterSkill> Skills { get; set; } = [];
-    public List<Wound> Wounds { get; set; } = [];
 
     /// <summary>
     /// Items owned by this character.

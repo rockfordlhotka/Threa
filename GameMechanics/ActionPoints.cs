@@ -149,6 +149,7 @@ namespace GameMechanics
       }
     }
 
+    [InsertChild]
     [UpdateChild]
     private void Update(Character character)
     {

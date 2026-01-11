@@ -1,4 +1,5 @@
 ﻿using Csla;
+using GameMechanics.Effects;
 using GameMechanics.Reference;
 using System;
 using System.Linq;
@@ -49,12 +50,12 @@ namespace GameMechanics
       get => (CharacterEdit)((DamageList)Parent).Parent;
     }
 
-    public void EndOfRound()
+    public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
       if (Name == "FAT")
         EndOfRoundFat();
       else
-        EndOfRoundVit();
+        EndOfRoundVit(effectPortal);
     }
 
     private void EndOfRoundFat()
@@ -88,7 +89,7 @@ namespace GameMechanics
       }
     }
 
-    private void EndOfRoundVit()
+    private void EndOfRoundVit(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
       if (Value < BaseValue || PendingDamage > 0)
       {
@@ -109,7 +110,14 @@ namespace GameMechanics
         {
           var overflow = -Value;
           Value = 0;
-          Character.Wounds.TakeWound(overflow);
+          if (effectPortal != null)
+          {
+            for (int i = 0; i < overflow; i++)
+            {
+              var location = EffectList.GetRandomLocation();
+              Effects.Behaviors.WoundBehavior.TakeWound(Character, location, effectPortal);
+            }
+          }
         }
         CheckVitFocusRolls();
       }
