@@ -11,13 +11,17 @@ namespace GameMechanics.Player
     [Fetch]
     private async Task Fetch(int playerId, 
       [Inject] ICharacterDal dal, 
+      [Inject] ITableDal tableDal,
       [Inject] IChildDataPortal<CharacterInfo> characterPortal)
     {
       var items = await dal.GetCharactersAsync(playerId);
       using (LoadListMode)
       {
         foreach (var item in items)
-          Add(characterPortal.FetchChild(item));
+        {
+          var table = await tableDal.GetTableForCharacterAsync(item.Id);
+          Add(characterPortal.FetchChild(item, table));
+        }
       }
     }
   }

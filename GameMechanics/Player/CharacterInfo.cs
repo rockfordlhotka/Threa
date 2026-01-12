@@ -35,13 +35,35 @@ namespace GameMechanics.Player
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<Guid?> TableIdProperty = RegisterProperty<Guid?>(nameof(TableId));
+    public Guid? TableId
+    {
+      get => GetProperty(TableIdProperty);
+      private set => LoadProperty(TableIdProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> TableNameProperty = RegisterProperty<string?>(nameof(TableName));
+    public string? TableName
+    {
+      get => GetProperty(TableNameProperty);
+      private set => LoadProperty(TableNameProperty, value);
+    }
+
+    public bool IsAttachedToTable => TableId.HasValue;
+
     [FetchChild]
-    private void Fetch(Character character)
+    private void Fetch(Character character, GameTable? table)
     {
       Id = character.Id;
       Name = character.Name;
       Species = character.Species;
       IsPlayable = character.IsPlayable;
+      
+      if (table != null)
+      {
+        TableId = table.Id;
+        TableName = table.Name;
+      }
     }
   }
 }

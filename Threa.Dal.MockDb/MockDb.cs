@@ -62,12 +62,12 @@ public static class MockDb
     /// <summary>
     /// Game tables (active sessions).
     /// </summary>
-    public static readonly List<GameTable> Tables = [];
+    public static readonly List<GameTable> Tables = CreateTables();
 
     /// <summary>
     /// Characters connected to tables.
     /// </summary>
-    public static readonly List<TableCharacter> TableCharacters = [];
+    public static readonly List<TableCharacter> TableCharacters = CreateTableCharacters();
 
     /// <summary>
     /// NPCs at tables.
@@ -78,6 +78,40 @@ public static class MockDb
     /// Skill definitions - all available skills in the game.
     /// </summary>
     public static readonly List<Skill> Skills = CreateSkills();
+
+    private static List<GameTable> CreateTables()
+    {
+        return
+        [
+            new GameTable
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Name = "Test Adventure",
+                GameMasterId = 1,
+                CreatedAt = DateTime.UtcNow.AddDays(-7),
+                LastActivityAt = DateTime.UtcNow.AddHours(-1),
+                Status = TableStatus.Active,
+                CurrentRound = 5,
+                IsInCombat = false
+            }
+        ];
+    }
+
+    private static List<TableCharacter> CreateTableCharacters()
+    {
+        return
+        [
+            new TableCharacter
+            {
+                TableId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                CharacterId = 1, // First test character
+                PlayerId = 1,
+                JoinedAt = DateTime.UtcNow.AddDays(-7),
+                ConnectionStatus = ConnectionStatus.Connected,
+                LastActivity = DateTime.UtcNow.AddHours(-1)
+            }
+        ];
+    }
 
     /// <summary>
     /// Magic school definitions - schools of magic available in the game world.

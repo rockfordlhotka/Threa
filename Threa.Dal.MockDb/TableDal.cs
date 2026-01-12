@@ -140,4 +140,15 @@ public class TableDal : ITableDal
         var tables = MockDb.Tables.Where(t => tableIds.Contains(t.Id)).ToList();
         return Task.FromResult(tables);
     }
+
+    public Task<GameTable?> GetTableForCharacterAsync(int characterId)
+    {
+        var tableCharacter = MockDb.TableCharacters
+            .FirstOrDefault(tc => tc.CharacterId == characterId);
+        if (tableCharacter == null)
+            return Task.FromResult<GameTable?>(null);
+
+        var table = MockDb.Tables.FirstOrDefault(t => t.Id == tableCharacter.TableId);
+        return Task.FromResult(table);
+    }
 }

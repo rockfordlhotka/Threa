@@ -391,4 +391,30 @@ public class TableDal : ITableDal
             throw new OperationFailedException("Error getting tables for character", ex);
         }
     }
+
+    public async Task<GameTable?> GetTableForCharacterAsync(int characterId)
+    {
+        try
+        {
+            var sql = @"
+                SELECT gt.Json FROM GameTables gt
+                INNER JOIN TableCharacters tc ON gt.Id = tc.TableId
+                WHERE tc.CharacterId = @CharacterId
+                LIMIT 1";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@CharacterId", characterId);
+            using var reader = await command.ExecuteReaderAsync();
+            if (reader.Read())
+            {
+                string json = reader.GetString(0);
+                return JsonSerializer.Deserialize<GameTable>(json);
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error getting table for character", ex);
+        }
+    }
 }

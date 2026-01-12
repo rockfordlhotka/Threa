@@ -84,4 +84,10 @@ public interface ITableDal
     /// Gets tables that a specific character is connected to.
     /// </summary>
     Task<List<GameTable>> GetTablesForCharacterAsync(int characterId);
+
+    /// <summary>
+    /// Gets the table a specific character is currently attached to, or null if not attached.
+    /// A character can only be attached to one table at a time.
+    /// </summary>
+    Task<GameTable?> GetTableForCharacterAsync(int characterId);
 }

@@ -14,6 +14,9 @@
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IDataPortal<GameMechanics.Player.CharacterList> characterListPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterAttacher> attacherPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -46,20 +49,154 @@ else if (character == null)
         <div class="list-group" style="max-width: 500px;">
             @foreach (var charInfo in availableCharacters)
             {
-                <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                        @onclick="() => SelectCharacterAsync(charInfo.Id)">
-                    <div>
-                        <strong>@charInfo.Name</strong>
-                        <br />
-                        <small class="text-muted">@charInfo.Species</small>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1" 
+                         style="cursor: pointer;" 
+                         @onclick="() => SelectCharacterAsync(charInfo.Id)">
+                        <div>
+                            <strong>@charInfo.Name</strong>
+                            <br />
+                            <small class="text-muted">@charInfo.Species</small>
+                            @if (charInfo.IsAttachedToTable)
+                            {
+                                <br />
+                                <small class="text-info"><i class="bi bi-table"></i> Table: @charInfo.TableName</small>
+                            }
+                        </div>
                     </div>
-                    <span class="badge bg-success">Play</span>
-                </button>
+                    <div class="d-flex gap-2">
+                        @if (charInfo.IsAttachedToTable)
+                        {
+                            <button class="btn btn-sm btn-outline-warning" 
+                                    title="Detach from table"
+                                    @onclick="() => ShowDetachConfirmation(charInfo)"
+                                    @onclick:stopPropagation="true">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        }
+                        <button class="btn btn-sm btn-success" 
+                                @onclick="() => SelectCharacterAsync(charInfo.Id)"
+                                @onclick:stopPropagation="true">
+                            Play
+                        </button>
+                    </div>
+                </div>
             }
         </div>
     }
 }
-else
+
+@* Detach Confirmation Dialog *@
+@if (showDetachConfirmation && characterToDetach != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Confirm Detach from Table</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDetach"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to detach <strong>@characterToDetach.Name</strong> from table <strong>@characterToDetach.TableName</strong>?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This will remove your character from the active game session. 
+                        You will need to rejoin the table to continue playing in that session.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDetach">Cancel</button>
+                    <button type="button" class="btn btn-warning" @onclick="ConfirmDetach" disabled="@isDetaching">
+                        @if (isDetaching)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Detaching...</span>
+                        }
+                        else
+                        {
+                            <span>Detach Character</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Table Selection Dialog *@
+@if (showTableSelection && characterToAttach != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Join a Table</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelTableSelection"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select a table for <strong>@characterToAttach.Name</strong> to join:</p>
+                    
+                    @if (availableTables == null)
+                    {
+                        <p>Loading tables...</p>
+                    }
+                    else if (!availableTables.Any())
+                    {
+                        <div class="alert alert-info">
+                            <p>No active tables available.</p>
+                            <p>You can still play without joining a table, or ask a Game Master to create one.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group mb-3">
+                            @foreach (var tableInfo in availableTables)
+                            {
+                                <button type="button" 
+                                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedTableId == tableInfo.Id ? "active" : "")"
+                                        @onclick="() => selectedTableId = tableInfo.Id">
+                                    <div>
+                                        <strong>@tableInfo.Name</strong>
+                                        <br />
+                                        <small>@tableInfo.StatusDisplay - Round @tableInfo.CurrentRound</small>
+                                    </div>
+                                    @if (selectedTableId == tableInfo.Id)
+                                    {
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelTableSelection">Cancel</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick="PlayWithoutTable">
+                        Play Without Table
+                    </button>
+                    @if (availableTables != null && availableTables.Any())
+                    {
+                        <button type="button" class="btn btn-primary" 
+                                @onclick="ConfirmTableSelection" 
+                                disabled="@(selectedTableId == Guid.Empty || isAttaching)">
+                            @if (isAttaching)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span>Joining...</span>
+                            }
+                            else
+                            {
+                                <span>Join Table</span>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (character != null)
 {
     <!-- Character Status Header -->
     <div class="character-header" style="background-color: #2d3748; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
@@ -161,62 +298,124 @@ else
 }
 
 @code {
-    [Parameter]
-    public Guid TableId { get; set; }
+[Parameter]
+public Guid TableId { get; set; }
 
-    private static readonly string[] tabNames = new[] { "Status", "Actions", "Skills", "Magic", "Defense", "Inventory" };
-    private string activeTab = tabNames[0];
+private static readonly string[] tabNames = new[] { "Status", "Actions", "Skills", "Magic", "Defense", "Inventory" };
+private string activeTab = tabNames[0];
 
-    private GameMechanics.CharacterEdit? character;
-    private GameMechanics.GamePlay.TableEdit? table;
-    private IEnumerable<GameMechanics.Player.CharacterInfo>? availableCharacters;
-    private string? errorMessage;
-    private List<ActivityLogEntry> activityLog = new();
+private GameMechanics.CharacterEdit? character;
+private GameMechanics.GamePlay.TableEdit? table;
+private IEnumerable<GameMechanics.Player.CharacterInfo>? availableCharacters;
+private IEnumerable<GameMechanics.GamePlay.TableInfo>? availableTables;
+private string? errorMessage;
+private int currentPlayerId;
+private List<ActivityLogEntry> activityLog = new();
 
-    private record ActivityLogEntry(DateTime Timestamp, string Message);
+// Detach confirmation state
+private bool showDetachConfirmation;
+private bool isDetaching;
+private GameMechanics.Player.CharacterInfo? characterToDetach;
 
-    protected override async Task OnInitializedAsync()
+// Table selection state
+private bool showTableSelection;
+private bool isAttaching;
+private GameMechanics.Player.CharacterInfo? characterToAttach;
+private Guid selectedTableId;
+
+private record ActivityLogEntry(DateTime Timestamp, string Message);
+
+protected override async Task OnInitializedAsync()
+{
+    await StateManager.InitializeAsync();
+
+    if (RenderModeProvider.GetRenderMode(this).IsInteractive())
     {
-        await StateManager.InitializeAsync();
+        // Get the current player ID from claims
+        currentPlayerId = int.Parse(applicationContext.Principal.Claims
+            .Where(_ => _.Type == System.Security.Claims.ClaimTypes.NameIdentifier).First().Value);
 
-        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        await LoadCharactersAsync();
+
+        // If TableId is provided, load the table
+        if (TableId != Guid.Empty)
         {
-            // Get the current player ID from claims
-            var playerId = int.Parse(applicationContext.Principal.Claims
-                .Where(_ => _.Type == System.Security.Claims.ClaimTypes.NameIdentifier).First().Value);
-
-            // Load available characters for selection
-            var charList = await characterListPortal.FetchAsync(playerId);
-            availableCharacters = charList.Where(c => c.IsPlayable);
-
-            // If TableId is provided, load the table
-            if (TableId != Guid.Empty)
+            try
             {
-                try
-                {
-                    table = await tablePortal.FetchAsync(TableId);
-                }
-                catch (Exception ex)
-                {
-                    errorMessage = $"Failed to load table: {ex.Message}";
-                }
+                table = await tablePortal.FetchAsync(TableId);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to load table: {ex.Message}";
             }
         }
     }
+}
 
-    private async Task SelectCharacterAsync(int characterId)
+private async Task LoadCharactersAsync()
+{
+    // Load available characters for selection
+    var charList = await characterListPortal.FetchAsync(currentPlayerId);
+    availableCharacters = charList.Where(c => c.IsPlayable);
+}
+
+private async Task LoadTablesAsync()
+{
+    try
     {
-        try
+        var tableList = await tableListPortal.FetchAsync();
+        // Show only active tables (not ended)
+        availableTables = tableList.Where(t => t.Status != Threa.Dal.Dto.TableStatus.Ended);
+    }
+    catch (Exception ex)
+    {
+        errorMessage = $"Failed to load tables: {ex.Message}";
+    }
+}
+
+private async Task SelectCharacterAsync(int characterId)
+{
+    try
+    {
+        errorMessage = null;
+        
+        // Find the character info to check if attached to table
+        var charInfo = availableCharacters?.FirstOrDefault(c => c.Id == characterId);
+        
+        if (charInfo != null && !charInfo.IsAttachedToTable)
         {
-            errorMessage = null;
+            // Character not attached to a table - show table selection dialog
+            characterToAttach = charInfo;
+            selectedTableId = Guid.Empty;
+            await LoadTablesAsync();
+            showTableSelection = true;
+        }
+        else
+        {
+            // Character is attached to a table or we couldn't find info - just load and play
             character = await characterPortal.FetchAsync(characterId);
+            
+            // If attached to a table, load the table too
+            if (charInfo?.TableId != null)
+            {
+                try
+                {
+                    table = await tablePortal.FetchAsync(charInfo.TableId.Value);
+                }
+                catch
+                {
+                    // Table might not exist anymore - continue without it
+                }
+            }
+            
             AddLogEntry($"Playing as {character.Name}");
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to load character: {ex.Message}";
-        }
     }
+    catch (Exception ex)
+    {
+        errorMessage = $"Failed to load character: {ex.Message}";
+    }
+}
 
     private void SelectTab(string tabName)
     {
@@ -247,5 +446,123 @@ else
     {
         var percent = GetVitPercent();
         return percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+    }
+
+    // Detach confirmation methods
+    private void ShowDetachConfirmation(GameMechanics.Player.CharacterInfo charInfo)
+    {
+        characterToDetach = charInfo;
+        showDetachConfirmation = true;
+    }
+
+    private void CancelDetach()
+    {
+        showDetachConfirmation = false;
+        characterToDetach = null;
+    }
+
+    private async Task ConfirmDetach()
+    {
+        if (characterToDetach == null) return;
+
+        try
+        {
+            isDetaching = true;
+            errorMessage = null;
+
+            var result = await detacherPortal.ExecuteAsync(characterToDetach.Id);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Detached {characterToDetach.Name} from table {result.TableName}");
+                
+                // Reload the character list to reflect the change
+                await LoadCharactersAsync();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage ?? "Failed to detach character from table.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to detach character: {ex.Message}";
+        }
+        finally
+        {
+            isDetaching = false;
+            showDetachConfirmation = false;
+            characterToDetach = null;
+        }
+    }
+
+    // Table selection methods
+    private void CancelTableSelection()
+    {
+        showTableSelection = false;
+        characterToAttach = null;
+        selectedTableId = Guid.Empty;
+    }
+
+    private async Task PlayWithoutTable()
+    {
+        if (characterToAttach == null) return;
+
+        try
+        {
+            errorMessage = null;
+            character = await characterPortal.FetchAsync(characterToAttach.Id);
+            AddLogEntry($"Playing as {character.Name} (no table)");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load character: {ex.Message}";
+        }
+        finally
+        {
+            showTableSelection = false;
+            characterToAttach = null;
+            selectedTableId = Guid.Empty;
+        }
+    }
+
+    private async Task ConfirmTableSelection()
+    {
+        if (characterToAttach == null || selectedTableId == Guid.Empty) return;
+
+        try
+        {
+            isAttaching = true;
+            errorMessage = null;
+
+            var result = await attacherPortal.ExecuteAsync(characterToAttach.Id, selectedTableId, currentPlayerId);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Joined table {result.TableName} with {characterToAttach.Name}");
+
+                // Load the character and table
+                character = await characterPortal.FetchAsync(characterToAttach.Id);
+                table = await tablePortal.FetchAsync(selectedTableId);
+
+                // Reload the character list to reflect the change
+                await LoadCharactersAsync();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage ?? "Failed to join table.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to join table: {ex.Message}";
+        }
+        finally
+        {
+            isAttaching = false;
+            showTableSelection = false;
+            characterToAttach = null;
+            selectedTableId = Guid.Empty;
+        }
     }
 }
