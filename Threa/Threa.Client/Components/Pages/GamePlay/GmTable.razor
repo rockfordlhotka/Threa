@@ -4,6 +4,9 @@
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
+@implements IDisposable
+
+@using GameMechanics.Messaging
 @using Microsoft.AspNetCore.Authorization
 @using Threa.Services
 
@@ -12,6 +15,7 @@
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
+@inject IActivityLogService ActivityLog
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -274,9 +278,9 @@ else
                     {
                         @foreach (var entry in activityLog.TakeLast(20).Reverse())
                         {
-                            <div class="small mb-1">
+                            <div class="small mb-1 @GetActivityClass(entry.Category)">
                                 <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
-                                @entry.Message
+                                <strong>@entry.Source:</strong> @entry.Message
                             </div>
                         }
                     }
@@ -296,6 +300,7 @@ else
     private List<NpcInfo>? npcs;
     private string? errorMessage;
     private List<ActivityLogEntry> activityLog = new();
+    private IDisposable? activityLogSubscription;
 
     // Form fields
     private int damageAmount = 1;
@@ -307,7 +312,7 @@ else
     private string announcementText = "";
 
     private record NpcInfo(Guid Id, string Name);
-    private record ActivityLogEntry(DateTime Timestamp, string Message);
+    private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
     {
@@ -316,7 +321,26 @@ else
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {
             await LoadTable();
+            SubscribeToActivityLog();
         }
+    }
+
+    private void SubscribeToActivityLog()
+    {
+        activityLogSubscription = ActivityLog.Subscribe(TableId, msg =>
+        {
+            InvokeAsync(() =>
+            {
+                activityLog.Add(new ActivityLogEntry(msg.Timestamp, msg.Message, msg.Source, msg.Category));
+                if (activityLog.Count > 100) activityLog.RemoveAt(0);
+                StateHasChanged();
+            });
+        });
+    }
+
+    public void Dispose()
+    {
+        activityLogSubscription?.Dispose();
     }
 
     private async Task LoadTable()
@@ -334,10 +358,9 @@ else
         }
     }
 
-    private void AddLogEntry(string message)
+    private void AddLogEntry(string message, ActivityCategory category = ActivityCategory.General)
     {
-        activityLog.Add(new ActivityLogEntry(DateTime.Now, message));
-        if (activityLog.Count > 100) activityLog.RemoveAt(0);
+        ActivityLog.Publish(TableId, message, "GM", category);
     }
 
     private async Task StartSession()
@@ -345,7 +368,7 @@ else
         if (table == null) return;
         table.StartSession();
         await SaveTable();
-        AddLogEntry("Session started");
+        AddLogEntry("Session started", ActivityCategory.Session);
     }
 
     private async Task PauseSession()
@@ -353,7 +376,7 @@ else
         if (table == null) return;
         table.PauseSession();
         await SaveTable();
-        AddLogEntry("Session paused");
+        AddLogEntry("Session paused", ActivityCategory.Session);
     }
 
     private async Task ResumeSession()
@@ -361,7 +384,7 @@ else
         if (table == null) return;
         table.ResumeSession();
         await SaveTable();
-        AddLogEntry("Session resumed");
+        AddLogEntry("Session resumed", ActivityCategory.Session);
     }
 
     private async Task EndSession()
@@ -369,7 +392,7 @@ else
         if (table == null) return;
         table.EndSession();
         await SaveTable();
-        AddLogEntry("Session ended");
+        AddLogEntry("Session ended", ActivityCategory.Session);
     }
 
     private async Task AdvanceRound()
@@ -377,8 +400,7 @@ else
         if (table == null) return;
         table.AdvanceRound();
         await SaveTable();
-        AddLogEntry($"Advanced to round {table.CurrentRound}");
-        // TODO: Publish RabbitMQ message for round advance
+        AddLogEntry($"Advanced to round {table.CurrentRound}", ActivityCategory.Time);
     }
 
     private async Task AdvanceMultipleRounds()
@@ -386,8 +408,7 @@ else
         if (table == null) return;
         table.AdvanceRounds(roundsToAdvance);
         await SaveTable();
-        AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}");
-        // TODO: Publish RabbitMQ message for round advance
+        AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}", ActivityCategory.Time);
     }
 
     private async Task EnterCombat()
@@ -395,8 +416,7 @@ else
         if (table == null) return;
         table.EnterCombat();
         await SaveTable();
-        AddLogEntry("Combat started!");
-        // TODO: Publish RabbitMQ message for combat state change
+        AddLogEntry("Combat started!", ActivityCategory.Combat);
     }
 
     private async Task ExitCombat()
@@ -404,15 +424,13 @@ else
         if (table == null) return;
         table.ExitCombat();
         await SaveTable();
-        AddLogEntry("Combat ended");
-        // TODO: Publish RabbitMQ message for combat state change
+        AddLogEntry("Combat ended", ActivityCategory.Combat);
     }
 
     private void SendAnnouncement()
     {
         if (string.IsNullOrWhiteSpace(announcementText)) return;
-        AddLogEntry($"Announcement: {announcementText}");
-        // TODO: Publish RabbitMQ message for GM announcement
+        AddLogEntry(announcementText, ActivityCategory.Announcement);
         announcementText = "";
     }
 
@@ -436,47 +454,42 @@ else
 
     private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
     {
-        AddLogEntry($"Quick healed {character.CharacterName}");
-        // TODO: Publish RabbitMQ message for healing
+        AddLogEntry($"Quick healed {character.CharacterName}", ActivityCategory.Health);
     }
 
     private void QuickDamage(GameMechanics.GamePlay.TableCharacterInfo character)
     {
-        AddLogEntry($"Quick damaged {character.CharacterName}");
-        // TODO: Publish RabbitMQ message for damage
+        AddLogEntry($"Quick damaged {character.CharacterName}", ActivityCategory.Health);
     }
 
     private void ApplyDamage()
     {
         if (selectedCharacter == null) return;
-        AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}");
-        // TODO: Publish RabbitMQ message for damage
+        AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}", ActivityCategory.Health);
     }
 
     private void ApplyHealing()
     {
         if (selectedCharacter == null) return;
-        AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}");
-        // TODO: Publish RabbitMQ message for healing
+        AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}", ActivityCategory.Health);
     }
 
     private void ApplyEffect()
     {
         if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect)) return;
-        AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}");
-        // TODO: Publish RabbitMQ message for effect
+        AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
         selectedEffect = "";
     }
 
     private void AddNpc()
     {
-        AddLogEntry("NPC creation not yet implemented");
+        AddLogEntry("NPC creation not yet implemented", ActivityCategory.General);
     }
 
     private void RemoveNpc(Guid npcId)
     {
         npcs?.RemoveAll(n => n.Id == npcId);
-        AddLogEntry("NPC removed");
+        AddLogEntry("NPC removed", ActivityCategory.General);
     }
 
     private string GetPlayerJoinLink() =>
@@ -503,4 +516,17 @@ else
 
     private int GetPercent(int value, int max) =>
         max > 0 ? (value * 100 / max) : 0;
+
+    private string GetActivityClass(ActivityCategory category) =>
+        category switch
+        {
+            ActivityCategory.Combat => "text-danger",
+            ActivityCategory.Announcement => "text-primary fw-bold",
+            ActivityCategory.Health => "text-success",
+            ActivityCategory.Effect => "text-warning",
+            ActivityCategory.Time => "text-info",
+            ActivityCategory.Session => "text-secondary fst-italic",
+            ActivityCategory.Player => "text-muted",
+            _ => ""
+        };
 }

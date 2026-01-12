@@ -195,3 +195,64 @@ public class CharacterTimeResult
     /// </summary>
     public bool Died { get; init; }
 }
+
+/// <summary>
+/// Message for activity log entries shared across GM and player screens.
+/// </summary>
+public class ActivityLogMessage
+{
+    /// <summary>
+    /// Unique identifier for this message.
+    /// </summary>
+    public Guid MessageId { get; init; } = Guid.NewGuid();
+
+    /// <summary>
+    /// The table this activity belongs to.
+    /// </summary>
+    public Guid TableId { get; init; }
+
+    /// <summary>
+    /// When the activity occurred.
+    /// </summary>
+    public DateTime Timestamp { get; init; } = DateTime.Now;
+
+    /// <summary>
+    /// The activity message text.
+    /// </summary>
+    public string Message { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The source of the activity (GM, character name, or system).
+    /// </summary>
+    public string Source { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Category of activity for filtering/styling.
+    /// </summary>
+    public ActivityCategory Category { get; init; } = ActivityCategory.General;
+}
+
+/// <summary>
+/// Categories for activity log entries.
+/// </summary>
+public enum ActivityCategory
+{
+    /// <summary>General activity.</summary>
+    General,
+    /// <summary>Combat-related activity.</summary>
+    Combat,
+    /// <summary>Time/round advancement.</summary>
+    Time,
+    /// <summary>GM announcements.</summary>
+    Announcement,
+    /// <summary>Character actions (skills, spells, etc.).</summary>
+    Action,
+    /// <summary>Damage or healing applied.</summary>
+    Health,
+    /// <summary>Effects applied or removed.</summary>
+    Effect,
+    /// <summary>Session state changes (start, pause, end).</summary>
+    Session,
+    /// <summary>Player joined or left.</summary>
+    Player
+}

@@ -1,5 +1,6 @@
 using Csla.Configuration;
 using GameMechanics;
+using GameMechanics.Messaging.InMemory;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Threa.Components;
@@ -31,6 +32,7 @@ builder.Services.AddCsla(o => o
 
 builder.Services.AddSqlite();
 builder.Services.AddGameMechanics();
+builder.Services.AddInMemoryMessaging();
 
 var app = builder.Build();
 

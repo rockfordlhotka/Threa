@@ -11,7 +11,6 @@ Before contributing to this project, ensure you have:
 - **.NET 10 SDK** (version 10.0.101 or later) - [Download here](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **IDE**: Visual Studio 2022 (version 17.12+), Visual Studio Code, or JetBrains Rider
 - **Git** for version control
-- **Optional**: RabbitMQ for testing time event messaging (not required for core development)
 
 ### Verify Prerequisites
 
@@ -32,7 +31,7 @@ git --version
 | Data Implementation | `Threa.Dal.MockDb`, `Threa.Dal.Sqlite` | Pluggable DAL implementations |
 | Presentation | `Threa.Client` (Blazor WASM) | UI components, pages |
 | Server | `Threa` | Blazor host, CSLA data portal server |
-| Messaging | `GameMechanics.Messaging.RabbitMQ` | Time event pub/sub |
+| Messaging | `GameMechanics.Messaging.InMemory` | In-memory pub/sub using Rx.NET |
 | Tests | `GameMechanics.Test` | MSTest unit tests |
 
 ### Key Design Patterns

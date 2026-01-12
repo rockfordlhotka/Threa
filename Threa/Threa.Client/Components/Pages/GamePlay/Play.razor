@@ -5,6 +5,9 @@
 
 @attribute [Authorize]
 
+@implements IDisposable
+
+@using GameMechanics.Messaging
 @using Threa.Services
 
 @inject Csla.Blazor.State.StateManager StateManager
@@ -17,6 +20,7 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterAttacher> attacherPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
+@inject IActivityLogService ActivityLog
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -288,9 +292,9 @@ else if (character == null)
         {
             @foreach (var entry in activityLog.TakeLast(10).Reverse())
             {
-                <div class="small">
+                <div class="small @GetActivityClass(entry.Category)">
                     <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
-                    @entry.Message
+                    <strong>@entry.Source:</strong> @entry.Message
                 </div>
             }
         }
@@ -311,6 +315,7 @@ private IEnumerable<GameMechanics.GamePlay.TableInfo>? availableTables;
 private string? errorMessage;
 private int currentPlayerId;
 private List<ActivityLogEntry> activityLog = new();
+private IDisposable? activityLogSubscription;
 
 // Detach confirmation state
 private bool showDetachConfirmation;
@@ -323,7 +328,7 @@ private bool isAttaching;
 private GameMechanics.Player.CharacterInfo? characterToAttach;
 private Guid selectedTableId;
 
-private record ActivityLogEntry(DateTime Timestamp, string Message);
+private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
 protected override async Task OnInitializedAsync()
 {
@@ -343,6 +348,7 @@ protected override async Task OnInitializedAsync()
             try
             {
                 table = await tablePortal.FetchAsync(TableId);
+                SubscribeToActivityLog(TableId);
             }
             catch (Exception ex)
             {
@@ -401,14 +407,15 @@ private async Task SelectCharacterAsync(int characterId)
                 try
                 {
                     table = await tablePortal.FetchAsync(charInfo.TableId.Value);
+                    SubscribeToActivityLog(charInfo.TableId.Value);
                 }
                 catch
                 {
                     // Table might not exist anymore - continue without it
                 }
             }
-            
-            AddLogEntry($"Playing as {character.Name}");
+
+            AddLogEntry($"Playing as {character.Name}", ActivityCategory.Player);
         }
     }
     catch (Exception ex)
@@ -422,12 +429,55 @@ private async Task SelectCharacterAsync(int characterId)
         activeTab = tabName;
     }
 
-    private void AddLogEntry(string message)
+    private void AddLogEntry(string message, ActivityCategory category = ActivityCategory.General)
     {
-        activityLog.Add(new ActivityLogEntry(DateTime.Now, message));
-        if (activityLog.Count > 100)
-            activityLog.RemoveAt(0);
+        // Only publish if we have a table context
+        if (table != null)
+        {
+            ActivityLog.Publish(table.Id, message, character?.Name ?? "Player", category);
+        }
+        else
+        {
+            // Local-only for when there's no table
+            activityLog.Add(new ActivityLogEntry(DateTime.Now, message, character?.Name ?? "Player", category));
+            if (activityLog.Count > 100)
+                activityLog.RemoveAt(0);
+        }
     }
+
+    private void SubscribeToActivityLog(Guid tableId)
+    {
+        // Unsubscribe from any previous subscription
+        activityLogSubscription?.Dispose();
+
+        activityLogSubscription = ActivityLog.Subscribe(tableId, msg =>
+        {
+            InvokeAsync(() =>
+            {
+                activityLog.Add(new ActivityLogEntry(msg.Timestamp, msg.Message, msg.Source, msg.Category));
+                if (activityLog.Count > 100) activityLog.RemoveAt(0);
+                StateHasChanged();
+            });
+        });
+    }
+
+    public void Dispose()
+    {
+        activityLogSubscription?.Dispose();
+    }
+
+    private string GetActivityClass(ActivityCategory category) =>
+        category switch
+        {
+            ActivityCategory.Combat => "text-danger",
+            ActivityCategory.Announcement => "text-primary fw-bold",
+            ActivityCategory.Health => "text-success",
+            ActivityCategory.Effect => "text-warning",
+            ActivityCategory.Time => "text-info",
+            ActivityCategory.Session => "text-secondary fst-italic",
+            ActivityCategory.Player => "text-muted",
+            _ => ""
+        };
 
     // UI Helper methods
     private int GetFatPercent() => character?.Fatigue.BaseValue > 0
@@ -474,8 +524,8 @@ private async Task SelectCharacterAsync(int characterId)
 
             if (result.Success)
             {
-                AddLogEntry($"Detached {characterToDetach.Name} from table {result.TableName}");
-                
+                AddLogEntry($"Detached {characterToDetach.Name} from table {result.TableName}", ActivityCategory.Player);
+
                 // Reload the character list to reflect the change
                 await LoadCharactersAsync();
             }
@@ -512,7 +562,7 @@ private async Task SelectCharacterAsync(int characterId)
         {
             errorMessage = null;
             character = await characterPortal.FetchAsync(characterToAttach.Id);
-            AddLogEntry($"Playing as {character.Name} (no table)");
+            AddLogEntry($"Playing as {character.Name} (no table)", ActivityCategory.Player);
         }
         catch (Exception ex)
         {
@@ -539,14 +589,15 @@ private async Task SelectCharacterAsync(int characterId)
 
             if (result.Success)
             {
-                AddLogEntry($"Joined table {result.TableName} with {characterToAttach.Name}");
-
-                // Load the character and table
+                    // Load the character and table
                 character = await characterPortal.FetchAsync(characterToAttach.Id);
                 table = await tablePortal.FetchAsync(selectedTableId);
+                SubscribeToActivityLog(selectedTableId);
 
                 // Reload the character list to reflect the change
                 await LoadCharactersAsync();
+
+                AddLogEntry($"Joined table {result.TableName}", ActivityCategory.Player);
             }
             else
             {
