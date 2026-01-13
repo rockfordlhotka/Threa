@@ -35,11 +35,19 @@ This folder contains the game rules and design specifications for the Threa tabl
 | [Item List](ITEM_LIST.md) | Sample items with values and categories |
 | [Currency System](CURRENCY_SYSTEM.md) | Four-tier currency (cp/sp/gp/pp), exchange rates, and pricing guidelines |
 
+### User Interface
+
+| Document | Description |
+|----------|-------------|
+| [Play Page Design](PLAY_PAGE_DESIGN.md) | Play page layout, combat workflows, skill usage, and magic casting UI |
+| [Play Page Implementation Plan](PLAY_PAGE_IMPLEMENTATION_PLAN.md) | Detailed implementation checklist for play page features |
+
 ### Technical
 
 | Document | Description |
 |----------|-------------|
 | [Database Design](DATABASE_DESIGN.md) | Schema design for characters, skills, items, effects, and inventory |
+| [XP System Refinement](XP_SYSTEM_REFINEMENT.md) | Converting XP from decimals to integers, fixing XPTotal tracking |
 
 ## Quick Reference
 

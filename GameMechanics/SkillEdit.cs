@@ -40,8 +40,8 @@ namespace GameMechanics
       private set => LoadProperty(PrimaryAttributeProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPBankedProperty = RegisterProperty<double>(nameof(XPBanked));
-    public double XPBanked
+    public static readonly PropertyInfo<int> XPBankedProperty = RegisterProperty<int>(nameof(XPBanked));
+    public int XPBanked
     {
       get => GetProperty(XPBankedProperty);
       set => SetProperty(XPBankedProperty, value);

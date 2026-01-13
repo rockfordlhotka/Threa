@@ -351,7 +351,7 @@ else
         return skillInfo?.Category?.Contains("Meta-Magic", StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
-    private double GetXPCostToNextLevel(GameMechanics.SkillEdit skill)
+    private int GetXPCostToNextLevel(GameMechanics.SkillEdit skill)
     {
         // Find the skill info to get the difficulty (Trained value)
         var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
@@ -395,7 +395,7 @@ else
         }
 
         // Spend XP and increase level
-        vm.Model.XPBanked -= xpCost;
+        vm.Model.SpendXP(xpCost);
         skill.Level++;
         
         StateHasChanged();
@@ -417,7 +417,7 @@ else
         // Refund XP and decrease level
         skill.Level--;
         var xpRefund = GetXPCostToNextLevel(skill);
-        vm!.Model!.XPBanked += xpRefund;
+        vm!.Model!.RefundXP(xpRefund);
         
         StateHasChanged();
     }
@@ -476,7 +476,7 @@ else
         {
             var tempSkillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
             var difficulty = tempSkillInfo?.Trained ?? 5;
-            vm!.Model!.XPBanked += GameMechanics.SkillCost.GetLevelUpCost(i, difficulty);
+            vm!.Model!.RefundXP(GameMechanics.SkillCost.GetLevelUpCost(i, difficulty));
         }
 
         // Remove the skill

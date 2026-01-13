@@ -42,15 +42,15 @@ namespace GameMechanics.GameMaster
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPTotalProperty = RegisterProperty<double>(nameof(XPTotal));
-    public double XPTotal
+    public static readonly PropertyInfo<int> XPTotalProperty = RegisterProperty<int>(nameof(XPTotal));
+    public int XPTotal
     {
       get => GetProperty(XPTotalProperty);
       private set => LoadProperty(XPTotalProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPBankedProperty = RegisterProperty<double>(nameof(XPBanked));
-    public double XPBanked
+    public static readonly PropertyInfo<int> XPBankedProperty = RegisterProperty<int>(nameof(XPBanked));
+    public int XPBanked
     {
       get => GetProperty(XPBankedProperty);
       private set => LoadProperty(XPBankedProperty, value);

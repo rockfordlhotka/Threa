@@ -205,20 +205,42 @@ namespace GameMechanics
       set => SetProperty(SkillsProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPTotalProperty = RegisterProperty<double>(nameof(XPTotal));
+    public static readonly PropertyInfo<int> XPTotalProperty = RegisterProperty<int>(nameof(XPTotal));
     [Display(Name = "Total XP")]
-    public double XPTotal
+    public int XPTotal
     {
       get => GetProperty(XPTotalProperty);
-      private set => LoadProperty(XPTotalProperty, value);
+      private set => SetProperty(XPTotalProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPBankedProperty = RegisterProperty<double>(nameof(XPBanked));
+    public static readonly PropertyInfo<int> XPBankedProperty = RegisterProperty<int>(nameof(XPBanked));
     [Display(Name = "Banked XP")]
-    public double XPBanked
+    public int XPBanked
     {
       get => GetProperty(XPBankedProperty);
       set => SetProperty(XPBankedProperty, value);
+    }
+
+    /// <summary>
+    /// Spends XP from the banked pool to advance a skill.
+    /// Updates XPTotal to track cumulative spending.
+    /// </summary>
+    public void SpendXP(int amount)
+    {
+        if (amount > XPBanked)
+            throw new InvalidOperationException("Insufficient XP");
+        XPBanked -= amount;
+        XPTotal += amount;
+    }
+
+    /// <summary>
+    /// Refunds XP to the banked pool when a skill is de-leveled.
+    /// Updates XPTotal to reverse cumulative spending.
+    /// </summary>
+    public void RefundXP(int amount)
+    {
+        XPBanked += amount;
+        XPTotal -= amount;
     }
 
     public static readonly PropertyInfo<int> DamageClassProperty = RegisterProperty<int>(nameof(DamageClass));
