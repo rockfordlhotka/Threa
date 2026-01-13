@@ -19,7 +19,8 @@ namespace GameMechanics.Reference
         Add(skillPortal.FetchChild("Awareness"));
         Add(skillPortal.FetchChild("Focus"));
         Add(skillPortal.FetchChild("Bearing"));
-        
+        Add(skillPortal.FetchChild("Influence"));
+
         // Movement skills
         Add(skillPortal.FetchChild("Sprint"));
         
@@ -189,7 +190,15 @@ namespace GameMechanics.Reference
           IsStandard = true;
           Untrained = 4;
           Trained = 2;
-          PrimaryAttribute = "SOC/INT";
+          PrimaryAttribute = "SOC";
+          break;
+        case "Influence":
+          Id = "";
+          Name = skillName;
+          IsStandard = true;
+          Untrained = 4;
+          Trained = 2;
+          PrimaryAttribute = "PHY";
           break;
         case "Sprint":
           Id = "sprint";

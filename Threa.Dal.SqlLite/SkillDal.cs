@@ -57,7 +57,8 @@ public class SkillDal : ISkillDal
             new Skill { Id = "reasoning", Name = "Reasoning", Category = SkillCategory.Standard, Untrained = 5, Trained = 3, PrimaryAttribute = "INT" },
             new Skill { Id = "awareness", Name = "Awareness", Category = SkillCategory.Standard, Untrained = 5, Trained = 2, PrimaryAttribute = "ITT" },
             new Skill { Id = "focus", Name = "Focus", Category = SkillCategory.Standard, Untrained = 5, Trained = 2, PrimaryAttribute = "WIL" },
-            new Skill { Id = "bearing", Name = "Bearing", Category = SkillCategory.Standard, Untrained = 4, Trained = 2, PrimaryAttribute = "SOC/INT" },
+            new Skill { Id = "bearing", Name = "Bearing", Category = SkillCategory.Standard, Untrained = 4, Trained = 2, PrimaryAttribute = "SOC" },
+            new Skill { Id = "influence", Name = "Influence", Category = SkillCategory.Standard, Untrained = 4, Trained = 2, PrimaryAttribute = "PHY" },
 
             // Weapon combat skills
             new Skill { Id = "swords", Name = "Swords", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 7, Trained = 4, PrimaryAttribute = "DEX" },

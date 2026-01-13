@@ -34,11 +34,11 @@ Characters
 ### Attributes System
 
 ```sql
--- Character attributes (the 7 core attributes)
+-- Character attributes (the 8 core attributes)
 CharacterAttributes
 - Id (Primary Key)
 - CharacterId (Foreign Key -> Characters.Id)
-- AttributeName (STR, DEX, END, INT, ITT, WIL, PHY)
+- AttributeName (STR, DEX, END, INT, ITT, WIL, PHY, SOC)
 - BaseValue (rolled value including species modifiers)
 - CurrentValue (may differ due to effects/conditions)
 - UNIQUE(CharacterId, AttributeName)
@@ -55,12 +55,12 @@ SkillDefinitions
 - Category (e.g., "Fire Magic", "Melee Weapons")
 - Description
 - BaseSkillRequired (Foreign Key -> SkillDefinitions.Id, nullable)
-- RelatedAttribute (STR, DEX, END, INT, ITT, WIL, PHY)
+- RelatedAttribute (STR, DEX, END, INT, ITT, WIL, PHY, SOC)
 - BaseCost (usage events for level 0→1)
 - Multiplier (progression scaling factor)
 - MinimumStartingLevel
 - MaximumLevel
-- IsStartingSkill (true for the 7 attribute skills)
+- IsStartingSkill (true for the 8 attribute skills)
 
 -- Individual character's skill levels
 CharacterSkills
@@ -151,7 +151,7 @@ EffectImpacts
 - EffectDefinitionId (Foreign Key -> EffectDefinitions.Id)
 - ImpactType (SkillBonus, SkillPenalty, AttributeBonus, AttributePenalty, etc.)
 - TargetSkillId (Foreign Key -> SkillDefinitions.Id, nullable)
-- TargetAttribute (nullable: STR, DEX, END, INT, ITT, WIL, PHY)
+- TargetAttribute (nullable: STR, DEX, END, INT, ITT, WIL, PHY, SOC)
 - ImpactValue
 - IsPercentage
 
@@ -225,7 +225,7 @@ ItemSkillBonuses
 ItemAttributeModifiers
 - Id (Primary Key)
 - ItemTemplateId (Foreign Key -> ItemTemplates.Id)
-- AttributeName (STR, DEX, END, INT, ITT, WIL, PHY)
+- AttributeName (STR, DEX, END, INT, ITT, WIL, PHY, SOC)
 - ModifierType (FlatBonus, PercentageBonus)
 - ModifierValue
 - Condition -- nullable
@@ -288,7 +288,7 @@ CREATE INDEX IX_ItemAttributeModifiers_ItemTemplateId ON ItemAttributeModifiers(
 
 - **Skill Definitions**: All skills are data-driven, not hard-coded
 - **Skill Dependencies**: Advanced skills can require prerequisite skills
-- **Starting Skills**: All characters begin with the 7 attribute skills
+- **Starting Skills**: All characters begin with the 8 attribute skills
 
 ### Item System
 

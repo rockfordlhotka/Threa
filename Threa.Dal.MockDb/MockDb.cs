@@ -250,7 +250,17 @@ public static class MockDb
                 IsSpecialized = false,
                 Untrained = 4,
                 Trained = 2,
-                PrimaryAttribute = "SOC/INT"
+                PrimaryAttribute = "SOC"
+            },
+            new Skill
+            {
+                Id = "influence",
+                Name = "Influence",
+                Category = SkillCategory.Standard,
+                IsSpecialized = false,
+                Untrained = 4,
+                Trained = 2,
+                PrimaryAttribute = "PHY"
             },
 
             // === WEAPON COMBAT SKILLS ===
@@ -1844,7 +1854,7 @@ public static class MockDb
                 new SpeciesAttributeModifier { AttributeName = "STR", Modifier = 2 },
                 new SpeciesAttributeModifier { AttributeName = "END", Modifier = 1 },
                 new SpeciesAttributeModifier { AttributeName = "INT", Modifier = -1 },
-                new SpeciesAttributeModifier { AttributeName = "PHY", Modifier = -1 }
+                new SpeciesAttributeModifier { AttributeName = "SOC", Modifier = -1 }
             ]
         }
     ];

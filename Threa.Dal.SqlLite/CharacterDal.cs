@@ -43,6 +43,14 @@ namespace Threa.Dal.Sqlite
         {
             try
             {
+                // Remove character from any tables they're attached to
+                var removeFromTablesSql = "DELETE FROM TableCharacters WHERE CharacterId = @Id";
+                using var removeCommand = Connection.CreateCommand();
+                removeCommand.CommandText = removeFromTablesSql;
+                removeCommand.Parameters.AddWithValue("@Id", id);
+                await removeCommand.ExecuteNonQueryAsync();
+
+                // Delete the character
                 var sql = "DELETE FROM Characters WHERE Id = @Id";
                 using var command = Connection.CreateCommand();
                 command.CommandText = sql;

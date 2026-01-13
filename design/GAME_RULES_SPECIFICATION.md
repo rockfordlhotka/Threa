@@ -65,7 +65,7 @@ For dramatic moments and critical situations, some rolls use **exploding dice** 
 
 ### Base Attribute Calculation
 
-All characters start with seven core attributes that serve as the foundation for all derived skills and secondary statistics. These attributes are calculated using the 4dF system combined with species-specific modifiers.
+All characters start with eight core attributes that serve as the foundation for all derived skills and secondary statistics. These attributes are calculated using the 4dF system combined with species-specific modifiers.
 
 #### Human Baseline (Default Species)
 
@@ -80,7 +80,7 @@ This gives each Human attribute an average value of **10**, with the following p
 
 #### Core Attributes
 
-All characters possess these seven core attributes:
+All characters possess these eight core attributes:
 
 1. **Physicality (STR)** - Physical strength and power
 2. **Dodge (DEX)** - Agility and evasion ability
@@ -88,7 +88,8 @@ All characters possess these seven core attributes:
 4. **Reasoning (INT)** - Intelligence and logical thinking
 5. **Awareness (ITT)** - Intuition and perception
 6. **Focus (WIL)** - Willpower and mental concentration
-7. **Bearing (PHY)** - Physical beauty and social presence
+7. **Influence (PHY)** - Physical beauty and attractiveness
+8. **Bearing (SOC)** - Social standing and presence
 
 ### Species Attribute Modifiers
 
@@ -119,7 +120,7 @@ Each non-Human species applies specific modifiers to the base Human attribute ca
   - **Physicality (STR)**: 4dF + 12 (+2 modifier to attribute)
   - **Drive (END)**: 4dF + 11 (+1 modifier to attribute)
   - **Reasoning (INT)**: 4dF + 9 (-1 modifier to attribute)
-  - **Bearing (PHY)**: 4dF + 9 (-1 modifier to attribute)
+  - **Bearing (SOC)**: 4dF + 9 (-1 modifier to attribute)
   - All other attributes: 4dF + 10
 
 ### Attribute Usage and Relationships
@@ -184,7 +185,8 @@ During character creation:
   - Reasoning (INT) - intelligence and logic
   - Awareness (ITT) - intuition and perception
   - Focus (WIL) - willpower and concentration
-  - Bearing (PHY) - physical beauty and presence
+  - Influence (PHY) - physical beauty and attractiveness
+  - Bearing (SOC) - social standing and presence
 
 - **Health System**:
   - **Fatigue (FAT)**: Calculated as (END + WIL) - 5, represents stamina and exhaustion

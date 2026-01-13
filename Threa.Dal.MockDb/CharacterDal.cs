@@ -18,6 +18,10 @@ namespace Threa.Dal.MockDb
       var character = MockDb.Characters.Where(r => r.Id == id).FirstOrDefault();
       if (character == null)
         throw new NotFoundException(nameof(character));
+
+      // Remove character from any tables they're attached to
+      MockDb.TableCharacters.RemoveAll(tc => tc.CharacterId == id);
+
       MockDb.Characters.Remove(character);
       return Task.CompletedTask;
     }

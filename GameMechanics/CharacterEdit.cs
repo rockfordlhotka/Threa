@@ -520,9 +520,9 @@ namespace GameMechanics
     }
 
     [Delete]
-    private async Task DeleteAsync([Inject] ICharacterDal dal)
+    private async Task DeleteAsync(int id, [Inject] ICharacterDal dal)
     {
-      await dal.DeleteCharacterAsync(Id);
+      await dal.DeleteCharacterAsync(id);
     }
 
     private class FatigueBase : PropertyRule

@@ -51,6 +51,20 @@ namespace GameMechanics
       BusinessRules.CheckRules();
     }
 
+    /// <summary>
+    /// Rerolls the base value for this attribute. Should only be called during character creation.
+    /// </summary>
+    internal void RerollBaseValue()
+    {
+      using (BypassPropertyChecks)
+      {
+        // Roll base value: 4dF + 10
+        LoadProperty(BaseValueProperty, 10 + Dice.Roll(4, "F"));
+      }
+      // Trigger recalculation of Value
+      BusinessRules.CheckRules();
+    }
+
     protected override void AddBusinessRules()
     {
       base.AddBusinessRules();

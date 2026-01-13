@@ -37,13 +37,15 @@ else
                 <span class="badge bg-warning">Creating</span>
             }
         </TemplateColumn>
-        <TemplateColumn>
+        <TemplateColumn Title="Actions">
             <a href="player/character/@context.Id">Details</a>
             @if (!context.IsPlayable)
             {
                 <span> | </span>
                 <a href="player/character/activate/@context.Id">Activate</a>
             }
+            <span> | </span>
+            <a href="player/character/delete/@context.Id" class="text-danger">Delete</a>
         </TemplateColumn>
     </QuickGrid>
 }

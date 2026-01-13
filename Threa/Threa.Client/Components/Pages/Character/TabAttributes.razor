@@ -14,6 +14,9 @@
     <div class="alert alert-info">
         You can adjust attribute values during character creation, but the total sum must remain @vm.Model.AttributeList.InitialSum.
     </div>
+    <div style="margin-bottom: 1rem;">
+        <button @onclick="RerollAttributes" class="btn btn-secondary">Reroll Attributes</button>
+    </div>
 }
 else
 {
@@ -100,13 +103,14 @@ else
     {
         return name switch
         {
-            "STR" => "Physicality (STR)",
-            "DEX" => "Dodge (DEX)",
-            "END" => "Drive (END)",
-            "INT" => "Reasoning (INT)",
-            "ITT" => "Awareness (ITT)",
-            "WIL" => "Focus (WIL)",
-            "PHY" => "Bearing (PHY)",
+            "STR" => "STR (Physicality)",
+            "DEX" => "DEX (Dodge)",
+            "END" => "END (Drive)",
+            "INT" => "INT (Reasoning)",
+            "ITT" => "ITT (Awareness)",
+            "WIL" => "WIL (Focus)",
+            "PHY" => "PHY (Influence)",
+            "SOC" => "SOC (Bearing)",
             _ => name
         };
     }
@@ -115,8 +119,17 @@ else
     {
         if (vm?.Model == null || vm.Model.IsPlayable)
             return "";
-        
+
         var isValid = vm.Model.AttributeList.CurrentSum == vm.Model.AttributeList.InitialSum;
         return isValid ? "color: green;" : "color: red; font-weight: bold;";
+    }
+
+    private void RerollAttributes()
+    {
+        if (vm?.Model != null && !vm.Model.IsPlayable)
+        {
+            vm.Model.AttributeList.RerollAttributes();
+            StateHasChanged();
+        }
     }
 }

@@ -1,0 +1,117 @@
+@page "/player/character/delete/{id:int}"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject NavigationManager NavigationManager
+@inject Csla.Blazor.State.StateManager StateManager
+
+<h3>Delete Character</h3>
+
+@if (character == null)
+{
+    <div>Loading...  </div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+    <p><a href="/player/characters">Return to character list</a></p>
+}
+else
+{
+    <div class="alert alert-danger">
+        <h4>⚠️ Confirm Deletion</h4>
+        <p>
+            Are you sure you want to permanently delete the character <strong>@character.Name</strong>?
+        </p>
+        <p>
+            <strong>This action cannot be undone!</strong>
+        </p>
+        @if (!string.IsNullOrEmpty(tableWarning))
+        {
+            <p class="mt-2">
+                <strong>Note:</strong> @tableWarning
+            </p>
+        }
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Character Details
+        </div>
+        <div class="card-body">
+            <p><strong>Name:</strong> @character.Name</p>
+            <p><strong>Species:</strong> @character.Species</p>
+            <p><strong>Status:</strong> @(character.IsPlayable ? "Active" : "In Creation")</p>
+        </div>
+    </div>
+
+    @if (isDeleting)
+    {
+        <button class="btn btn-danger" disabled>
+            Deleting...
+        </button>
+        <img src="images/busy.gif" class="busy-animation" />
+    }
+    else
+    {
+        <button class="btn btn-danger" @onclick="ConfirmDelete">
+            Yes, Delete This Character
+        </button>
+        <a href="/player/characters" class="btn btn-secondary ms-2">
+            Cancel
+        </a>
+    }
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private GameMechanics.CharacterEdit? character;
+    private string? errorMessage;
+    private string? tableWarning;
+    private bool isDeleting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        try
+        {
+            character = await characterPortal.FetchAsync(id);
+
+            // Check if character is attached to a table (using ITableDal would be better)
+            // For now, we'll just show a generic warning
+            tableWarning = "This character will be removed from any game tables they are currently in.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading character: {ex.Message}";
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (character == null)
+            return;
+
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            await characterPortal.DeleteAsync(id);
+            NavigationManager.NavigateTo("/player/characters");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting character: {ex.Message}";
+            isDeleting = false;
+            StateHasChanged();
+        }
+    }
+}
