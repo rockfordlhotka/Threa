@@ -241,6 +241,46 @@ When a time event is triggered:
 
 ---
 
+## Game Time and Fictional Date/Time
+
+### Elapsed Game Time
+
+Game time is tracked as a `long` value representing the number of seconds since the start of the table (time 0). This value is incremented as the GM advances time through various time units:
+
+| Time Advancement | Seconds Added |
+|------------------|---------------|
+| End of Round | 3 |
+| End of Minute | 60 |
+| End of Turn | 600 (10 minutes) |
+| End of Hour | 3600 |
+| End of Day | 86400 |
+| End of Week | 604800 |
+
+**Storage**: Add `ElapsedSeconds` (long) to the `GameTable` entity to track total elapsed game time.
+
+### Fictional Date/Time Mapping (Future Feature)
+
+Different game scenarios may use different calendar systems:
+- **Fantasy**: "The 10th day of Mongroth in the year 123"
+- **Sci-Fi**: Stardate 47634.2
+- **Modern**: Standard Gregorian calendar
+- **Post-Apocalyptic**: "Day 347 After the Fall"
+
+**Planned Implementation**:
+
+1. Each table/campaign defines a `TimeFormat` configuration that includes:
+   - Calendar system type (Gregorian, custom fantasy, stardate, etc.)
+   - Starting date/time in that system (mapping ElapsedSeconds = 0 to a specific date)
+   - Format string for display
+
+2. A `TimeFormatter` service converts `ElapsedSeconds` to displayable date/time strings based on the table's configuration
+
+3. The player and GM screens display the formatted fictional time
+
+**Note**: For initial implementation, display raw elapsed time as days/hours/minutes/seconds until the calendar system is built.
+
+---
+
 ## Implementation Notes
 
 ### Time Tracking Requirements

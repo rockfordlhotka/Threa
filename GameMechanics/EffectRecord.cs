@@ -395,6 +395,8 @@ public class EffectRecord : BusinessBase<EffectRecord>
       EffectType.SpellEffect => 50,
       EffectType.ObjectEffect => 60,
       EffectType.Environmental => 70,
+      EffectType.ItemEffect => 80,
+      EffectType.CombatStance => 90,
       _ => 1
     };
   }

@@ -14,7 +14,9 @@ public static class EffectBehaviorFactory
     { EffectType.Poison, new Behaviors.PoisonBehavior() },
     { EffectType.Buff, new Behaviors.SpellBuffBehavior() },
     { EffectType.SpellEffect, new Behaviors.DrugBehavior() }, // Using SpellEffect for drugs temporarily
-    { EffectType.ItemEffect, new Behaviors.ItemEffectBehavior() }
+    { EffectType.ItemEffect, new Behaviors.ItemEffectBehavior() },
+    { EffectType.CombatStance, new Behaviors.CombatStanceBehavior() },
+    { EffectType.Debuff, new Behaviors.DebuffBehavior() }
   };
 
   private static readonly IEffectBehavior _defaultBehavior = new Behaviors.DefaultEffectBehavior();

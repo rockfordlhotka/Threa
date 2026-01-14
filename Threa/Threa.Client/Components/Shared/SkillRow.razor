@@ -1,0 +1,12 @@
+@namespace Threa.Client.Components.Shared
+@inherits SkillRowBase
+
+<div class="skill-row @(CanUse ? "" : "disabled")" title="@TooltipText">
+    <div class="skill-name">@SkillName</div>
+    <div class="skill-as">AS: @AbilityScore</div>
+    <div class="skill-level">Lvl: @Level</div>
+    <div class="skill-attribute">(@PrimaryAttribute)</div>
+    <button class="btn btn-sm btn-primary skill-use-btn" @onclick="OnUse" disabled="@(!CanUse)">
+        Use
+    </button>
+</div>

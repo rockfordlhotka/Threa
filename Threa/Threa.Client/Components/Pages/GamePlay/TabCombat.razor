@@ -1,0 +1,477 @@
+@using GameMechanics.Actions
+@using GameMechanics.Messaging
+@using GameMechanics.Effects.Behaviors
+@using GameMechanics.Combat
+@using Threa.Dal.Dto
+@using Threa.Dal
+@using Threa.Client.Components.Shared
+
+@inject ICharacterItemDal CharacterItemDal
+@inject IActivityLogService ActivityLog
+
+<div class="combat-tab-container">
+    @if (combatMode == CombatMode.Default)
+    {
+        <!-- Default Mode: Main combat actions and skill list -->
+        <div class="row">
+            <!-- Combat Skills Column -->
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong><i class="bi bi-list-ul"></i> Combat Skills</strong>
+                        @if (Table?.IsInCombat == true)
+                        {
+                            <span class="badge bg-danger">Round @Table.CurrentRound</span>
+                        }
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        @if (filteredSkills == null)
+                        {
+                            <p class="text-muted"><em>Loading skills...</em></p>
+                        }
+                        else if (!filteredSkills.Any())
+                        {
+                            <p class="text-muted"><em>No combat skills available. Equip a weapon to see weapon skills.</em></p>
+                        }
+                        else
+                        {
+                            @foreach (var group in GetGroupedSkills())
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-muted border-bottom pb-1 mb-2">
+                                        <i class="bi @GetSkillGroupIcon(group.Key)"></i> @group.Key
+                                    </h6>
+                                    <div class="d-flex flex-column gap-1">
+                                        @foreach (var skill in group)
+                                        {
+                                            <SkillRow SkillName="@skill.Name"
+                                                      Level="@skill.Level"
+                                                      AbilityScore="@skill.AbilityScore"
+                                                      PrimaryAttribute="@skill.PrimaryAttribute"
+                                                      OnUse="@(() => StartAttackWithSkill(skill))"
+                                                      CanUse="@CanAct()" />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons Column -->
+            <div class="col-md-5">
+                <div class="d-grid gap-3">
+                    <!-- Attack Button -->
+                    <button class="btn btn-lg btn-danger py-3"
+                            @onclick="StartAttack"
+                            disabled="@(!CanAct())">
+                        <i class="bi bi-bullseye fs-4"></i>
+                        <div class="fw-bold">ATTACK</div>
+                        <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                    </button>
+
+                    <!-- Defend Button -->
+                    <button class="btn btn-lg btn-info py-3"
+                            @onclick="StartDefend"
+                            disabled="@(!CanAct())">
+                        <i class="bi bi-shield-shaded fs-4"></i>
+                        <div class="fw-bold">DEFEND</div>
+                        <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                    </button>
+
+                    <!-- Rest Card -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-cup-hot"></i> Rest
+                            </h6>
+                            <p class="card-text small text-muted mb-2">
+                                Spend 1 AP to recover 1 FAT (added to pending healing).
+                            </p>
+                            <button class="btn btn-warning w-100"
+                                    @onclick="Rest"
+                                    disabled="@(!CanRest())">
+                                <i class="bi bi-pause-circle"></i> Rest
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Take Damage Card (for falls, spells, etc.) -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-lightning-charge text-danger"></i> Take Damage
+                            </h6>
+                            <p class="card-text small text-muted mb-2">
+                                Resolve damage from falls, spells, or other sources.
+                            </p>
+                            <button class="btn btn-outline-danger w-100"
+                                    @onclick="StartTakeDamage">
+                                <i class="bi bi-bandaid"></i> Take Damage
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Resource Summary -->
+                    <div class="card bg-light">
+                        <div class="card-body py-2">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <small class="text-muted">AP</small>
+                                    <div class="fw-bold @(Character?.ActionPoints.Available <= 0 ? "text-danger" : "")">
+                                        @Character?.ActionPoints.Available / @Character?.ActionPoints.Max
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">FAT</small>
+                                    <div class="fw-bold @(Character?.Fatigue.Value <= 0 ? "text-danger" : "")">
+                                        @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">VIT</small>
+                                    <div class="fw-bold @(GetVitPercent() <= 25 ? "text-danger" : "")">
+                                        @Character?.Vitality.Value / @Character?.Vitality.BaseValue
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (combatMode == CombatMode.Attack)
+    {
+        <AttackMode Character="Character"
+                    Table="Table"
+                    AvailableSkills="attackSkills"
+                    SelectedSkill="selectedSkill"
+                    OnCancel="ReturnToDefault"
+                    OnAttackComplete="OnAttackComplete" />
+    }
+    else if (combatMode == CombatMode.Defend)
+    {
+        <DefendMode Character="Character"
+                    Table="Table"
+                    HasWeaponEquipped="hasWeaponEquipped"
+                    HasShieldEquipped="hasShieldEquipped"
+                    WeaponSkillAS="weaponSkillAS"
+                    WeaponSkillName="weaponSkillName"
+                    ShieldSkillAS="shieldSkillAS"
+                    OnCancel="ReturnToDefault"
+                    OnDefenseComplete="OnDefenseComplete"
+                    OnHit="OnDefenseHit" />
+    }
+    else if (combatMode == CombatMode.TakeDamage)
+    {
+        <DamageResolution Character="Character"
+                          Table="Table"
+                          InitialSV="pendingDamageSV"
+                          InitialDamageType="pendingDamageType"
+                          InitialDamageClass="pendingDamageClass"
+                          InitialShieldBlockSuccess="pendingShieldBlockSuccess"
+                          InitialShieldBlockRV="pendingShieldBlockRV"
+                          EquippedItems="equippedItems"
+                          ShieldSkillAS="shieldSkillAS"
+                          ArmorSkillAS="armorSkillAS"
+                          OnCancel="ReturnToDefault"
+                          OnDamageComplete="OnDamageComplete" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    private enum CombatMode { Default, Attack, Defend, TakeDamage }
+    private CombatMode combatMode = CombatMode.Default;
+
+    private List<GameMechanics.SkillEdit> filteredSkills = new();
+    private List<GameMechanics.SkillEdit> attackSkills = new();
+    private GameMechanics.SkillEdit? selectedSkill;
+    private List<CharacterItem> equippedItems = new();
+
+    // Equipment state
+    private bool hasWeaponEquipped;
+    private bool hasShieldEquipped;
+    private int weaponSkillAS;
+    private int shieldSkillAS;
+    private int armorSkillAS;
+    private string weaponSkillName = "";
+
+    // Pending damage state (from defense when hit)
+    private int? pendingDamageSV;
+    private DamageType? pendingDamageType;
+    private int? pendingDamageClass;
+    private bool? pendingShieldBlockSuccess;
+    private int? pendingShieldBlockRV;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Character != null)
+        {
+            await LoadEquipmentAndSkills();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Character != null && !filteredSkills.Any())
+        {
+            await LoadEquipmentAndSkills();
+        }
+    }
+
+    private async Task LoadEquipmentAndSkills()
+    {
+        if (Character == null) return;
+
+        equippedItems = await CharacterItemDal.GetEquippedItemsAsync(Character.Id);
+
+        // Detect equipped weapons and shields
+        var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
+        var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
+
+        hasWeaponEquipped = mainHand != null;
+        hasShieldEquipped = offHand?.Template?.ItemType == ItemType.Shield;
+
+        // Get equipped weapon skill names (exclude shields from weapons)
+        var equippedWeaponSkillNames = equippedItems
+            .Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
+                       (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield))
+            .Select(i => i.Template?.Name)
+            .Where(name => name != null)
+            .ToHashSet();
+
+        var skills = Character.Skills.ToList();
+        var result = new List<GameMechanics.SkillEdit>();
+        attackSkills = new List<GameMechanics.SkillEdit>();
+
+        foreach (var skill in skills)
+        {
+            var category = GetSkillCategory(skill);
+
+            if (category == "Weapon")
+            {
+                // Only show weapon skills for equipped weapons
+                if (equippedWeaponSkillNames.Contains(skill.Name))
+                {
+                    result.Add(skill);
+                    attackSkills.Add(skill);
+
+                    // Track weapon skill AS and name for parry
+                    if (weaponSkillAS == 0)
+                    {
+                        weaponSkillAS = skill.AbilityScore;
+                        weaponSkillName = skill.Name;
+                    }
+                }
+            }
+            else if (category == "Attribute")
+            {
+                result.Add(skill);
+
+                // Physicality can be used for attacks (unarmed)
+                if (skill.Name.Equals("Physicality", StringComparison.OrdinalIgnoreCase))
+                {
+                    attackSkills.Add(skill);
+                }
+            }
+            else if (category == "Defense")
+            {
+                result.Add(skill);
+            }
+            else if (category == "Movement")
+            {
+                result.Add(skill);
+            }
+            else if (category == "Shield" && hasShieldEquipped)
+            {
+                result.Add(skill);
+                shieldSkillAS = skill.AbilityScore;
+            }
+            else if (skill.Name.Equals("Armor", StringComparison.OrdinalIgnoreCase))
+            {
+                armorSkillAS = skill.AbilityScore;
+            }
+        }
+
+        filteredSkills = result;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string GetSkillCategory(GameMechanics.SkillEdit skill)
+    {
+        if (skill.ActionType == ActionType.Attack) return "Weapon";
+
+        return skill.Name.ToLower() switch
+        {
+            "physicality" => "Attribute",
+            "dodge" => "Defense",
+            "shield" or "shield block" => "Shield",
+            "sprint" or "run" => "Movement",
+            _ => "Other"
+        };
+    }
+
+    private IEnumerable<IGrouping<string, GameMechanics.SkillEdit>> GetGroupedSkills()
+    {
+        return filteredSkills
+            .GroupBy(s => GetSkillCategory(s))
+            .OrderBy(g => GetCategoryOrder(g.Key));
+    }
+
+    private int GetCategoryOrder(string category) => category switch
+    {
+        "Weapon" => 0,
+        "Defense" => 1,
+        "Shield" => 2,
+        "Attribute" => 3,
+        "Movement" => 4,
+        _ => 99
+    };
+
+    private string GetSkillGroupIcon(string category) => category switch
+    {
+        "Weapon" => "bi-bullseye",
+        "Defense" => "bi-shield",
+        "Shield" => "bi-shield-shaded",
+        "Attribute" => "bi-person-arms-up",
+        "Movement" => "bi-arrows-move",
+        _ => "bi-star"
+    };
+
+    private void StartAttack()
+    {
+        // Attacking ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        selectedSkill = attackSkills.FirstOrDefault();
+        combatMode = CombatMode.Attack;
+    }
+
+    private void StartAttackWithSkill(GameMechanics.SkillEdit skill)
+    {
+        // Attacking ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        selectedSkill = skill;
+        combatMode = CombatMode.Attack;
+    }
+
+    private void StartDefend()
+    {
+        combatMode = CombatMode.Defend;
+    }
+
+    private void ReturnToDefault()
+    {
+        combatMode = CombatMode.Default;
+        selectedSkill = null;
+    }
+
+    private async Task OnAttackComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+        selectedSkill = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnDefenseComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+        ClearPendingDamage();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnDefenseHit(DefenseHitData hitData)
+    {
+        // Transition to damage resolution with data from defense
+        pendingDamageSV = hitData.SV;
+        pendingDamageType = hitData.DamageType;
+        pendingDamageClass = hitData.DamageClass;
+        pendingShieldBlockSuccess = hitData.ShieldBlockSuccess;
+        pendingShieldBlockRV = hitData.ShieldBlockRV;
+        combatMode = CombatMode.TakeDamage;
+        StateHasChanged();
+    }
+
+    private async Task OnDamageComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+        ClearPendingDamage();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void StartTakeDamage()
+    {
+        // For non-combat damage (falls, spells, etc.)
+        ClearPendingDamage();
+        combatMode = CombatMode.TakeDamage;
+    }
+
+    private void ClearPendingDamage()
+    {
+        pendingDamageSV = null;
+        pendingDamageType = null;
+        pendingDamageClass = null;
+        pendingShieldBlockSuccess = null;
+        pendingShieldBlockRV = null;
+    }
+
+
+    private async Task Rest()
+    {
+        if (!CanRest() || Character == null) return;
+
+        // Resting ends parry mode
+        if (CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+
+        Character.ActionPoints.Available -= 1;
+        Character.Fatigue.PendingHealing += 1;
+
+        LogActivity($"{Character.Name} rests, recovering some fatigue.", ActivityCategory.Health);
+
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+        StateHasChanged();
+    }
+
+    private void LogActivity(string message, ActivityCategory category)
+    {
+        if (Table != null && Character != null)
+        {
+            ActivityLog.Publish(Table.Id, message, Character.Name, category);
+        }
+    }
+
+    private bool CanAct() =>
+        Character?.ActionPoints.Available >= 1 &&
+        Character?.Fatigue.Value >= 1 &&
+        !Character.IsPassedOut;
+
+    private bool CanRest() =>
+        Character?.ActionPoints.Available >= 1 &&
+        Character?.Fatigue.Value < Character?.Fatigue.BaseValue &&
+        !Character.IsPassedOut;
+
+    private int GetVitPercent() => Character?.Vitality.BaseValue > 0
+        ? (int)((double)Character.Vitality.Value / Character.Vitality.BaseValue * 100) : 0;
+}

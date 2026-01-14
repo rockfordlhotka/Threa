@@ -79,11 +79,25 @@ namespace GameMechanics.Combat
 
       // Step 4: Calculate penetrating damage
       int totalAbsorbed = request.IncomingSV - remainingSV;
-      
-      // If all damage was absorbed, no damage is dealt (not even a glancing blow)
-      var finalDamage = remainingSV > 0
-        ? CombatResultTables.GetDamage(remainingSV)
-        : DamageResult.None;
+
+      // Roll damage dice if there's penetrating damage
+      DamageRollResult? damageRoll = null;
+      DamageResult legacyDamage = DamageResult.None;
+
+      if (remainingSV > 0)
+      {
+        // Use new dice-based damage system
+        damageRoll = DamageTables.RollDamage(_diceRoller, remainingSV, request.DamageClass);
+
+        // Also populate legacy DamageResult for backwards compatibility
+        legacyDamage = new DamageResult
+        {
+          FatigueDamage = damageRoll.FatigueDamage,
+          VitalityDamage = damageRoll.VitalityDamage,
+          CausesWound = damageRoll.Wounds > 0,
+          Description = damageRoll.Summary
+        };
+      }
 
       return new DamageResolutionResult
       {
@@ -97,8 +111,9 @@ namespace GameMechanics.Combat
         AbsorptionSteps = absorptionSteps,
         TotalAbsorbed = totalAbsorbed,
         PenetratingSV = remainingSV,
-        FinalDamage = finalDamage,
-        Summary = BuildSummary(request, absorptionSteps, totalAbsorbed, remainingSV, finalDamage, armorRV)
+        DamageRoll = damageRoll,
+        FinalDamage = legacyDamage,
+        Summary = BuildSummary(request, absorptionSteps, totalAbsorbed, remainingSV, damageRoll, armorRV)
       };
     }
 
@@ -245,7 +260,7 @@ namespace GameMechanics.Combat
       List<AbsorptionRecord> steps,
       int totalAbsorbed,
       int penetratingSV,
-      DamageResult finalDamage,
+      DamageRollResult? damageRoll,
       int armorRV)
     {
       var sb = new StringBuilder();
@@ -261,17 +276,17 @@ namespace GameMechanics.Combat
         sb.Append(step.Description).Append(". ");
       }
 
-      if (penetratingSV < 0)
+      if (penetratingSV <= 0)
       {
         sb.Append("All damage absorbed!");
       }
-      else if (penetratingSV == 0)
+      else if (damageRoll != null)
       {
-        sb.Append($"Glancing blow: {finalDamage.Description}");
+        sb.Append($"Penetrating SV {penetratingSV}: {damageRoll.Summary}");
       }
       else
       {
-        sb.Append($"Penetrating SV {penetratingSV}: {finalDamage.Description}");
+        sb.Append($"Penetrating SV {penetratingSV}");
       }
 
       return sb.ToString();

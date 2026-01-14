@@ -53,5 +53,11 @@ public enum EffectType
     /// <summary>
     /// Effect from a magic or tech item (equipment, implants, etc.).
     /// </summary>
-    ItemEffect = 9
+    ItemEffect = 9,
+
+    /// <summary>
+    /// Combat stance or mode (parry mode, defensive stance, etc.).
+    /// Ends when character takes non-compatible action.
+    /// </summary>
+    CombatStance = 10
 }

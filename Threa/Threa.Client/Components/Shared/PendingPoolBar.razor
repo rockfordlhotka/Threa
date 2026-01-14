@@ -1,0 +1,14 @@
+@namespace Threa.Client.Components.Shared
+@inherits PendingPoolBarBase
+
+<div class="pending-pool-bar-container" style="height: @Height;" title="@TooltipText">
+    <div class="progress" style="height: 100%;">
+        <div class="progress-bar" role="progressbar" style="width: @(BasePercentage)%; background-color: #0d6efd;" aria-valuenow="@(CurrentValue - PendingDamage)" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+        <div class="progress-bar" role="progressbar" style="width: @(DamagePercentage)%; background-color: #dc3545;" aria-valuenow="@PendingDamage" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+        <div class="progress-bar" role="progressbar" style="width: @(HealingPercentage)%; background-color: #198754;" aria-valuenow="@PendingHealing" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+    </div>
+    @if (ShowLabels)
+    {
+        <div class="pool-bar-label">@($"{CurrentValue - PendingDamage + PendingHealing} / {MaxValue}")</div>
+    }
+</div>
