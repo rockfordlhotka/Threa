@@ -78,9 +78,16 @@
 
                     <button class="btn btn-primary w-100"
                             disabled="@(!CanPerformCheck())"
-                            @onclick="PerformCheck">
+                            @onclick="PerformCheckAsync">
                         Roll Check
                     </button>
+
+                    @if (selectedSkill?.Name == "Drive")
+                    {
+                        <div class="alert alert-info mt-2 small">
+                            <strong>Drive Action:</strong> On success, queues 1 VIT damage and FAT healing = AS - TV + 2
+                        </div>
+                    }
                 }
                 else
                 {
@@ -99,6 +106,10 @@
                     <p>AS: @lastCheckResult.AbilityScore vs TV: @lastCheckResult.TargetValue</p>
                     <p>Success Value: <strong>@lastCheckResult.SuccessValue</strong></p>
                     <p class="text-muted small">@lastCheckResult.Outcome</p>
+                    @if (!string.IsNullOrEmpty(lastCheckResult.SpecialEffect))
+                    {
+                        <p class="text-info small"><i class="bi bi-lightning-fill"></i> @lastCheckResult.SpecialEffect</p>
+                    }
                 </div>
             </div>
         }
@@ -112,19 +123,27 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
     private string searchFilter = "";
     private GameMechanics.SkillEdit? selectedSkill;
     private int targetValue = 8;
     private string actionType = "standard";
     private CheckResult? lastCheckResult;
 
-    private record CheckResult(bool Success, int AbilityScore, int TargetValue, int SuccessValue, string Outcome);
+    private record CheckResult(bool Success, int AbilityScore, int TargetValue, int SuccessValue, string Outcome, string? SpecialEffect);
 
     private IEnumerable<GameMechanics.SkillEdit> FilteredSkills()
     {
         if (Character?.Skills == null) return Enumerable.Empty<GameMechanics.SkillEdit>();
 
-        var skills = Character.Skills.AsEnumerable();
+        var skills = Character.Skills.AsEnumerable()
+            // Filter out magic skills (shown in Magic tab)
+            .Where(s => !s.IsSpell && !s.IsManaSkill)
+            // Filter out combat-only skills (shown in Combat tab)
+            .Where(s => !s.IsCombatSkill);
+
         if (!string.IsNullOrWhiteSpace(searchFilter))
         {
             skills = skills.Where(s => s.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
@@ -143,6 +162,10 @@
         if (selectedSkill == null || Character == null) return false;
         if (Character.IsPassedOut) return false;
 
+        // Drive skill requires AS >= 8 to use
+        if (selectedSkill.Name == "Drive" && selectedSkill.AbilityScore < 8)
+            return false;
+
         if (actionType == "standard")
             return Character.ActionPoints.Available >= 1 && Character.Fatigue.Value >= 1;
         else
@@ -152,18 +175,49 @@
     private void UseSkill(GameMechanics.SkillEdit skill)
     {
         selectedSkill = skill;
+
+        // Drive skill has a fixed TV of 8
+        if (skill.Name == "Drive")
+            targetValue = 8;
     }
 
-    private void PerformCheck()
+    private async Task PerformCheckAsync()
     {
-        if (selectedSkill == null) return;
+        if (selectedSkill == null || Character == null) return;
 
-        // Simulate a check - in real implementation this would go through the hub
-        var successValue = selectedSkill.AbilityScore - targetValue;
-        var success = successValue >= 0;
-        var outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
+        // Deduct AP and FAT costs using the ActionPoints methods
+        if (actionType == "standard")
+        {
+            Character.ActionPoints.TakeActionWithFatigue();
+        }
+        else // fatigue-free
+        {
+            Character.ActionPoints.TakeActionNoFatigue();
+        }
 
-        lastCheckResult = new CheckResult(success, selectedSkill.AbilityScore, targetValue, successValue, outcome);
+        // Perform the actual roll using 4dF+
+        int roll = GameMechanics.Dice.Roll4dFPlus();
+        int totalRoll = roll + selectedSkill.AbilityScore;
+        int successValue = totalRoll - targetValue;
+        bool success = successValue >= 0;
+
+        string? specialEffect = null;
+
+        // Handle Drive skill special case: VIT to FAT conversion on success
+        if (selectedSkill.Name == "Drive" && success)
+        {
+            // Queue 1 VIT damage and FAT healing = AS - TV + 2
+            int fatHealing = selectedSkill.AbilityScore - targetValue + 2;
+            Character.Vitality.PendingDamage += 1;
+            Character.Fatigue.PendingHealing += fatHealing;
+            specialEffect = $"Queued 1 VIT damage and {fatHealing} FAT healing";
+        }
+
+        string outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
+        lastCheckResult = new CheckResult(success, selectedSkill.AbilityScore, targetValue, successValue, outcome, specialEffect);
+
+        // Notify parent that character changed (for saving)
+        await OnCharacterChanged.InvokeAsync();
     }
 
     private string GetSuccessOutcome(int sv)

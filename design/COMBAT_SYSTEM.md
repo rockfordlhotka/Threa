@@ -11,6 +11,9 @@ Combat actions follow the universal action resolution framework defined in [ACTI
 - [Action Points](ACTION_POINTS.md) - AP calculation, costs, and recovery
 - [Time System](TIME_SYSTEM.md) - Rounds, initiative, and cooldowns
 - [Game Rules Specification](GAME_RULES_SPECIFICATION.md) - Dice mechanics, damage tables
+- [Ranged Weapons (Sci-Fi)](RANGED_WEAPONS_SCIFI.md) - Modern/futuristic firearms, fire modes, ammo types
+- [Implants System](IMPLANTS_SYSTEM.md) - Cybernetic implants, installation, activation
+- [Effects System](EFFECTS_SYSTEM.md) - Status effects, buffs, debuffs
 
 ---
 
@@ -255,22 +258,34 @@ Actual Distance (meters) = Range Value²
 
 ### Weapon Range Categories
 
-Each ranged weapon has four range values: **Short / Medium / Long / Extreme**
+Each ranged weapon has a **Short Range** value. Range categories are derived from this:
 
-Example weapon ranges:
-- Shortbow: 3/5/7/9 (actual: 9/25/49/81 units)
-- Longbow: 4/6/8/10 (actual: 16/36/64/100 units)
-- Crossbow: 5/7/9/11 (actual: 25/49/81/121 units)
-- Thrown Dagger: 1/2/3/4 (actual: 1/4/9/16 units)
+| Category | Range Values | AV Modifier |
+|----------|--------------|-------------|
+| **Short** | 1 to [Short Range] | +0 |
+| **Medium** | Short Range + 1 | -1 |
+| **Long** | Short Range + 2 | -2 |
+| **Extreme** | Short Range + 3 | -4 |
 
-### Base Target Value by Range
+**Example - Straight Bow (Short Range 4)**:
+| Category | Range Values | Distance (meters) | AV Mod |
+|----------|--------------|-------------------|--------|
+| Short | 1-4 | 1-16m | +0 |
+| Medium | 5 | 25m | -1 |
+| Long | 6 | 36m | -2 |
+| Extreme | 7 | 49m | -4 |
 
-| Range Category | Base TV |
-|----------------|---------|
-| Short | 6 |
-| Medium | 8 |
-| Long | 10 |
-| Extreme | 12 |
+**Example Weapon Short Ranges**:
+| Weapon | Short Range | Extreme Range | Max Distance |
+|--------|-------------|---------------|--------------|
+| Thrown Dagger | 2 | 5 | 25m |
+| Shortbow | 3 | 6 | 36m |
+| Straight Bow | 4 | 7 | 49m |
+| Longbow | 5 | 8 | 64m |
+| Crossbow | 6 | 9 | 81m |
+| Pistol | 4 | 7 | 49m |
+| Rifle | 6 | 9 | 81m |
+| Sniper Rifle | 8 | 11 | 121m |
 
 ### Ranged Attack
 
@@ -278,10 +293,13 @@ Example weapon ranges:
 
 1. Attacker declares target and weapon
 2. Determine range category based on distance to target
-3. Attacker rolls: **Ranged Weapon Skill AS + 4dF+** = AV
-4. Calculate TV = Base TV + Modifiers
-5. SV = AV - TV
-6. If SV ≥ 0, proceed to damage resolution
+3. Apply range AV modifier to weapon skill
+4. Attacker rolls: **(Weapon Skill AS + Range Modifier) + 4dF+** = AV
+5. Defender determines TV (passive defense or active dodge)
+6. SV = AV - TV
+7. If SV ≥ 0, proceed to damage resolution
+
+**Base TV**: Ranged attacks use **passive defense TV** (Dodge AS - 1) unless the defender spends an action to actively dodge.
 
 ### Target Value Modifiers
 
@@ -295,12 +313,12 @@ Example weapon ranges:
 | Target behind ½ cover | +1 |
 | Target behind ¾ cover | +2 |
 | **Attacker Conditions** | |
-| Attacker in motion | +2 |
+| Attacker in motion | -2 AV (penalty to attacker) |
 | **Target Size** | |
 | Tiny target | +2 |
 | Small target | +1 |
 
-Modifiers stack. Example: Small target behind ½ cover at long range = TV 10 + 1 + 1 = 12
+Modifiers stack. Example: Small target (+1 TV) behind ½ cover (+1 TV) at long range (-2 AV) = effective -2 AV and +2 TV
 
 ### Prep Actions
 
@@ -346,44 +364,35 @@ Aiming provides a bonus to the next ranged attack:
   - Attacker takes any other action before firing
   - Attacker is interrupted (takes damage, etc.)
 
-### Ranged Weapon Cooldowns
+### Reload Mechanics
 
-After firing, ranged weapons require time before the next shot:
+**Reload is an Action**: When a ranged weapon's loaded ammo reaches 0, it must be reloaded before firing again. Reloading always costs an action.
 
-| Skill Level | Cooldown | Shots per Round |
-|-------------|----------|-----------------|
-| 0 | 6 seconds (2 rounds) | 0.5 |
-| 1 | 5 seconds | 0.6 |
-| 2 | 4 seconds | 0.75 |
-| 3 | 3 seconds (1 round) | 1 |
-| 4-5 | 2 seconds | 1.5 |
-| 6-7 | 1 second | 3 |
-| 8-9 | 0.5 seconds | 6 |
-| 10+ | No cooldown | AP limited |
+| Weapon Type | Reload Action | Cost | Result |
+|-------------|---------------|------|--------|
+| **Bow** | Nock Arrow | 1 AP + 1 FAT | +1 arrow loaded |
+| **Crossbow** | Load Bolt | 1 AP + 1 FAT | +1 bolt loaded |
+| **Revolver** | Load Round | 1 AP + 1 FAT | +1 round loaded |
+| **Magazine Weapon** | Magazine Swap | 1 AP + 1 FAT | Full capacity |
+| **Thrown** | Draw Weapon | 1 AP + 1 FAT | Ready to throw |
 
-**Note**: These cooldowns apply when NOT using prepped ammunition. With prepped ammo, the limiting factor becomes AP and the weapon's mechanical rate of fire.
+**Weapon Capacity Examples**:
+- Bow: 1 (reload after every shot)
+- Crossbow: 1 (reload after every shot)
+- Revolver: 6 (reload after 6 shots)
+- Pistol: 8-18 (reload when magazine empty)
 
-**Cooldown Mechanics**:
-- Cooldown begins after firing
-- Cannot fire again until cooldown completes
-- Cooldown continues even if taking other actions
-- Sub-round cooldowns (< 3 sec) allow multiple shots per round
+**Speed and Skill**:
+- **Speed Reload** (skill 6+): 2 AP, can fire same round
+- **Prepped Ammunition**: If ammo was prepped in advance, reload is instant (0 additional cost)
 
-### Cooldown Interruption
+**Multiple Shots Per Round**:
+Characters with sufficient AP can fire multiple times per round, limited by:
+- Available AP (each shot costs 1 AP + 1 FAT)
+- Loaded ammo (must reload when empty)
+- Prepped ammunition (enables rapid fire without reload actions)
 
-If a character is interrupted while preparing a ranged weapon:
-
-| Weapon Type | Interruption Effect |
-|-------------|---------------------|
-| Bow (readying arrow) | **Pausable** - Progress freezes, resumes later |
-| Crossbow (winding) | **Pausable** - Progress freezes, resumes later |
-| Firearm (reloading) | **Pausable** - Progress freezes, resumes later |
-| Thrown (drawing) | **Resettable** - Must start over |
-
-**Interruption Triggers**:
-- Taking damage
-- Performing a different action
-- Being knocked down or stunned
+See [Ranged Weapons (Sci-Fi)](RANGED_WEAPONS_SCIFI.md) for modern/futuristic weapon mechanics including fire modes and ammunition types.
 
 ### Ammunition
 
@@ -442,16 +451,113 @@ Determined by **1d12** roll:
 
 ### Damage Classes
 
-| Class | Scale | Examples |
-|-------|-------|----------|
-| Class 1 | Normal | Human weapons, standard combat |
-| Class 2 | Heavy (10×) | Vehicles, giant creatures |
-| Class 3 | Massive (100×) | Armored vehicles, dragons |
-| Class 4 | Siege (1000×) | Structures, legendary magic |
+| Class | Scale | Fantasy Examples | Sci-Fi Examples |
+|-------|-------|------------------|-----------------|
+| Class 1 | Normal | Human weapons, standard combat | Pistols, rifles, personal melee |
+| Class 2 | Heavy (10×) | Vehicles, giant creatures | Powered armor, APCs, anti-materiel rifles |
+| Class 3 | Massive (100×) | Armored vehicles, dragons | Tanks, gunships, mech suits |
+| Class 4 | Siege (1000×) | Structures, legendary magic | Starship weapons, orbital strikes |
 
 **Class Interactions**:
-- Higher-class armor absorbs lower-class damage as 1 SV
-- Damage penetrating lower-class armor translates UP (×10 multiplier)
+- Higher-class armor **absorbs** lower-class damage as 1 SV maximum (trivial damage)
+- When damage **penetrates** from a higher DC to a lower DC target inside, SV is multiplied by 10×
+
+### Damage Class Escalation
+
+When a weapon deals exceptionally high damage, the damage value itself determines the effective damage class. This allows powerful weapons or exceptional rolls to punch above their weight class.
+
+| Damage Value | Effective DC | Notes |
+|--------------|--------------|-------|
+| 1-19 | Weapon's DC | Normal damage |
+| 20-29 | DC 2 (minimum) | Crosses into "heavy" damage |
+| 30-39 | DC 3 (minimum) | Crosses into "massive" damage |
+| 40+ | DC 4 (minimum) | Crosses into "siege" damage |
+
+**Key Rules**:
+- The effective DC is the **higher** of the weapon's innate DC and the damage-based DC
+- A DC1 pistol dealing 22 damage becomes DC2 damage against DC2 armor
+- A DC2 railgun dealing 35 damage becomes DC3 damage against DC3 armor
+- This scaling applies AFTER armor absorption at the weapon's base DC
+
+**Example - Pistol vs Powered Armor**:
+1. Pistol (DC1) scores SV 8, rolls 2d10 = 17 damage
+2. DC2 powered armor absorbs DC1 damage as 1 SV → 16 damage gets through
+3. 16 < 20, so damage remains DC1 against the wearer's DC1 body
+4. Apply 16 damage to FAT/VIT per damage table
+
+**Example - Pistol Critical vs Powered Armor**:
+1. Pistol (DC1) scores SV 12 (critical!), rolls 4d10 = 28 damage
+2. DC2 powered armor absorbs DC1 damage as 1 SV → 27 damage gets through
+3. 27 is in 20-29 range = DC2 damage
+4. Since target's body is DC1, this DC2 damage is devastating (×10 effect)
+
+**Example - Railgun vs Tank**:
+1. Railgun (DC2) scores SV 10, rolls 3d10 = 24 damage
+2. Tank (DC3) armor absorbs DC2 damage as 1 SV → 23 damage
+3. 23 is in 20-29 range = DC2 (no escalation, weapon already DC2)
+4. 23 damage applied normally to tank systems
+
+### Powered Armor and Vehicles (Layered Defense)
+
+Powered armor and vehicles act as **layered defense**. The outer shell absorbs damage at its damage class, but any penetrating damage translates down to affect occupants inside.
+
+**Powered Armor** (DC2):
+- Provides DC2 protection to the wearer
+- DC1 weapons deal 1 SV maximum (trivial scratches)
+- Wearer's body remains DC1 inside the armor
+- Armor has its own structure pool (typically 20-50)
+- Characters can wear additional DC1 armor underneath
+
+**Penetration and Translation**:
+When damage exceeds the outer armor's absorption, the remaining SV penetrates and is **multiplied by 10×** as it translates down to the next damage class layer.
+
+**Example - Arnie in Powered Armor**:
+```
+Arnie wears:
+  - Powered Armor (DC2, absorbs 4 SV)
+  - Blast-resistant shirt (DC1, absorbs 3 SV)
+
+Attack: Railgun (DC2 weapon) hits with SV 5
+
+Step 1: Powered Armor (DC2) absorbs damage
+  - Armor absorbs 4 SV
+  - 1 SV penetrates the outer shell
+
+Step 2: Penetrating damage translates to DC1
+  - 1 SV at DC2 → 10 SV at DC1 (×10 multiplier)
+  - This represents the catastrophic effect of a heavy round
+    punching through into the vulnerable interior
+
+Step 3: Inner armor (DC1) absorbs remaining damage
+  - Blast shirt absorbs 3 SV
+  - 10 - 3 = 7 SV reaches Arnie
+
+Step 4: Damage resolution
+  - Roll damage at SV 7 against Arnie normally
+  - SV 7 = 2d8 damage dice
+```
+
+**Vehicles** (DC2-3):
+- Hull absorbs damage at vehicle's DC
+- Penetrating damage affects crew at DC1 (×10 per class difference)
+- Crew compartment may have separate armor rating
+- Hull damage vs crew damage tracked separately
+- Disabled vehicles may still provide cover
+- See [Ranged Weapons (Sci-Fi)](RANGED_WEAPONS_SCIFI.md) for vehicle-scale weapons
+
+**Example - Tank Crew**:
+```
+Tank (DC3, absorbs 6 SV) hit by anti-tank missile (DC3) at SV 8
+
+Step 1: Tank hull absorbs 6 SV → 2 SV penetrates
+Step 2: 2 SV at DC3 → 20 SV at DC2 → 200 SV at DC1
+        (This is catastrophic - crew is killed instantly)
+```
+
+**Targeting Weak Points**:
+- Called shot to weak point: -4 AS penalty
+- Success: Damage bypasses outer armor entirely (no absorption)
+- Examples: Vision slit, joint, exhaust port, sensor array
 
 ### SV to Damage Conversion
 

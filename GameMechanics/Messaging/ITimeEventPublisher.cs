@@ -32,6 +32,13 @@ public interface ITimeEventPublisher : IAsyncDisposable
     Task PublishCombatStateAsync(CombatStateMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Publishes a character update notification.
+    /// </summary>
+    /// <param name="message">The character update message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishCharacterUpdateAsync(CharacterUpdateMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

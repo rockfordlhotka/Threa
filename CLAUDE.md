@@ -50,11 +50,14 @@ Core design documents in `design/`:
 |----------|-------------|
 | `GAME_RULES_SPECIFICATION.md` | **Primary reference** - Complete game mechanics |
 | `ACTIONS.md` | Universal action framework and resolution flow |
-| `COMBAT_SYSTEM.md` | Combat resolution, initiative, defense options |
+| `COMBAT_SYSTEM.md` | Combat resolution, initiative, defense options, damage classes |
 | `ACTION_POINTS.md` | AP calculation, costs, recovery, Fatigue interaction |
 | `TIME_SYSTEM.md` | Rounds, initiative, cooldowns, long-term events |
 | `EFFECTS_SYSTEM.md` | Wounds, conditions, buffs, debuffs, spell effects |
 | `EQUIPMENT_SYSTEM.md` | Equipment slots, item bonuses, stacking rules |
+| `ITEM_EFFECTS_SYSTEM.md` | Item-triggered effects, curses, toggleable equipment |
+| `RANGED_WEAPONS_SCIFI.md` | Sci-fi firearms, fire modes, ammo types, heavy weapons |
+| `IMPLANTS_SYSTEM.md` | Cybernetic implants, installation, activation modes |
 | `DATABASE_DESIGN.md` | Schema design for characters, skills, items, effects |
 | `PLAY_PAGE_DESIGN.md` | Play page layout, combat workflows, UI patterns |
 

@@ -297,7 +297,7 @@ IEnumerable<EffectRecord> GetCursedEffectsFromItem(Guid itemId);
 }
 ```
 
-### Neural Implant
+### Neural Implant (Always-On)
 
 ```json
 {
@@ -308,6 +308,7 @@ IEnumerable<EffectRecord> GetCursedEffectsFromItem(Guid itemId);
       "Name": "Enhanced Cognition",
       "EffectType": "Buff",
       "Trigger": "WhileEquipped",
+      "IsToggleable": false,
       "BehaviorState": {
         "Modifiers": [
           { "Type": "Attribute", "Target": "INT", "Value": 2 },
@@ -320,6 +321,119 @@ IEnumerable<EffectRecord> GetCursedEffectsFromItem(Guid itemId);
       "EffectType": "Condition",
       "Trigger": "WhileEquipped",
       "Description": "Requires power cell. Without power: -4 to all INT skills."
+    }
+  ]
+}
+```
+
+### Wired Reflexes (Toggleable - Costs 1 AP)
+
+```json
+{
+  "Name": "Wired Reflexes II",
+  "EquipmentSlot": "ImplantSpine",
+  "Effects": [
+    {
+      "Name": "Boosted Reflexes",
+      "EffectType": "Buff",
+      "Trigger": "WhileEquipped",
+      "IsToggleable": true,
+      "ToggleCost": "1 AP",
+      "IsActive": false,
+      "Description": "Spend 1 AP to activate or deactivate. While active, enhanced reflexes.",
+      "BehaviorState": {
+        "Modifiers": [
+          { "Type": "Attribute", "Target": "DEX", "Value": 2 },
+          { "Type": "AbilityScore", "Target": "Defense", "Value": 2 }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Thermographic Vision (Toggleable - Free Action)
+
+```json
+{
+  "Name": "Thermographic Optics",
+  "EquipmentSlot": "ImplantOpticLeft",
+  "Effects": [
+    {
+      "Name": "Heat Vision",
+      "EffectType": "Buff",
+      "Trigger": "WhileEquipped",
+      "IsToggleable": true,
+      "ToggleCost": "Free",
+      "IsActive": false,
+      "Description": "Toggle as free action. See heat signatures through walls and in darkness.",
+      "BehaviorState": {
+        "Modifiers": [
+          { "Type": "AbilityScore", "Target": "Awareness", "Value": 2, "Condition": "detecting living creatures" },
+          { "Type": "SpecialAbility", "Target": "Vision", "Value": "Thermographic" }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Adrenaline Surge (Conditional Activation)
+
+```json
+{
+  "Name": "Adrenaline Pump",
+  "EquipmentSlot": "ImplantCardiac",
+  "Effects": [
+    {
+      "Name": "Combat Surge",
+      "EffectType": "Buff",
+      "Trigger": "OnUse",
+      "IsToggleable": true,
+      "ToggleCost": "1 AP",
+      "DurationRounds": 3,
+      "CooldownRounds": 10,
+      "Description": "Activate for 3 rounds of enhanced physical ability. 10-round cooldown between uses.",
+      "BehaviorState": {
+        "Modifiers": [
+          { "Type": "AbilityScore", "Target": "PhysicalSkills", "Value": 3 }
+        ]
+      }
+    },
+    {
+      "Name": "Adrenaline Crash",
+      "EffectType": "Debuff",
+      "Trigger": "AfterDuration",
+      "DurationRounds": 3,
+      "Description": "After surge ends, suffer fatigue for 3 rounds.",
+      "BehaviorState": {
+        "Modifiers": [
+          { "Type": "AbilityScore", "Target": "PhysicalSkills", "Value": -2 }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Subdermal Armor (Always-On, Passive)
+
+```json
+{
+  "Name": "Subdermal Plating",
+  "EquipmentSlot": "ImplantSubdermal",
+  "Effects": [
+    {
+      "Name": "Under-skin Protection",
+      "EffectType": "Buff",
+      "Trigger": "WhileEquipped",
+      "IsToggleable": false,
+      "Description": "Provides passive armor bonus. Cannot be disabled.",
+      "BehaviorState": {
+        "Modifiers": [
+          { "Type": "ArmorAbsorption", "Target": "All", "Value": 2 }
+        ]
+      }
     }
   ]
 }

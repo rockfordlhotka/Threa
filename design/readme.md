@@ -26,7 +26,15 @@ This folder contains the game rules and design specifications for the Threa tabl
 | [Equipment System](EQUIPMENT_SYSTEM.md) | Equipment slots, item bonuses, attribute modifiers, and stacking rules |
 | [Item System Overview](ITEM_SYSTEM_OVERVIEW.md) | Architecture diagram, container hierarchy, weight/volume calculations |
 | [Item Bonuses and Cascading Effects](ITEM_BONUSES_AND_CASCADING_EFFECTS.md) | Detailed explanation of how item bonuses affect skills and cascade through attributes |
+| [Item Effects System](ITEM_EFFECTS_SYSTEM.md) | Item-triggered effects, curses, and toggleable equipment |
 | [Carrying Capacity Analysis](CARRYING_CAPACITY_ANALYSIS.md) | Exponential scaling formula for weight/volume based on Physicality |
+
+### Sci-Fi / Cyberpunk Systems
+
+| Document | Description |
+|----------|-------------|
+| [Ranged Weapons (Sci-Fi)](RANGED_WEAPONS_SCIFI.md) | Modern/futuristic firearms, fire modes, ammunition types, heavy weapons |
+| [Implants System](IMPLANTS_SYSTEM.md) | Cybernetic implants, installation/removal, toggleable activation, power requirements |
 
 ### Reference Data
 

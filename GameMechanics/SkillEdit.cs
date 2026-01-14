@@ -129,6 +129,61 @@ namespace GameMechanics
       private set => LoadProperty(IsFreeActionProperty, value);
     }
 
+    public static readonly PropertyInfo<SkillCategory> CategoryProperty = RegisterProperty<SkillCategory>(nameof(Category));
+    /// <summary>
+    /// Category classification for UI filtering and display logic.
+    /// </summary>
+    public SkillCategory Category
+    {
+      get => GetProperty(CategoryProperty);
+      private set => LoadProperty(CategoryProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsMagicProperty = RegisterProperty<bool>(nameof(IsMagic));
+    /// <summary>
+    /// Whether this is a magic skill.
+    /// </summary>
+    public bool IsMagic
+    {
+      get => GetProperty(IsMagicProperty);
+      private set => LoadProperty(IsMagicProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsTheologyProperty = RegisterProperty<bool>(nameof(IsTheology));
+    /// <summary>
+    /// Whether this is a theology/divine skill.
+    /// </summary>
+    public bool IsTheology
+    {
+      get => GetProperty(IsTheologyProperty);
+      private set => LoadProperty(IsTheologyProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsPsionicProperty = RegisterProperty<bool>(nameof(IsPsionic));
+    /// <summary>
+    /// Whether this is a psionic skill.
+    /// </summary>
+    public bool IsPsionic
+    {
+      get => GetProperty(IsPsionicProperty);
+      private set => LoadProperty(IsPsionicProperty, value);
+    }
+
+    /// <summary>
+    /// Whether this is a spell skill (magic, theology, or psionic).
+    /// </summary>
+    public bool IsSpell => IsMagic || IsTheology || IsPsionic;
+
+    /// <summary>
+    /// Whether this is a combat skill.
+    /// </summary>
+    public bool IsCombatSkill => Category == SkillCategory.Combat;
+
+    /// <summary>
+    /// Whether this is a mana channeling/gathering skill.
+    /// </summary>
+    public bool IsManaSkill => Category == SkillCategory.Mana;
+
     // === Existing Skill Check Logic ===
 
     public ResultValue SkillCheck()
@@ -219,6 +274,12 @@ namespace GameMechanics
         AppliesPhysicalityBonus = skill.AppliesPhysicalityBonus;
         RequiresTarget = skill.RequiresTarget;
         IsFreeAction = skill.IsFreeAction;
+
+        // Load magic/category properties
+        Category = skill.Category;
+        IsMagic = skill.IsMagic;
+        IsTheology = skill.IsTheology;
+        IsPsionic = skill.IsPsionic;
       }
     }
 

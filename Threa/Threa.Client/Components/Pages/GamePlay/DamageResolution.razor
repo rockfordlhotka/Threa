@@ -605,20 +605,11 @@
             Character.Vitality.PendingDamage += result.VitalityDamage;
         }
 
-        // Create wound effects
+        // Create wound effects using the proper WoundBehavior helper
+        // This ensures proper WoundState initialization with SeriousWounds count
         for (int i = 0; i < result.WoundCount; i++)
         {
-            var woundEffect = EffectPortal.CreateChild(
-                EffectType.Wound,
-                $"Wound ({result.HitLocation})",
-                result.HitLocation.ToString(),
-                null, // Wounds don't expire automatically
-                null);
-
-            woundEffect.Description = $"Wound at {result.HitLocation} from {result.DamageType} damage";
-            woundEffect.Source = "Combat";
-
-            Character.Effects.AddEffect(woundEffect);
+            WoundBehavior.TakeWound(Character, result.HitLocation.ToString(), EffectPortal);
         }
 
         // Save character

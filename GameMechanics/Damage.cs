@@ -50,6 +50,15 @@ namespace GameMechanics
       get => (CharacterEdit)((DamageList)Parent).Parent;
     }
 
+    /// <summary>
+    /// Sets the current value directly (used by effects like Stunned that set FAT to 0).
+    /// </summary>
+    /// <param name="newValue">The new value to set.</param>
+    public void SetValue(int newValue)
+    {
+      Value = Math.Max(0, Math.Min(newValue, BaseValue));
+    }
+
     public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
       if (Name == "FAT")

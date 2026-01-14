@@ -8,43 +8,72 @@ namespace GameMechanics.Time;
 
 /// <summary>
 /// Represents the current time state for a campaign/session.
+/// All sub-unit values are calculated from TotalRounds.
 /// </summary>
 public class TimeState
 {
+    // Time unit constants (in rounds, where 1 round = 3 seconds)
+    public const int RoundsPerMinute = 20;      // 60 seconds
+    public const int RoundsPerTurn = 200;       // 10 minutes
+    public const int RoundsPerHour = 1200;      // 60 minutes
+    public const int RoundsPerDay = 28800;      // 24 hours
+    public const int RoundsPerWeek = 201600;    // 7 days
+
     /// <summary>
     /// Total elapsed rounds since tracking began.
+    /// This is the single source of truth for all time calculations.
     /// </summary>
     public long TotalRounds { get; set; }
 
     /// <summary>
     /// Current round within the current minute (0-19).
     /// </summary>
-    public int RoundInMinute { get; set; }
+    public int RoundInMinute => (int)(TotalRounds % RoundsPerMinute);
 
     /// <summary>
     /// Current minute within the current turn (0-9).
     /// </summary>
-    public int MinuteInTurn { get; set; }
+    public int MinuteInTurn => (int)((TotalRounds % RoundsPerTurn) / RoundsPerMinute);
 
     /// <summary>
     /// Current turn within the current hour (0-5).
     /// </summary>
-    public int TurnInHour { get; set; }
+    public int TurnInHour => (int)((TotalRounds % RoundsPerHour) / RoundsPerTurn);
 
     /// <summary>
     /// Current hour within the current day (0-23).
     /// </summary>
-    public int HourInDay { get; set; }
+    public int HourInDay => (int)((TotalRounds % RoundsPerDay) / RoundsPerHour);
 
     /// <summary>
     /// Current day within the current week (0-6).
     /// </summary>
-    public int DayInWeek { get; set; }
+    public int DayInWeek => (int)((TotalRounds % RoundsPerWeek) / RoundsPerDay);
 
     /// <summary>
     /// Total elapsed weeks.
     /// </summary>
-    public long TotalWeeks { get; set; }
+    public long TotalWeeks => TotalRounds / RoundsPerWeek;
+
+    /// <summary>
+    /// Total elapsed minutes.
+    /// </summary>
+    public long TotalMinutes => TotalRounds / RoundsPerMinute;
+
+    /// <summary>
+    /// Total elapsed turns.
+    /// </summary>
+    public long TotalTurns => TotalRounds / RoundsPerTurn;
+
+    /// <summary>
+    /// Total elapsed hours.
+    /// </summary>
+    public long TotalHours => TotalRounds / RoundsPerHour;
+
+    /// <summary>
+    /// Total elapsed days.
+    /// </summary>
+    public long TotalDays => TotalRounds / RoundsPerDay;
 
     /// <summary>
     /// Gets elapsed time in seconds.
@@ -215,29 +244,22 @@ public class TimeManager
             UnitsAdvanced = count
         };
 
-        for (int i = 0; i < count; i++)
+        // Convert the event type to rounds
+        int roundsToAdvance = eventType switch
         {
-            switch (eventType)
-            {
-                case TimeEventType.EndOfRound:
-                    await ProcessEndOfRoundAsync(result);
-                    break;
-                case TimeEventType.EndOfMinute:
-                    await ProcessEndOfMinuteAsync(result);
-                    break;
-                case TimeEventType.EndOfTurn:
-                    await ProcessEndOfTurnAsync(result);
-                    break;
-                case TimeEventType.EndOfHour:
-                    await ProcessEndOfHourAsync(result);
-                    break;
-                case TimeEventType.EndOfDay:
-                    await ProcessEndOfDayAsync(result);
-                    break;
-                case TimeEventType.EndOfWeek:
-                    await ProcessEndOfWeekAsync(result);
-                    break;
-            }
+            TimeEventType.EndOfRound => count,
+            TimeEventType.EndOfMinute => count * TimeState.RoundsPerMinute,
+            TimeEventType.EndOfTurn => count * TimeState.RoundsPerTurn,
+            TimeEventType.EndOfHour => count * TimeState.RoundsPerHour,
+            TimeEventType.EndOfDay => count * TimeState.RoundsPerDay,
+            TimeEventType.EndOfWeek => count * TimeState.RoundsPerWeek,
+            _ => 0
+        };
+
+        // Process each round individually to handle all boundaries
+        for (int i = 0; i < roundsToAdvance; i++)
+        {
+            await ProcessSingleRoundAsync(result);
         }
 
         result.CurrentTime = _timeState;
@@ -254,14 +276,22 @@ public class TimeManager
     }
 
     /// <summary>
-    /// Processes a single round (3 seconds).
+    /// Processes a single round (3 seconds) and checks for all boundary crossings.
     /// </summary>
-    private async Task ProcessEndOfRoundAsync(TimeAdvanceResult result)
+    private async Task ProcessSingleRoundAsync(TimeAdvanceResult result)
     {
-        _timeState.TotalRounds++;
-        _timeState.RoundInMinute++;
+        // Capture "before" state for boundary detection
+        long previousRounds = _timeState.TotalRounds;
+        long previousMinutes = _timeState.TotalMinutes;
+        long previousTurns = _timeState.TotalTurns;
+        long previousHours = _timeState.TotalHours;
+        long previousDays = _timeState.TotalDays;
+        long previousWeeks = _timeState.TotalWeeks;
 
-        // Process characters
+        // Advance one round
+        _timeState.TotalRounds++;
+
+        // Process character end-of-round effects
         foreach (var character in _trackedCharacters.Values)
         {
             var charResult = new CharacterRoundResult
@@ -301,36 +331,44 @@ public class TimeManager
             result.CharacterResults.Add(charResult);
         }
 
-        // Check for minute boundary
-        if (_timeState.RoundInMinute >= 20)
+        // Check for boundary crossings (from smallest to largest time unit)
+        if (_timeState.TotalMinutes > previousMinutes)
         {
-            _timeState.RoundInMinute = 0;
-            result.BoundariesCrossed.Add(TimeEventType.EndOfMinute);
             await ProcessMinuteBoundaryAsync(result);
+            result.BoundariesCrossed.Add(TimeEventType.EndOfMinute);
         }
-    }
 
-    /// <summary>
-    /// Processes end of minute (skipping 20 rounds with summarized effects).
-    /// </summary>
-    private async Task ProcessEndOfMinuteAsync(TimeAdvanceResult result)
-    {
-        // Advance 20 rounds worth of time
-        for (int i = 0; i < 20; i++)
+        if (_timeState.TotalTurns > previousTurns)
         {
-            await ProcessEndOfRoundAsync(result);
+            await ProcessTurnBoundaryAsync(result);
+            result.BoundariesCrossed.Add(TimeEventType.EndOfTurn);
         }
-        
-        result.Messages.Add("Minute complete (20 rounds processed).");
+
+        if (_timeState.TotalHours > previousHours)
+        {
+            await ProcessHourBoundaryAsync(result);
+            result.BoundariesCrossed.Add(TimeEventType.EndOfHour);
+        }
+
+        if (_timeState.TotalDays > previousDays)
+        {
+            await ProcessDayBoundaryAsync(result);
+            result.BoundariesCrossed.Add(TimeEventType.EndOfDay);
+        }
+
+        if (_timeState.TotalWeeks > previousWeeks)
+        {
+            await ProcessWeekBoundaryAsync(result);
+            result.BoundariesCrossed.Add(TimeEventType.EndOfWeek);
+        }
     }
 
     /// <summary>
-    /// Called when a minute boundary is crossed during round processing.
+    /// Called when a minute boundary is crossed.
     /// </summary>
     private async Task ProcessMinuteBoundaryAsync(TimeAdvanceResult result)
     {
-        _timeState.MinuteInTurn++;
-        result.Messages.Add("End of minute.");
+        result.Messages.Add($"End of minute {_timeState.TotalMinutes}.");
 
         // Process minute-specific effects (poison ticks, environmental hazards)
         if (_effectManager != null)
@@ -341,63 +379,43 @@ public class TimeManager
             }
         }
 
-        // Check for turn boundary
-        if (_timeState.MinuteInTurn >= 10)
+        // FAT recovery for VIT=4 characters (1 FAT per minute)
+        foreach (var character in _trackedCharacters.Values)
         {
-            _timeState.MinuteInTurn = 0;
-            result.BoundariesCrossed.Add(TimeEventType.EndOfTurn);
-            await ProcessTurnBoundaryAsync(result);
+            if (character.Vitality.Value == 4 && character.Fatigue.Value < character.Fatigue.BaseValue)
+            {
+                character.Fatigue.PendingHealing += 1;
+                result.Messages.Add($"  {character.Name}: +1 FAT recovery pending (low VIT)");
+            }
         }
     }
 
     /// <summary>
-    /// Processes end of turn (10 minutes / 200 rounds).
-    /// </summary>
-    private async Task ProcessEndOfTurnAsync(TimeAdvanceResult result)
-    {
-        // Advance 10 minutes
-        for (int i = 0; i < 10; i++)
-        {
-            await ProcessEndOfMinuteAsync(result);
-        }
-
-        result.Messages.Add("Turn complete (10 minutes processed).");
-    }
-
-    /// <summary>
-    /// Called when a turn boundary is crossed.
+    /// Called when a turn boundary is crossed (every 10 minutes).
     /// </summary>
     private async Task ProcessTurnBoundaryAsync(TimeAdvanceResult result)
     {
-        _timeState.TurnInHour++;
-        result.Messages.Add("End of turn (10 minutes).");
+        result.Messages.Add($"End of turn {_timeState.TotalTurns} (10 minutes).");
 
         // Turn-specific processing: torch consumption, buff expiration, exploration events
         // TODO: Add turn-specific effect processing
 
-        // Check for hour boundary
-        if (_timeState.TurnInHour >= 6)
+        // FAT recovery for VIT=3 characters (1 FAT per 30 minutes)
+        // Check if this is the 30-minute mark within the hour (turn 3 or 6 within the hour)
+        // TurnInHour is 0-5, so positions 2 and 5 are 30 and 60 minutes
+        if (_timeState.TurnInHour == 2) // 30 minutes into the hour (0, 1, 2 = 30 min mark)
         {
-            _timeState.TurnInHour = 0;
-            result.BoundariesCrossed.Add(TimeEventType.EndOfHour);
-            await ProcessHourBoundaryAsync(result);
+            foreach (var character in _trackedCharacters.Values)
+            {
+                if (character.Vitality.Value == 3 && character.Fatigue.Value < character.Fatigue.BaseValue)
+                {
+                    character.Fatigue.PendingHealing += 1;
+                    result.Messages.Add($"  {character.Name}: +1 FAT recovery pending (very low VIT)");
+                }
+            }
         }
 
         await Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Processes end of hour.
-    /// </summary>
-    private async Task ProcessEndOfHourAsync(TimeAdvanceResult result)
-    {
-        // Advance 6 turns
-        for (int i = 0; i < 6; i++)
-        {
-            await ProcessEndOfTurnAsync(result);
-        }
-
-        result.Messages.Add("Hour complete.");
     }
 
     /// <summary>
@@ -405,42 +423,26 @@ public class TimeManager
     /// </summary>
     private async Task ProcessHourBoundaryAsync(TimeAdvanceResult result)
     {
-        _timeState.HourInDay++;
-        result.Messages.Add("End of hour.");
+        result.Messages.Add($"End of hour {_timeState.TotalHours}.");
 
-        // Hour-specific processing: VIT recovery
+        // FAT recovery for low VIT characters
         foreach (var character in _trackedCharacters.Values)
         {
-            if (character.Vitality.Value > 0 && character.Vitality.Value < character.Vitality.BaseValue)
+            // VIT=2: 1 FAT per hour
+            if (character.Vitality.Value == 2 && character.Fatigue.Value < character.Fatigue.BaseValue)
             {
-                character.Vitality.PendingHealing += 1;
-                result.Messages.Add($"  {character.Name}: +1 VIT recovery pending");
+                character.Fatigue.PendingHealing += 1;
+                result.Messages.Add($"  {character.Name}: +1 FAT recovery pending (critical VIT)");
+            }
+            // VIT=3: 1 FAT per 30 minutes (also applies at hour boundary = 60 min mark)
+            else if (character.Vitality.Value == 3 && character.Fatigue.Value < character.Fatigue.BaseValue)
+            {
+                character.Fatigue.PendingHealing += 1;
+                result.Messages.Add($"  {character.Name}: +1 FAT recovery pending (very low VIT)");
             }
         }
 
-        // Check for day boundary
-        if (_timeState.HourInDay >= 24)
-        {
-            _timeState.HourInDay = 0;
-            result.BoundariesCrossed.Add(TimeEventType.EndOfDay);
-            await ProcessDayBoundaryAsync(result);
-        }
-
         await Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Processes end of day.
-    /// </summary>
-    private async Task ProcessEndOfDayAsync(TimeAdvanceResult result)
-    {
-        // Advance 24 hours
-        for (int i = 0; i < 24; i++)
-        {
-            await ProcessEndOfHourAsync(result);
-        }
-
-        result.Messages.Add("Day complete.");
     }
 
     /// <summary>
@@ -448,36 +450,19 @@ public class TimeManager
     /// </summary>
     private async Task ProcessDayBoundaryAsync(TimeAdvanceResult result)
     {
-        _timeState.DayInWeek++;
-        result.Messages.Add("End of day.");
+        result.Messages.Add($"End of day {_timeState.TotalDays}.");
 
-        // Day-specific processing: full rest, daily resets, condition progression
-        // TODO: Add day-specific processing
-
-        // Check for week boundary
-        if (_timeState.DayInWeek >= 7)
+        // VIT recovery: 1 VIT per day (if alive and not at max)
+        foreach (var character in _trackedCharacters.Values)
         {
-            _timeState.DayInWeek = 0;
-            _timeState.TotalWeeks++;
-            result.BoundariesCrossed.Add(TimeEventType.EndOfWeek);
-            await ProcessWeekBoundaryAsync(result);
+            if (character.Vitality.Value > 0 && character.Vitality.Value < character.Vitality.BaseValue)
+            {
+                character.Vitality.PendingHealing += 1;
+                result.Messages.Add($"  {character.Name}: +1 VIT recovery pending (daily healing)");
+            }
         }
 
         await Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Processes end of week.
-    /// </summary>
-    private async Task ProcessEndOfWeekAsync(TimeAdvanceResult result)
-    {
-        // Advance 7 days
-        for (int i = 0; i < 7; i++)
-        {
-            await ProcessEndOfDayAsync(result);
-        }
-
-        result.Messages.Add("Week complete.");
     }
 
     /// <summary>
@@ -495,7 +480,7 @@ public class TimeManager
 
     /// <summary>
     /// Skips time without detailed processing (narrative time skip).
-    /// Only processes the final time unit's effects.
+    /// Calculates recovery based on time skipped without processing each round.
     /// </summary>
     public async Task<TimeAdvanceResult> SkipTimeAsync(TimeEventType unit, int count)
     {
@@ -505,54 +490,51 @@ public class TimeManager
             UnitsAdvanced = count
         };
 
+        // Capture before state
+        long previousDays = _timeState.TotalDays;
+
         // Calculate total rounds to skip
         long roundsToSkip = unit switch
         {
             TimeEventType.EndOfRound => count,
-            TimeEventType.EndOfMinute => count * 20L,
-            TimeEventType.EndOfTurn => count * 200L,
-            TimeEventType.EndOfHour => count * 1200L,
-            TimeEventType.EndOfDay => count * 28800L,
-            TimeEventType.EndOfWeek => count * 201600L,
+            TimeEventType.EndOfMinute => count * TimeState.RoundsPerMinute,
+            TimeEventType.EndOfTurn => count * TimeState.RoundsPerTurn,
+            TimeEventType.EndOfHour => count * TimeState.RoundsPerHour,
+            TimeEventType.EndOfDay => count * TimeState.RoundsPerDay,
+            TimeEventType.EndOfWeek => count * TimeState.RoundsPerWeek,
             _ => 0
         };
 
-        // Update time state directly
+        // Update time state - all other values are computed automatically
         _timeState.TotalRounds += roundsToSkip;
-        
-        // Recalculate all time boundaries
-        var totalMinutes = _timeState.TotalRounds / 20;
-        var totalTurns = totalMinutes / 10;
-        var totalHours = totalTurns / 6;
-        var totalDays = totalHours / 24;
-        
-        _timeState.RoundInMinute = (int)(_timeState.TotalRounds % 20);
-        _timeState.MinuteInTurn = (int)(totalMinutes % 10);
-        _timeState.TurnInHour = (int)(totalTurns % 6);
-        _timeState.HourInDay = (int)(totalHours % 24);
-        _timeState.DayInWeek = (int)(totalDays % 7);
-        _timeState.TotalWeeks = totalDays / 7;
 
-        // Process one final boundary at the target level
-        switch (unit)
+        // Calculate how many days were skipped for VIT recovery
+        long daysSkipped = _timeState.TotalDays - previousDays;
+
+        // Apply recovery based on time skipped
+        foreach (var character in _trackedCharacters.Values)
         {
-            case TimeEventType.EndOfHour:
-                foreach (var character in _trackedCharacters.Values)
-                {
-                    if (character.Vitality.Value > 0)
-                    {
-                        // Recover VIT equal to hours skipped
-                        character.Vitality.PendingHealing += count;
-                    }
-                }
-                break;
-            // Add other skip processing as needed
+            // VIT recovery: 1 per day skipped
+            if (daysSkipped > 0 && character.Vitality.Value > 0 && character.Vitality.Value < character.Vitality.BaseValue)
+            {
+                int vitRecovery = (int)Math.Min(daysSkipped, character.Vitality.BaseValue - character.Vitality.Value);
+                character.Vitality.PendingHealing += vitRecovery;
+                result.Messages.Add($"  {character.Name}: +{vitRecovery} VIT recovery pending ({daysSkipped} days)");
+            }
+
+            // FAT recovery depends on VIT level - assume full recovery during narrative skip
+            if (character.Fatigue.Value < character.Fatigue.BaseValue && character.Vitality.Value >= 2)
+            {
+                int fatRecovery = character.Fatigue.BaseValue - character.Fatigue.Value;
+                character.Fatigue.PendingHealing += fatRecovery;
+                result.Messages.Add($"  {character.Name}: +{fatRecovery} FAT recovery pending (rest)");
+            }
         }
 
         result.CurrentTime = _timeState;
         result.Messages.Add($"Skipped {count} {unit}(s). Time is now: {_timeState.DisplayTime}");
 
         TimeAdvanced?.Invoke(this, result);
-        return result;
+        return await Task.FromResult(result);
     }
 }

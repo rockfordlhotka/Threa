@@ -24,6 +24,26 @@ public class CharacterEffect
     public int EffectDefinitionId { get; set; }
 
     /// <summary>
+    /// The type of this effect (stored directly to avoid relying on Definition navigation property).
+    /// </summary>
+    public EffectType EffectType { get; set; }
+
+    /// <summary>
+    /// Display name for this effect instance (stored directly to avoid relying on Definition).
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Description of this effect instance.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Description of what caused this effect (spell name, item, attacker, etc.).
+    /// </summary>
+    public string? Source { get; set; }
+
+    /// <summary>
     /// Current stack count (for stackable effects).
     /// </summary>
     public int CurrentStacks { get; set; } = 1;

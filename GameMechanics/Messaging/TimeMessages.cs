@@ -256,3 +256,44 @@ public enum ActivityCategory
     /// <summary>Player joined or left.</summary>
     Player
 }
+
+/// <summary>
+/// Message sent when a character is updated by the GM or system.
+/// Players should refresh their character data when receiving this.
+/// </summary>
+public class CharacterUpdateMessage : TimeMessageBase
+{
+    /// <summary>
+    /// The ID of the character that was updated.
+    /// </summary>
+    public int CharacterId { get; init; }
+
+    /// <summary>
+    /// The type of update that occurred.
+    /// </summary>
+    public CharacterUpdateType UpdateType { get; init; }
+
+    /// <summary>
+    /// Optional description of what changed.
+    /// </summary>
+    public string? Description { get; init; }
+}
+
+/// <summary>
+/// Types of character updates.
+/// </summary>
+public enum CharacterUpdateType
+{
+    /// <summary>General update, refresh everything.</summary>
+    General,
+    /// <summary>Damage was applied.</summary>
+    Damage,
+    /// <summary>Healing was applied.</summary>
+    Healing,
+    /// <summary>An effect was added.</summary>
+    EffectAdded,
+    /// <summary>An effect was removed.</summary>
+    EffectRemoved,
+    /// <summary>Character stats changed.</summary>
+    StatsChanged
+}

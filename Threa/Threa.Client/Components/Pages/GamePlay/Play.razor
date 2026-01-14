@@ -22,6 +22,10 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterAttacher> attacherPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
 @inject IActivityLogService ActivityLog
+@inject ITimeEventSubscriber TimeEventSubscriber
+@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
+
+@using GameMechanics.Time
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -249,6 +253,8 @@ else if (character == null)
                         <div class="text-end">
                             <small>Table: @table.Name</small>
                             <br />
+                            <small class="text-muted">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
+                            <br />
                             <span class="badge @(table.IsInCombat ? "bg-danger" : "bg-success")">
                                 @(table.IsInCombat ? "Combat" : "Exploration") - Round @table.CurrentRound
                             </span>
@@ -297,7 +303,7 @@ else if (character == null)
         }
         else if (activeTab == "Skills")
         {
-            <TabPlaySkills Character="character" Table="table" />
+            <TabPlaySkills Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
         else if (activeTab == "Magic")
         {
@@ -348,6 +354,7 @@ private string? errorMessage;
 private int currentPlayerId;
 private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
+private bool timeEventSubscribed;
 
 // Detach confirmation state
 private bool showDetachConfirmation;
@@ -381,6 +388,7 @@ protected override async Task OnInitializedAsync()
             {
                 table = await tablePortal.FetchAsync(TableId);
                 SubscribeToActivityLog(TableId);
+                await SubscribeToTimeEvents(TableId);
             }
             catch (Exception ex)
             {
@@ -440,6 +448,7 @@ private async Task SelectCharacterAsync(int characterId)
                 {
                     table = await tablePortal.FetchAsync(charInfo.TableId.Value);
                     SubscribeToActivityLog(charInfo.TableId.Value);
+                    await SubscribeToTimeEvents(charInfo.TableId.Value);
                 }
                 catch
                 {
@@ -448,6 +457,13 @@ private async Task SelectCharacterAsync(int characterId)
             }
 
             AddLogEntry($"Playing as {character.Name}", ActivityCategory.Player);
+
+            // If joining an in-progress table, announce the current game time
+            if (table != null && table.Status == Threa.Dal.Dto.TableStatus.Active)
+            {
+                var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
+            }
         }
     }
     catch (Exception ex)
@@ -493,9 +509,114 @@ private async Task SelectCharacterAsync(int characterId)
         });
     }
 
-    public void Dispose()
+    private async Task SubscribeToTimeEvents(Guid tableId)
+    {
+        if (timeEventSubscribed) return;
+
+        // Connect and subscribe to time events
+        await TimeEventSubscriber.ConnectAsync();
+        await TimeEventSubscriber.SubscribeAsync();
+
+        TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
+        TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        timeEventSubscribed = true;
+    }
+
+    private void OnTimeEventReceived(object? sender, TimeEventMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Process end-of-round effects on the character
+                if (character != null && e.EventType == GameMechanics.Time.TimeEventType.EndOfRound)
+                {
+                    for (int i = 0; i < e.Count; i++)
+                    {
+                        character.EndOfRound(effectPortal);
+                    }
+
+                    // Save the updated character
+                    await characterPortal.UpdateAsync(character);
+
+                    // Refresh table state
+                    if (table != null)
+                    {
+                        table = await tablePortal.FetchAsync(table.Id);
+                    }
+                }
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing time event: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnCombatStateReceived(object? sender, CombatStateMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Refresh the table to get the updated combat state
+                table = await tablePortal.FetchAsync(table.Id);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing combat state: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
+    {
+        // Only process if this event is for our character
+        if (character == null || e.CharacterId != character.Id) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Refresh the character to get the updated state
+                character = await characterPortal.FetchAsync(character.Id);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing character update: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task UnsubscribeFromTimeEvents()
+    {
+        if (!timeEventSubscribed) return;
+
+        TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
+        TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        await TimeEventSubscriber.UnsubscribeAsync();
+        timeEventSubscribed = false;
+    }
+
+    public async void Dispose()
     {
         activityLogSubscription?.Dispose();
+        await UnsubscribeFromTimeEvents();
     }
 
     private string GetActivityClass(ActivityCategory category) =>
@@ -510,6 +631,20 @@ private async Task SelectCharacterAsync(int characterId)
             ActivityCategory.Player => "text-muted",
             _ => ""
         };
+
+    private async Task SaveCharacterAsync()
+    {
+        if (character == null) return;
+        try
+        {
+            await characterPortal.UpdateAsync(character);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save character: {ex.Message}";
+        }
+    }
 
     // UI Helper methods
     private int GetWoundCount() => character?.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound) ?? 0;
@@ -614,15 +749,23 @@ private async Task SelectCharacterAsync(int characterId)
 
             if (result.Success)
             {
-                    // Load the character and table
+                // Load the character and table
                 character = await characterPortal.FetchAsync(characterToAttach.Id);
                 table = await tablePortal.FetchAsync(selectedTableId);
                 SubscribeToActivityLog(selectedTableId);
+                await SubscribeToTimeEvents(selectedTableId);
 
                 // Reload the character list to reflect the change
                 await LoadCharactersAsync();
 
                 AddLogEntry($"Joined table {result.TableName}", ActivityCategory.Player);
+
+                // If joining an in-progress table, announce the current game time
+                if (table.Status == Threa.Dal.Dto.TableStatus.Active)
+                {
+                    var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                    AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
+                }
             }
             else
             {

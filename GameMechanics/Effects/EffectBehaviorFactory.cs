@@ -11,6 +11,7 @@ public static class EffectBehaviorFactory
   private static readonly Dictionary<EffectType, IEffectBehavior> _behaviors = new()
   {
     { EffectType.Wound, new Behaviors.WoundBehavior() },
+    { EffectType.Condition, new Behaviors.ConditionBehavior() },
     { EffectType.Poison, new Behaviors.PoisonBehavior() },
     { EffectType.Buff, new Behaviors.SpellBuffBehavior() },
     { EffectType.SpellEffect, new Behaviors.DrugBehavior() }, // Using SpellEffect for drugs temporarily

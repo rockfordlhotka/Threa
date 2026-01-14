@@ -43,38 +43,33 @@ namespace GameMechanics
 
     public void EndOfRound()
     {
-      if (Value < BaseValue)
+      // Passive FAT recovery depends on current VIT level:
+      // VIT >= 5: 1 per round (here)
+      // VIT = 4: 1 per minute (handled in TimeManager)
+      // VIT = 3: 1 per 30 minutes (handled in TimeManager)
+      // VIT = 2: 1 per hour (handled in TimeManager)
+      // VIT <= 1: No recovery
+      if (Value < BaseValue && Character.Vitality.Value >= 5)
       {
-        // recover
-        if (Character.Vitality.Value > Character.Vitality.BaseValue / 2)
-          PendingHealing += 1;
-        // heal
-        int heal;
-        if (PendingHealing > 1)
-          heal = PendingHealing / 2;
-        else
-          heal = 1;
-        Value += heal;
+        PendingHealing += 1;
+      }
+
+      // Apply half of pending healing (rounded up to ensure pool reaches zero)
+      if (PendingHealing > 0)
+      {
+        int heal = (PendingHealing + 1) / 2; // Round up: 1->1, 2->1, 3->2, 4->2, 5->3
         PendingHealing -= heal;
+        // Only apply healing up to max
+        Value = Math.Min(BaseValue, Value + heal);
       }
-      else if (PendingHealing > 0)
-      {
-        if (PendingHealing > 1)
-          PendingHealing /= 2;
-        else
-          PendingHealing = 0;
-      }
+
+      // Apply half of pending damage (rounded up to ensure pool reaches zero)
       if (PendingDamage > 0)
       {
-        // take damage
-        int damage;
-        if (PendingDamage > 2)
-          damage = PendingDamage / 2;
-        else
-          damage = 1;
+        int damage = (PendingDamage + 1) / 2; // Round up: 1->1, 2->1, 3->2, 4->2, 5->3
         PendingDamage -= damage;
         Value -= damage;
-        // cascade overflow
+        // cascade overflow to VIT
         if (Value < 0)
         {
           var overflow = -Value;
@@ -82,6 +77,7 @@ namespace GameMechanics
           Character.Vitality.PendingDamage += overflow;
         }
       }
+
       CheckFocusRolls();
     }
 
