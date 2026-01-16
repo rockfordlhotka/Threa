@@ -155,6 +155,17 @@ This allows very fast reloads in combat if magazines were prepped beforehand.
 
 ## Ammunition Types
 
+### Ammunition AV Modifiers
+
+Some ammunition types provide accuracy modifiers (AV) in addition to damage modifiers. **Ammunition AV is cumulative with weapon AV** - if a weapon has +1 AV and the ammo has +1 AV, the total modifier is +2 AV.
+
+| Ammo Type | AV Modifier | Notes |
+|-----------|-------------|-------|
+| Standard | +0 | Default accuracy |
+| Smart Rounds | +2 | Guided projectile |
+| Tracer | +1* | *To subsequent shots only |
+| Subsonic | -1 | Lower velocity affects accuracy |
+
 ### Standard Ammunition
 
 Default ammunition type. No special effects or modifiers.

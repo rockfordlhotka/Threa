@@ -532,18 +532,18 @@ else
                             </td>
                         </tr>
                         <tr>
+                            <td>Accuracy Modifier (AV)</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="ammoProps.AccuracyModifier"
+                                       @bind:after="UpdateAmmoProperties" />
+                                <small class="text-muted">Bonus/penalty to hit rolls (cumulative with weapon AV)</small>
+                            </td>
+                        </tr>
+                        <tr>
                             <td>Special Effect</td>
                             <td>
                                 <input type="text" class="form-control" @bind="ammoProps.SpecialEffect"
                                        @bind:after="UpdateAmmoProperties" placeholder="e.g., Hollow-Point, Incendiary" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Is Loose Ammo</td>
-                            <td>
-                                <input type="checkbox" class="form-check-input" @bind="ammoProps.IsLooseAmmo"
-                                       @bind:after="UpdateAmmoProperties" />
-                                <small class="text-muted ms-2">Check for individual rounds, uncheck for pre-loaded magazines</small>
                             </td>
                         </tr>
                         <tr>
@@ -591,6 +591,57 @@ else
         }
 
         <!-- ========================== -->
+        <!-- AMMO CONTAINER PROPERTIES -->
+        <!-- ========================== -->
+        @if (vm.Model.ItemType == ItemType.AmmoContainer)
+        {
+            <fieldset class="mb-4">
+                <legend>Ammo Container Properties</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Ammo Type</td>
+                            <td>
+                                <input type="text" class="form-control" @bind="ammoContainerProps.AmmoType"
+                                       @bind:after="UpdateAmmoContainerProperties" placeholder="e.g., 9mm, Arrow" />
+                                <small class="text-muted">Primary ammunition type this container holds</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Capacity</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="ammoContainerProps.Capacity"
+                                       @bind:after="UpdateAmmoContainerProperties" min="1" />
+                                <small class="text-muted">Maximum number of rounds this container can hold</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Container Type</td>
+                            <td>
+                                <select class="form-control" @bind="ammoContainerProps.ContainerType" @bind:after="UpdateAmmoContainerProperties">
+                                    <option value="Magazine">Magazine (detachable box magazine)</option>
+                                    <option value="Quiver">Quiver (arrow/bolt container)</option>
+                                    <option value="Speedloader">Speedloader (quick-load revolver device)</option>
+                                    <option value="Belt">Belt (belt-fed ammunition)</option>
+                                    <option value="Clip">Clip (stripper clip for internal magazines)</option>
+                                    <option value="PowerCell">PowerCell (rechargeable energy cell)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Allowed Ammo Types</td>
+                            <td>
+                                <input type="text" class="form-control" @bind="ammoContainerProps.AllowedAmmoTypes"
+                                       @bind:after="UpdateAmmoContainerProperties" placeholder="e.g., 9mm,9mm+P (leave blank for same as Ammo Type)" />
+                                <small class="text-muted">Comma-separated list of compatible ammo types (defaults to Ammo Type if empty)</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        }
+
+        <!-- ========================== -->
         <!-- SAVE/CANCEL BUTTONS -->
         <!-- ========================== -->
         <div class="mt-3">
@@ -616,6 +667,7 @@ else
     private RangedWeaponPropsEditor rangedProps = new();
     private ArmorAbsorptionEditor armorAbsorption = new();
     private AmmoPropsEditor ammoProps = new();
+    private AmmoContainerPropsEditor ammoContainerProps = new();
 
     // Computed properties for section visibility
     private bool ShowEquipmentSection => vm.Model?.ItemType is ItemType.Weapon or ItemType.Armor
@@ -682,6 +734,17 @@ else
                 if (props != null && !string.IsNullOrEmpty(props.AmmoType))
                 {
                     ammoProps = props;
+                }
+            }
+            catch { }
+
+            // Try loading ammo container properties
+            try
+            {
+                var props = JsonSerializer.Deserialize<AmmoContainerPropsEditor>(vm.Model.CustomProperties);
+                if (props != null && props.IsAmmoContainer)
+                {
+                    ammoContainerProps = props;
                 }
             }
             catch { }
@@ -821,6 +884,17 @@ else
         });
     }
 
+    private void UpdateAmmoContainerProperties()
+    {
+        if (vm.Model == null) return;
+        ammoContainerProps.IsAmmoContainer = true;
+        vm.Model.CustomProperties = JsonSerializer.Serialize(ammoContainerProps, new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
+    }
+
     private async Task SaveData()
     {
         await vm.SaveAsync();
@@ -912,15 +986,50 @@ else
 
     private class AmmoPropsEditor
     {
+        [System.Text.Json.Serialization.JsonPropertyName("ammoType")]
         public string AmmoType { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("damageModifier")]
         public int DamageModifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("accuracyModifier")]
+        public int AccuracyModifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("specialEffect")]
         public string? SpecialEffect { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("isLooseAmmo")]
         public bool IsLooseAmmo { get; set; } = true;
 
         // AOE properties (for explosive ammo)
+        [System.Text.Json.Serialization.JsonPropertyName("isAOE")]
         public bool IsAOE { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("blastRadius")]
         public int BlastRadius { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("blastFalloff")]
         public string? BlastFalloff { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("directHitBonus")]
         public int DirectHitBonus { get; set; }
+    }
+
+    private class AmmoContainerPropsEditor
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("isAmmoContainer")]
+        public bool IsAmmoContainer { get; set; } = true;
+
+        [System.Text.Json.Serialization.JsonPropertyName("ammoType")]
+        public string AmmoType { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("capacity")]
+        public int Capacity { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("containerType")]
+        public string ContainerType { get; set; } = "Magazine";
+
+        [System.Text.Json.Serialization.JsonPropertyName("allowedAmmoTypes")]
+        public string? AllowedAmmoTypes { get; set; }
     }
 }

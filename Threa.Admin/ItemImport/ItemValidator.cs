@@ -1,3 +1,4 @@
+using GameMechanics.Combat;
 using Threa.Dal.Dto;
 
 namespace Threa.Admin.ItemImport;
@@ -11,6 +12,7 @@ public static class ItemValidator
     public static readonly string[] ValidDamageTypes = ["Bashing", "Cutting", "Piercing", "Projectile", "Energy"];
     public static readonly string[] ValidReloadTypes = ["None", "Magazine", "SingleRound", "Cylinder", "Belt", "Battery"];
     public static readonly string[] ValidFireModes = ["Single", "Burst", "Suppression"];
+    public static readonly string[] ValidContainerTypes = AmmoContainerType.ValidTypes;
     public static readonly string[] ValidRarities = Enum.GetNames<ItemRarity>();
     public static readonly string[] ValidItemTypes = Enum.GetNames<ItemType>();
     public static readonly string[] ValidWeaponTypes = Enum.GetNames<WeaponType>();
@@ -291,6 +293,54 @@ public static class ItemValidator
         return errors;
     }
 
+    public static List<ItemValidationError> ValidateAmmoContainers(List<AmmoContainerImportRow> items)
+    {
+        var errors = new List<ItemValidationError>();
+        var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            int row = i + 2;
+            var item = items[i];
+
+            // Name validation
+            if (string.IsNullOrWhiteSpace(item.Name))
+                errors.Add(new ItemValidationError(row, "Name", "Name is required"));
+            else if (seenNames.Contains(item.Name))
+                errors.Add(new ItemValidationError(row, "Name", $"Duplicate item name '{item.Name}'"));
+            else
+                seenNames.Add(item.Name);
+
+            // AmmoType validation - required
+            if (string.IsNullOrWhiteSpace(item.AmmoType))
+                errors.Add(new ItemValidationError(row, "AmmoType",
+                    $"AmmoType is required. Common types: {string.Join(", ", CommonAmmoTypes.Take(10))}..."));
+
+            // Capacity validation - must be positive
+            if (item.Capacity <= 0)
+                errors.Add(new ItemValidationError(row, "Capacity",
+                    $"Capacity must be positive, got '{item.Capacity}'"));
+
+            // ContainerType validation
+            if (!string.IsNullOrWhiteSpace(item.ContainerType) && !ValidContainerTypes.Contains(item.ContainerType, StringComparer.OrdinalIgnoreCase))
+                errors.Add(new ItemValidationError(row, "ContainerType",
+                    $"Invalid container type '{item.ContainerType}'. Valid values: {string.Join(", ", ValidContainerTypes)}"));
+
+            // Rarity validation
+            if (!Enum.IsDefined(item.Rarity))
+                errors.Add(new ItemValidationError(row, "Rarity",
+                    $"Invalid rarity '{item.Rarity}'. Valid values: {string.Join(", ", ValidRarities)}"));
+
+            // Weight/Value validations
+            if (item.Weight < 0)
+                errors.Add(new ItemValidationError(row, "Weight", "Weight cannot be negative"));
+            if (item.Value < 0)
+                errors.Add(new ItemValidationError(row, "Value", "Value cannot be negative"));
+        }
+
+        return errors;
+    }
+
     /// <summary>
     /// Gets a formatted string of all validation requirements for display.
     /// </summary>
@@ -301,6 +351,7 @@ Item Validation Requirements:
   DamageTypes: {string.Join(", ", ValidDamageTypes)}
   ReloadTypes: {string.Join(", ", ValidReloadTypes)}
   FireModes: {string.Join(", ", ValidFireModes)}
+  ContainerTypes: {string.Join(", ", ValidContainerTypes)}
   Rarities: {string.Join(", ", ValidRarities)}
   ItemTypes: {string.Join(", ", ValidItemTypes)}
   WeaponTypes: {string.Join(", ", ValidWeaponTypes)}

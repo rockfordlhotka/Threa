@@ -1,4 +1,5 @@
 using Csla;
+using GameMechanics.Combat;
 using System;
 using System.Threading.Tasks;
 using Threa.Dal;
@@ -43,6 +44,7 @@ public class ItemManagementService
   private readonly ICharacterItemDal _itemDal;
   private readonly IItemTemplateDal _templateDal;
   private readonly Effects.ItemEffectService _effectService;
+  private readonly AmmoCompatibilityValidator _ammoValidator;
 
   public ItemManagementService(
     ICharacterItemDal itemDal,
@@ -52,6 +54,7 @@ public class ItemManagementService
     _itemDal = itemDal;
     _templateDal = templateDal;
     _effectService = effectService;
+    _ammoValidator = new AmmoCompatibilityValidator();
   }
 
   /// <summary>
@@ -303,6 +306,7 @@ public class ItemManagementService
 
   /// <summary>
   /// Moves an item into or out of a container.
+  /// Validates ammo compatibility when moving ammo into an AmmoContainer.
   /// </summary>
   /// <param name="character">The character owning the items.</param>
   /// <param name="itemId">The item to move.</param>
@@ -325,6 +329,39 @@ public class ItemManagementService
         var unequipResult = await UnequipItemAsync(character, itemId);
         if (!unequipResult.Success)
           return unequipResult;
+      }
+
+      // Validate ammo compatibility if moving into an AmmoContainer
+      if (containerItemId.HasValue)
+      {
+        var containerItem = await _itemDal.GetItemAsync(containerItemId.Value);
+        if (containerItem != null)
+        {
+          var containerTemplate = await _templateDal.GetTemplateAsync(containerItem.ItemTemplateId);
+
+          // If target is an AmmoContainer, validate ammo compatibility
+          if (containerTemplate.ItemType == ItemType.AmmoContainer)
+          {
+            var itemTemplate = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
+
+            // Only ammunition can go into AmmoContainers
+            if (itemTemplate.ItemType != ItemType.Ammunition)
+            {
+              return ItemOperationResult.Failed(
+                "Only ammunition can be placed into ammo containers (magazines, quivers, etc.).");
+            }
+
+            var containerProps = AmmoContainerProperties.FromJson(containerTemplate.CustomProperties);
+            var ammoProps = AmmunitionProperties.FromJson(itemTemplate.CustomProperties);
+
+            if (containerProps != null && ammoProps != null)
+            {
+              var validation = _ammoValidator.CanLoadAmmoIntoContainer(ammoProps, containerProps);
+              if (!validation.IsValid)
+                return ItemOperationResult.Failed(validation.ErrorMessage!);
+            }
+          }
+        }
       }
 
       await _itemDal.MoveToContainerAsync(itemId, containerItemId);

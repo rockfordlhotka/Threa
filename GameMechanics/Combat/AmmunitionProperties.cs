@@ -29,6 +29,10 @@ public class AmmunitionProperties
     [JsonPropertyName("damageModifier")]
     public int DamageModifier { get; set; }
 
+    /// <summary>Accuracy modifier (AV) applied to attack rolls with this ammo. Cumulative with weapon AV.</summary>
+    [JsonPropertyName("accuracyModifier")]
+    public int AccuracyModifier { get; set; }
+
     /// <summary>Penetration modifier (reduces armor effectiveness).</summary>
     [JsonPropertyName("penetrationModifier")]
     public int PenetrationModifier { get; set; }

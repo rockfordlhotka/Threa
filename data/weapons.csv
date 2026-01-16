@@ -19,3 +19,5 @@ Esso FootScythe right,Retractable cybernetic blade in the foot,,1,0,0,Common,Dag
 Esso FootScythe left,Retractable cybernetic blade in the foot,,1,0,0,Common,Dagger,hand-to-hand,1,Cutting,5,0,ImplantLegLeft,0
 Heavy whip,,,3,2,0,Common,None,whip,1,Cutting,4,0,MainHand,0
 Light whip,,,2,2,0,Common,None,whip,1,Cutting,3,0,MainHand,0
+Taser,,,1,1,0,Uncommon,None,hand-to-hand,1,Energy,3,0,MainHand,0
+Stun rod,,,1,2,0,Uncommon,Unarmed,hand-to-hand,1,Energy,3,0,MainHand,0

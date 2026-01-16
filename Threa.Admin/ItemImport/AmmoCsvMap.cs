@@ -21,6 +21,7 @@ public class AmmoImportRow
     // Ammo specific
     public string AmmoType { get; set; } = string.Empty;
     public int DamageModifier { get; set; }
+    public int AVModifier { get; set; }
     public string? SpecialEffect { get; set; }
     public string? DamageType { get; set; }
 
@@ -52,6 +53,7 @@ public sealed class AmmoImportCsvMap : ClassMap<AmmoImportRow>
         // Ammo specific
         Map(m => m.AmmoType).Name("AmmoType");
         Map(m => m.DamageModifier).Name("DamageModifier").Optional();
+        Map(m => m.AVModifier).Name("AVModifier").Optional();
         Map(m => m.SpecialEffect).Name("SpecialEffect").Optional();
         Map(m => m.DamageType).Name("DamageType").Optional();
 

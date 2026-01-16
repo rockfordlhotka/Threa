@@ -20,5 +20,6 @@ public enum ItemType
     Clothing = 12,
     Jewelry = 13,
     Shield = 14,
-    Ammunition = 15
+    Ammunition = 15,
+    AmmoContainer = 16
 }

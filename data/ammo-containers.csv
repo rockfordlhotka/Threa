@@ -1,0 +1,16 @@
+Name,Description,ShortDescription,Weight,Volume,Value,Rarity,AmmoType,Capacity,ContainerType,AllowedAmmoTypes
+Arrow quiver,Standard quiver for holding arrows,Holds arrows,2,3,10,Common,Arrow,12,Quiver,Arrow
+Crossbow bolt case,Case for crossbow bolts,Holds bolts,1.5,2,12,Common,Bolt,10,Quiver,Bolt
+9mm magazine,Standard 9mm pistol magazine,9mm mag,0.3,0.02,5,Common,9mm,15,Magazine,9mm
+9mm extended magazine,Extended 9mm pistol magazine,9mm ext mag,0.4,0.03,15,Uncommon,9mm,25,Magazine,9mm
+5mm magazine,Standard 5mm rifle magazine,5mm mag,0.4,0.03,8,Common,5mm,30,Magazine,5mm
+5mm drum magazine,Large 5mm drum magazine,5mm drum,0.8,0.1,25,Uncommon,5mm,60,Magazine,5mm
+30 cal magazine,30 cal rifle magazine,30 cal mag,0.5,0.04,10,Common,30 cal,20,Magazine,30 cal
+50 cal magazine,50 cal heavy rifle magazine,50 cal mag,0.7,0.06,20,Uncommon,50 cal,10,Magazine,50 cal
+12 gauge shell holder,Shotgun shell holder,Shell holder,0.2,0.02,8,Common,12 gauge,6,Clip,12 gauge
+.357 speedloader,Revolver speedloader for .357 rounds,.357 loader,0.2,0.01,15,Uncommon,357,6,Speedloader,357
+.44 speedloader,Revolver speedloader for .44 rounds,.44 loader,0.25,0.01,18,Uncommon,44,6,Speedloader,44
+MG belt,Belt-fed ammunition belt for machine guns,MG belt,0.5,0.1,20,Common,5mm,100,Belt,5mm
+Minigun belt,Belt-fed ammunition belt for miniguns,Minigun belt,1,0.2,40,Uncommon,5mm,200,Belt,5mm
+McGovern power cell,Rechargeable power cell for McGovern weapons,Power cell,0.5,0.1,50,Uncommon,mcgovern,6,PowerCell,mcgovern
+22 cal magazine,22 cal pistol magazine,22 cal mag,0.2,0.015,4,Common,22 cal,10,Magazine,22 cal

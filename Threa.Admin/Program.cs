@@ -47,6 +47,7 @@ class Program
         services.AddTransient<ImportArmorCommand>();
         services.AddTransient<ImportRangedWeaponsCommand>();
         services.AddTransient<ImportAmmoCommand>();
+        services.AddTransient<ImportAmmoContainersCommand>();
         services.AddTransient<ExportItemsCommand>();
 
         var serviceProvider = services.BuildServiceProvider();
@@ -89,6 +90,8 @@ class Program
                 .WithDescription("Import ranged weapons (guns, bows) from CSV or TSV");
             config.AddCommand<ImportAmmoCommand>("import-ammo")
                 .WithDescription("Import ammunition from CSV or TSV");
+            config.AddCommand<ImportAmmoContainersCommand>("import-ammo-containers")
+                .WithDescription("Import ammo containers (magazines, quivers) from CSV or TSV");
             config.AddCommand<ExportItemsCommand>("export-items")
                 .WithDescription("Export items to CSV or TSV files by category");
         });

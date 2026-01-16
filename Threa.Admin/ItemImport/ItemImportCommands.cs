@@ -336,6 +336,7 @@ public class ImportAmmoCommand : AsyncCommand<ImportItemSettings>
         {
             AmmoType = row.AmmoType,
             DamageModifier = row.DamageModifier,
+            AccuracyModifier = row.AVModifier,
             SpecialEffect = row.SpecialEffect,
             IsContainer = row.IsContainer,
             ContainerCapacity = row.ContainerCapacity,
@@ -360,6 +361,70 @@ public class ImportAmmoCommand : AsyncCommand<ImportItemSettings>
             MaxStackSize = row.MaxStackSize,
             DamageType = row.DamageType,
             CustomProperties = ammoProps.ToJson()
+        };
+    }
+}
+
+/// <summary>
+/// Import ammo containers (magazines, quivers, speedloaders).
+/// </summary>
+public class ImportAmmoContainersCommand : AsyncCommand<ImportItemSettings>
+{
+    private readonly IItemTemplateDal _dal;
+
+    public ImportAmmoContainersCommand(IItemTemplateDal dal) => _dal = dal;
+
+    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+        => ImportValidation.ValidateFilePath(settings.FilePath);
+
+    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    {
+        var rows = CsvImportHelper.ReadCsv<AmmoContainerImportRow, AmmoContainerImportCsvMap>(settings.FilePath);
+        if (rows == null) return 1;
+
+        var errors = ItemValidator.ValidateAmmoContainers(rows);
+        if (errors.Count > 0)
+        {
+            ImportValidation.PrintErrors(errors);
+            return 1;
+        }
+
+        AnsiConsole.MarkupLine($"[green]Validated {rows.Count} ammo container(s)[/]");
+
+        if (settings.DryRun)
+        {
+            AnsiConsole.MarkupLine("[yellow]Dry run - no changes made[/]");
+            return 0;
+        }
+
+        var items = rows.Select(ConvertToItemTemplate).ToList();
+        return await ImportValidation.SaveItems(_dal, items);
+    }
+
+    private static ItemTemplate ConvertToItemTemplate(AmmoContainerImportRow row)
+    {
+        var containerProps = new AmmoContainerProperties
+        {
+            IsAmmoContainer = true,
+            AmmoType = row.AmmoType,
+            Capacity = row.Capacity,
+            ContainerType = string.IsNullOrWhiteSpace(row.ContainerType) ? "Magazine" : row.ContainerType,
+            AllowedAmmoTypes = row.AllowedAmmoTypes
+        };
+
+        return new ItemTemplate
+        {
+            Name = row.Name,
+            Description = row.Description,
+            ShortDescription = row.ShortDescription,
+            ItemType = ItemType.AmmoContainer,
+            Weight = row.Weight,
+            Volume = row.Volume,
+            Value = row.Value,
+            Rarity = row.Rarity,
+            IsStackable = false,
+            MaxStackSize = 1,
+            CustomProperties = containerProps.ToJson()
         };
     }
 }

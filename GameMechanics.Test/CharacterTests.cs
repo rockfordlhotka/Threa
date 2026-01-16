@@ -114,8 +114,8 @@ namespace GameMechanics.Test
       // Verify species is set
       Assert.AreEqual("Elf", c.Species);
       
-      // Verify all 7 attributes exist
-      Assert.AreEqual(7, c.AttributeList.Count);
+      // Verify all 8 attributes exist (STR, DEX, END, INT, ITT, WIL, PHY, SOC)
+      Assert.AreEqual(8, c.AttributeList.Count);
     }
 
     [TestMethod]
@@ -158,11 +158,11 @@ namespace GameMechanics.Test
       var speciesList = await speciesListPortal.FetchAsync();
       var orc = speciesList.First(s => s.Id == "Orc");
       
-      // Per design: Orc has STR +2, END +1, INT -1, PHY -1
+      // Per design: Orc has STR +2, END +1, INT -1, SOC -1
       Assert.AreEqual(2, orc.GetModifier("STR"), "Orc STR modifier");
       Assert.AreEqual(1, orc.GetModifier("END"), "Orc END modifier");
       Assert.AreEqual(-1, orc.GetModifier("INT"), "Orc INT modifier");
-      Assert.AreEqual(-1, orc.GetModifier("PHY"), "Orc PHY modifier");
+      Assert.AreEqual(-1, orc.GetModifier("SOC"), "Orc SOC modifier");
       Assert.AreEqual(0, orc.GetModifier("DEX"), "Orc DEX should be 0");
     }
 

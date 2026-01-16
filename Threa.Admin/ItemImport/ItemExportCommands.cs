@@ -78,6 +78,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         var rangedWeapons = new List<(ItemTemplate Item, RangedWeaponProperties Props)>();
         var armor = new List<ItemTemplate>();
         var ammunition = new List<(ItemTemplate Item, AmmunitionProperties? Props)>();
+        var ammoContainers = new List<(ItemTemplate Item, AmmoContainerProperties? Props)>();
 
         foreach (var item in allItems)
         {
@@ -101,6 +102,11 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
                     ammunition.Add((item, ammoProps));
                     break;
 
+                case ItemType.AmmoContainer:
+                    var containerProps = AmmoContainerProperties.FromJson(item.CustomProperties);
+                    ammoContainers.Add((item, containerProps));
+                    break;
+
                 default:
                     basicItems.Add(item);
                     break;
@@ -118,6 +124,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         AnsiConsole.MarkupLine($"  Ranged weapons: {rangedWeapons.Count}");
         AnsiConsole.MarkupLine($"  Armor/shields: {armor.Count}");
         AnsiConsole.MarkupLine($"  Ammunition: {ammunition.Count}");
+        AnsiConsole.MarkupLine($"  Ammo containers: {ammoContainers.Count}");
         AnsiConsole.WriteLine();
 
         // Export each category (always create files, even if empty - headers only)
@@ -157,6 +164,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             ? $"  [green]ammo{extension}[/]: {ammunition.Count} ammunition items"
             : $"  [yellow]ammo{extension}[/]: headers only (no data)");
         totalExported += ammunition.Count;
+
+        var ammoContainerPath = Path.Combine(settings.OutputDirectory, $"ammo-containers{extension}");
+        ExportAmmoContainers(ammoContainerPath, ammoContainers, delimiter);
+        AnsiConsole.MarkupLine(ammoContainers.Count > 0
+            ? $"  [green]ammo-containers{extension}[/]: {ammoContainers.Count} ammo container items"
+            : $"  [yellow]ammo-containers{extension}[/]: headers only (no data)");
+        totalExported += ammoContainers.Count;
 
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[green]Export complete![/] {totalExported} total items exported to {Markup.Escape(settings.OutputDirectory)}");
@@ -211,10 +225,18 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         // Ammunition
         AnsiConsole.MarkupLine("[bold]ammo.csv/tsv (Ammunition)[/]");
         AnsiConsole.MarkupLine("  [grey]Required:[/] Name (unique), AmmoType");
-        AnsiConsole.MarkupLine("  [grey]Optional:[/] Description, ShortDescription, Weight, Volume, Value, Rarity, MaxStackSize, DamageModifier, SpecialEffect, DamageType, IsContainer, ContainerCapacity");
+        AnsiConsole.MarkupLine("  [grey]Optional:[/] Description, ShortDescription, Weight, Volume, Value, Rarity, MaxStackSize, DamageModifier, SpecialEffect, DamageType");
         AnsiConsole.MarkupLine("  [grey]AOE fields:[/] IsAOE (for explosive ammo), BlastRadius (meters), BlastFalloff (Linear/Steep/Flat), DirectHitBonus (extra SV for direct hit)");
-        AnsiConsole.MarkupLine("  [grey]Note:[/] If IsContainer=true, ContainerCapacity must be > 0 (for magazines)");
         AnsiConsole.MarkupLine("  [grey]Note:[/] If IsAOE=true, BlastRadius should be > 0. AOE ammo enables AOE attacks with any compatible weapon.");
+        AnsiConsole.WriteLine();
+
+        // Ammo Containers
+        AnsiConsole.MarkupLine("[bold]ammo-containers.csv/tsv (Magazines, Quivers, Speedloaders)[/]");
+        AnsiConsole.MarkupLine("  [grey]Required:[/] Name (unique), AmmoType, Capacity (> 0)");
+        AnsiConsole.MarkupLine("  [grey]Optional:[/] Description, ShortDescription, Weight, Volume, Value, Rarity, ContainerType, AllowedAmmoTypes");
+        AnsiConsole.MarkupLine("  [grey]ContainerType values:[/] Magazine, Quiver, Speedloader, Belt, Clip");
+        AnsiConsole.MarkupLine("  [grey]AllowedAmmoTypes:[/] Comma-separated ammo types (defaults to AmmoType if not specified)");
+        AnsiConsole.MarkupLine("  [grey]Note:[/] Use these for detachable magazines, quivers for arrows, speedloaders for revolvers, etc.");
         AnsiConsole.WriteLine();
 
         AnsiConsole.Write(new Rule().LeftJustified());
@@ -448,6 +470,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("MaxStackSize");
         csv.WriteField("AmmoType");
         csv.WriteField("DamageModifier");
+        csv.WriteField("AVModifier");
         csv.WriteField("SpecialEffect");
         csv.WriteField("DamageType");
         csv.WriteField("IsContainer");
@@ -470,6 +493,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(item.MaxStackSize);
             csv.WriteField(props?.AmmoType ?? "");
             csv.WriteField(props?.DamageModifier ?? 0);
+            csv.WriteField(props?.AccuracyModifier ?? 0);
             csv.WriteField(props?.SpecialEffect ?? "");
             csv.WriteField(item.DamageType);
             csv.WriteField(props?.IsContainer ?? false);
@@ -478,6 +502,43 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(props?.BlastRadius ?? 0);
             csv.WriteField(props?.BlastFalloff ?? "");
             csv.WriteField(props?.DirectHitBonus ?? 0);
+            csv.NextRecord();
+        }
+    }
+
+    private void ExportAmmoContainers(string path, List<(ItemTemplate Item, AmmoContainerProperties? Props)> items, string delimiter)
+    {
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
+        using var writer = new StreamWriter(path);
+        using var csv = new CsvWriter(writer, config);
+
+        // Write header
+        csv.WriteField("Name");
+        csv.WriteField("Description");
+        csv.WriteField("ShortDescription");
+        csv.WriteField("Weight");
+        csv.WriteField("Volume");
+        csv.WriteField("Value");
+        csv.WriteField("Rarity");
+        csv.WriteField("AmmoType");
+        csv.WriteField("Capacity");
+        csv.WriteField("ContainerType");
+        csv.WriteField("AllowedAmmoTypes");
+        csv.NextRecord();
+
+        foreach (var (item, props) in items)
+        {
+            csv.WriteField(item.Name);
+            csv.WriteField(item.Description);
+            csv.WriteField(item.ShortDescription);
+            csv.WriteField(item.Weight);
+            csv.WriteField(item.Volume);
+            csv.WriteField(item.Value);
+            csv.WriteField(item.Rarity.ToString());
+            csv.WriteField(props?.AmmoType ?? "");
+            csv.WriteField(props?.Capacity ?? 0);
+            csv.WriteField(props?.ContainerType ?? "Magazine");
+            csv.WriteField(props?.AllowedAmmoTypes ?? "");
             csv.NextRecord();
         }
     }

@@ -3,6 +3,7 @@ using Csla.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
+using Threa.Dal;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Test
@@ -14,6 +15,7 @@ namespace GameMechanics.Test
     {
       IServiceCollection services = new ServiceCollection();
       services.AddCsla();
+      services.AddMockDb();
       return services.BuildServiceProvider();
     }
 
@@ -72,7 +74,7 @@ namespace GameMechanics.Test
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
-      Assert.AreEqual(7, c.Skills.Count);
+      Assert.AreEqual(8, c.Skills.Count);
     }
   }
 }

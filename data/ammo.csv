@@ -1,6 +1,27 @@
-Name,Description,ShortDescription,Weight,Volume,Value,Rarity,MaxStackSize,AmmoType,DamageModifier,SpecialEffect,DamageType,IsContainer,ContainerCapacity,IsAOE,BlastRadius,BlastFalloff,DirectHitBonus
-Bird shot,Shotgun bird shot,,1,1,0,Common,12,12 gauge,2,,Projectile,False,0,False,0,,0
-Buck shot,Shotgun buck shot,,1,1,0,Common,12,12 gauge,7,,Projectile,False,0,False,0,,0
-Slug,Shotgun slug,,1,1,0,Common,12,12 gauge,7,,Projectile,False,0,False,0,,0
-Glazer round,Shotgun glazer round,,1,1,0,Rare,12,12 gauge,8,,Piercing,False,0,False,0,,0
-HE round,Shotgun HE round,,1,1,0,Rare,12,12 gauge,8,,Projectile,False,0,True,1,2,1
+Name,Description,ShortDescription,Weight,Volume,Value,Rarity,MaxStackSize,AmmoType,DamageModifier,AVModifier,SpecialEffect,DamageType,IsAOE,BlastRadius,BlastFalloff,DirectHitBonus
+Bird shot,Shotgun bird shot,,1,1,0,Common,12,12 gauge,2,0,,Projectile,FALSE,0,,0
+Buck shot,Shotgun buck shot,,1,1,0,Common,12,12 gauge,7,0,,Projectile,FALSE,0,,0
+12 gauge slug,Shotgun slug,,1,1,0,Common,12,12 gauge,7,0,,Projectile,FALSE,0,,0
+12 gauge glazer,Shotgun glazer round,,1,1,0,Rare,12,12 gauge,8,0,,Piercing,FALSE,0,,0
+HE round,Shotgun HE round,,1,1,0,Rare,12,12 gauge,8,0,,Projectile,TRUE,1,Linear,2
+22 cal,22 long rifle,,1,1,0,Common,100,22 cal,6,0,,Projectile,FALSE,0,,0
+5mm,5mm rifle round,,1,1,0,Common,50,5mm,8,0,,Projectile,FALSE,0,,0
+5mm glazer,5mm rifle glazer round,,1,1,0,Rare,50,5mm,8,0,,Piercing,FALSE,0,,0
+5mm AP,5mm rifle AP round,,1,1,0,Rare,50,5mm,8,0,Armor piercing,Projectile,FALSE,0,,0
+30 cal,30 cal rifle round,,1,1,0,Common,25,30 cal,8,0,,Projectile,FALSE,0,,0
+30 cal glazer,30 cal rifle glazer round,,1,1,0,Rare,25,30 cal,9,0,,Piercing,FALSE,0,,0
+30 cal AP,30 cal rifle AP round,,1,1,0,Rare,25,30 cal,9,0,Armor piercing,Projectile,FALSE,0,,0
+50 cal,50 cal rifle round,,1,1,0,Uncommon,25,50 cal,11,0,,Projectile,FALSE,0,,0
+50 cal SLAP,50 cal rifle SLAP round,,1,1,0,Rare,25,50 cal,10,1,,Projectile,FALSE,0,,0
+50 cal AP,50 cal rifle AP round,,1,1,0,Rare,25,50 cal,11,0,Armor piercing,Projectile,FALSE,0,,0
+50 cal ICAP,50 cal rifle ICAP round,,1,1,0,Rare,15,50 cal,7,0,,Energy,FALSE,0,,0
+9mm,9mm pistol round,,0.02,0.01,1,Common,100,9mm,6,0,,Projectile,FALSE,0,,0
+9mm HP,9mm hollow point round,,0.02,0.01,3,Uncommon,50,9mm,8,-1,Hollow-Point,Projectile,FALSE,0,,0
+9mm AP,9mm armor piercing round,,0.02,0.01,5,Rare,50,9mm,5,0,Armor piercing,Projectile,FALSE,0,,0
+Arrow,Standard arrow,,0.1,0.05,2,Common,20,Arrow,5,0,,Piercing,FALSE,0,,0
+Broadhead arrow,Hunting arrow with broadhead tip,,0.12,0.05,5,Common,20,Arrow,7,0,,Cutting,FALSE,0,,0
+Bodkin arrow,Armor piercing arrow,,0.12,0.05,8,Uncommon,20,Arrow,5,1,Armor piercing,Piercing,FALSE,0,,0
+Crossbow bolt,Standard crossbow bolt,,0.08,0.03,3,Common,20,Bolt,6,0,,Piercing,FALSE,0,,0
+McGovern power load,McGovern power cartridge,,0.1,0.02,10,Common,30,mcgovern,0,0,,Energy,FALSE,0,,0
+.357 round,.357 magnum revolver round,,0.03,0.01,3,Common,50,357,8,0,,Projectile,FALSE,0,,0
+.44 round,.44 magnum revolver round,,0.04,0.01,4,Common,50,44,10,0,,Projectile,FALSE,0,,0
