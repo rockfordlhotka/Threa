@@ -298,14 +298,20 @@ public class TimeSystemTests
     [TestMethod]
     public void TimeState_DisplayTime_FormatsCorrectly()
     {
+        // Set TotalRounds to produce the desired computed values:
+        // TotalWeeks = 2, DayInWeek = 3, HourInDay = 14, MinuteInTurn = 3, RoundInMinute = 10
+        // Calculation: 2*201600 + 3*28800 + 14*1200 + 3*20 + 10 = 506470
         var state = new TimeState
         {
-            TotalWeeks = 2,
-            DayInWeek = 3,
-            HourInDay = 14,
-            MinuteInTurn = 3,
-            RoundInMinute = 10
+            TotalRounds = 506470
         };
+
+        // Verify computed values
+        Assert.AreEqual(2, state.TotalWeeks);
+        Assert.AreEqual(3, state.DayInWeek);
+        Assert.AreEqual(14, state.HourInDay);
+        Assert.AreEqual(3, state.MinuteInTurn);
+        Assert.AreEqual(10, state.RoundInMinute);
 
         Assert.AreEqual("Week 3, Day 4, 14:35", state.DisplayTime);
     }

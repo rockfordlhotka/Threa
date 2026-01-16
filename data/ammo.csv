@@ -1,0 +1,6 @@
+Name,Description,ShortDescription,Weight,Volume,Value,Rarity,MaxStackSize,AmmoType,DamageModifier,SpecialEffect,DamageType,IsContainer,ContainerCapacity,IsAOE,BlastRadius,BlastFalloff,DirectHitBonus
+Bird shot,Shotgun bird shot,,1,1,0,Common,12,12 gauge,2,,Projectile,False,0,False,0,,0
+Buck shot,Shotgun buck shot,,1,1,0,Common,12,12 gauge,7,,Projectile,False,0,False,0,,0
+Slug,Shotgun slug,,1,1,0,Common,12,12 gauge,7,,Projectile,False,0,False,0,,0
+Glazer round,Shotgun glazer round,,1,1,0,Rare,12,12 gauge,8,,Piercing,False,0,False,0,,0
+HE round,Shotgun HE round,,1,1,0,Rare,12,12 gauge,8,,Projectile,False,0,True,1,2,1

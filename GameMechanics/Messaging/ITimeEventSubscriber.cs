@@ -26,6 +26,11 @@ public interface ITimeEventSubscriber : IAsyncDisposable
     event EventHandler<CombatStateMessage>? CombatStateReceived;
 
     /// <summary>
+    /// Event raised when a character update is received.
+    /// </summary>
+    event EventHandler<CharacterUpdateMessage>? CharacterUpdateReceived;
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

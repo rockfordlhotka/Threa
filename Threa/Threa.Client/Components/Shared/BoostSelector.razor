@@ -1,0 +1,20 @@
+@namespace Threa.Client.Components.Shared
+@inherits BoostSelectorBase
+
+<div class="boost-selector">
+    <div class="boost-control">
+        <label>AP Boost:</label>
+        <button class="btn btn-sm btn-secondary" @onclick="DecrementApBoost" disabled="@(ApBoost == 0)">-</button>
+        <span>@ApBoost</span>
+        <button class="btn btn-sm btn-secondary" @onclick="IncrementApBoost" disabled="@(ApBoost >= MaxAP)">+</button>
+    </div>
+    <div class="boost-control">
+        <label>FAT Boost:</label>
+        <button class="btn btn-sm btn-secondary" @onclick="DecrementFatBoost" disabled="@(FatBoost == 0)">-</button>
+        <span>@FatBoost</span>
+        <button class="btn btn-sm btn-secondary" @onclick="IncrementFatBoost" disabled="@(FatBoost >= MaxFAT)">+</button>
+    </div>
+    <div class="boost-summary">
+        Total AS Bonus: <strong>+@TotalBoost</strong>
+    </div>
+</div>

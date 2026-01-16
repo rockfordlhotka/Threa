@@ -42,10 +42,26 @@ namespace GameMechanics
       set => SetProperty(RecoveryProperty, value);
     }
 
+    public static readonly PropertyInfo<int> ActionsTakenThisRoundProperty = RegisterProperty<int>(nameof(ActionsTakenThisRound));
+    /// <summary>
+    /// Number of actions taken this round. After the first action, subsequent actions take a -1 AS penalty.
+    /// </summary>
+    public int ActionsTakenThisRound
+    {
+      get => GetProperty(ActionsTakenThisRoundProperty);
+      set => SetProperty(ActionsTakenThisRoundProperty, value);
+    }
+
+    /// <summary>
+    /// The AS penalty for multiple actions this round. -1 after first action.
+    /// </summary>
+    public int MultiActionPenalty => ActionsTakenThisRound > 0 ? -1 : 0;
+
     public void EndOfRound()
     {
       Available += Recovery + Locked;
       Spent = 0;
+      ActionsTakenThisRound = 0; // Reset action count at end of round
       Locked = 0;
       if (Available > Max)
         Available = Max;
@@ -77,6 +93,7 @@ namespace GameMechanics
       character.Fatigue.PendingDamage += 1 + boost;
       Available -= 1;
       Spent += 1;
+      ActionsTakenThisRound += 1;
     }
 
     public void TakeActionNoFatigue()
@@ -92,6 +109,7 @@ namespace GameMechanics
       character.Fatigue.PendingDamage += boost;
       Available -= 2;
       Spent += 2;
+      ActionsTakenThisRound += 1;
     }
 
     /// <summary>

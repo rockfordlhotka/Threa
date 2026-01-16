@@ -9,6 +9,7 @@
 
 @using GameMechanics.Messaging
 @using Threa.Services
+@using Threa.Client.Components.Shared
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
@@ -21,6 +22,10 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterAttacher> attacherPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
 @inject IActivityLogService ActivityLog
+@inject ITimeEventSubscriber TimeEventSubscriber
+@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
+
+@using GameMechanics.Time
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -204,41 +209,74 @@ else if (character == null)
 {
     <!-- Character Status Header -->
     <div class="character-header" style="background-color: #2d3748; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        <div class="d-flex flex-wrap justify-content-between align-items-center">
-            <div>
-                <h4 style="margin: 0;">@character.Name</h4>
-                <small>@character.Species</small>
-            </div>
-            <div class="d-flex gap-4 flex-wrap">
-                <div class="text-center">
-                    <small>FAT</small>
-                    <div class="fw-bold">@character.Fatigue.Value / @character.Fatigue.BaseValue</div>
-                    <div class="progress" style="height: 8px; width: 80px;">
-                        <div class="progress-bar @(GetFatBarColor())" style="width: @GetFatPercent()%"></div>
+        <div class="d-flex flex-column gap-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-start">
+                <div>
+                    <h4 style="margin: 0;">@character.Name</h4>
+                    <small>@character.Species</small>
+                </div>
+
+                <div class="d-flex gap-4 flex-wrap justify-content-center">
+                    <div class="text-center" style="width: 120px;">
+                        <small>FAT</small>
+                        <div class="fw-bold">@character.Fatigue.Value / @character.Fatigue.BaseValue</div>
+                        <PendingPoolBar CurrentValue="@character.Fatigue.Value"
+                                        MaxValue="@character.Fatigue.BaseValue"
+                                        PendingDamage="@character.Fatigue.PendingDamage"
+                                        PendingHealing="@character.Fatigue.PendingHealing"
+                                        Height="10px" />
+                    </div>
+                    <div class="text-center" style="width: 120px;">
+                        <small>VIT</small>
+                        <div class="fw-bold">@character.Vitality.Value / @character.Vitality.BaseValue</div>
+                        <PendingPoolBar CurrentValue="@character.Vitality.Value"
+                                        MaxValue="@character.Vitality.BaseValue"
+                                        PendingDamage="@character.Vitality.PendingDamage"
+                                        PendingHealing="@character.Vitality.PendingHealing"
+                                        Height="10px" />
+                    </div>
+                    <div class="text-center">
+                        <small>AP</small>
+                        <div class="fw-bold fs-4">@character.ActionPoints.Available / @character.ActionPoints.Max</div>
+                    </div>
+                    <div class="text-center">
+                        <small>Wounds</small>
+                        <div class="fw-bold fs-4">
+                            <i class="bi bi-bandaid"></i> @GetWoundCount()
+                        </div>
                     </div>
                 </div>
-                <div class="text-center">
-                    <small>VIT</small>
-                    <div class="fw-bold">@character.Vitality.Value / @character.Vitality.BaseValue</div>
-                    <div class="progress" style="height: 8px; width: 80px;">
-                        <div class="progress-bar @(GetVitBarColor())" style="width: @GetVitPercent()%"></div>
-                    </div>
-                </div>
-                <div class="text-center">
-                    <small>AP</small>
-                    <div class="fw-bold">@character.ActionPoints.Available / @character.ActionPoints.Max</div>
+
+                <div>
+                    @if (table != null)
+                    {
+                        <div class="text-end">
+                            <small>Table: @table.Name</small>
+                            <br />
+                            <small class="text-muted">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
+                            <br />
+                            <span class="badge @(table.IsInCombat ? "bg-danger" : "bg-success")">
+                                @(table.IsInCombat ? "Combat" : "Exploration") - Round @table.CurrentRound
+                            </span>
+                        </div>
+                    }
                 </div>
             </div>
-            <div>
-                @if (table != null)
-                {
-                    <small>Table: @table.Name</small>
-                    <br />
-                    <span class="badge @(table.IsInCombat ? "bg-danger" : "bg-success")">
-                        @(table.IsInCombat ? "Combat" : "Exploration") - Round @table.CurrentRound
-                    </span>
-                }
-            </div>
+
+            @if (character.Effects.Any())
+            {
+                <div class="d-flex flex-wrap gap-2 align-items-center" style="border-top: 1px solid #4a5568; padding-top: 0.75rem;">
+                    <small class="me-2">Effects:</small>
+                    @foreach (var effect in character.Effects)
+                    {
+                        <EffectIcon EffectType="@effect.EffectType.ToString()"
+                                    EffectName="@effect.Name"
+                                    Tooltip="@GetEffectTooltip(effect)"
+                                    Stacks="@effect.CurrentStacks"
+                                    Color="white" />
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -259,13 +297,13 @@ else if (character == null)
         {
             <TabStatus Character="character" Table="table" />
         }
-        else if (activeTab == "Actions")
+        else if (activeTab == "Combat")
         {
-            <TabActions Character="character" Table="table" />
+            <TabCombat Character="character" Table="table" />
         }
         else if (activeTab == "Skills")
         {
-            <TabPlaySkills Character="character" Table="table" />
+            <TabPlaySkills Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
         else if (activeTab == "Magic")
         {
@@ -305,7 +343,7 @@ else if (character == null)
 [Parameter]
 public Guid TableId { get; set; }
 
-private static readonly string[] tabNames = new[] { "Status", "Actions", "Skills", "Magic", "Defense", "Inventory" };
+private static readonly string[] tabNames = new[] { "Status", "Combat", "Skills", "Magic", "Defense", "Inventory" };
 private string activeTab = tabNames[0];
 
 private GameMechanics.CharacterEdit? character;
@@ -316,6 +354,7 @@ private string? errorMessage;
 private int currentPlayerId;
 private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
+private bool timeEventSubscribed;
 
 // Detach confirmation state
 private bool showDetachConfirmation;
@@ -349,6 +388,7 @@ protected override async Task OnInitializedAsync()
             {
                 table = await tablePortal.FetchAsync(TableId);
                 SubscribeToActivityLog(TableId);
+                await SubscribeToTimeEvents(TableId);
             }
             catch (Exception ex)
             {
@@ -408,6 +448,7 @@ private async Task SelectCharacterAsync(int characterId)
                 {
                     table = await tablePortal.FetchAsync(charInfo.TableId.Value);
                     SubscribeToActivityLog(charInfo.TableId.Value);
+                    await SubscribeToTimeEvents(charInfo.TableId.Value);
                 }
                 catch
                 {
@@ -416,6 +457,13 @@ private async Task SelectCharacterAsync(int characterId)
             }
 
             AddLogEntry($"Playing as {character.Name}", ActivityCategory.Player);
+
+            // If joining an in-progress table, announce the current game time
+            if (table != null && table.Status == Threa.Dal.Dto.TableStatus.Active)
+            {
+                var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
+            }
         }
     }
     catch (Exception ex)
@@ -461,9 +509,114 @@ private async Task SelectCharacterAsync(int characterId)
         });
     }
 
-    public void Dispose()
+    private async Task SubscribeToTimeEvents(Guid tableId)
+    {
+        if (timeEventSubscribed) return;
+
+        // Connect and subscribe to time events
+        await TimeEventSubscriber.ConnectAsync();
+        await TimeEventSubscriber.SubscribeAsync();
+
+        TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
+        TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        timeEventSubscribed = true;
+    }
+
+    private void OnTimeEventReceived(object? sender, TimeEventMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Process end-of-round effects on the character
+                if (character != null && e.EventType == GameMechanics.Time.TimeEventType.EndOfRound)
+                {
+                    for (int i = 0; i < e.Count; i++)
+                    {
+                        character.EndOfRound(effectPortal);
+                    }
+
+                    // Save the updated character
+                    await characterPortal.UpdateAsync(character);
+
+                    // Refresh table state
+                    if (table != null)
+                    {
+                        table = await tablePortal.FetchAsync(table.Id);
+                    }
+                }
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing time event: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnCombatStateReceived(object? sender, CombatStateMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Refresh the table to get the updated combat state
+                table = await tablePortal.FetchAsync(table.Id);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing combat state: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
+    {
+        // Only process if this event is for our character
+        if (character == null || e.CharacterId != character.Id) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Refresh the character to get the updated state
+                character = await characterPortal.FetchAsync(character.Id);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing character update: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task UnsubscribeFromTimeEvents()
+    {
+        if (!timeEventSubscribed) return;
+
+        TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
+        TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        await TimeEventSubscriber.UnsubscribeAsync();
+        timeEventSubscribed = false;
+    }
+
+    public async void Dispose()
     {
         activityLogSubscription?.Dispose();
+        await UnsubscribeFromTimeEvents();
     }
 
     private string GetActivityClass(ActivityCategory category) =>
@@ -479,23 +632,30 @@ private async Task SelectCharacterAsync(int characterId)
             _ => ""
         };
 
-    // UI Helper methods
-    private int GetFatPercent() => character?.Fatigue.BaseValue > 0
-        ? (int)((double)character.Fatigue.Value / character.Fatigue.BaseValue * 100) : 0;
-
-    private int GetVitPercent() => character?.Vitality.BaseValue > 0
-        ? (int)((double)character.Vitality.Value / character.Vitality.BaseValue * 100) : 0;
-
-    private string GetFatBarColor()
+    private async Task SaveCharacterAsync()
     {
-        var percent = GetFatPercent();
-        return percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+        if (character == null) return;
+        try
+        {
+            await characterPortal.UpdateAsync(character);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save character: {ex.Message}";
+        }
     }
 
-    private string GetVitBarColor()
+    // UI Helper methods
+    private int GetWoundCount() => character?.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound) ?? 0;
+
+    private string GetEffectTooltip(GameMechanics.EffectRecord effect)
     {
-        var percent = GetVitPercent();
-        return percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+        var duration = effect.RemainingRounds.HasValue ? $" ({effect.RemainingRounds} rounds left)" : "";
+        var source = string.IsNullOrEmpty(effect.Source) ? "" : $" (Source: {effect.Source})";
+        var description = string.IsNullOrEmpty(effect.Description) ? "" : $": {effect.Description}";
+
+        return $"{effect.Name}{description}{duration}{source}";
     }
 
     // Detach confirmation methods
@@ -589,15 +749,23 @@ private async Task SelectCharacterAsync(int characterId)
 
             if (result.Success)
             {
-                    // Load the character and table
+                // Load the character and table
                 character = await characterPortal.FetchAsync(characterToAttach.Id);
                 table = await tablePortal.FetchAsync(selectedTableId);
                 SubscribeToActivityLog(selectedTableId);
+                await SubscribeToTimeEvents(selectedTableId);
 
                 // Reload the character list to reflect the change
                 await LoadCharactersAsync();
 
                 AddLogEntry($"Joined table {result.TableName}", ActivityCategory.Player);
+
+                // If joining an in-progress table, announce the current game time
+                if (table.Status == Threa.Dal.Dto.TableStatus.Active)
+                {
+                    var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                    AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
+                }
             }
             else
             {

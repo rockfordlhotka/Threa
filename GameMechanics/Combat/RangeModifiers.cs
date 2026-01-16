@@ -38,9 +38,9 @@ namespace GameMechanics.Combat
   public enum TargetSize
   {
     /// <summary>
-    /// Normal sized target. No modifier.
+    /// Tiny target (cat, bird). +2 TV.
     /// </summary>
-    Normal,
+    Tiny,
 
     /// <summary>
     /// Small target (child, dog). +1 TV.
@@ -48,9 +48,19 @@ namespace GameMechanics.Combat
     Small,
 
     /// <summary>
-    /// Tiny target (cat, bird). +2 TV.
+    /// Normal sized target. No modifier.
     /// </summary>
-    Tiny
+    Normal,
+
+    /// <summary>
+    /// Large target (horse, ogre). -1 TV.
+    /// </summary>
+    Large,
+
+    /// <summary>
+    /// Huge target (elephant, dragon). -2 TV.
+    /// </summary>
+    Huge
   }
 
   /// <summary>
@@ -71,7 +81,45 @@ namespace GameMechanics.Combat
     /// <summary>
     /// Three-quarters cover (doorway, arrow slit). +2 TV.
     /// </summary>
-    ThreeQuarters
+    ThreeQuarters,
+
+    /// <summary>
+    /// Full cover - cannot be targeted directly.
+    /// </summary>
+    Full
+  }
+
+  /// <summary>
+  /// Fire modes for ranged weapons.
+  /// Note: AOE is not a fire mode - it's determined by weapon/ammo properties (IsInherentAOE or IsAOE).
+  /// </summary>
+  public enum FireMode
+  {
+    /// <summary>Single shot - 1 round consumed.</summary>
+    Single,
+    /// <summary>Burst fire - multiple rounds, each hit after first gets +1 TV cumulative.</summary>
+    Burst,
+    /// <summary>Suppressive fire - many rounds at area, GM determines targets.</summary>
+    Suppression
+  }
+
+  /// <summary>
+  /// Reload types for ranged weapons.
+  /// </summary>
+  public enum ReloadType
+  {
+    /// <summary>No reload needed (thrown weapons consume themselves).</summary>
+    None,
+    /// <summary>Swap entire magazine.</summary>
+    Magazine,
+    /// <summary>Load single rounds (bow, revolver).</summary>
+    SingleRound,
+    /// <summary>Revolving cylinder (revolver, some crossbows).</summary>
+    Cylinder,
+    /// <summary>Belt-fed (machine guns).</summary>
+    Belt,
+    /// <summary>Energy cell/battery (blasters, energy weapons).</summary>
+    Battery
   }
 
   /// <summary>
@@ -114,9 +162,11 @@ namespace GameMechanics.Combat
     {
       return size switch
       {
-        TargetSize.Normal => 0,
-        TargetSize.Small => 1,
         TargetSize.Tiny => 2,
+        TargetSize.Small => 1,
+        TargetSize.Normal => 0,
+        TargetSize.Large => -1,
+        TargetSize.Huge => -2,
         _ => 0
       };
     }

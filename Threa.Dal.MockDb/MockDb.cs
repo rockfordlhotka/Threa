@@ -316,6 +316,16 @@ public static class MockDb
             },
             new Skill
             {
+                Id = "pistols",
+                Name = "Pistols",
+                Category = SkillCategory.Combat,
+                IsSpecialized = true,
+                Untrained = 7,
+                Trained = 4,
+                PrimaryAttribute = "DEX"
+            },
+            new Skill
+            {
                 Id = "spears",
                 Name = "Spears",
                 Category = SkillCategory.Combat,
@@ -731,7 +741,102 @@ public static class MockDb
                 DamageClass = 2,
                 DamageType = "Piercing",
                 Range = 100,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                // Ranged weapon properties for shortbow
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"Arrow\",\"capacity\":1,\"rangeShort\":20,\"rangeMedium\":40,\"rangeLong\":80,\"rangeExtreme\":120,\"weaponModifier\":0,\"baseSVModifier\":0,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":1,\"isDodgeable\":true}"
+            },
+
+            // === RANGED WEAPONS (SCI-FI) ===
+            new ItemTemplate
+            {
+                Id = 100,
+                Name = "9mm Pistol",
+                Description = "A reliable semi-automatic pistol chambered in 9mm. Standard sidearm for security forces.",
+                ShortDescription = "9mm sidearm",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Pistol,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 1.2m,
+                Volume = 0.05m,
+                Value = 400,
+                HasDurability = true,
+                MaxDurability = 100,
+                RelatedSkill = "Pistols",
+                MinSkillLevel = 0,
+                DamageClass = 2,
+                DamageType = "Piercing",
+                Range = 50,
+                Rarity = ItemRarity.Common,
+                // Ranged weapon properties: magazine-fed, single/burst fire modes
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"9mm\",\"capacity\":15,\"rangeShort\":10,\"rangeMedium\":25,\"rangeLong\":50,\"rangeExtreme\":100,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\"],\"burstSize\":3,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":3,\"isDodgeable\":false}"
+            },
+
+            // === AMMUNITION ===
+            new ItemTemplate
+            {
+                Id = 101,
+                Name = "9mm FMJ Rounds",
+                Description = "Standard 9mm full metal jacket ammunition. Reliable and accurate.",
+                ShortDescription = "9mm ammo",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.01m,
+                Volume = 0.001m,
+                Value = 1,
+                IsStackable = true,
+                MaxStackSize = 100,
+                Rarity = ItemRarity.Common,
+                // Ammunition properties
+                CustomProperties = "{\"ammoType\":\"9mm\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 102,
+                Name = "9mm Hollow-Point Rounds",
+                Description = "9mm hollow-point ammunition. Higher damage against unarmored targets.",
+                ShortDescription = "9mm HP ammo",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.01m,
+                Volume = 0.001m,
+                Value = 3,
+                IsStackable = true,
+                MaxStackSize = 100,
+                Rarity = ItemRarity.Uncommon,
+                // Ammunition properties with damage bonus
+                CustomProperties = "{\"ammoType\":\"9mm\",\"damageModifier\":2,\"specialEffect\":\"Hollow-Point\",\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 103,
+                Name = "9mm Magazine (15 rnd)",
+                Description = "A standard 15-round magazine for 9mm pistols.",
+                ShortDescription = "Pistol magazine",
+                ItemType = ItemType.Container,
+                Weight = 0.15m,
+                Volume = 0.02m,
+                Value = 25,
+                IsContainer = true,
+                ContainerMaxWeight = 0.5m,
+                ContainerMaxVolume = 0.02m,
+                ContainerAllowedTypes = "9mm",
+                Rarity = ItemRarity.Common,
+                // Magazine state - capacity and ammo type
+                CustomProperties = "{\"ammoType\":\"9mm\",\"capacity\":15,\"currentAmmo\":0,\"ammoDamageModifier\":0}"
+            },
+            new ItemTemplate
+            {
+                Id = 104,
+                Name = "Arrow",
+                Description = "A standard wooden arrow with an iron tip.",
+                ShortDescription = "Wooden arrow",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.05m,
+                Volume = 0.01m,
+                Value = 1,
+                IsStackable = true,
+                MaxStackSize = 50,
+                Rarity = ItemRarity.Common,
+                // Arrow ammunition properties
+                CustomProperties = "{\"ammoType\":\"Arrow\",\"damageModifier\":0,\"isLooseAmmo\":true}"
             },
 
             // === ARMOR ===
@@ -749,7 +854,7 @@ public static class MockDb
                 HasDurability = true,
                 MaxDurability = 80,
                 DodgeModifier = -1,
-                ArmorAbsorption = "{\"Cutting\": 2, \"Piercing\": 1, \"Blunt\": 1}",
+                ArmorAbsorption = "{\"Cutting\": 2, \"Piercing\": 1, \"Bashing\": 1}",
                 Rarity = ItemRarity.Common
             },
             new ItemTemplate
@@ -766,7 +871,7 @@ public static class MockDb
                 HasDurability = true,
                 MaxDurability = 150,
                 DodgeModifier = -3,
-                ArmorAbsorption = "{\"Cutting\": 4, \"Piercing\": 3, \"Blunt\": 2}",
+                ArmorAbsorption = "{\"Cutting\": 4, \"Piercing\": 3, \"Bashing\": 2}",
                 Rarity = ItemRarity.Uncommon
             },
             new ItemTemplate
@@ -783,7 +888,7 @@ public static class MockDb
                 HasDurability = true,
                 MaxDurability = 100,
                 DodgeModifier = 0,
-                ArmorAbsorption = "{\"Cutting\": 3, \"Piercing\": 3, \"Blunt\": 2}",
+                ArmorAbsorption = "{\"Cutting\": 3, \"Piercing\": 3, \"Bashing\": 2}",
                 Rarity = ItemRarity.Common
             },
             new ItemTemplate
@@ -1229,6 +1334,51 @@ public static class MockDb
                 OwnerCharacterId = 1,
                 ContainerItemId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                 StackSize = 25
+            },
+
+            // === RANGED WEAPON EQUIPMENT ===
+            new CharacterItem
+            {
+                Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+                ItemTemplateId = 100, // 9mm Pistol
+                OwnerCharacterId = 1,
+                IsEquipped = false,
+                CurrentDurability = 100,
+                // Loaded with 10 rounds of standard 9mm ammo
+                CustomProperties = "{\"loadedAmmo\":10,\"loadedAmmoType\":\"9mm\",\"loadedAmmoDamageModifier\":0}"
+            },
+            new CharacterItem
+            {
+                Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
+                ItemTemplateId = 103, // 9mm Magazine (15 rnd)
+                OwnerCharacterId = 1,
+                ContainerItemId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                // Magazine is loaded with 15 rounds of FMJ
+                CustomProperties = "{\"ammoType\":\"9mm\",\"capacity\":15,\"currentAmmo\":15,\"ammoDamageModifier\":0}"
+            },
+            new CharacterItem
+            {
+                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
+                ItemTemplateId = 101, // 9mm FMJ Rounds (loose)
+                OwnerCharacterId = 1,
+                ContainerItemId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                StackSize = 30
+            },
+            new CharacterItem
+            {
+                Id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+                ItemTemplateId = 14, // Shortbow
+                OwnerCharacterId = 1,
+                IsEquipped = false,
+                CurrentDurability = 80
+            },
+            new CharacterItem
+            {
+                Id = Guid.Parse("bbbbbbbb-cccc-dddd-eeee-ffffffffffff"),
+                ItemTemplateId = 104, // Arrows
+                OwnerCharacterId = 1,
+                ContainerItemId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                StackSize = 20
             }
         ];
     }

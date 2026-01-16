@@ -309,9 +309,12 @@ public class EffectRecord : BusinessBase<EffectRecord>
     using (BypassPropertyChecks)
     {
       Id = dto.Id;
-      EffectType = dto.Definition?.EffectType ?? EffectType.Condition;
-      Name = dto.Definition?.Name ?? "Unknown Effect";
-      Description = dto.Definition?.Description;
+      // Use directly stored fields if Name is set (indicates data was saved with new schema)
+      // Fall back to Definition for backwards compatibility with old records
+      bool hasDirectData = !string.IsNullOrEmpty(dto.Name);
+      EffectType = hasDirectData ? dto.EffectType : (dto.Definition?.EffectType ?? EffectType.Condition);
+      Name = hasDirectData ? dto.Name : (dto.Definition?.Name ?? "Unknown Effect");
+      Description = dto.Description ?? dto.Definition?.Description;
       Location = dto.WoundLocation;
       IconName = dto.Definition?.IconName;
       DurationRounds = dto.RoundsRemaining.HasValue
@@ -323,8 +326,8 @@ public class EffectRecord : BusinessBase<EffectRecord>
       CurrentStacks = dto.CurrentStacks;
       IsActive = dto.IsActive;
       BehaviorState = dto.CustomProperties;
-      Source = dto.Definition?.Source;
-      
+      Source = dto.Source ?? dto.Definition?.Source;
+
       // Item effect properties
       SourceItemId = dto.SourceItemId;
       ItemEffectTrigger = dto.ItemEffectTrigger;
@@ -356,13 +359,18 @@ public class EffectRecord : BusinessBase<EffectRecord>
           effects.Add(dto);
       }
 
+      // Store effect data directly (not just via EffectDefinitionId)
+      dto.EffectType = EffectType;
+      dto.Name = Name;
+      dto.Description = Description;
+      dto.Source = Source;
       dto.WoundLocation = Location;
       dto.RoundsRemaining = RemainingRounds;
       dto.CurrentStacks = CurrentStacks;
       dto.IsActive = IsActive;
       dto.CustomProperties = BehaviorState;
       dto.EffectDefinitionId = GetEffectDefinitionId(EffectType);
-      
+
       // Item effect properties
       dto.SourceItemId = SourceItemId;
       dto.ItemEffectTrigger = ItemEffectTrigger;
@@ -395,6 +403,8 @@ public class EffectRecord : BusinessBase<EffectRecord>
       EffectType.SpellEffect => 50,
       EffectType.ObjectEffect => 60,
       EffectType.Environmental => 70,
+      EffectType.ItemEffect => 80,
+      EffectType.CombatStance => 90,
       _ => 1
     };
   }

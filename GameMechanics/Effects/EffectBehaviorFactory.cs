@@ -11,10 +11,14 @@ public static class EffectBehaviorFactory
   private static readonly Dictionary<EffectType, IEffectBehavior> _behaviors = new()
   {
     { EffectType.Wound, new Behaviors.WoundBehavior() },
+    { EffectType.Condition, new Behaviors.ConditionBehavior() },
     { EffectType.Poison, new Behaviors.PoisonBehavior() },
     { EffectType.Buff, new Behaviors.SpellBuffBehavior() },
     { EffectType.SpellEffect, new Behaviors.DrugBehavior() }, // Using SpellEffect for drugs temporarily
-    { EffectType.ItemEffect, new Behaviors.ItemEffectBehavior() }
+    { EffectType.ItemEffect, new Behaviors.ItemEffectBehavior() },
+    { EffectType.CombatStance, new Behaviors.CombatStanceBehavior() },
+    { EffectType.Debuff, new Behaviors.DebuffBehavior() },
+    { EffectType.Concentration, new Behaviors.ConcentrationBehavior() }
   };
 
   private static readonly IEffectBehavior _defaultBehavior = new Behaviors.DefaultEffectBehavior();

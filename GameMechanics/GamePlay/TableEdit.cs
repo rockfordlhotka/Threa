@@ -94,6 +94,23 @@ public class TableEdit : BusinessBase<TableEdit>
         private set => LoadProperty(LastTimeAdvanceProperty, value);
     }
 
+    public static readonly PropertyInfo<long> StartTimeSecondsProperty = RegisterProperty<long>(nameof(StartTimeSeconds));
+    /// <summary>
+    /// The in-game start time in seconds from epoch 0.
+    /// Set by the GM when creating the table to establish the game world time.
+    /// </summary>
+    public long StartTimeSeconds
+    {
+        get => GetProperty(StartTimeSecondsProperty);
+        set => SetProperty(StartTimeSecondsProperty, value);
+    }
+
+    /// <summary>
+    /// The current in-game time in seconds, calculated from start time plus elapsed rounds.
+    /// Each round is 3 seconds.
+    /// </summary>
+    public long CurrentTimeSeconds => StartTimeSeconds + (CurrentRound * 3L);
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -267,6 +284,7 @@ public class TableEdit : BusinessBase<TableEdit>
         IsInCombat = dto.IsInCombat;
         CombatStartedAt = dto.CombatStartedAt;
         LastTimeAdvance = dto.LastTimeAdvance;
+        StartTimeSeconds = dto.StartTimeSeconds;
     }
 
     private void MapToDto(GameTable dto)
@@ -282,5 +300,6 @@ public class TableEdit : BusinessBase<TableEdit>
         dto.IsInCombat = IsInCombat;
         dto.CombatStartedAt = CombatStartedAt;
         dto.LastTimeAdvance = LastTimeAdvance;
+        dto.StartTimeSeconds = StartTimeSeconds;
     }
 }

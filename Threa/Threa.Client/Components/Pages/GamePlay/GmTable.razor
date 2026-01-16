@@ -7,6 +7,7 @@
 @implements IDisposable
 
 @using GameMechanics.Messaging
+@using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
 @using Threa.Services
 
@@ -15,7 +16,10 @@
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IActivityLogService ActivityLog
+@inject ITimeEventPublisher TimeEventPublisher
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -37,6 +41,10 @@ else
             <span class="badge @GetStatusBadgeClass()">@table.StatusDisplay</span>
         </div>
         <div class="d-flex gap-2 align-items-center">
+            <div class="text-end me-3">
+                <small class="d-block text-muted">Game Time</small>
+                <span class="fw-bold">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</span>
+            </div>
             <span class="badge bg-info fs-5">Round @table.CurrentRound</span>
             @if (table.IsInCombat)
             {
@@ -209,6 +217,14 @@ else
                 <div class="card-body">
                     @if (table.Status == Threa.Dal.Dto.TableStatus.Lobby)
                     {
+                        <div class="mb-3">
+                            <label class="form-label">Start Time (in seconds from epoch 0)</label>
+                            <input type="number" class="form-control" @bind="table.StartTimeSeconds"
+                                   min="0" placeholder="e.g., 0 for beginning of time" />
+                            <small class="text-muted">
+                                Preview: @GameTimeFormatter.FormatCompact(table.StartTimeSeconds)
+                            </small>
+                        </div>
                         <button class="btn btn-success btn-lg w-100" @onclick="StartSession">
                             Start Session
                         </button>
@@ -322,6 +338,7 @@ else
         {
             await LoadTable();
             SubscribeToActivityLog();
+            await TimeEventPublisher.ConnectAsync();
         }
     }
 
@@ -341,6 +358,7 @@ else
     public void Dispose()
     {
         activityLogSubscription?.Dispose();
+        // Note: TimeEventPublisher is a singleton service, do not dispose
     }
 
     private async Task LoadTable()
@@ -369,6 +387,10 @@ else
         table.StartSession();
         await SaveTable();
         AddLogEntry("Session started", ActivityCategory.Session);
+
+        // Announce the current game time to all players
+        var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+        AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
     }
 
     private async Task PauseSession()
@@ -401,6 +423,16 @@ else
         table.AdvanceRound();
         await SaveTable();
         AddLogEntry($"Advanced to round {table.CurrentRound}", ActivityCategory.Time);
+
+        // Publish time event so players can process end-of-round effects
+        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
+        {
+            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
+            Count = 1,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            Reason = $"Advanced to round {table.CurrentRound}"
+        });
     }
 
     private async Task AdvanceMultipleRounds()
@@ -409,6 +441,16 @@ else
         table.AdvanceRounds(roundsToAdvance);
         await SaveTable();
         AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}", ActivityCategory.Time);
+
+        // Publish time event so players can process end-of-round effects
+        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
+        {
+            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
+            Count = roundsToAdvance,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            Reason = $"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}"
+        });
     }
 
     private async Task EnterCombat()
@@ -417,6 +459,15 @@ else
         table.EnterCombat();
         await SaveTable();
         AddLogEntry("Combat started!", ActivityCategory.Combat);
+
+        // Publish combat state change
+        await TimeEventPublisher.PublishCombatStateAsync(new CombatStateMessage
+        {
+            EnteringCombat = true,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            EncounterName = "Combat"
+        });
     }
 
     private async Task ExitCombat()
@@ -425,6 +476,14 @@ else
         table.ExitCombat();
         await SaveTable();
         AddLogEntry("Combat ended", ActivityCategory.Combat);
+
+        // Publish combat state change
+        await TimeEventPublisher.PublishCombatStateAsync(new CombatStateMessage
+        {
+            EnteringCombat = false,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM"
+        });
     }
 
     private void SendAnnouncement()
@@ -462,23 +521,130 @@ else
         AddLogEntry($"Quick damaged {character.CharacterName}", ActivityCategory.Health);
     }
 
-    private void ApplyDamage()
+    private async Task ApplyDamage()
     {
-        if (selectedCharacter == null) return;
-        AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}", ActivityCategory.Health);
+        if (selectedCharacter == null || table == null) return;
+
+        try
+        {
+            // Fetch the character, apply damage, and save
+            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+
+            if (damageType == "FAT")
+            {
+                character.Fatigue.PendingDamage += damageAmount;
+            }
+            else // VIT
+            {
+                character.Vitality.PendingDamage += damageAmount;
+            }
+
+            await characterPortal.UpdateAsync(character);
+
+            AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}", ActivityCategory.Health);
+
+            // Notify the player to refresh their character
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = selectedCharacter.CharacterId,
+                UpdateType = CharacterUpdateType.Damage,
+                CampaignId = table.Id.ToString(),
+                SourceId = "GM",
+                Description = $"{damageAmount} {damageType} damage"
+            });
+
+            // Refresh the table character list to show updated values
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to apply damage: {ex.Message}";
+        }
     }
 
-    private void ApplyHealing()
+    private async Task ApplyHealing()
     {
-        if (selectedCharacter == null) return;
-        AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}", ActivityCategory.Health);
+        if (selectedCharacter == null || table == null) return;
+
+        try
+        {
+            // Fetch the character, apply healing, and save
+            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+
+            if (healType == "FAT")
+            {
+                character.Fatigue.PendingHealing += healAmount;
+            }
+            else // VIT
+            {
+                character.Vitality.PendingHealing += healAmount;
+            }
+
+            await characterPortal.UpdateAsync(character);
+
+            AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}", ActivityCategory.Health);
+
+            // Notify the player to refresh their character
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = selectedCharacter.CharacterId,
+                UpdateType = CharacterUpdateType.Healing,
+                CampaignId = table.Id.ToString(),
+                SourceId = "GM",
+                Description = $"{healAmount} {healType} healing"
+            });
+
+            // Refresh the table character list to show updated values
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to apply healing: {ex.Message}";
+        }
     }
 
-    private void ApplyEffect()
+    private async Task ApplyEffect()
     {
-        if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect)) return;
-        AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
-        selectedEffect = "";
+        if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect) || table == null) return;
+
+        try
+        {
+            // Fetch the character, add effect, and save
+            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+
+            // Create the effect with appropriate type and duration
+            var effect = await effectPortal.CreateChildAsync(
+                Threa.Dal.Dto.EffectType.Condition,  // Stunned, Blinded, Prone are all conditions
+                selectedEffect,  // Name
+                (string?)null,   // Location (null for global effects)
+                (int?)null,      // DurationRounds (null = permanent until removed)
+                (string?)null    // BehaviorState
+            );
+            effect.Source = "GM";
+
+            character.Effects.Add(effect);
+            await characterPortal.UpdateAsync(character);
+
+            AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
+
+            // Notify the player to refresh their character
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = selectedCharacter.CharacterId,
+                UpdateType = CharacterUpdateType.EffectAdded,
+                CampaignId = table.Id.ToString(),
+                SourceId = "GM",
+                Description = selectedEffect
+            });
+
+            selectedEffect = "";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to apply effect: {ex.Message}";
+        }
     }
 
     private void AddNpc()

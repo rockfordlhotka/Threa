@@ -58,24 +58,34 @@ namespace GameMechanics.Combat
     public int PenetratingSV { get; init; }
 
     /// <summary>
-    /// The final damage result based on penetrating SV.
+    /// The damage dice roll result (new dice-based system).
+    /// </summary>
+    public DamageRollResult? DamageRoll { get; init; }
+
+    /// <summary>
+    /// The final damage result based on penetrating SV (legacy, for compatibility).
     /// </summary>
     public DamageResult FinalDamage { get; init; } = DamageResult.None;
 
     /// <summary>
     /// Whether a wound was caused.
     /// </summary>
-    public bool CausedWound => FinalDamage.CausesWound;
+    public bool CausedWound => DamageRoll?.Wounds > 0 || FinalDamage.CausesWound;
+
+    /// <summary>
+    /// Number of wounds inflicted.
+    /// </summary>
+    public int WoundCount => DamageRoll?.Wounds ?? (FinalDamage.CausesWound ? 1 : 0);
 
     /// <summary>
     /// FAT damage to apply.
     /// </summary>
-    public int FatigueDamage => FinalDamage.FatigueDamage;
+    public int FatigueDamage => DamageRoll?.FatigueDamage ?? FinalDamage.FatigueDamage;
 
     /// <summary>
     /// VIT damage to apply.
     /// </summary>
-    public int VitalityDamage => FinalDamage.VitalityDamage;
+    public int VitalityDamage => DamageRoll?.VitalityDamage ?? FinalDamage.VitalityDamage;
 
     /// <summary>
     /// Whether all damage was absorbed (no penetration).

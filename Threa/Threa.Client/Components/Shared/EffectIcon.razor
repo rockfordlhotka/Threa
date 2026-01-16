@@ -1,0 +1,10 @@
+@namespace Threa.Client.Components.Shared
+@inherits EffectIconBase
+
+<div class="effect-icon-container" title="@Tooltip">
+    <i class="bi @IconClass" style="color: @Color;"></i>
+    @if (Stacks is > 1)
+    {
+        <span class="badge rounded-pill bg-secondary effect-stack-badge">@Stacks</span>
+    }
+</div>

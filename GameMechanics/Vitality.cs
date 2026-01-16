@@ -44,38 +44,25 @@ namespace GameMechanics
 
     public void EndOfRound(Csla.IChildDataPortal<EffectRecord>? effectPortal = null)
     {
-      if (Value < BaseValue)
+      // Note: VIT does NOT have passive recovery like FAT does
+      // VIT healing comes from spells, potions, or hourly recovery
+
+      // Apply half of pending healing (rounded up to ensure pool reaches zero)
+      if (PendingHealing > 0)
       {
-        // recover
-        if (Character.Vitality.Value > Character.Vitality.BaseValue / 2)
-          PendingHealing += 1;
-        // heal
-        int heal;
-        if (PendingHealing > 1)
-          heal = PendingHealing / 2;
-        else
-          heal = 1;
-        Value += heal;
+        int heal = (PendingHealing + 1) / 2; // Round up: 1->1, 2->1, 3->2, 4->2, 5->3
         PendingHealing -= heal;
+        // Only apply healing up to max
+        Value = Math.Min(BaseValue, Value + heal);
       }
-      else if (PendingHealing > 0)
-      {
-        if (PendingHealing > 1)
-          PendingHealing /= 2;
-        else
-          PendingHealing = 0;
-      }
+
+      // Apply half of pending damage (rounded up to ensure pool reaches zero)
       if (PendingDamage > 0)
       {
-        // take damage
-        int damage;
-        if (PendingDamage > 2)
-          damage = PendingDamage / 2;
-        else
-          damage = 1;
+        int damage = (PendingDamage + 1) / 2; // Round up: 1->1, 2->1, 3->2, 4->2, 5->3
         PendingDamage -= damage;
         Value -= damage;
-        // cascade overflow
+        // cascade overflow to wounds
         if (Value < 0)
         {
           var overflow = -Value;

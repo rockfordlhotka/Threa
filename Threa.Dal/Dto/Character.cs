@@ -19,8 +19,8 @@ public class Character
     public string HairDescription { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public long Birthdate { get; set; }
-    public double XPTotal { get; set; }
-    public double XPBanked { get; set; }
+    public int XPTotal { get; set; }
+    public int XPBanked { get; set; }
     public int ActionPointMax { get; set; }
     public int ActionPointRecovery { get; set; }
     public int ActionPointAvailable { get; set; }

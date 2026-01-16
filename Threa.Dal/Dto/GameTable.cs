@@ -22,6 +22,12 @@ public class GameTable
     public DateTime? CombatStartedAt { get; set; }
     public DateTime? LastTimeAdvance { get; set; }
 
+    /// <summary>
+    /// The in-game start time in seconds from epoch 0.
+    /// Set by the GM when creating the table to establish the game world time.
+    /// </summary>
+    public long StartTimeSeconds { get; set; }
+
     // Connected characters (managed separately for efficiency)
     public List<TableCharacter> Characters { get; set; } = [];
 

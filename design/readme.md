@@ -26,7 +26,15 @@ This folder contains the game rules and design specifications for the Threa tabl
 | [Equipment System](EQUIPMENT_SYSTEM.md) | Equipment slots, item bonuses, attribute modifiers, and stacking rules |
 | [Item System Overview](ITEM_SYSTEM_OVERVIEW.md) | Architecture diagram, container hierarchy, weight/volume calculations |
 | [Item Bonuses and Cascading Effects](ITEM_BONUSES_AND_CASCADING_EFFECTS.md) | Detailed explanation of how item bonuses affect skills and cascade through attributes |
+| [Item Effects System](ITEM_EFFECTS_SYSTEM.md) | Item-triggered effects, curses, and toggleable equipment |
 | [Carrying Capacity Analysis](CARRYING_CAPACITY_ANALYSIS.md) | Exponential scaling formula for weight/volume based on Physicality |
+
+### Sci-Fi / Cyberpunk Systems
+
+| Document | Description |
+|----------|-------------|
+| [Ranged Weapons (Sci-Fi)](RANGED_WEAPONS_SCIFI.md) | Modern/futuristic firearms, fire modes, ammunition types, heavy weapons |
+| [Implants System](IMPLANTS_SYSTEM.md) | Cybernetic implants, installation/removal, toggleable activation, power requirements |
 
 ### Reference Data
 
@@ -35,11 +43,19 @@ This folder contains the game rules and design specifications for the Threa tabl
 | [Item List](ITEM_LIST.md) | Sample items with values and categories |
 | [Currency System](CURRENCY_SYSTEM.md) | Four-tier currency (cp/sp/gp/pp), exchange rates, and pricing guidelines |
 
+### User Interface
+
+| Document | Description |
+|----------|-------------|
+| [Play Page Design](PLAY_PAGE_DESIGN.md) | Play page layout, combat workflows, skill usage, and magic casting UI |
+| [Play Page Implementation Plan](PLAY_PAGE_IMPLEMENTATION_PLAN.md) | Detailed implementation checklist for play page features |
+
 ### Technical
 
 | Document | Description |
 |----------|-------------|
 | [Database Design](DATABASE_DESIGN.md) | Schema design for characters, skills, items, effects, and inventory |
+| [XP System Refinement](XP_SYSTEM_REFINEMENT.md) | Converting XP from decimals to integers, fixing XPTotal tracking |
 
 ## Quick Reference
 

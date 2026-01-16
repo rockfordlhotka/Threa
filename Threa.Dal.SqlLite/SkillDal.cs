@@ -1,89 +1,135 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Threa.Dal;
+using Microsoft.Data.Sqlite;
 using Threa.Dal.Dto;
 
 namespace Threa.Dal.Sqlite;
 
+/// <summary>
+/// SQLite implementation of ISkillDal.
+/// </summary>
 public class SkillDal : ISkillDal
 {
-    private static readonly List<Skill> _skills = GetHardcodedSkills();
+    private readonly SqliteConnection Connection;
 
-    public Task<List<Skill>> GetAllSkillsAsync()
+    public SkillDal(SqliteConnection connection)
     {
-        // TODO: Implement SQLite persistence for skills
-        // For now, return hardcoded skills matching MockDb
-        return Task.FromResult(_skills);
+        Connection = connection;
+        InitializeTable();
     }
 
-    public Task<Skill?> GetSkillAsync(string id)
+    private void InitializeTable()
     {
-        // TODO: Implement SQLite persistence for skills
-        return Task.FromResult(_skills.FirstOrDefault(s => s.Id == id));
-    }
-
-    public Task<Skill> SaveSkillAsync(Skill skill)
-    {
-        // TODO: Implement SQLite persistence for skills
-        var existing = _skills.FirstOrDefault(s => s.Id == skill.Id);
-        if (existing != null)
+        try
         {
-            _skills.Remove(existing);
+            var sql = @"
+                CREATE TABLE IF NOT EXISTS Skills (
+                    Id TEXT NOT NULL PRIMARY KEY,
+                    Name TEXT NOT NULL,
+                    Json TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS IX_Skills_Name ON Skills(Name);
+            ";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
         }
-        _skills.Add(skill);
-        return Task.FromResult(skill);
-    }
-
-    public Task DeleteSkillAsync(string id)
-    {
-        // TODO: Implement SQLite persistence for skills
-        var existing = _skills.FirstOrDefault(s => s.Id == id);
-        if (existing != null)
+        catch (Exception ex)
         {
-            _skills.Remove(existing);
+            throw new OperationFailedException("Error creating Skills table", ex);
         }
-        return Task.CompletedTask;
     }
 
-    private static List<Skill> GetHardcodedSkills()
+    public async Task<List<Skill>> GetAllSkillsAsync()
     {
-        return
-        [
-            // Standard attribute skills
-            new Skill { Id = "physicality", Name = "Physicality", Category = SkillCategory.Standard, Untrained = 3, Trained = 1, PrimaryAttribute = "STR" },
-            new Skill { Id = "dodge", Name = "Dodge", Category = SkillCategory.Standard, Untrained = 6, Trained = 4, PrimaryAttribute = "DEX/ITT" },
-            new Skill { Id = "drive", Name = "Drive", Category = SkillCategory.Standard, Untrained = 5, Trained = 3, PrimaryAttribute = "WIL/END" },
-            new Skill { Id = "reasoning", Name = "Reasoning", Category = SkillCategory.Standard, Untrained = 5, Trained = 3, PrimaryAttribute = "INT" },
-            new Skill { Id = "awareness", Name = "Awareness", Category = SkillCategory.Standard, Untrained = 5, Trained = 2, PrimaryAttribute = "ITT" },
-            new Skill { Id = "focus", Name = "Focus", Category = SkillCategory.Standard, Untrained = 5, Trained = 2, PrimaryAttribute = "WIL" },
-            new Skill { Id = "bearing", Name = "Bearing", Category = SkillCategory.Standard, Untrained = 4, Trained = 2, PrimaryAttribute = "SOC" },
-            new Skill { Id = "influence", Name = "Influence", Category = SkillCategory.Standard, Untrained = 4, Trained = 2, PrimaryAttribute = "PHY" },
+        try
+        {
+            var sql = "SELECT Json FROM Skills ORDER BY Name";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            using var reader = await command.ExecuteReaderAsync();
+            var skills = new List<Skill>();
+            while (reader.Read())
+            {
+                string json = reader.GetString(0);
+                var skill = JsonSerializer.Deserialize<Skill>(json);
+                if (skill != null)
+                    skills.Add(skill);
+            }
+            return skills;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error getting skills", ex);
+        }
+    }
 
-            // Weapon combat skills
-            new Skill { Id = "swords", Name = "Swords", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 7, Trained = 4, PrimaryAttribute = "DEX" },
-            new Skill { Id = "axes", Name = "Axes", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 7, Trained = 4, PrimaryAttribute = "STR" },
-            new Skill { Id = "daggers", Name = "Daggers", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 6, Trained = 3, PrimaryAttribute = "DEX" },
-            new Skill { Id = "bows", Name = "Bows", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 7, Trained = 4, PrimaryAttribute = "DEX" },
-            new Skill { Id = "crossbows", Name = "Crossbows", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 6, Trained = 3, PrimaryAttribute = "DEX" },
-            new Skill { Id = "spears", Name = "Spears", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 6, Trained = 3, PrimaryAttribute = "DEX" },
-            new Skill { Id = "polearms", Name = "Polearms", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 7, Trained = 4, PrimaryAttribute = "STR" },
-            new Skill { Id = "unarmed-combat", Name = "Unarmed Combat", Category = SkillCategory.Combat, IsSpecialized = true, Untrained = 6, Trained = 3, PrimaryAttribute = "DEX" },
+    public async Task<Skill?> GetSkillAsync(string id)
+    {
+        try
+        {
+            var sql = "SELECT Json FROM Skills WHERE Id = @Id COLLATE NOCASE";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@Id", id);
+            using var reader = await command.ExecuteReaderAsync();
+            if (!reader.Read())
+                return null;
+            string json = reader.GetString(0);
+            return JsonSerializer.Deserialize<Skill>(json);
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException($"Error getting skill {id}", ex);
+        }
+    }
 
-            // Movement skills
-            new Skill { Id = "sprint", Name = "Sprint", Category = SkillCategory.Movement, Untrained = 5, Trained = 2, PrimaryAttribute = "DEX" },
+    public async Task<Skill> SaveSkillAsync(Skill skill)
+    {
+        try
+        {
+            // Check if skill exists
+            var existing = await GetSkillAsync(skill.Id);
+            string sql;
+            if (existing == null)
+            {
+                sql = "INSERT INTO Skills (Id, Name, Json) VALUES (@Id, @Name, @Json)";
+            }
+            else
+            {
+                sql = "UPDATE Skills SET Name = @Name, Json = @Json WHERE Id = @Id COLLATE NOCASE";
+            }
 
-            // Magic: Mana skills
-            new Skill { Id = "fire-mana", Name = "Fire Mana", Category = SkillCategory.Mana, IsMagic = true, Untrained = 7, Trained = 4, PrimaryAttribute = "WIL" },
-            new Skill { Id = "water-mana", Name = "Water Mana", Category = SkillCategory.Mana, IsMagic = true, Untrained = 7, Trained = 4, PrimaryAttribute = "WIL" },
-            new Skill { Id = "light-mana", Name = "Light Mana", Category = SkillCategory.Mana, IsMagic = true, Untrained = 7, Trained = 4, PrimaryAttribute = "WIL" },
-            new Skill { Id = "life-mana", Name = "Life Mana", Category = SkillCategory.Mana, IsMagic = true, Untrained = 7, Trained = 4, PrimaryAttribute = "WIL" },
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@Id", skill.Id);
+            command.Parameters.AddWithValue("@Name", skill.Name);
+            command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(skill));
+            await command.ExecuteNonQueryAsync();
 
-            // Magic: Spell skills
-            new Skill { Id = "fire-bolt", Name = "Fire Bolt", Category = SkillCategory.Spell, IsMagic = true, Untrained = 8, Trained = 5, PrimaryAttribute = "INT" },
-            new Skill { Id = "heal", Name = "Heal", Category = SkillCategory.Spell, IsMagic = true, Untrained = 8, Trained = 5, PrimaryAttribute = "WIL" },
-            new Skill { Id = "illuminate", Name = "Illuminate", Category = SkillCategory.Spell, IsMagic = true, Untrained = 7, Trained = 4, PrimaryAttribute = "INT" }
-        ];
+            return skill;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException($"Error saving skill {skill.Id}", ex);
+        }
+    }
+
+    public async Task DeleteSkillAsync(string id)
+    {
+        try
+        {
+            var sql = "DELETE FROM Skills WHERE Id = @Id COLLATE NOCASE";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@Id", id);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException($"Error deleting skill {id}", ex);
+        }
     }
 }
-

@@ -200,6 +200,18 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
     public bool IsCombatSkill => Category == SkillCategory.Combat;
     public bool CanBeDeleted => Category != SkillCategory.Standard;
 
+    protected override void AddBusinessRules()
+    {
+        base.AddBusinessRules();
+
+        // Primary attribute is required and must be valid attribute code(s)
+        BusinessRules.AddRule(new AttributeValidationRule(PrimaryAttributeProperty, required: true));
+
+        // Secondary and tertiary attributes are optional but must be valid if provided
+        BusinessRules.AddRule(new AttributeValidationRule(SecondaryAttributeProperty, required: false));
+        BusinessRules.AddRule(new AttributeValidationRule(TertiaryAttributeProperty, required: false));
+    }
+
     [Create]
     private async Task Create()
     {

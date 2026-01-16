@@ -1,0 +1,853 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Effects.Behaviors
+@using GameMechanics.Combat
+@using Threa.Dal.Dto
+
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
+
+<div class="defend-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-shield-shaded text-info"></i> Defend Mode</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (!hasRolled)
+    {
+        <!-- Defense Setup -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Parry Mode Status -->
+                @if (isInParryMode)
+                {
+                    <div class="alert alert-success mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><i class="bi bi-shield-check"></i> Parry Mode Active</strong>
+                                <div class="small">Using @parrySkillName (AS @parrySkillAS). Parry defenses are FREE.</div>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm" @onclick="EndParryModeClicked">
+                                End Parry Mode
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Defense Type</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <!-- Passive Defense -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="defenseType"
+                                       id="defPassive" value="Passive"
+                                       checked="@(defenseType == DefenseTypeOption.Passive)"
+                                       @onchange="@(() => SetDefenseType(DefenseTypeOption.Passive))">
+                                <label class="form-check-label" for="defPassive">
+                                    <strong>Passive</strong>
+                                    <small class="text-muted d-block">TV = Dodge AS - 1. No cost, no roll.</small>
+                                </label>
+                            </div>
+
+                            <!-- Active Dodge -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="defenseType"
+                                       id="defDodge" value="Dodge"
+                                       checked="@(defenseType == DefenseTypeOption.Dodge)"
+                                       @onchange="@(() => SetDefenseType(DefenseTypeOption.Dodge))">
+                                <label class="form-check-label" for="defDodge">
+                                    <strong>Dodge</strong>
+                                    <small class="text-muted d-block">TV = Dodge AS + 4dF+. Costs 1 AP + 1 FAT (or 2 AP).</small>
+                                </label>
+                            </div>
+
+                            <!-- Enter Parry Mode -->
+                            @if (!isInParryMode)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="defenseType"
+                                           id="defEnterParry" value="EnterParry"
+                                           checked="@(defenseType == DefenseTypeOption.EnterParry)"
+                                           disabled="@(!HasWeaponEquipped)"
+                                           @onchange="@(() => SetDefenseType(DefenseTypeOption.EnterParry))">
+                                    <label class="form-check-label @(!HasWeaponEquipped ? "text-muted" : "")" for="defEnterParry">
+                                        <strong>Enter Parry Mode</strong>
+                                        @if (HasWeaponEquipped)
+                                        {
+                                            <small class="text-muted d-block">
+                                                Costs 1 AP + 1 FAT (or 2 AP). Then parries are FREE until you take another action.
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-danger d-block">Requires equipped weapon.</small>
+                                        }
+                                    </label>
+                                </div>
+                            }
+
+                            <!-- Parry (when in parry mode) -->
+                            @if (isInParryMode)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="defenseType"
+                                           id="defParry" value="Parry"
+                                           checked="@(defenseType == DefenseTypeOption.Parry)"
+                                           @onchange="@(() => SetDefenseType(DefenseTypeOption.Parry))">
+                                    <label class="form-check-label" for="defParry">
+                                        <strong>Parry (FREE)</strong>
+                                        <small class="text-success d-block">
+                                            TV = @parrySkillName AS + 4dF+. No cost while in Parry Mode!
+                                        </small>
+                                    </label>
+                                </div>
+                            }
+
+                            <!-- Shield Block -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="defenseType"
+                                       id="defShield" value="ShieldBlock"
+                                       checked="@(defenseType == DefenseTypeOption.ShieldBlock)"
+                                       disabled="@(!HasShieldEquipped)"
+                                       @onchange="@(() => SetDefenseType(DefenseTypeOption.ShieldBlock))">
+                                <label class="form-check-label @(!HasShieldEquipped ? "text-muted" : "")" for="defShield">
+                                    <strong>Shield Block</strong>
+                                    @if (HasShieldEquipped)
+                                    {
+                                        <small class="text-muted d-block">
+                                            Roll Shield AS + 4dF+ vs TV 8. On success, absorbs damage.
+                                            Can layer with other defenses. Costs 1 AP + 1 FAT (or 2 AP).
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-danger d-block">Requires equipped shield.</small>
+                                    }
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (RequiresCost())
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>2. Action Cost</strong>
+                        </div>
+                        <div class="card-body">
+                            <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                                Fat="@(Character?.Fatigue.Value ?? 0)"
+                                                OnCostTypeSelected="OnCostTypeChanged" />
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>3. Boost (Optional)</strong>
+                        </div>
+                        <div class="card-body">
+                            <BoostSelector MaxAP="@GetMaxBoostAP()"
+                                           MaxFAT="@GetMaxBoostFAT()"
+                                           OnBoostChanged="OnBoostChanged" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-md-6">
+                <!-- Defense Summary -->
+                <div class="card bg-light">
+                    <div class="card-header bg-info text-white">
+                        <strong><i class="bi bi-calculator"></i> Defense Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Defense Type:</td>
+                                    <td class="fw-bold">@GetDefenseTypeName()</td>
+                                </tr>
+                                @if (defenseType == DefenseTypeOption.ShieldBlock)
+                                {
+                                    <tr>
+                                        <td>Shield AS:</td>
+                                        <td class="fw-bold">@ShieldSkillAS</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target Value:</td>
+                                        <td class="fw-bold">8 (fixed)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Boost:</td>
+                                        <td class="fw-bold text-success">+@boostValue</td>
+                                    </tr>
+                                    @if (GetMultiActionPenalty() != 0)
+                                    {
+                                        <tr>
+                                            <td>Multi-Action Penalty:</td>
+                                            <td class="fw-bold text-danger">@GetMultiActionPenalty()</td>
+                                        </tr>
+                                    }
+                                    @if (GetEffectModifier() != 0)
+                                    {
+                                        <tr>
+                                            <td>Effect Modifiers:</td>
+                                            <td class="fw-bold @(GetEffectModifier() >= 0 ? "text-success" : "text-danger")">
+                                                @(GetEffectModifier() >= 0 ? "+" : "")@GetEffectModifier()
+                                            </td>
+                                        </tr>
+                                    }
+                                    <tr class="table-active">
+                                        <td><strong>Effective AS:</strong></td>
+                                        <td><strong class="fs-5">@(ShieldSkillAS + boostValue + GetMultiActionPenalty() + GetEffectModifier())</strong></td>
+                                    </tr>
+                                }
+                                else if (defenseType == DefenseTypeOption.Passive)
+                                {
+                                    <tr>
+                                        <td>Base AS:</td>
+                                        <td class="fw-bold">@GetBaseAS()</td>
+                                    </tr>
+                                    <tr class="table-active">
+                                        <td><strong>Passive TV:</strong></td>
+                                        <td><strong class="fs-5">@GetPassiveTV()</strong></td>
+                                    </tr>
+                                }
+                                else if (defenseType == DefenseTypeOption.EnterParry)
+                                {
+                                    <tr>
+                                        <td colspan="2" class="text-muted">
+                                            Entering parry mode. Select weapon skill after.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td>Base AS:</td>
+                                        <td class="fw-bold">@GetBaseAS()</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Boost:</td>
+                                        <td class="fw-bold text-success">+@boostValue</td>
+                                    </tr>
+                                    @if (GetMultiActionPenalty() != 0)
+                                    {
+                                        <tr>
+                                            <td>Multi-Action Penalty:</td>
+                                            <td class="fw-bold text-danger">@GetMultiActionPenalty()</td>
+                                        </tr>
+                                    }
+                                    @if (GetEffectModifier() != 0)
+                                    {
+                                        <tr>
+                                            <td>Effect Modifiers:</td>
+                                            <td class="fw-bold @(GetEffectModifier() >= 0 ? "text-success" : "text-danger")">
+                                                @(GetEffectModifier() >= 0 ? "+" : "")@GetEffectModifier()
+                                            </td>
+                                        </tr>
+                                    }
+                                    <tr class="table-active">
+                                        <td><strong>Effective AS:</strong></td>
+                                        <td><strong class="fs-5">@GetEffectiveAS()</strong></td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Cost:</td>
+                                    <td>@GetCostDisplayText()</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        @if (defenseType == DefenseTypeOption.Passive)
+                        {
+                            <button class="btn btn-info btn-lg w-100" @onclick="UsePassiveDefense">
+                                <i class="bi bi-shield"></i> Use Passive Defense (TV @GetPassiveTV())
+                            </button>
+                        }
+                        else if (defenseType == DefenseTypeOption.EnterParry)
+                        {
+                            <button class="btn btn-warning btn-lg w-100"
+                                    @onclick="EnterParryMode"
+                                    disabled="@(!CanAct())">
+                                <i class="bi bi-shield-plus"></i> Enter Parry Mode
+                            </button>
+                        }
+                        else if (defenseType == DefenseTypeOption.ShieldBlock)
+                        {
+                            <button class="btn btn-info btn-lg w-100"
+                                    @onclick="ExecuteShieldBlock"
+                                    disabled="@(!CanDefend())">
+                                <i class="bi bi-dice-5"></i> Roll Shield Block vs TV 8
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-info btn-lg w-100"
+                                    @onclick="ExecuteDefense"
+                                    disabled="@(!CanDefend())">
+                                <i class="bi bi-dice-5"></i> Roll Defense (4dF+)
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Attacker's AV Input -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <strong><i class="bi bi-input-cursor-text"></i> Attacker's AV (Optional)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <span class="input-group-text">AV</span>
+                            <input type="number" class="form-control" @bind="attackerAV" placeholder="Enter attacker's AV">
+                        </div>
+                        <small class="text-muted">Enter the attacker's AV to see if you're hit after rolling.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Defense Result -->
+        <div class="card">
+            <div class="card-header @GetResultHeaderClass() text-white">
+                <strong>
+                    <i class="bi @GetResultIcon()"></i> @GetResultTitle()
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Roll Breakdown</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Defense Type:</td>
+                                    <td class="fw-bold">@defenseResult!.DefenseTypeName</td>
+                                </tr>
+                                @if (defenseResult.IsShieldBlock)
+                                {
+                                    <tr>
+                                        <td>Shield AS:</td>
+                                        <td class="fw-bold">@defenseResult.EffectiveAS</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dice Roll (4dF+):</td>
+                                        <td class="fw-bold @(defenseResult.DiceRoll >= 0 ? "text-success" : "text-danger")">
+                                            @(defenseResult.DiceRoll >= 0 ? "+" : "")@defenseResult.DiceRoll
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Roll Total:</td>
+                                        <td class="fw-bold">@(defenseResult.EffectiveAS + defenseResult.DiceRoll)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>vs TV:</td>
+                                        <td class="fw-bold">8</td>
+                                    </tr>
+                                    <tr class="@(defenseResult.ShieldBlockSuccess ? "table-success" : "table-danger")">
+                                        <td><strong>Result:</strong></td>
+                                        <td>
+                                            <strong>
+                                                @if (defenseResult.ShieldBlockSuccess)
+                                                {
+                                                    <text>Success! Shield absorbs damage.</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>Failed. Shield doesn't block.</text>
+                                                }
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                }
+                                else if (!defenseResult.IsPassive)
+                                {
+                                    <tr>
+                                        <td>Effective AS:</td>
+                                        <td class="fw-bold">@defenseResult.EffectiveAS</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dice Roll (4dF+):</td>
+                                        <td class="fw-bold @(defenseResult.DiceRoll >= 0 ? "text-success" : "text-danger")">
+                                            @(defenseResult.DiceRoll >= 0 ? "+" : "")@defenseResult.DiceRoll
+                                        </td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td><strong>Target Value (TV):</strong></td>
+                                        <td><strong class="fs-4">@defenseResult.TV</strong></td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr class="table-primary">
+                                        <td><strong>Target Value (TV):</strong></td>
+                                        <td><strong class="fs-4">@defenseResult.TV</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        @if (!defenseResult.IsShieldBlock && attackerAV.HasValue)
+                        {
+                            var sv = attackerAV.Value - defenseResult!.TV;
+                            var isHit = sv >= 0;
+                            <h5>Attack Resolution</h5>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Attacker's AV:</td>
+                                        <td>@attackerAV</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Your TV:</td>
+                                        <td>@defenseResult.TV</td>
+                                    </tr>
+                                    <tr class="@(isHit ? "table-danger" : "table-success")">
+                                        <td><strong>Success Value (SV):</strong></td>
+                                        <td><strong>@sv</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="alert @(isHit ? "alert-danger" : "alert-success")">
+                                @if (isHit)
+                                {
+                                    <strong><i class="bi bi-exclamation-triangle"></i> You were hit!</strong>
+                                    <br />
+                                    <small>SV @sv determines damage. Proceed to damage resolution.</small>
+                                }
+                                else
+                                {
+                                    <strong><i class="bi bi-shield-check"></i> Attack missed!</strong>
+                                    <br />
+                                    <small>The attacker's AV was not high enough.</small>
+                                }
+                            </div>
+                        }
+                        else if (!defenseResult.IsShieldBlock)
+                        {
+                            <div class="alert alert-info">
+                                <strong>Your TV: @defenseResult!.TV</strong>
+                                <br />
+                                <small>Tell the attacker your TV. If their AV ≥ your TV, you are hit.</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                @if (!defenseResult!.IsShieldBlock && attackerAV.HasValue && (attackerAV.Value - defenseResult.TV) >= 0)
+                {
+                    <button class="btn btn-danger btn-lg" @onclick="ProceedToDamageResolution">
+                        <i class="bi bi-lightning-charge"></i> Resolve Damage (SV @(attackerAV.Value - defenseResult.TV))
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="CompleteDefense">
+                        <i class="bi bi-check"></i> Done
+                    </button>
+                }
+                <button class="btn btn-outline-secondary" @onclick="ResetDefense">
+                    <i class="bi bi-arrow-repeat"></i> New Defense
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public GameMechanics.CharacterEdit? Character { get; set; }
+    [Parameter] public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+    [Parameter] public bool HasWeaponEquipped { get; set; }
+    [Parameter] public bool HasShieldEquipped { get; set; }
+    [Parameter] public int WeaponSkillAS { get; set; }
+    [Parameter] public int ShieldSkillAS { get; set; }
+    [Parameter] public string WeaponSkillName { get; set; } = "";
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<string> OnDefenseComplete { get; set; }
+    [Parameter] public EventCallback<DefenseHitData> OnHit { get; set; }
+
+    private enum DefenseTypeOption { Passive, Dodge, EnterParry, Parry, ShieldBlock }
+
+    private DefenseTypeOption defenseType = DefenseTypeOption.Passive;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+    private int boostValue;
+    private int? attackerAV;
+    private bool hasRolled;
+    private DefenseResultData? defenseResult;
+
+    // Parry mode state
+    private bool isInParryMode;
+    private string parrySkillName = "";
+    private int parrySkillAS;
+
+    protected override void OnParametersSet()
+    {
+        if (Character != null)
+        {
+            isInParryMode = CombatStanceBehavior.IsInParryMode(Character);
+            if (isInParryMode)
+            {
+                parrySkillName = CombatStanceBehavior.GetParrySkillName(Character);
+                parrySkillAS = CombatStanceBehavior.GetParrySkillAS(Character);
+            }
+        }
+    }
+
+    private void SetDefenseType(DefenseTypeOption type) => defenseType = type;
+
+    private void OnCostTypeChanged(ActionCostType type) => costType = type;
+
+    private void OnBoostChanged(int totalBoost) => boostValue = totalBoost;
+
+    private bool RequiresCost() => defenseType switch
+    {
+        DefenseTypeOption.Passive => false,
+        DefenseTypeOption.Parry when isInParryMode => false, // Free while in parry mode
+        _ => true
+    };
+
+    private string GetDefenseTypeName() => defenseType switch
+    {
+        DefenseTypeOption.Passive => "Passive",
+        DefenseTypeOption.Dodge => "Active Dodge",
+        DefenseTypeOption.EnterParry => "Enter Parry Mode",
+        DefenseTypeOption.Parry => "Parry (Free)",
+        DefenseTypeOption.ShieldBlock => "Shield Block",
+        _ => "Unknown"
+    };
+
+    private int GetDodgeAS()
+    {
+        var dodgeSkill = Character?.Skills.FirstOrDefault(s =>
+            s.Name.Equals("Dodge", StringComparison.OrdinalIgnoreCase));
+        return dodgeSkill?.AbilityScore ?? 0;
+    }
+
+    private int GetBaseAS() => defenseType switch
+    {
+        DefenseTypeOption.Passive => GetDodgeAS(),
+        DefenseTypeOption.Dodge => GetDodgeAS(),
+        DefenseTypeOption.Parry => parrySkillAS,
+        DefenseTypeOption.ShieldBlock => ShieldSkillAS,
+        _ => 0
+    };
+
+    private int GetMultiActionPenalty() => Character?.ActionPoints.MultiActionPenalty ?? 0;
+
+    private int GetEffectModifier()
+    {
+        if (Character == null) return 0;
+        // For defense, use the Dodge skill for effect modifiers (or the specific skill being used)
+        var skillName = defenseType switch
+        {
+            DefenseTypeOption.Dodge or DefenseTypeOption.Passive => "Dodge",
+            DefenseTypeOption.Parry => WeaponSkillName,
+            DefenseTypeOption.ShieldBlock => "Shield",
+            _ => "Dodge"
+        };
+        var dodgeSkill = Character.Skills.FirstOrDefault(s => s.Name.Equals("Dodge", StringComparison.OrdinalIgnoreCase));
+        var attrName = dodgeSkill?.PrimaryAttribute ?? "AGI";
+        return Character.Effects.GetAbilityScoreModifier(skillName, attrName, GetBaseAS());
+    }
+
+    private int GetEffectiveAS() => GetBaseAS() + boostValue + GetMultiActionPenalty() + GetEffectModifier();
+    private int GetPassiveTV() => GetDodgeAS() - 1;
+
+    private int GetMaxBoostAP()
+    {
+        if (!RequiresCost()) return Character?.ActionPoints.Available ?? 0;
+        var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
+    }
+
+    private int GetMaxBoostFAT()
+    {
+        if (!RequiresCost()) return Character?.Fatigue.Value ?? 0;
+        var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
+    }
+
+    private string GetCostDisplayText()
+    {
+        if (!RequiresCost()) return "None (Free)";
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private bool CanAct()
+    {
+        if (Character == null) return false;
+        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded &&
+               !Character.IsPassedOut;
+    }
+
+    private bool CanDefend()
+    {
+        if (Character == null) return false;
+        if (!RequiresCost()) return !Character.IsPassedOut;
+        return CanAct();
+    }
+
+    private void UsePassiveDefense()
+    {
+        defenseResult = new DefenseResultData
+        {
+            DefenseTypeName = "Passive",
+            IsPassive = true,
+            EffectiveAS = GetDodgeAS(),
+            DiceRoll = 0,
+            TV = GetPassiveTV()
+        };
+        hasRolled = true;
+    }
+
+    private async Task EnterParryMode()
+    {
+        if (!CanAct() || Character == null) return;
+
+        // Deduct costs
+        DeductCosts();
+
+        // Create parry mode effect using CreateChild with parameters:
+        // EffectType, Name, Location (null), DurationRounds (null = indefinite), BehaviorState
+        var effect = EffectPortal.CreateChild(
+            EffectType.CombatStance,
+            CombatStanceBehavior.ParryModeName,
+            null, // no body location
+            null, // indefinite duration (until action breaks it)
+            CombatStanceBehavior.CreateParryModeState(WeaponSkillName, WeaponSkillAS));
+
+        effect.Description = CombatStanceBehavior.GetParryModeDescription(WeaponSkillName);
+        effect.Source = "Combat";
+
+        Character.Effects.AddEffect(effect);
+
+        // Save and update state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+
+        isInParryMode = true;
+        parrySkillName = WeaponSkillName;
+        parrySkillAS = WeaponSkillAS;
+        defenseType = DefenseTypeOption.Parry;
+
+        var message = $"{Character.Name} enters Parry Mode with {WeaponSkillName}.";
+        await OnDefenseComplete.InvokeAsync(message);
+    }
+
+    private async Task EndParryModeClicked()
+    {
+        if (Character == null) return;
+
+        CombatStanceBehavior.EndParryMode(Character);
+
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+
+        isInParryMode = false;
+        defenseType = DefenseTypeOption.Passive;
+        StateHasChanged();
+    }
+
+    private async Task ExecuteDefense()
+    {
+        if (!CanDefend() || Character == null) return;
+
+        // Deduct costs if required
+        if (RequiresCost())
+        {
+            DeductCosts();
+        }
+
+        // Roll defense
+        int effectiveAS = GetEffectiveAS();
+        int diceRoll = GameMechanics.Dice.Roll4dFPlus();
+        int tv = effectiveAS + diceRoll;
+
+        defenseResult = new DefenseResultData
+        {
+            DefenseTypeName = GetDefenseTypeName(),
+            IsPassive = false,
+            EffectiveAS = effectiveAS,
+            DiceRoll = diceRoll,
+            TV = tv
+        };
+
+        hasRolled = true;
+
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private async Task ExecuteShieldBlock()
+    {
+        if (!CanDefend() || Character == null) return;
+
+        // Deduct costs
+        DeductCosts();
+
+        // Roll shield block vs TV 8
+        int effectiveAS = ShieldSkillAS + boostValue + GetMultiActionPenalty() + GetEffectModifier();
+        int diceRoll = GameMechanics.Dice.Roll4dFPlus();
+        int rollTotal = effectiveAS + diceRoll;
+        bool success = rollTotal >= 8;
+
+        defenseResult = new DefenseResultData
+        {
+            DefenseTypeName = "Shield Block",
+            IsPassive = false,
+            IsShieldBlock = true,
+            EffectiveAS = effectiveAS,
+            DiceRoll = diceRoll,
+            TV = 8,
+            ShieldBlockSuccess = success
+        };
+
+        hasRolled = true;
+
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private void DeductCosts()
+    {
+        if (Character == null) return;
+
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= apCost;
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if (fatCost > 0)
+            Character.Fatigue.Value -= fatCost;
+    }
+
+    private void ResetDefense()
+    {
+        hasRolled = false;
+        defenseResult = null;
+    }
+
+    private string GetResultHeaderClass()
+    {
+        if (defenseResult == null) return "bg-secondary";
+        if (defenseResult.IsShieldBlock)
+            return defenseResult.ShieldBlockSuccess ? "bg-success" : "bg-danger";
+        if (!attackerAV.HasValue) return "bg-info";
+        var sv = attackerAV.Value - defenseResult.TV;
+        return sv >= 0 ? "bg-danger" : "bg-success";
+    }
+
+    private string GetResultIcon()
+    {
+        if (defenseResult == null) return "bi-question-circle";
+        if (defenseResult.IsShieldBlock)
+            return defenseResult.ShieldBlockSuccess ? "bi-shield-check" : "bi-shield-x";
+        if (!attackerAV.HasValue) return "bi-shield";
+        var sv = attackerAV.Value - defenseResult.TV;
+        return sv >= 0 ? "bi-exclamation-triangle" : "bi-shield-check";
+    }
+
+    private string GetResultTitle()
+    {
+        if (defenseResult == null) return "Defense Result";
+        if (defenseResult.IsShieldBlock)
+            return defenseResult.ShieldBlockSuccess ? "Shield Block Success!" : "Shield Block Failed";
+        if (!attackerAV.HasValue) return $"Defense: TV {defenseResult.TV}";
+        var sv = attackerAV.Value - defenseResult.TV;
+        return sv >= 0 ? "You Were Hit!" : "Attack Avoided!";
+    }
+
+    private async Task CompleteDefense()
+    {
+        if (defenseResult == null) return;
+
+        string message;
+        if (defenseResult.IsShieldBlock)
+        {
+            message = $"{Character?.Name} attempts Shield Block: {(defenseResult.ShieldBlockSuccess ? "SUCCESS" : "FAILED")} (rolled {defenseResult.EffectiveAS + defenseResult.DiceRoll} vs TV 8)";
+        }
+        else if (defenseResult.IsPassive)
+        {
+            message = $"{Character?.Name} uses passive defense: TV {defenseResult.TV}";
+        }
+        else
+        {
+            message = $"{Character?.Name} {defenseResult.DefenseTypeName}: TV {defenseResult.TV} (rolled {(defenseResult.DiceRoll >= 0 ? "+" : "")}{defenseResult.DiceRoll})";
+        }
+
+        if (!defenseResult.IsShieldBlock && attackerAV.HasValue)
+        {
+            var sv = attackerAV.Value - defenseResult.TV;
+            message += sv >= 0 ? $" - HIT (SV {sv})" : " - MISSED";
+        }
+
+        await OnDefenseComplete.InvokeAsync(message);
+    }
+
+    private async Task ProceedToDamageResolution()
+    {
+        if (defenseResult == null || !attackerAV.HasValue) return;
+
+        var sv = attackerAV.Value - defenseResult.TV;
+        if (sv < 0) return; // Not actually hit
+
+        // Log the defense result first
+        var message = defenseResult.IsPassive
+            ? $"{Character?.Name} uses passive defense: TV {defenseResult.TV} - HIT (SV {sv})"
+            : $"{Character?.Name} {defenseResult.DefenseTypeName}: TV {defenseResult.TV} (rolled {(defenseResult.DiceRoll >= 0 ? "+" : "")}{defenseResult.DiceRoll}) - HIT (SV {sv})";
+
+        await OnDefenseComplete.InvokeAsync(message);
+
+        // Transition to damage resolution
+        var hitData = new DefenseHitData
+        {
+            SV = sv,
+            DamageType = null, // Will be set in DamageResolution
+            DamageClass = null, // Will be set in DamageResolution
+            ShieldBlockSuccess = defenseResult.IsShieldBlock ? defenseResult.ShieldBlockSuccess : null,
+            ShieldBlockRV = defenseResult.IsShieldBlock ? (defenseResult.EffectiveAS + defenseResult.DiceRoll - 8) : null
+        };
+
+        await OnHit.InvokeAsync(hitData);
+    }
+
+    private class DefenseResultData
+    {
+        public string DefenseTypeName { get; set; } = "";
+        public bool IsPassive { get; set; }
+        public bool IsShieldBlock { get; set; }
+        public bool ShieldBlockSuccess { get; set; }
+        public int EffectiveAS { get; set; }
+        public int DiceRoll { get; set; }
+        public int TV { get; set; }
+    }
+}

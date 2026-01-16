@@ -1,0 +1,483 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
+@using Threa.Dal.Dto
+
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
+
+<div class="attack-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-bullseye text-danger"></i> Attack Mode</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (!hasRolled)
+    {
+        <!-- Attack Setup -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Select Skill</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (AvailableSkills == null || !AvailableSkills.Any())
+                        {
+                            <p class="text-muted">No attack skills available.</p>
+                        }
+                        else
+                        {
+                            <select class="form-select" @bind="selectedSkillIndex">
+                                @for (int i = 0; i < AvailableSkills.Count; i++)
+                                {
+                                    var skill = AvailableSkills[i];
+                                    <option value="@i">@skill.Name (AS: @skill.AbilityScore)</option>
+                                }
+                            </select>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>2. Action Cost</strong>
+                    </div>
+                    <div class="card-body">
+                        <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                            Fat="@(Character?.Fatigue.Value ?? 0)"
+                                            OnCostTypeSelected="OnCostTypeChanged" />
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>3. Boost (Optional)</strong>
+                    </div>
+                    <div class="card-body">
+                        <BoostSelector MaxAP="@GetMaxBoostAP()"
+                                       MaxFAT="@GetMaxBoostFAT()"
+                                       OnBoostChanged="OnBoostChanged" />
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>4. Options</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="physicalityBonus" @bind="includePhysicality">
+                            <label class="form-check-label" for="physicalityBonus">
+                                Include Physicality Bonus
+                                <small class="text-muted d-block">Automatic roll vs TV 8, adds to damage if successful</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <!-- Attack Summary -->
+                <div class="card bg-light">
+                    <div class="card-header bg-danger text-white">
+                        <strong><i class="bi bi-calculator"></i> Attack Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Skill:</td>
+                                    <td class="fw-bold">@GetSelectedSkill()?.Name</td>
+                                </tr>
+                                <tr>
+                                    <td>Base AS:</td>
+                                    <td class="fw-bold">@(GetSelectedSkill()?.AbilityScore ?? 0)</td>
+                                </tr>
+                                <tr>
+                                    <td>Boost:</td>
+                                    <td class="fw-bold text-success">+@boostValue</td>
+                                </tr>
+                                @if (GetMultiActionPenalty() != 0)
+                                {
+                                    <tr>
+                                        <td>Multi-Action Penalty:</td>
+                                        <td class="fw-bold text-danger">@GetMultiActionPenalty()</td>
+                                    </tr>
+                                }
+                                @if (GetEffectModifier() != 0)
+                                {
+                                    <tr>
+                                        <td>Effect Modifiers:</td>
+                                        <td class="fw-bold @(GetEffectModifier() >= 0 ? "text-success" : "text-danger")">
+                                            @(GetEffectModifier() >= 0 ? "+" : "")@GetEffectModifier()
+                                        </td>
+                                    </tr>
+                                }
+                                <tr class="table-active">
+                                    <td><strong>Effective AS:</strong></td>
+                                    <td><strong class="fs-5">@GetEffectiveAS()</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Cost:</td>
+                                    <td>@GetCostDisplay()</td>
+                                </tr>
+                                <tr>
+                                    <td>Boost Cost:</td>
+                                    <td>@GetBoostCostDisplay()</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-danger btn-lg w-100"
+                                @onclick="ExecuteAttack"
+                                disabled="@(!CanAttack())">
+                            <i class="bi bi-dice-5"></i> Roll Attack (4dF+)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Attack Result -->
+        <div class="card">
+            <div class="card-header @(attackResult!.IsHit ? "bg-success" : "bg-secondary") text-white">
+                <strong>
+                    @if (attackResult.IsHit)
+                    {
+                        <i class="bi bi-check-circle"></i> <text>Attack Hit!</text>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle"></i> <text>Attack Missed</text>
+                    }
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Roll Breakdown</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Effective AS:</td>
+                                    <td class="fw-bold">@attackResult.EffectiveAS</td>
+                                </tr>
+                                <tr>
+                                    <td>Dice Roll (4dF+):</td>
+                                    <td class="fw-bold @(attackResult.DiceRoll >= 0 ? "text-success" : "text-danger")">
+                                        @(attackResult.DiceRoll >= 0 ? "+" : "")@attackResult.DiceRoll
+                                    </td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>Attack Value (AV):</strong></td>
+                                    <td><strong class="fs-4">@attackResult.AV</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        @if (includePhysicality)
+                        {
+                            <h5>Physicality Result</h5>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Physicality AS:</td>
+                                        <td>@attackResult.PhysicalityAS</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Roll:</td>
+                                        <td>@(attackResult.PhysicalityRoll >= 0 ? "+" : "")@attackResult.PhysicalityRoll</td>
+                                    </tr>
+                                    <tr>
+                                        <td>vs TV 8:</td>
+                                        <td class="fw-bold @(attackResult.PhysicalitySV >= 0 ? "text-success" : "text-danger")">
+                                            SV @attackResult.PhysicalitySV
+                                        </td>
+                                    </tr>
+                                    @if (attackResult.PhysicalityDamageBonus > 0)
+                                    {
+                                        <tr>
+                                            <td>Damage Bonus:</td>
+                                            <td class="fw-bold text-success">+@attackResult.PhysicalityDamageBonus SV</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            @if (attackResult.PhysicalityDebuffApplied)
+                            {
+                                <div class="alert alert-warning">
+                                    <strong><i class="bi bi-exclamation-triangle"></i> @attackResult.PhysicalityDebuffDescription</strong>
+                                    <br />
+                                    <small>A debuff Effect has been applied to your character.</small>
+                                </div>
+                            }
+                        }
+
+                        @if (attackResult.IsHit)
+                        {
+                            <div class="alert alert-success">
+                                <strong>Tell the defender your AV: @attackResult.AV</strong>
+                                <br />
+                                <small>They will calculate if the attack hits based on their defense.</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <button class="btn btn-primary" @onclick="CompleteAttack">
+                    <i class="bi bi-check"></i> Done
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ResetAttack">
+                    <i class="bi bi-arrow-repeat"></i> New Attack
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    [Parameter]
+    public List<GameMechanics.SkillEdit>? AvailableSkills { get; set; }
+
+    [Parameter]
+    public GameMechanics.SkillEdit? SelectedSkill { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnAttackComplete { get; set; }
+
+    private int selectedSkillIndex;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+    private int boostValue;
+    private bool includePhysicality = true;
+    private bool hasRolled;
+    private AttackResultData? attackResult;
+
+    protected override void OnParametersSet()
+    {
+        if (SelectedSkill != null && AvailableSkills != null)
+        {
+            selectedSkillIndex = AvailableSkills.IndexOf(SelectedSkill);
+            if (selectedSkillIndex < 0) selectedSkillIndex = 0;
+        }
+    }
+
+    private GameMechanics.SkillEdit? GetSelectedSkill()
+    {
+        if (AvailableSkills == null || selectedSkillIndex < 0 || selectedSkillIndex >= AvailableSkills.Count)
+            return null;
+        return AvailableSkills[selectedSkillIndex];
+    }
+
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+    }
+
+    private void OnBoostChanged(int totalBoost)
+    {
+        boostValue = totalBoost;
+    }
+
+    private int GetMultiActionPenalty()
+    {
+        return Character?.ActionPoints.MultiActionPenalty ?? 0;
+    }
+
+    private int GetEffectModifier()
+    {
+        if (Character == null) return 0;
+        var skill = GetSelectedSkill();
+        if (skill == null) return 0;
+        return Character.Effects.GetAbilityScoreModifier(skill.Name, skill.PrimaryAttribute, skill.AbilityScore);
+    }
+
+    private int GetEffectiveAS()
+    {
+        var skill = GetSelectedSkill();
+        if (skill == null) return 0;
+        return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier();
+    }
+
+    private int GetMaxBoostAP()
+    {
+        var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
+    }
+
+    private int GetMaxBoostFAT()
+    {
+        var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
+    }
+
+    private string GetCostDisplay()
+    {
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetBoostCostDisplay()
+    {
+        if (boostValue == 0) return "None";
+        // This is simplified - the actual boost tracker would need more detail
+        return $"+{boostValue} AS";
+    }
+
+    private bool CanAttack()
+    {
+        if (Character == null || GetSelectedSkill() == null) return false;
+
+        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded &&
+               !Character.IsPassedOut;
+    }
+
+    private async Task ExecuteAttack()
+    {
+        if (!CanAttack() || Character == null) return;
+
+        var skill = GetSelectedSkill();
+        if (skill == null) return;
+
+        // Deduct costs and track action for multi-action penalty
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= apCost;
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if (fatCost > 0)
+            Character.Fatigue.Value -= fatCost;
+
+        // Roll attack
+        int effectiveAS = GetEffectiveAS();
+        int diceRoll = GameMechanics.Dice.Roll4dFPlus();
+        int av = effectiveAS + diceRoll;
+
+        // Physicality bonus (if included)
+        int physicalityAS = 0;
+        int physicalityRoll = 0;
+        int physicalitySV = 0;
+        int physicalityBonus = 0;
+        PhysicalityBonusResult? physResult = null;
+
+        if (includePhysicality)
+        {
+            var physSkill = Character.Skills.FirstOrDefault(s =>
+                s.Name.Equals("Physicality", StringComparison.OrdinalIgnoreCase));
+            if (physSkill != null)
+            {
+                physicalityAS = physSkill.AbilityScore;
+                physicalityRoll = GameMechanics.Dice.Roll4dFPlus();
+                physicalitySV = physicalityAS + physicalityRoll - 8; // TV 8
+
+                // Use the combat result table for physicality
+                physResult = CombatResultTables.GetPhysicalityBonus(physicalitySV);
+                physicalityBonus = physResult.SVModifier;
+
+                // Apply debuff effect for negative results
+                if (physResult.AttackerAVPenalty < 0 && physResult.PenaltyDurationRounds > 0)
+                {
+                    var debuffState = new DebuffState
+                    {
+                        AttackPenalty = physResult.AttackerAVPenalty
+                    };
+
+                    var debuff = EffectPortal.CreateChild(
+                        EffectType.Debuff,
+                        "Overexertion",
+                        null,
+                        physResult.PenaltyDurationRounds,
+                        debuffState.Serialize());
+
+                    debuff.Description = physResult.Description;
+                    debuff.Source = "Physicality Check";
+
+                    Character.Effects.AddEffect(debuff);
+                }
+            }
+        }
+
+        attackResult = new AttackResultData
+        {
+            SkillName = skill.Name,
+            EffectiveAS = effectiveAS,
+            DiceRoll = diceRoll,
+            AV = av,
+            IsHit = true, // We don't know defender's TV yet
+            PhysicalityAS = physicalityAS,
+            PhysicalityRoll = physicalityRoll,
+            PhysicalitySV = physicalitySV,
+            PhysicalityDamageBonus = physicalityBonus,
+            PhysicalityDebuffApplied = physResult?.AttackerAVPenalty < 0,
+            PhysicalityDebuffDescription = physResult?.Description ?? ""
+        };
+
+        hasRolled = true;
+
+        // Save character state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private void ResetAttack()
+    {
+        hasRolled = false;
+        attackResult = null;
+    }
+
+    private async Task CompleteAttack()
+    {
+        if (attackResult == null) return;
+
+        var message = $"{Character?.Name} attacks with {attackResult.SkillName}: AV {attackResult.AV}";
+        if (includePhysicality && attackResult.PhysicalityDamageBonus > 0)
+        {
+            message += $" (+{attackResult.PhysicalityDamageBonus} physicality bonus)";
+        }
+
+        await OnAttackComplete.InvokeAsync(message);
+    }
+
+    private class AttackResultData
+    {
+        public string SkillName { get; set; } = "";
+        public int EffectiveAS { get; set; }
+        public int DiceRoll { get; set; }
+        public int AV { get; set; }
+        public bool IsHit { get; set; }
+        public int PhysicalityAS { get; set; }
+        public int PhysicalityRoll { get; set; }
+        public int PhysicalitySV { get; set; }
+        public int PhysicalityDamageBonus { get; set; }
+        public bool PhysicalityDebuffApplied { get; set; }
+        public string PhysicalityDebuffDescription { get; set; } = "";
+    }
+}

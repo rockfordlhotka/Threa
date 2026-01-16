@@ -1,0 +1,9 @@
+Id	Name	Category	IsSpecialized	IsMagic	IsTheology	IsPsionic	Trained	Untrained	PrimaryAttribute	SecondaryAttribute	TertiaryAttribute
+physicality	Physicality	Standard	false	false	false	false	1	3	STR
+dodge	Dodge	Standard	false	false	false	false	4	6	DEX/ITT
+drive	Drive	Standard	false	false	false	false	3	5	WIL/END
+reasoning	Reasoning	Standard	false	false	false	false	3	5	INT
+awareness	Awareness	Standard	false	false	false	false	2	5	ITT
+focus	Focus	Standard	false	false	false	false	2	5	WIL
+bearing	Bearing	Standard	false	false	false	false	2	4	SOC
+influence	Influence	Standard	false	false	false	false	2	4	PHY

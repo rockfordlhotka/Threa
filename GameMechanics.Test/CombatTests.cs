@@ -1134,7 +1134,8 @@ public class CombatTests
   public void DamageResolver_NoDefense_FullDamage()
   {
     var diceRoller = new DeterministicDiceRoller()
-      .Queue4dFPlusResults(0); // Armor skill check
+      .Queue4dFPlusResults(0)  // Armor skill check
+      .QueueDiceRolls(4, 5);   // Damage roll: SV 6 = 1d6 + 1d8 = 4 + 5 = 9 damage -> wounds
 
     var resolver = new DamageResolver(diceRoller);
 
@@ -1153,7 +1154,8 @@ public class CombatTests
     Assert.AreEqual(6, result.IncomingSV);
     Assert.AreEqual(6, result.PenetratingSV);
     Assert.AreEqual(0, result.TotalAbsorbed);
-    Assert.IsTrue(result.CausedWound);
+    Assert.IsTrue(result.CausedWound, "Damage of 9 should cause wounds");
+    Assert.AreEqual(9, result.DamageRoll?.DamageValue, "Expected 9 damage from 1d6(4) + 1d8(5)");
   }
 
   [TestMethod]

@@ -40,8 +40,28 @@ namespace GameMechanics
       private set => LoadProperty(PrimaryAttributeProperty, value);
     }
 
-    public static readonly PropertyInfo<double> XPBankedProperty = RegisterProperty<double>(nameof(XPBanked));
-    public double XPBanked
+    public static readonly PropertyInfo<string?> SecondaryAttributeProperty = RegisterProperty<string?>(nameof(SecondaryAttribute));
+    /// <summary>
+    /// Secondary attribute - character must have current value >= 8 to use this skill.
+    /// </summary>
+    public string? SecondaryAttribute
+    {
+      get => GetProperty(SecondaryAttributeProperty);
+      private set => LoadProperty(SecondaryAttributeProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> TertiaryAttributeProperty = RegisterProperty<string?>(nameof(TertiaryAttribute));
+    /// <summary>
+    /// Tertiary attribute - character must have current value >= 6 to use this skill.
+    /// </summary>
+    public string? TertiaryAttribute
+    {
+      get => GetProperty(TertiaryAttributeProperty);
+      private set => LoadProperty(TertiaryAttributeProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> XPBankedProperty = RegisterProperty<int>(nameof(XPBanked));
+    public int XPBanked
     {
       get => GetProperty(XPBankedProperty);
       set => SetProperty(XPBankedProperty, value);
@@ -129,6 +149,153 @@ namespace GameMechanics
       private set => LoadProperty(IsFreeActionProperty, value);
     }
 
+    public static readonly PropertyInfo<SkillCategory> CategoryProperty = RegisterProperty<SkillCategory>(nameof(Category));
+    /// <summary>
+    /// Category classification for UI filtering and display logic.
+    /// </summary>
+    public SkillCategory Category
+    {
+      get => GetProperty(CategoryProperty);
+      private set => LoadProperty(CategoryProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsMagicProperty = RegisterProperty<bool>(nameof(IsMagic));
+    /// <summary>
+    /// Whether this is a magic skill.
+    /// </summary>
+    public bool IsMagic
+    {
+      get => GetProperty(IsMagicProperty);
+      private set => LoadProperty(IsMagicProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsTheologyProperty = RegisterProperty<bool>(nameof(IsTheology));
+    /// <summary>
+    /// Whether this is a theology/divine skill.
+    /// </summary>
+    public bool IsTheology
+    {
+      get => GetProperty(IsTheologyProperty);
+      private set => LoadProperty(IsTheologyProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsPsionicProperty = RegisterProperty<bool>(nameof(IsPsionic));
+    /// <summary>
+    /// Whether this is a psionic skill.
+    /// </summary>
+    public bool IsPsionic
+    {
+      get => GetProperty(IsPsionicProperty);
+      private set => LoadProperty(IsPsionicProperty, value);
+    }
+
+    /// <summary>
+    /// Whether this is a spell skill (magic, theology, or psionic).
+    /// </summary>
+    public bool IsSpell => IsMagic || IsTheology || IsPsionic;
+
+    /// <summary>
+    /// Whether this is a combat skill.
+    /// </summary>
+    public bool IsCombatSkill => Category == SkillCategory.Combat;
+
+    /// <summary>
+    /// Whether this is a mana channeling/gathering skill.
+    /// </summary>
+    public bool IsManaSkill => Category == SkillCategory.Mana;
+
+    // === Attribute Requirement Constants ===
+
+    /// <summary>
+    /// Minimum attribute value required for secondary attribute.
+    /// </summary>
+    public const int SecondaryAttributeMinimum = 8;
+
+    /// <summary>
+    /// Minimum attribute value required for tertiary attribute.
+    /// </summary>
+    public const int TertiaryAttributeMinimum = 6;
+
+    // === Skill Usage Validation ===
+
+    /// <summary>
+    /// Whether this skill can be used based on attribute requirements.
+    /// Returns false if secondary attribute is below 8 or tertiary is below 6.
+    /// </summary>
+    public bool CanUse
+    {
+      get
+      {
+        var character = GetCharacter();
+        if (character == null) return true; // No character context, assume usable
+
+        // Check secondary attribute requirement (>= 8)
+        if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
+        {
+          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          if (secondaryValue < SecondaryAttributeMinimum)
+            return false;
+        }
+
+        // Check tertiary attribute requirement (>= 6)
+        if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
+        {
+          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          if (tertiaryValue < TertiaryAttributeMinimum)
+            return false;
+        }
+
+        return true;
+      }
+    }
+
+    /// <summary>
+    /// Explanation of why this skill cannot be used, or null if it can be used.
+    /// </summary>
+    public string? CannotUseReason
+    {
+      get
+      {
+        var character = GetCharacter();
+        if (character == null) return null;
+
+        var reasons = new List<string>();
+
+        // Check secondary attribute requirement (>= 8)
+        if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
+        {
+          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          if (secondaryValue < SecondaryAttributeMinimum)
+            reasons.Add($"Requires {SecondaryAttribute} >= {SecondaryAttributeMinimum}, current: {secondaryValue}");
+        }
+
+        // Check tertiary attribute requirement (>= 6)
+        if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
+        {
+          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          if (tertiaryValue < TertiaryAttributeMinimum)
+            reasons.Add($"Requires {TertiaryAttribute} >= {TertiaryAttributeMinimum}, current: {tertiaryValue}");
+        }
+
+        return reasons.Count > 0 ? string.Join("; ", reasons) : null;
+      }
+    }
+
+    /// <summary>
+    /// Gets the parent character, or null if not available.
+    /// </summary>
+    private CharacterEdit? GetCharacter()
+    {
+      try
+      {
+        return (CharacterEdit)((IParent)Parent).Parent;
+      }
+      catch
+      {
+        return null;
+      }
+    }
+
     // === Existing Skill Check Logic ===
 
     public ResultValue SkillCheck()
@@ -197,6 +364,8 @@ namespace GameMechanics
       Id = std.Id;
       Name = std.Name;
       PrimaryAttribute = std.PrimaryAttribute;
+      SecondaryAttribute = std.SecondaryAttribute;
+      TertiaryAttribute = std.TertiaryAttribute;
     }
 
     [FetchChild]
@@ -209,6 +378,8 @@ namespace GameMechanics
         Level = skill.Level;
         XPBanked = skill.XPBanked;
         PrimaryAttribute = skill.PrimaryAttribute;
+        SecondaryAttribute = skill.SecondaryAttribute;
+        TertiaryAttribute = skill.TertiaryAttribute;
 
         // Load action system properties
         ActionType = skill.ActionType;
@@ -219,6 +390,12 @@ namespace GameMechanics
         AppliesPhysicalityBonus = skill.AppliesPhysicalityBonus;
         RequiresTarget = skill.RequiresTarget;
         IsFreeAction = skill.IsFreeAction;
+
+        // Load magic/category properties
+        Category = skill.Category;
+        IsMagic = skill.IsMagic;
+        IsTheology = skill.IsTheology;
+        IsPsionic = skill.IsPsionic;
       }
     }
 
@@ -249,6 +426,8 @@ namespace GameMechanics
         skill.Level = Level;
         skill.XPBanked = XPBanked;
         skill.PrimaryAttribute = PrimaryAttribute;
+        skill.SecondaryAttribute = SecondaryAttribute;
+        skill.TertiaryAttribute = TertiaryAttribute;
 
         // Save action system properties
         skill.ActionType = ActionType;

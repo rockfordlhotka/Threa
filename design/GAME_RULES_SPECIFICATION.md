@@ -4,6 +4,19 @@
 
 This document defines the core game mechanics and rules for the Threa tabletop role-playing game system. These rules are used by the Threa TTRPG Character Sheet Assistant to help players manage their characters, calculate derived values, and resolve game mechanics during tabletop play.
 
+---
+
+## Characters and NPCs
+
+All game mechanics in this specification apply equally to:
+
+- **Player Characters (PCs)**: Owned and controlled by players
+- **Non-Player Characters (NPCs)**: Owned and controlled by the Game Master
+
+An NPC is mechanically identical to a Character - same attributes, skills, health pools, effects, combat resolution, and all other systems. The only distinction is ownership and control. In the application, NPCs are Characters with an `IsNPC` flag set to true, owned by the GM's user account.
+
+---
+
 ## Core Dice Mechanics
 
 Threa uses a **4dF (Fudge/Fate Dice)** system as the foundation for all skill checks, combat resolution, and random events. This provides consistent, predictable probability curves that favor average results while still allowing for dramatic successes and failures.
@@ -153,6 +166,10 @@ While all action resolution uses skills rather than raw attributes, attributes s
     - **VIT = 2**: Fatigue recovery slows to 1 point per hour and requires a Focus skill check (AS + 4dF+) against TV 12 to attempt any action
     - **VIT = 1**: Fatigue recovery halts entirely and the character cannot perform actions
     - **VIT = 0**: The character dies immediately
+
+#### Death and Resurrection (Future)
+
+*Future implementation: Define mechanics for bringing characters back to life after VIT reaches 0. Consider spell requirements, time windows, resurrection penalties, and item-based resurrection.*
 
 #### Skill Relationship Examples
 
