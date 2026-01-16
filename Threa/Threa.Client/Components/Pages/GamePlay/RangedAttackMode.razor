@@ -1,0 +1,895 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Combat
+@using Threa.Dal.Dto
+
+<div class="ranged-attack-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-crosshair text-warning"></i> Ranged Attack</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (!hasRolled)
+    {
+        <!-- Attack Setup -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Weapon Selection -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Weapon</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (AvailableWeapons == null || !AvailableWeapons.Any())
+                        {
+                            <p class="text-muted">No ranged weapons equipped.</p>
+                        }
+                        else if (AvailableWeapons.Count == 1)
+                        {
+                            var weapon = AvailableWeapons[0];
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@weapon.Name</strong>
+                                    <div class="small text-muted">
+                                        AS: @weapon.SkillAS | SV: +@weapon.BaseSV
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge @(weapon.LoadedAmmo > 0 ? "bg-success" : "bg-danger")">
+                                        @weapon.LoadedAmmo / @weapon.Capacity
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <select class="form-select" @bind="selectedWeaponIndex">
+                                @for (int i = 0; i < AvailableWeapons.Count; i++)
+                                {
+                                    var weapon = AvailableWeapons[i];
+                                    <option value="@i">@weapon.Name (AS: @weapon.SkillAS, Ammo: @weapon.LoadedAmmo/@weapon.Capacity)</option>
+                                }
+                            </select>
+                        }
+                    </div>
+                </div>
+
+                <!-- Fire Mode -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>2. Fire Mode</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (GetSelectedWeapon() != null)
+                        {
+                            var weapon = GetSelectedWeapon()!;
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (weapon.SupportsSingle)
+                                {
+                                    <button class="btn @(selectedFireMode == FireMode.Single ? "btn-warning" : "btn-outline-secondary")"
+                                            @onclick="() => selectedFireMode = FireMode.Single">
+                                        <i class="bi bi-dot"></i> Single
+                                        <span class="badge bg-dark">1 round</span>
+                                    </button>
+                                }
+                                @if (weapon.SupportsBurst)
+                                {
+                                    <button class="btn @(selectedFireMode == FireMode.Burst ? "btn-warning" : "btn-outline-secondary")"
+                                            @onclick="() => selectedFireMode = FireMode.Burst">
+                                        <i class="bi bi-three-dots"></i> Burst
+                                        <span class="badge bg-dark">@burstSize rounds</span>
+                                    </button>
+                                }
+                                @if (weapon.SupportsSuppression)
+                                {
+                                    <button class="btn @(selectedFireMode == FireMode.Suppression ? "btn-warning" : "btn-outline-secondary")"
+                                            @onclick="() => selectedFireMode = FireMode.Suppression">
+                                        <i class="bi bi-arrows-angle-expand"></i> Suppression
+                                        <span class="badge bg-dark">@suppressiveRounds rounds</span>
+                                    </button>
+                                }
+                            </div>
+
+                            @* AOE Indicator - AOE is determined by weapon/ammo properties, not a fire mode *@
+                            @if (weapon.IsAOECapable)
+                            {
+                                <div class="alert alert-warning mt-2 mb-0 py-2">
+                                    <i class="bi bi-bullseye"></i>
+                                    <strong>AOE Attack</strong>
+                                    <span class="badge bg-danger ms-2">@weapon.BlastRadius m radius</span>
+                                    @if (weapon.AOEFromAmmo)
+                                    {
+                                        <small class="d-block text-muted">AOE from loaded ammo (@(weapon.LoadedAmmoType ?? "special"))</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="d-block text-muted">Inherent weapon AOE</small>
+                                    }
+                                </div>
+                            }
+
+                            @if (selectedFireMode == FireMode.Burst)
+                            {
+                                <div class="mt-2">
+                                    <label class="form-label small">Burst Size:</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => burstSize = Math.Max(2, burstSize - 1)">-</button>
+                                        <span class="fw-bold">@burstSize</span>
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => burstSize = Math.Min(weapon.LoadedAmmo, burstSize + 1)">+</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Range -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>3. Range</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var range in Enum.GetValues<RangeCategory>())
+                            {
+                                <button class="btn @(selectedRange == range ? "btn-primary" : "btn-outline-secondary")"
+                                        @onclick="() => selectedRange = range">
+                                    @range
+                                    <span class="badge bg-dark">TV @RangeModifiers.GetBaseTV(range)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Target Conditions -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>4. Target Conditions</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="targetMoving" @bind="targetIsMoving">
+                                    <label class="form-check-label" for="targetMoving">
+                                        Moving <span class="badge bg-secondary">+2 TV</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="targetProne" @bind="targetIsProne">
+                                    <label class="form-check-label" for="targetProne">
+                                        Prone <span class="badge bg-secondary">+2 TV</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="targetCrouching" @bind="targetIsCrouching">
+                                    <label class="form-check-label" for="targetCrouching">
+                                        Crouching <span class="badge bg-secondary">+2 TV</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Cover:</label>
+                                <select class="form-select form-select-sm" @bind="targetCover">
+                                    <option value="@CoverType.None">None</option>
+                                    <option value="@CoverType.Half">Half (+1 TV)</option>
+                                    <option value="@CoverType.ThreeQuarters">3/4 (+2 TV)</option>
+                                    <option value="@CoverType.Full">Full (+4 TV)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Size:</label>
+                                <select class="form-select form-select-sm" @bind="targetSize">
+                                    <option value="@TargetSize.Tiny">Tiny (-4 TV)</option>
+                                    <option value="@TargetSize.Small">Small (-2 TV)</option>
+                                    <option value="@TargetSize.Normal">Normal</option>
+                                    <option value="@TargetSize.Large">Large (+2 TV)</option>
+                                    <option value="@TargetSize.Huge">Huge (+4 TV)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attacker Conditions -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>5. Attacker Conditions</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="attackerMoving" @bind="attackerIsMoving">
+                            <label class="form-check-label" for="attackerMoving">
+                                Moving <span class="badge bg-danger">-2 AV</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TV Adjustment (for dodgeable weapons or GM) -->
+                @if (GetSelectedWeapon()?.IsDodgeable == true)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>6. Defender's Dodge Result (Optional)</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <span class="input-group-text">TV Adjustment</span>
+                                <input type="number" class="form-control" @bind="tvAdjustment" placeholder="0">
+                            </div>
+                            <small class="text-muted">Enter the defender's dodge roll result to add to TV.</small>
+                        </div>
+                    </div>
+                }
+
+                <!-- Action Cost -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>@(GetSelectedWeapon()?.IsDodgeable == true ? "7" : "6"). Action Cost</strong>
+                    </div>
+                    <div class="card-body">
+                        <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                            Fat="@(Character?.Fatigue.Value ?? 0)"
+                                            OnCostTypeSelected="OnCostTypeChanged" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <!-- Attack Summary -->
+                <div class="card bg-light">
+                    <div class="card-header bg-warning text-dark">
+                        <strong><i class="bi bi-calculator"></i> Ranged Attack Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Weapon:</td>
+                                    <td class="fw-bold">@(GetSelectedWeapon()?.Name ?? "None")</td>
+                                </tr>
+                                <tr>
+                                    <td>Attack Type:</td>
+                                    <td class="fw-bold">
+                                        @if (GetSelectedWeapon()?.IsAOECapable == true)
+                                        {
+                                            <span class="text-danger">AOE (@(GetSelectedWeapon()?.BlastRadius ?? 0)m)</span>
+                                        }
+                                        else
+                                        {
+                                            @selectedFireMode
+                                        }
+                                        <span class="text-muted">(@GetAmmoConsumption() ammo)</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Skill AS:</td>
+                                    <td class="fw-bold">@(GetSelectedWeapon()?.SkillAS ?? 0)</td>
+                                </tr>
+                                <tr>
+                                    <td>Weapon Modifier:</td>
+                                    <td class="fw-bold">+@(GetSelectedWeapon()?.WeaponAVModifier ?? 0)</td>
+                                </tr>
+                                @if (attackerIsMoving)
+                                {
+                                    <tr>
+                                        <td>Moving Penalty:</td>
+                                        <td class="fw-bold text-danger">-2</td>
+                                    </tr>
+                                }
+                                @if (GetMultiActionPenalty() != 0)
+                                {
+                                    <tr>
+                                        <td>Multi-Action Penalty:</td>
+                                        <td class="fw-bold text-danger">@GetMultiActionPenalty()</td>
+                                    </tr>
+                                }
+                                <tr class="table-active">
+                                    <td><strong>AV Base:</strong></td>
+                                    <td><strong class="fs-5">@GetAVBase()</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Range (@selectedRange):</td>
+                                    <td class="fw-bold">@RangeModifiers.GetBaseTV(selectedRange)</td>
+                                </tr>
+                                @if (targetIsMoving)
+                                {
+                                    <tr>
+                                        <td>Target Moving:</td>
+                                        <td class="fw-bold">+2</td>
+                                    </tr>
+                                }
+                                @if (targetIsProne)
+                                {
+                                    <tr>
+                                        <td>Target Prone:</td>
+                                        <td class="fw-bold">+2</td>
+                                    </tr>
+                                }
+                                @if (targetIsCrouching)
+                                {
+                                    <tr>
+                                        <td>Target Crouching:</td>
+                                        <td class="fw-bold">+2</td>
+                                    </tr>
+                                }
+                                @if (targetCover != CoverType.None)
+                                {
+                                    <tr>
+                                        <td>Cover (@targetCover):</td>
+                                        <td class="fw-bold">+@RangeModifiers.GetCoverModifier(targetCover)</td>
+                                    </tr>
+                                }
+                                @if (targetSize != TargetSize.Normal)
+                                {
+                                    <tr>
+                                        <td>Size (@targetSize):</td>
+                                        <td class="fw-bold">@(RangeModifiers.GetSizeModifier(targetSize) >= 0 ? "+" : "")@RangeModifiers.GetSizeModifier(targetSize)</td>
+                                    </tr>
+                                }
+                                @if (tvAdjustment != 0)
+                                {
+                                    <tr>
+                                        <td>Dodge Adjustment:</td>
+                                        <td class="fw-bold">+@tvAdjustment</td>
+                                    </tr>
+                                }
+                                <tr class="table-active">
+                                    <td><strong>Target Value (TV):</strong></td>
+                                    <td><strong class="fs-5">@GetTV()</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Base SV Modifier:</td>
+                                    <td class="fw-bold">+@(GetSelectedWeapon()?.BaseSV ?? 0)</td>
+                                </tr>
+                                @if (GetSelectedWeapon()?.AmmoDamageModifier != 0)
+                                {
+                                    <tr>
+                                        <td>Ammo Modifier:</td>
+                                        <td class="fw-bold">+@(GetSelectedWeapon()?.AmmoDamageModifier ?? 0)</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="2"><hr class="my-1" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Cost:</td>
+                                    <td>@GetCostDisplay()</td>
+                                </tr>
+                                <tr>
+                                    <td>Loaded Ammo:</td>
+                                    <td class="@(HasEnoughAmmo() ? "" : "text-danger fw-bold")">
+                                        @(GetSelectedWeapon()?.LoadedAmmo ?? 0) / @(GetSelectedWeapon()?.Capacity ?? 0)
+                                        @if (!HasEnoughAmmo())
+                                        {
+                                            <span>(Need @GetAmmoConsumption())</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-warning btn-lg w-100"
+                                @onclick="ExecuteAttack"
+                                disabled="@(!CanAttack())">
+                            <i class="bi bi-dice-5"></i> Roll Attack (4dF+)
+                        </button>
+                        @if (!HasEnoughAmmo())
+                        {
+                            <div class="alert alert-danger mt-2 mb-0">
+                                <small><i class="bi bi-exclamation-triangle"></i> Not enough ammo loaded!</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Attack Result -->
+        <div class="card">
+            <div class="card-header @(attackResult!.Hit ? "bg-success" : "bg-secondary") text-white">
+                <strong>
+                    @if (attackResult.InsufficientAmmo)
+                    {
+                        <i class="bi bi-exclamation-circle"></i> <text>Insufficient Ammo!</text>
+                    }
+                    else if (attackResult.Hit)
+                    {
+                        <i class="bi bi-check-circle"></i> <text>Attack Hit!</text>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle"></i> <text>Attack Missed</text>
+                    }
+                </strong>
+            </div>
+            <div class="card-body">
+                @if (attackResult.InsufficientAmmo)
+                {
+                    <div class="alert alert-danger">
+                        @attackResult.Description
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Roll Breakdown</h5>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Attack Type:</td>
+                                        <td class="fw-bold">
+                                            @if (attackResult.IsAOE)
+                                            {
+                                                <span class="text-danger">AOE (@attackResult.BlastRadius m)</span>
+                                            }
+                                            else
+                                            {
+                                                @attackResult.FireMode
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>AV Base:</td>
+                                        <td class="fw-bold">@attackResult.AVBase</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dice Roll (4dF+):</td>
+                                        <td class="fw-bold @(attackResult.DiceRoll >= 0 ? "text-success" : "text-danger")">
+                                            @(attackResult.DiceRoll >= 0 ? "+" : "")@attackResult.DiceRoll
+                                        </td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td><strong>Attack Value (AV):</strong></td>
+                                        <td><strong class="fs-4">@attackResult.AV</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target Value (TV):</td>
+                                        <td class="fw-bold">@attackResult.TV</td>
+                                    </tr>
+                                    <tr class="@(attackResult.RV >= 0 ? "table-success" : "table-danger")">
+                                        <td><strong>Result Value (RV):</strong></td>
+                                        <td><strong class="fs-4">@attackResult.RV</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            @if (attackResult.FireMode == FireMode.Single)
+                            {
+                                @if (attackResult.Hit && attackResult.Hits.Count > 0)
+                                {
+                                    <div class="alert alert-success">
+                                        <strong><i class="bi bi-bullseye"></i> Hit!</strong>
+                                        <br />
+                                        <span class="fs-4">SV: @attackResult.Hits[0].SV</span>
+                                        <br />
+                                        <small>Target should apply SV @attackResult.Hits[0].SV via Damage Resolution.</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary">
+                                        <strong><i class="bi bi-x-circle"></i> Miss!</strong>
+                                        <br />
+                                        <small>RV @attackResult.RV (needed 0+)</small>
+                                    </div>
+                                }
+                            }
+                            else if (attackResult.FireMode == FireMode.Burst)
+                            {
+                                <h5>Burst Results</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Shot</th>
+                                            <th>TV</th>
+                                            <th>RV</th>
+                                            <th>Result</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var hit in attackResult.Hits)
+                                        {
+                                            <tr class="@(hit.Hit ? "table-success" : "")">
+                                                <td>@hit.ShotNumber</td>
+                                                <td>@hit.TVForShot</td>
+                                                <td>@hit.RVForShot</td>
+                                                <td>
+                                                    @if (hit.Hit)
+                                                    {
+                                                        <span class="badge bg-success">HIT (SV @hit.SV)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">MISS</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                @if (attackResult.Hits.Any(h => h.Hit))
+                                {
+                                    <div class="alert alert-success">
+                                        <strong>@attackResult.Hits.Count(h => h.Hit) hit(s)!</strong>
+                                        <br />
+                                        <span class="fs-4">Total SV: @attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV)</span>
+                                        <br />
+                                        <small>Target should apply total SV @attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV) via Damage Resolution.</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary">
+                                        <strong>All shots missed!</strong>
+                                    </div>
+                                }
+                            }
+                            else if (attackResult.FireMode == FireMode.Suppression)
+                            {
+                                @if (attackResult.Hit && attackResult.OutputSV.HasValue)
+                                {
+                                    <div class="alert alert-warning">
+                                        <strong><i class="bi bi-arrows-angle-expand"></i> Suppression Successful!</strong>
+                                        <br />
+                                        <span class="fs-4">Output SV: @attackResult.OutputSV</span>
+                                        <br />
+                                        <small>GM determines which targets are hit. Each affected target applies SV @attackResult.OutputSV via Damage Resolution.</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary">
+                                        <strong><i class="bi bi-x-circle"></i> Suppression Failed!</strong>
+                                        <br />
+                                        <small>No targets hit.</small>
+                                    </div>
+                                }
+                            }
+                            @* AOE results are shown based on IsAOE property, not FireMode *@
+                            @if (attackResult.IsAOE)
+                            {
+                                @if (attackResult.Hit && attackResult.OutputSV.HasValue)
+                                {
+                                    <div class="alert alert-danger">
+                                        <strong><i class="bi bi-bullseye"></i> AOE Hit!</strong>
+                                        <br />
+                                        <span class="fs-5">Blast Radius: @attackResult.BlastRadius m</span>
+                                        @if (attackResult.DirectHitSV.HasValue && attackResult.DirectHitSV != attackResult.OutputSV)
+                                        {
+                                            <br />
+                                            <span class="fs-4">Direct Hit SV: @attackResult.DirectHitSV</span>
+                                        }
+                                        <br />
+                                        <span class="fs-4">Area SV: @attackResult.OutputSV</span>
+                                        <br />
+                                        <small>GM determines targets in blast area. Direct hit target uses Direct Hit SV, others use Area SV (modified by distance from center).</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary">
+                                        <strong><i class="bi bi-x-circle"></i> AOE Missed Target Area!</strong>
+                                    </div>
+                                }
+                            }
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Ammo Consumed:</span>
+                                    <span class="fw-bold">@attackResult.AmmoConsumed</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Ammo Remaining:</span>
+                                    <span class="fw-bold">@attackResult.AmmoRemaining</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <button class="btn btn-primary" @onclick="CompleteAttack">
+                    <i class="bi bi-check"></i> Done
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ResetAttack">
+                    <i class="bi bi-arrow-repeat"></i> New Attack
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    [Parameter]
+    public List<RangedWeaponInfo>? AvailableWeapons { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<RangedAttackCompleteData> OnAttackComplete { get; set; }
+
+    // Setup state
+    private int selectedWeaponIndex;
+    private FireMode selectedFireMode = FireMode.Single;
+    private RangeCategory selectedRange = RangeCategory.Short;
+    private bool targetIsMoving;
+    private bool targetIsProne;
+    private bool targetIsCrouching;
+    private CoverType targetCover = CoverType.None;
+    private TargetSize targetSize = TargetSize.Normal;
+    private bool attackerIsMoving;
+    private int tvAdjustment;
+    private int burstSize = 3;
+    private int suppressiveRounds = 10;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+
+    // Result state
+    private bool hasRolled;
+    private FirearmAttackResult? attackResult;
+
+    protected override void OnParametersSet()
+    {
+        // Set default fire mode based on weapon capabilities
+        // Note: AOE is not a fire mode - it's determined by weapon/ammo properties
+        var weapon = GetSelectedWeapon();
+        if (weapon != null)
+        {
+            if (weapon.SupportsSingle) selectedFireMode = FireMode.Single;
+            else if (weapon.SupportsBurst) selectedFireMode = FireMode.Burst;
+            else if (weapon.SupportsSuppression) selectedFireMode = FireMode.Suppression;
+
+            // Clamp burst size to available ammo
+            if (burstSize > weapon.LoadedAmmo)
+                burstSize = Math.Max(2, weapon.LoadedAmmo);
+        }
+    }
+
+    private RangedWeaponInfo? GetSelectedWeapon()
+    {
+        if (AvailableWeapons == null || selectedWeaponIndex < 0 || selectedWeaponIndex >= AvailableWeapons.Count)
+            return null;
+        return AvailableWeapons[selectedWeaponIndex];
+    }
+
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+    }
+
+    private int GetMultiActionPenalty()
+    {
+        return Character?.ActionPoints.MultiActionPenalty ?? 0;
+    }
+
+    private int GetAVBase()
+    {
+        var weapon = GetSelectedWeapon();
+        if (weapon == null) return 0;
+
+        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty();
+        if (attackerIsMoving) av -= 2;
+        return av;
+    }
+
+    private int GetTV()
+    {
+        int tv = RangeModifiers.GetBaseTV(selectedRange);
+        tv += RangeModifiers.GetTargetMovementModifier(targetIsMoving, targetIsProne, targetIsCrouching);
+        tv += RangeModifiers.GetCoverModifier(targetCover);
+        tv += RangeModifiers.GetSizeModifier(targetSize);
+        tv += tvAdjustment;
+        return tv;
+    }
+
+    private int GetAmmoConsumption()
+    {
+        var weapon = GetSelectedWeapon();
+
+        // AOE attacks (from weapon or ammo) consume 1 round
+        if (weapon?.IsAOECapable == true)
+            return 1;
+
+        return selectedFireMode switch
+        {
+            FireMode.Single => 1,
+            FireMode.Burst => burstSize,
+            FireMode.Suppression => suppressiveRounds,
+            _ => 1
+        };
+    }
+
+    private bool HasEnoughAmmo()
+    {
+        var weapon = GetSelectedWeapon();
+        return weapon != null && weapon.LoadedAmmo >= GetAmmoConsumption();
+    }
+
+    private string GetCostDisplay()
+    {
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private bool CanAttack()
+    {
+        if (Character == null || GetSelectedWeapon() == null) return false;
+        if (!HasEnoughAmmo()) return false;
+
+        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded &&
+               !Character.IsPassedOut;
+    }
+
+    private async Task ExecuteAttack()
+    {
+        if (!CanAttack() || Character == null) return;
+
+        var weapon = GetSelectedWeapon();
+        if (weapon == null) return;
+
+        // Deduct costs
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= apCost;
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if (fatCost > 0)
+            Character.Fatigue.Value -= fatCost;
+
+        // Build request
+        var request = new FirearmAttackRequest
+        {
+            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty(),
+            WeaponAVModifier = weapon.WeaponAVModifier,
+            AttackerIsMoving = attackerIsMoving,
+            Range = selectedRange,
+            TargetIsMoving = targetIsMoving,
+            TargetIsProne = targetIsProne,
+            TargetIsCrouching = targetIsCrouching,
+            TargetCover = targetCover,
+            TargetSize = targetSize,
+            TVAdjustment = tvAdjustment,
+            FireMode = selectedFireMode,
+            BurstSize = burstSize,
+            SuppressiveRounds = suppressiveRounds,
+            BaseSVModifier = weapon.BaseSV,
+            CurrentLoadedAmmo = weapon.LoadedAmmo,
+            AmmoDamageModifier = weapon.AmmoDamageModifier,
+            IsDodgeable = weapon.IsDodgeable,
+            // AOE properties (from weapon or loaded ammo)
+            IsAOEAttack = weapon.IsAOECapable,
+            EffectiveBlastRadius = weapon.BlastRadius,
+            EffectiveFalloff = weapon.BlastFalloff,
+            DirectHitBonus = weapon.DirectHitBonus
+        };
+
+        // Resolve attack
+        var resolver = new FirearmAttackResolver(new GameMechanics.RandomDiceRoller());
+        attackResult = resolver.Resolve(request);
+
+        hasRolled = true;
+
+        // Save character state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private void ResetAttack()
+    {
+        hasRolled = false;
+        attackResult = null;
+    }
+
+    private async Task CompleteAttack()
+    {
+        if (attackResult == null) return;
+
+        var weapon = GetSelectedWeapon();
+        var message = $"{Character?.Name} fires {weapon?.Name} ({attackResult.FireMode})";
+
+        if (attackResult.InsufficientAmmo)
+        {
+            message = $"{Character?.Name} attempted to fire {weapon?.Name} but had insufficient ammo";
+        }
+        else if (attackResult.FireMode == FireMode.Single)
+        {
+            if (attackResult.Hit && attackResult.Hits.Count > 0)
+            {
+                message += $": Hit! SV {attackResult.Hits[0].SV}";
+            }
+            else
+            {
+                message += $": Miss (RV {attackResult.RV})";
+            }
+        }
+        else if (attackResult.FireMode == FireMode.Burst)
+        {
+            var hits = attackResult.Hits.Count(h => h.Hit);
+            var totalSV = attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV);
+            message += $": {hits}/{attackResult.Hits.Count} hits";
+            if (hits > 0) message += $", total SV {totalSV}";
+        }
+        else if (attackResult.FireMode == FireMode.Suppression)
+        {
+            if (attackResult.Hit && attackResult.OutputSV.HasValue)
+            {
+                message += $": Suppression success! Output SV {attackResult.OutputSV}";
+            }
+            else
+            {
+                message += ": Suppression failed";
+            }
+        }
+
+        // AOE results (from weapon or ammo)
+        if (attackResult.IsAOE)
+        {
+            message = $"{Character?.Name} fires {weapon?.Name} (AOE, {attackResult.BlastRadius}m radius)";
+            if (attackResult.Hit && attackResult.OutputSV.HasValue)
+            {
+                message += $": Hit! Area SV {attackResult.OutputSV}";
+                if (attackResult.DirectHitSV.HasValue && attackResult.DirectHitSV != attackResult.OutputSV)
+                {
+                    message += $", Direct Hit SV {attackResult.DirectHitSV}";
+                }
+            }
+            else
+            {
+                message += ": Missed target area";
+            }
+        }
+
+        message += $" ({attackResult.AmmoConsumed} ammo used, {attackResult.AmmoRemaining} remaining)";
+
+        var completeData = new RangedAttackCompleteData
+        {
+            Message = message,
+            WeaponItemId = weapon?.ItemId ?? Guid.Empty,
+            AmmoConsumed = attackResult.AmmoConsumed,
+            AmmoRemaining = attackResult.AmmoRemaining
+        };
+
+        await OnAttackComplete.InvokeAsync(completeData);
+    }
+}

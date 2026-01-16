@@ -1,0 +1,110 @@
+@page "/gamemaster/items/{Id:int}/delete"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics.Items
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<ItemTemplateEdit> itemPortal
+@inject NavigationManager NavigationManager
+@inject Csla.Blazor.State.StateManager StateManager
+
+<h3>Delete Item</h3>
+
+@if (item == null)
+{
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
+}
+else if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+    <p><a href="/gamemaster/items">Return to item list</a></p>
+}
+else
+{
+    <div class="alert alert-danger">
+        <h4>Confirm Deletion</h4>
+        <p>
+            Are you sure you want to delete the item <strong>@item.Name</strong>?
+        </p>
+        <p>
+            <strong>This will deactivate the item template.</strong>
+        </p>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Item Details
+        </div>
+        <div class="card-body">
+            <p><strong>Name:</strong> @item.Name</p>
+            <p><strong>Type:</strong> @item.ItemType</p>
+            <p><strong>Description:</strong> @(string.IsNullOrWhiteSpace(item.ShortDescription) ? "(none)" : item.ShortDescription)</p>
+            <p><strong>Rarity:</strong> @item.Rarity</p>
+        </div>
+    </div>
+
+    @if (isDeleting)
+    {
+        <button class="btn btn-danger" disabled>
+            Deleting...
+        </button>
+        <img src="images/busy.gif" class="busy-animation" />
+    }
+    else
+    {
+        <button class="btn btn-danger" @onclick="ConfirmDelete">
+            Yes, Delete This Item
+        </button>
+        <a href="/gamemaster/items" class="btn btn-secondary ms-2">
+            Cancel
+        </a>
+    }
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ItemTemplateEdit? item;
+    private string? errorMessage;
+    private bool isDeleting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        try
+        {
+            item = await itemPortal.FetchAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading item: {ex.Message}";
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (item == null)
+            return;
+
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            await itemPortal.DeleteAsync(Id);
+            NavigationManager.NavigateTo("/gamemaster/items");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting item: {ex.Message}";
+            isDeleting = false;
+            StateHasChanged();
+        }
+    }
+}

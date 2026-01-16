@@ -16,5 +16,9 @@ public enum WeaponType
     Staff = 8,
     Wand = 9,
     Thrown = 10,
-    Unarmed = 11
+    Unarmed = 11,
+    Pistol = 12,
+    Rifle = 13,
+    Shotgun = 14,
+    SMG = 15
 }

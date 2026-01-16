@@ -59,5 +59,11 @@ public enum EffectType
     /// Combat stance or mode (parry mode, defensive stance, etc.).
     /// Ends when character takes non-compatible action.
     /// </summary>
-    CombatStance = 10
+    CombatStance = 10,
+
+    /// <summary>
+    /// Concentration effect for long-running actions (reloading, rituals, etc.).
+    /// Progress tracked per round, can be interrupted.
+    /// </summary>
+    Concentration = 11
 }

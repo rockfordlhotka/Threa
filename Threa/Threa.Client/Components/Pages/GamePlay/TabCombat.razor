@@ -49,7 +49,8 @@
                                                       AbilityScore="@skill.AbilityScore"
                                                       PrimaryAttribute="@skill.PrimaryAttribute"
                                                       OnUse="@(() => StartAttackWithSkill(skill))"
-                                                      CanUse="@CanAct()" />
+                                                      CanUse="@(CanAct() && skill.CanUse)"
+                                                      DisabledReason="@skill.CannotUseReason" />
                                         }
                                     </div>
                                 </div>
@@ -70,6 +71,30 @@
                         <div class="fw-bold">ATTACK</div>
                         <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
                     </button>
+
+                    <!-- Ranged Attack Button -->
+                    @if (hasRangedWeaponEquipped)
+                    {
+                        <button class="btn btn-lg btn-warning py-3"
+                                @onclick="StartRangedAttack"
+                                disabled="@(!CanAct())">
+                            <i class="bi bi-crosshair fs-4"></i>
+                            <div class="fw-bold">RANGED ATTACK</div>
+                            <small class="opacity-75">@GetRangedAmmoDisplay()</small>
+                        </button>
+                    }
+
+                    <!-- Reload Button -->
+                    @if (hasRangedWeaponEquipped)
+                    {
+                        <button class="btn btn-lg btn-success py-3"
+                                @onclick="StartReload"
+                                disabled="@(!CanAct())">
+                            <i class="bi bi-box-arrow-in-down fs-4"></i>
+                            <div class="fw-bold">RELOAD</div>
+                            <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                        </button>
+                    }
 
                     <!-- Defend Button -->
                     <button class="btn btn-lg btn-info py-3"
@@ -179,6 +204,23 @@
                           OnCancel="ReturnToDefault"
                           OnDamageComplete="OnDamageComplete" />
     }
+    else if (combatMode == CombatMode.RangedAttack)
+    {
+        <RangedAttackMode Character="Character"
+                          Table="Table"
+                          AvailableWeapons="rangedWeapons"
+                          OnCancel="ReturnToDefault"
+                          OnAttackComplete="OnRangedAttackComplete" />
+    }
+    else if (combatMode == CombatMode.Reload)
+    {
+        <ReloadMode Character="Character"
+                    Table="Table"
+                    AvailableWeapons="rangedWeapons"
+                    AvailableMagazines="availableAmmoSources"
+                    OnCancel="ReturnToDefault"
+                    OnReloadComplete="OnReloadComplete" />
+    }
 </div>
 
 @code {
@@ -188,7 +230,7 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -199,10 +241,13 @@
     // Equipment state
     private bool hasWeaponEquipped;
     private bool hasShieldEquipped;
+    private bool hasRangedWeaponEquipped;
     private int weaponSkillAS;
     private int shieldSkillAS;
     private int armorSkillAS;
     private string weaponSkillName = "";
+    private List<RangedWeaponInfo> rangedWeapons = new();
+    private List<AmmoSourceInfo> availableAmmoSources = new();
 
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
@@ -239,6 +284,61 @@
 
         hasWeaponEquipped = mainHand != null;
         hasShieldEquipped = offHand?.Template?.ItemType == ItemType.Shield;
+
+        // Load ranged weapons
+        rangedWeapons = new List<RangedWeaponInfo>();
+        foreach (var item in equippedItems.Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
+                                                       i.EquippedSlot == EquipmentSlot.OffHand))
+        {
+            var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
+            if (rangedProps?.IsRangedWeapon == true)
+            {
+                var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+                // Use the ranged skill from weapon properties, fall back to RelatedSkill for backward compatibility
+                var skillName = !string.IsNullOrWhiteSpace(rangedProps.RangedSkill)
+                    ? rangedProps.RangedSkill
+                    : item.Template?.RelatedSkill ?? "";
+                var skill = Character.Skills.FirstOrDefault(s => s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
+
+                // Check weapon's inherent AOE (grenades, rockets)
+                bool isAOECapable = rangedProps.IsInherentAOE;
+                int blastRadius = rangedProps.DefaultBlastRadius;
+                string? blastFalloff = rangedProps.DefaultBlastFalloff;
+                bool aoeFromAmmo = false;
+                int directHitBonus = 0;
+
+                // TODO: Look up loaded ammo template to check for ammo-provided AOE
+                // For now, inherent AOE is supported; ammo AOE will be checked at attack time
+
+                rangedWeapons.Add(new RangedWeaponInfo
+                {
+                    ItemId = item.Id,
+                    Name = item.Template?.Name ?? "Unknown",
+                    SkillName = skillName,
+                    SkillAS = skill?.AbilityScore ?? 0,
+                    WeaponAVModifier = rangedProps.AccuracyModifier,
+                    BaseSV = rangedProps.BaseSVModifier,
+                    LoadedAmmo = ammoState.LoadedAmmo,
+                    Capacity = rangedProps.Capacity,
+                    LoadedAmmoType = ammoState.LoadedAmmoType,
+                    AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
+                    IsDodgeable = rangedProps.IsDodgeable,
+                    SupportsSingle = rangedProps.HasFireMode(FireMode.Single),
+                    SupportsBurst = rangedProps.HasFireMode(FireMode.Burst),
+                    SupportsSuppression = rangedProps.HasFireMode(FireMode.Suppression),
+                    IsAOECapable = isAOECapable,
+                    BlastRadius = blastRadius,
+                    BlastFalloff = blastFalloff,
+                    AOEFromAmmo = aoeFromAmmo,
+                    DirectHitBonus = directHitBonus,
+                    ShortRange = rangedProps.ShortRange,
+                    MediumRange = rangedProps.MediumRange,
+                    LongRange = rangedProps.LongRange,
+                    ExtremeRange = rangedProps.ExtremeRange
+                });
+            }
+        }
+        hasRangedWeaponEquipped = rangedWeapons.Any();
 
         // Get equipped weapon skill names (exclude shields from weapons)
         var equippedWeaponSkillNames = equippedItems
@@ -373,6 +473,95 @@
         combatMode = CombatMode.Defend;
     }
 
+    private void StartRangedAttack()
+    {
+        // Ranged attacking ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        combatMode = CombatMode.RangedAttack;
+    }
+
+    private string GetRangedAmmoDisplay()
+    {
+        if (rangedWeapons.Count == 0) return "No ranged weapons";
+        if (rangedWeapons.Count == 1)
+        {
+            var w = rangedWeapons[0];
+            return $"{w.LoadedAmmo}/{w.Capacity} ammo loaded";
+        }
+        var total = rangedWeapons.Sum(w => w.LoadedAmmo);
+        return $"{total} total ammo loaded";
+    }
+
+    private async Task StartReload()
+    {
+        // Reloading ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+
+        // Load available ammo sources from inventory
+        await LoadAvailableAmmoSources();
+
+        combatMode = CombatMode.Reload;
+    }
+
+    private async Task LoadAvailableAmmoSources()
+    {
+        availableAmmoSources = new List<AmmoSourceInfo>();
+        if (Character == null) return;
+
+        // Get all items in character's inventory
+        var allItems = await CharacterItemDal.GetCharacterItemsAsync(Character.Id);
+
+        foreach (var item in allItems)
+        {
+            // Skip equipped ranged weapons (they're the targets, not sources)
+            if (item.IsEquipped && rangedWeapons.Any(w => w.ItemId == item.Id))
+                continue;
+
+            // Check if this is ammunition
+            var ammoProps = AmmunitionProperties.FromJson(item.Template?.CustomProperties);
+            if (ammoProps != null)
+            {
+                if (ammoProps.IsContainer)
+                {
+                    // This is a magazine - get its current ammo state
+                    var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+                    availableAmmoSources.Add(new AmmoSourceInfo
+                    {
+                        ItemId = item.Id,
+                        Name = item.CustomName ?? item.Template?.Name ?? "Magazine",
+                        AmmoType = ammoProps.AmmoType ?? "",
+                        CurrentAmmo = containerState.LoadedAmmo,
+                        Capacity = ammoProps.ContainerCapacity,
+                        IsLooseAmmo = false,
+                        DamageModifier = ammoProps.DamageModifier,
+                        SpecialEffect = ammoProps.SpecialEffect
+                    });
+                }
+                else
+                {
+                    // This is loose ammo - use stack size
+                    availableAmmoSources.Add(new AmmoSourceInfo
+                    {
+                        ItemId = item.Id,
+                        Name = item.CustomName ?? item.Template?.Name ?? "Ammo",
+                        AmmoType = ammoProps.AmmoType ?? "",
+                        CurrentAmmo = item.StackSize,
+                        Capacity = 0,
+                        IsLooseAmmo = true,
+                        DamageModifier = ammoProps.DamageModifier,
+                        SpecialEffect = ammoProps.SpecialEffect
+                    });
+                }
+            }
+        }
+    }
+
     private void ReturnToDefault()
     {
         combatMode = CombatMode.Default;
@@ -412,6 +601,97 @@
         LogActivity(resultMessage, ActivityCategory.Combat);
         combatMode = CombatMode.Default;
         ClearPendingDamage();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnRangedAttackComplete(RangedAttackCompleteData data)
+    {
+        LogActivity(data.Message, ActivityCategory.Combat);
+
+        // Update the weapon's ammo state
+        if (data.WeaponItemId != Guid.Empty)
+        {
+            var weapon = rangedWeapons.FirstOrDefault(w => w.ItemId == data.WeaponItemId);
+            if (weapon != null)
+            {
+                weapon.LoadedAmmo = data.AmmoRemaining;
+
+                // Also update the actual item in the database
+                var item = equippedItems.FirstOrDefault(i => i.Id == data.WeaponItemId);
+                if (item != null)
+                {
+                    var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+                    ammoState.LoadedAmmo = data.AmmoRemaining;
+                    item.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(item.CustomProperties, ammoState);
+                    await CharacterItemDal.UpdateItemAsync(item);
+                }
+            }
+        }
+
+        combatMode = CombatMode.Default;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnReloadComplete(ReloadCompleteData data)
+    {
+        LogActivity(data.Message, ActivityCategory.Combat);
+
+        // Update the weapon's ammo state
+        if (data.WeaponItemId != Guid.Empty)
+        {
+            var weapon = rangedWeapons.FirstOrDefault(w => w.ItemId == data.WeaponItemId);
+            if (weapon != null)
+            {
+                weapon.LoadedAmmo = data.NewWeaponAmmoCount;
+
+                // Update the weapon item in the database
+                var weaponItem = equippedItems.FirstOrDefault(i => i.Id == data.WeaponItemId);
+                if (weaponItem != null)
+                {
+                    var ammoState = WeaponAmmoState.FromJson(weaponItem.CustomProperties);
+                    ammoState.LoadedAmmo = data.NewWeaponAmmoCount;
+                    weaponItem.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(weaponItem.CustomProperties, ammoState);
+                    await CharacterItemDal.UpdateItemAsync(weaponItem);
+                }
+            }
+        }
+
+        // Update the ammo source
+        if (data.AmmoSourceItemId != Guid.Empty)
+        {
+            var ammoSource = availableAmmoSources.FirstOrDefault(a => a.ItemId == data.AmmoSourceItemId);
+            if (ammoSource != null)
+            {
+                var sourceItem = await CharacterItemDal.GetItemAsync(data.AmmoSourceItemId);
+                if (sourceItem != null)
+                {
+                    if (ammoSource.IsLooseAmmo)
+                    {
+                        // Update stack size for loose ammo
+                        sourceItem.StackSize = data.AmmoSourceRemaining;
+                        if (sourceItem.StackSize <= 0)
+                        {
+                            // Delete the item if empty
+                            await CharacterItemDal.DeleteItemAsync(data.AmmoSourceItemId);
+                        }
+                        else
+                        {
+                            await CharacterItemDal.UpdateItemAsync(sourceItem);
+                        }
+                    }
+                    else
+                    {
+                        // Update container state for magazines
+                        var containerState = AmmoContainerState.FromJson(sourceItem.CustomProperties);
+                        containerState.LoadedAmmo = data.AmmoSourceRemaining;
+                        sourceItem.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(sourceItem.CustomProperties, containerState);
+                        await CharacterItemDal.UpdateItemAsync(sourceItem);
+                    }
+                }
+            }
+        }
+
+        combatMode = CombatMode.Default;
         await InvokeAsync(StateHasChanged);
     }
 

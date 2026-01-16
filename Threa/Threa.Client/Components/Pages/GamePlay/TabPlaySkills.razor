@@ -31,14 +31,23 @@
                         <tbody>
                             @foreach (var skill in FilteredSkills())
                             {
-                                <tr>
-                                    <td>@skill.Name</td>
+                                <tr class="@(skill.CanUse ? "" : "text-muted")"
+                                    title="@(skill.CanUse ? "" : skill.CannotUseReason)">
+                                    <td>
+                                        @skill.Name
+                                        @if (!skill.CanUse)
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                               title="@skill.CannotUseReason"></i>
+                                        }
+                                    </td>
                                     <td>@skill.Level</td>
                                     <td><strong>@skill.AbilityScore</strong></td>
                                     <td>@skill.PrimaryAttribute</td>
                                     <td>
-                                        <button class="btn btn-sm btn-primary"
-                                                disabled="@(!CanUseSkill())"
+                                        <button class="btn btn-sm @(skill.CanUse ? "btn-primary" : "btn-secondary")"
+                                                disabled="@(!CanUseSkill() || !skill.CanUse)"
+                                                title="@(skill.CanUse ? "" : skill.CannotUseReason)"
                                                 @onclick="() => UseSkill(skill)">
                                             Use
                                         </button>
@@ -62,6 +71,14 @@
                 {
                     <h5>@selectedSkill.Name</h5>
                     <p class="mb-2">Ability Score: <strong>@selectedSkill.AbilityScore</strong></p>
+
+                    @if (!selectedSkill.CanUse)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Cannot use:</strong> @selectedSkill.CannotUseReason
+                        </div>
+                    }
 
                     <div class="mb-3">
                         <label class="form-label">Target Value (TV)</label>
@@ -161,6 +178,10 @@
     {
         if (selectedSkill == null || Character == null) return false;
         if (Character.IsPassedOut) return false;
+
+        // Check attribute requirements (secondary >= 8, tertiary >= 6)
+        if (!selectedSkill.CanUse)
+            return false;
 
         // Drive skill requires AS >= 8 to use
         if (selectedSkill.Name == "Drive" && selectedSkill.AbilityScore < 8)

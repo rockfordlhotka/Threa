@@ -9,6 +9,7 @@
 @using GameMechanics.Reference
 @using Threa.Dal.Dto
 @using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
 
 @inject IDataPortal<ItemTemplateEdit> itemPortal
 @inject IDataPortal<SkillNameList> skillListPortal
@@ -26,155 +27,799 @@
 }
 else
 {
-    <table>
-        <thead>
-            <tr><th></th><th></th></tr>
-        </thead>
-        <tbody>
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
-            <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ShortDescription)" />
-            
-            <tr>
-                <td>Item Type</td>
-                <td>
-                    <select @bind="vm.Model.ItemType" class="form-control">
-                        @foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
-                        {
-                            <option value="@type">@type</option>
-                        }
-                    </select>
-                </td>
-            </tr>
+    <div class="item-edit-form">
+        <!-- ========================== -->
+        <!-- BASIC PROPERTIES (Always) -->
+        <!-- ========================== -->
+        <fieldset class="mb-4">
+            <legend>Basic Properties</legend>
+            <table class="table table-sm">
+                <tbody>
+                    <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+                    <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
+                    <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ShortDescription)" />
 
-            <tr>
-                <td>Equipment Slot</td>
-                <td>
-                    <select @bind="vm.Model.EquipmentSlot" class="form-control">
-                        @foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
-                        {
-                            <option value="@slot">@slot</option>
-                        }
-                    </select>
-                </td>
-            </tr>
+                    <tr>
+                        <td>Item Type</td>
+                        <td>
+                            <select @bind="vm.Model.ItemType" @bind:after="OnItemTypeChanged" class="form-control">
+                                @foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
 
-            <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Weight)" />
-            <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Volume)" />
-            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Value)" />
+                    <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Weight)" />
+                    <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Volume)" />
+                    <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Value)" />
 
-            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsStackable)" />
-            
-            @if (vm.Model.IsStackable)
+                    <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsStackable)" />
+                    @if (vm.Model.IsStackable)
+                    {
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MaxStackSize)" />
+                    }
+
+                    <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.HasDurability)" />
+                    @if (vm.Model.HasDurability)
+                    {
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int?>(() => vm.Model.MaxDurability)" />
+                    }
+
+                    <tr>
+                        <td>Rarity</td>
+                        <td>
+                            <select @bind="vm.Model.Rarity" class="form-control">
+                                @foreach (ItemRarity rarity in Enum.GetValues(typeof(ItemRarity)))
+                                {
+                                    <option value="@rarity">@rarity</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
+
+                    <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsActive)" />
+                </tbody>
+            </table>
+        </fieldset>
+
+        <!-- ========================== -->
+        <!-- EQUIPMENT SLOT (Equipment) -->
+        <!-- ========================== -->
+        @if (ShowEquipmentSection)
+        {
+            <fieldset class="mb-4">
+                <legend>Equipment</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Equipment Slot</td>
+                            <td>
+                                <select @bind="vm.Model.EquipmentSlot" class="form-control">
+                                    @foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
+                                    {
+                                        <option value="@slot">@slot</option>
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        }
+
+        <!-- ========================== -->
+        <!-- WEAPON PROPERTIES -->
+        <!-- ========================== -->
+        @if (vm.Model.ItemType == ItemType.Weapon)
+        {
+            <fieldset class="mb-4">
+                <legend>Weapon Properties</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Weapon Type</td>
+                            <td>
+                                <select @bind="vm.Model.WeaponType" @bind:after="OnWeaponTypeChanged" class="form-control">
+                                    @foreach (WeaponType wtype in Enum.GetValues(typeof(WeaponType)))
+                                    {
+                                        <option value="@wtype">@wtype</option>
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>@(IsRangedWeaponType ? "Melee Skill (Optional)" : "Related Skill")</td>
+                            <td>
+                                <select @bind="vm.Model.RelatedSkill" class="form-control">
+                                    <option value="">-- None --</option>
+                                    @if (availableSkills != null)
+                                    {
+                                        @foreach (var skill in availableSkills)
+                                        {
+                                            <option value="@skill.Id">@skill.Name</option>
+                                        }
+                                    }
+                                </select>
+                                @if (IsRangedWeaponType)
+                                {
+                                    <small class="text-muted">Skill for melee use (e.g., Brawling for pistol-whip, Light Blades for dagger stab)</small>
+                                }
+                            </td>
+                        </tr>
+
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MinSkillLevel)" />
+
+                        <tr>
+                            <td>Damage Class (1-4)</td>
+                            <td>
+                                <select @bind="vm.Model.DamageClass" class="form-control">
+                                    <option value="1">1 - Normal weapons, human-scale combat</option>
+                                    <option value="2">2 - Vehicles, giant creatures (10x Class 1)</option>
+                                    <option value="3">3 - Armored vehicles, structures, dragons (10x Class 2)</option>
+                                    <option value="4">4 - Armored structures, high-end magic (10x Class 3)</option>
+                                </select>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Damage Type</td>
+                            <td>
+                                <select @bind="vm.Model.DamageType" class="form-control">
+                                    <option value="">-- None --</option>
+                                    @foreach (DamageType type in Enum.GetValues(typeof(DamageType)))
+                                    {
+                                        <option value="@type.ToString()">@type.ToString()</option>
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SVModifier)" />
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.AVModifier)" />
+                    </tbody>
+                </table>
+            </fieldset>
+
+            <!-- ========================== -->
+            <!-- RANGED WEAPON PROPERTIES -->
+            <!-- ========================== -->
+            @if (IsRangedWeaponType)
             {
-                <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MaxStackSize)" />
-            }
-
-            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.HasDurability)" />
-            
-            @if (vm.Model.HasDurability)
-            {
-                <NumericSelectorRow Property="vm.GetPropertyInfo<int?>(() => vm.Model.MaxDurability)" />
-            }
-
-            <tr>
-                <td>Rarity</td>
-                <td>
-                    <select @bind="vm.Model.Rarity" class="form-control">
-                        @foreach (ItemRarity rarity in Enum.GetValues(typeof(ItemRarity)))
-                        {
-                            <option value="@rarity">@rarity</option>
-                        }
-                    </select>
-                </td>
-            </tr>
-
-            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsActive)" />
-
-            <hr />
-            <tr><td colspan="2"><strong>Weapon/Armor Properties</strong></td></tr>
-
-            <tr>
-                <td>Related Skill</td>
-                <td>
-                    <select @bind="vm.Model.RelatedSkill" class="form-control">
-                        <option value="">-- None --</option>
-                        @if (availableSkills != null)
-                        {
-                            @foreach (var skill in availableSkills)
+                <fieldset class="mb-4">
+                    <legend>Ranged Weapon Properties</legend>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>Ranged Skill</td>
+                                <td>
+                                    <select class="form-control" @bind="rangedProps.RangedSkill" @bind:after="UpdateCustomProperties">
+                                        <option value="">-- Select Skill --</option>
+                                        @if (availableSkills != null)
+                                        {
+                                            @foreach (var skill in availableSkills)
+                                            {
+                                                <option value="@skill.Id">@skill.Name</option>
+                                            }
+                                        }
+                                    </select>
+                                    <small class="text-muted">Skill for ranged use (e.g., Archery, Pistols, Throwing - Light)</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Is Thrown Weapon</td>
+                                <td>
+                                    <input type="checkbox" class="form-check-input" @bind="rangedProps.IsThrown"
+                                           @bind:after="OnThrownChanged" />
+                                    <small class="text-muted ms-2">Thrown weapons (knives, javelins) are consumed when thrown</small>
+                                </td>
+                            </tr>
+                            @if (!rangedProps.IsThrown)
                             {
-                                <option value="@skill.Name">@skill.Name</option>
+                                <tr>
+                                    <td>Ammo Type</td>
+                                    <td>
+                                        <input type="text" class="form-control" @bind="rangedProps.AmmoType"
+                                               @bind:after="UpdateCustomProperties" placeholder="e.g., 9mm, Arrow" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Capacity</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="rangedProps.Capacity"
+                                               @bind:after="UpdateCustomProperties" min="0" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Chamber Capacity</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="rangedProps.ChamberCapacity"
+                                               @bind:after="UpdateCustomProperties" min="0" />
+                                        <small class="text-muted">Typically 0 or 1 for weapons with a chamber</small>
+                                    </td>
+                                </tr>
                             }
-                        }
-                    </select>
-                </td>
-            </tr>
-            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MinSkillLevel)" />
+                            <tr>
+                                <td>Short Range (m)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.ShortRange"
+                                           @bind:after="UpdateCustomProperties" min="0" />
+                                    <small class="text-muted">Base TV 8</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Medium Range (m)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.MediumRange"
+                                           @bind:after="UpdateCustomProperties" min="0" />
+                                    <small class="text-muted">Base TV 10</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Long Range (m)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.LongRange"
+                                           @bind:after="UpdateCustomProperties" min="0" />
+                                    <small class="text-muted">Base TV 12</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Extreme Range (m)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.ExtremeRange"
+                                           @bind:after="UpdateCustomProperties" min="0" />
+                                    <small class="text-muted">Base TV 14</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Accuracy Modifier (AV)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.AccuracyModifier"
+                                           @bind:after="UpdateCustomProperties" />
+                                    <small class="text-muted">Bonus/penalty to hit rolls</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Damage Modifier (SV)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="rangedProps.BaseSVModifier"
+                                           @bind:after="UpdateCustomProperties" />
+                                    <small class="text-muted">Bonus/penalty to damage</small>
+                                </td>
+                            </tr>
+                            @if (!rangedProps.IsThrown)
+                            {
+                                <tr>
+                                    <td>Fire Modes</td>
+                                    <td>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input" id="fmSingle"
+                                                   checked="@HasFireMode(FireModeSingle)" @onchange="OnToggleSingleMode" />
+                                            <label class="form-check-label" for="fmSingle">Single</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input" id="fmBurst"
+                                                   checked="@HasFireMode(FireModeBurst)" @onchange="OnToggleBurstMode" />
+                                            <label class="form-check-label" for="fmBurst">Burst</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input" id="fmSuppression"
+                                                   checked="@HasFireMode(FireModeSuppression)" @onchange="OnToggleSuppressionMode" />
+                                            <label class="form-check-label" for="fmSuppression">Suppression</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @if (HasFireMode(FireModeBurst))
+                                {
+                                    <tr>
+                                        <td>Burst Size</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedProps.BurstSize"
+                                                   @bind:after="UpdateCustomProperties" min="2" max="10" />
+                                        </td>
+                                    </tr>
+                                }
+                                @if (HasFireMode(FireModeSuppression))
+                                {
+                                    <tr>
+                                        <td>Suppressive Rounds</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedProps.SuppressiveRounds"
+                                                   @bind:after="UpdateCustomProperties" min="3" />
+                                        </td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td>Reload Type</td>
+                                    <td>
+                                        <select class="form-control" @bind="rangedProps.ReloadType" @bind:after="UpdateCustomProperties">
+                                            <option value="None">None (thrown weapons)</option>
+                                            <option value="Magazine">Magazine (swap magazine)</option>
+                                            <option value="SingleRound">Single Round (load one at a time)</option>
+                                            <option value="Cylinder">Cylinder (revolver-style)</option>
+                                            <option value="Belt">Belt (belt-fed)</option>
+                                            <option value="Battery">Battery (energy weapons)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Accepts Loose Ammo</td>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input" @bind="rangedProps.AcceptsLooseAmmo"
+                                               @bind:after="UpdateCustomProperties" />
+                                        <small class="text-muted ms-2">Can be loaded with individual rounds (arrows, loose bullets)</small>
+                                    </td>
+                                </tr>
+                            }
+                            <tr>
+                                <td>Is Dodgeable</td>
+                                <td>
+                                    <input type="checkbox" class="form-check-input" @bind="rangedProps.IsDodgeable"
+                                           @bind:after="UpdateCustomProperties" />
+                                    <small class="text-muted ms-2">Arrows/thrown can be dodged, bullets typically cannot</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2"><hr class="my-2" /><strong>Inherent AOE (for grenades, rockets, etc.)</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Is Inherent AOE</td>
+                                <td>
+                                    <input type="checkbox" class="form-check-input" @bind="rangedProps.IsInherentAOE"
+                                           @bind:after="UpdateCustomProperties" />
+                                    <small class="text-muted ms-2">Weapon itself causes area effect damage (grenades, rockets)</small>
+                                </td>
+                            </tr>
+                            @if (rangedProps.IsInherentAOE)
+                            {
+                                <tr>
+                                    <td>Blast Radius (m)</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="rangedProps.DefaultBlastRadius"
+                                               @bind:after="UpdateCustomProperties" min="1" max="50" />
+                                        <small class="text-muted">Default radius if ammo doesn't specify</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Blast Falloff</td>
+                                    <td>
+                                        <select class="form-control" @bind="rangedProps.DefaultBlastFalloff" @bind:after="UpdateCustomProperties">
+                                            <option value="Linear">Linear (damage decreases linearly)</option>
+                                            <option value="Steep">Steep (damage drops quickly)</option>
+                                            <option value="Flat">Flat (same damage throughout)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </fieldset>
+            }
+        }
 
-            <tr>
-                <td>Damage Class (1-4)</td>
-                <td>
-                    <select @bind="vm.Model.DamageClass" class="form-control">
-                        <option value="1">1 - Normal weapons, human-scale combat</option>
-                        <option value="2">2 - Vehicles, giant creatures (10× Class 1)</option>
-                        <option value="3">3 - Armored vehicles, structures, dragons (10× Class 2)</option>
-                        <option value="4">4 - Armored structures, high-end magic (10× Class 3)</option>
-                    </select>
-                </td>
-            </tr>
+        <!-- ========================== -->
+        <!-- ARMOR/SHIELD PROPERTIES -->
+        <!-- ========================== -->
+        @if (vm.Model.ItemType == ItemType.Armor || vm.Model.ItemType == ItemType.Shield)
+        {
+            <fieldset class="mb-4">
+                <legend>Armor Properties</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DodgeModifier)" />
 
-            <tr>
-                <td>Damage Type</td>
-                <td>
-                    <select @bind="vm.Model.DamageType" class="form-control">
-                        <option value="">-- None --</option>
-                        @foreach (DamageType type in Enum.GetValues(typeof(DamageType)))
+                        <tr>
+                            <td colspan="2"><strong>Armor Absorption by Damage Type</strong></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><small class="text-muted">Enter absorption value for each damage type this armor protects against. Leave at 0 for no protection.</small></td>
+                        </tr>
+                        <tr>
+                            <td>Bashing</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="armorAbsorption.Bashing"
+                                       @bind:after="UpdateArmorAbsorption" min="0" />
+                                <small class="text-muted">Blunt impact (maces, clubs, fists)</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Cutting</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="armorAbsorption.Cutting"
+                                       @bind:after="UpdateArmorAbsorption" min="0" />
+                                <small class="text-muted">Slashing (swords, axes)</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Piercing</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="armorAbsorption.Piercing"
+                                       @bind:after="UpdateArmorAbsorption" min="0" />
+                                <small class="text-muted">Puncture (daggers, spears)</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Projectile</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="armorAbsorption.Projectile"
+                                       @bind:after="UpdateArmorAbsorption" min="0" />
+                                <small class="text-muted">Ranged (arrows, bolts, bullets)</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Energy</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="armorAbsorption.Energy"
+                                       @bind:after="UpdateArmorAbsorption" min="0" />
+                                <small class="text-muted">Magic/tech (fire, lightning, plasma)</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        }
+
+        <!-- ========================== -->
+        <!-- CONTAINER PROPERTIES -->
+        <!-- ========================== -->
+        @if (vm.Model.ItemType == ItemType.Container)
+        {
+            <fieldset class="mb-4">
+                <legend>Container Properties</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Max Weight (lbs)</td>
+                            <td>
+                                <input type="number" class="form-control" step="0.1"
+                                       value="@vm.Model.ContainerMaxWeight"
+                                       @onchange="e => vm.Model.ContainerMaxWeight = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Max Volume (cu ft)</td>
+                            <td>
+                                <input type="number" class="form-control" step="0.1"
+                                       value="@vm.Model.ContainerMaxVolume"
+                                       @onchange="e => vm.Model.ContainerMaxVolume = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Allowed Item Types</td>
+                            <td>
+                                <input type="text" class="form-control" @bind="vm.Model.ContainerAllowedTypes"
+                                       placeholder="e.g., Arrow,Bolt or 9mm (leave blank for any)" />
+                                <small class="text-muted">Comma-separated list. Leave blank to allow any item type.</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Weight Reduction</td>
+                            <td>
+                                <input type="number" class="form-control" step="0.1" min="0" max="1"
+                                       @bind="vm.Model.ContainerWeightReduction" />
+                                <small class="text-muted">1.0 = normal, 0.1 = 90% weight reduction (magical)</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        }
+
+        <!-- ========================== -->
+        <!-- AMMUNITION PROPERTIES -->
+        <!-- ========================== -->
+        @if (vm.Model.ItemType == ItemType.Ammunition)
+        {
+            <fieldset class="mb-4">
+                <legend>Ammunition Properties</legend>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Ammo Type</td>
+                            <td>
+                                <input type="text" class="form-control" @bind="ammoProps.AmmoType"
+                                       @bind:after="UpdateAmmoProperties" placeholder="e.g., 9mm, Arrow, Bolt" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Damage Modifier</td>
+                            <td>
+                                <input type="number" class="form-control" @bind="ammoProps.DamageModifier"
+                                       @bind:after="UpdateAmmoProperties" />
+                                <small class="text-muted">Added to weapon's base damage</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Special Effect</td>
+                            <td>
+                                <input type="text" class="form-control" @bind="ammoProps.SpecialEffect"
+                                       @bind:after="UpdateAmmoProperties" placeholder="e.g., Hollow-Point, Incendiary" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Is Loose Ammo</td>
+                            <td>
+                                <input type="checkbox" class="form-check-input" @bind="ammoProps.IsLooseAmmo"
+                                       @bind:after="UpdateAmmoProperties" />
+                                <small class="text-muted ms-2">Check for individual rounds, uncheck for pre-loaded magazines</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr class="my-2" /><strong>AOE Properties (for explosive ammo)</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Is AOE</td>
+                            <td>
+                                <input type="checkbox" class="form-check-input" @bind="ammoProps.IsAOE"
+                                       @bind:after="UpdateAmmoProperties" />
+                                <small class="text-muted ms-2">This ammo causes area of effect damage (HE rounds, explosive arrows)</small>
+                            </td>
+                        </tr>
+                        @if (ammoProps.IsAOE)
                         {
-                            <option value="@type.ToString()">@type.ToString()</option>
+                            <tr>
+                                <td>Blast Radius (m)</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="ammoProps.BlastRadius"
+                                           @bind:after="UpdateAmmoProperties" min="1" max="50" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Blast Falloff</td>
+                                <td>
+                                    <select class="form-control" @bind="ammoProps.BlastFalloff" @bind:after="UpdateAmmoProperties">
+                                        <option value="Linear">Linear (damage decreases linearly)</option>
+                                        <option value="Steep">Steep (damage drops quickly)</option>
+                                        <option value="Flat">Flat (same damage throughout)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Direct Hit Bonus</td>
+                                <td>
+                                    <input type="number" class="form-control" @bind="ammoProps.DirectHitBonus"
+                                           @bind:after="UpdateAmmoProperties" />
+                                    <small class="text-muted">Extra SV for the direct hit target</small>
+                                </td>
+                            </tr>
                         }
-                    </select>
-                </td>
-            </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        }
 
-            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SVModifier)" />
-            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.AVModifier)" />
-            <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DodgeModifier)" />
-        </tbody>
-    </table>
-    <div class="mt-3">
-        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
-        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+        <!-- ========================== -->
+        <!-- SAVE/CANCEL BUTTONS -->
+        <!-- ========================== -->
+        <div class="mt-3">
+            <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+            <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+        </div>
     </div>
 }
 
 @code {
-[Parameter]
-public string? Id { get; set; }
+    [Parameter]
+    public string? Id { get; set; }
 
-private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
-private SkillNameList? availableSkills;
+    private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
+    private SkillNameList? availableSkills;
 
-protected override async Task OnInitializedAsync()
-{
-    if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
-        return;
+    // Fire mode constants (AOE is no longer a fire mode - it's a property on weapon/ammo)
+    private const string FireModeSingle = "Single";
+    private const string FireModeBurst = "Burst";
+    private const string FireModeSuppression = "Suppression";
 
-    vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/items");
-    vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
-    vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+    // Helper classes for JSON properties
+    private RangedWeaponPropsEditor rangedProps = new();
+    private ArmorAbsorptionEditor armorAbsorption = new();
+    private AmmoPropsEditor ammoProps = new();
 
-    // Load available skills for the dropdown
-    availableSkills = await skillListPortal.FetchAsync();
+    // Computed properties for section visibility
+    private bool ShowEquipmentSection => vm.Model?.ItemType is ItemType.Weapon or ItemType.Armor
+        or ItemType.Shield or ItemType.Jewelry or ItemType.Clothing;
 
-    if (IsNewItem)
+    private bool IsRangedWeaponType => vm.Model?.WeaponType is WeaponType.Bow or WeaponType.Crossbow
+        or WeaponType.Pistol or WeaponType.Rifle or WeaponType.Shotgun or WeaponType.SMG
+        or WeaponType.Thrown or WeaponType.Wand;
+
+    protected override async Task OnInitializedAsync()
     {
-        await vm.RefreshAsync(() => itemPortal.CreateAsync());
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/items");
+        vm.ModelChanged += async () =>
+        {
+            LoadCustomProperties();
+            await InvokeAsync(() => StateHasChanged());
+        };
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        // Load available skills for the dropdown
+        availableSkills = await skillListPortal.FetchAsync();
+
+        if (IsNewItem)
+        {
+            await vm.RefreshAsync(() => itemPortal.CreateAsync());
+        }
+        else if (int.TryParse(Id, out int itemId))
+        {
+            await vm.RefreshAsync(() => itemPortal.FetchAsync(itemId));
+        }
     }
-    else if (int.TryParse(Id, out int itemId))
+
+    private void LoadCustomProperties()
     {
-        await vm.RefreshAsync(() => itemPortal.FetchAsync(itemId));
+        if (vm.Model == null) return;
+
+        // Load ranged weapon properties from CustomProperties
+        if (!string.IsNullOrWhiteSpace(vm.Model.CustomProperties))
+        {
+            try
+            {
+                var props = JsonSerializer.Deserialize<RangedWeaponPropsEditor>(vm.Model.CustomProperties);
+                if (props != null && props.IsRangedWeapon)
+                {
+                    rangedProps = props;
+
+                    // Backward compatibility: if RangedSkill is empty but RelatedSkill has a value,
+                    // use RelatedSkill as the ranged skill (old data format)
+                    if (string.IsNullOrWhiteSpace(rangedProps.RangedSkill) && !string.IsNullOrWhiteSpace(vm.Model.RelatedSkill))
+                    {
+                        rangedProps.RangedSkill = vm.Model.RelatedSkill;
+                    }
+                }
+            }
+            catch { }
+
+            // Try loading ammo properties
+            try
+            {
+                var props = JsonSerializer.Deserialize<AmmoPropsEditor>(vm.Model.CustomProperties);
+                if (props != null && !string.IsNullOrEmpty(props.AmmoType))
+                {
+                    ammoProps = props;
+                }
+            }
+            catch { }
+        }
+
+        // Load armor absorption
+        if (!string.IsNullOrWhiteSpace(vm.Model.ArmorAbsorption))
+        {
+            try
+            {
+                var abs = JsonSerializer.Deserialize<ArmorAbsorptionEditor>(vm.Model.ArmorAbsorption);
+                if (abs != null)
+                {
+                    armorAbsorption = abs;
+                }
+            }
+            catch { }
+        }
     }
-}
+
+    private void OnItemTypeChanged()
+    {
+        // Reset type-specific properties when item type changes
+        if (vm.Model == null) return;
+
+        // Set IsContainer for Container type
+        vm.Model.IsContainer = vm.Model.ItemType == ItemType.Container;
+
+        // Set default stackable for ammunition
+        if (vm.Model.ItemType == ItemType.Ammunition && !vm.Model.IsStackable)
+        {
+            vm.Model.IsStackable = true;
+            vm.Model.MaxStackSize = 100;
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnWeaponTypeChanged()
+    {
+        // Initialize ranged properties when switching to a ranged weapon type
+        if (IsRangedWeaponType && !rangedProps.IsRangedWeapon)
+        {
+            rangedProps = new RangedWeaponPropsEditor
+            {
+                IsRangedWeapon = true,
+                FireModes = new List<string> { "Single" },
+                ReloadType = "Magazine",
+                BurstSize = 3,
+                SuppressiveRounds = 10
+            };
+            UpdateCustomProperties();
+        }
+        StateHasChanged();
+    }
+
+    private void OnThrownChanged()
+    {
+        if (vm.Model == null) return;
+
+        if (rangedProps.IsThrown)
+        {
+            // Thrown weapons should be stackable
+            vm.Model.IsStackable = true;
+            vm.Model.MaxStackSize = vm.Model.MaxStackSize < 2 ? 20 : vm.Model.MaxStackSize;
+            // Thrown weapons are typically dodgeable
+            rangedProps.IsDodgeable = true;
+            // Clear ammo-related fields for thrown weapons
+            rangedProps.AmmoType = null;
+            rangedProps.Capacity = 0;
+            rangedProps.ChamberCapacity = 0;
+            rangedProps.ReloadType = "None";
+        }
+        else
+        {
+            // Non-thrown weapons are not stackable
+            vm.Model.IsStackable = false;
+            vm.Model.MaxStackSize = 1;
+            // Reset reload type to default for non-thrown weapons
+            if (rangedProps.ReloadType == "None")
+            {
+                rangedProps.ReloadType = "Magazine";
+            }
+        }
+
+        UpdateCustomProperties();
+        StateHasChanged();
+    }
+
+    private bool HasFireMode(string mode) => rangedProps.FireModes.Contains(mode);
+
+    private void OnToggleSingleMode(ChangeEventArgs e) => ToggleFireMode(FireModeSingle, (bool)e.Value!);
+    private void OnToggleBurstMode(ChangeEventArgs e) => ToggleFireMode(FireModeBurst, (bool)e.Value!);
+    private void OnToggleSuppressionMode(ChangeEventArgs e) => ToggleFireMode(FireModeSuppression, (bool)e.Value!);
+
+    private void ToggleFireMode(string mode, bool enabled)
+    {
+        if (enabled && !rangedProps.FireModes.Contains(mode))
+        {
+            rangedProps.FireModes.Add(mode);
+        }
+        else if (!enabled && rangedProps.FireModes.Contains(mode))
+        {
+            rangedProps.FireModes.Remove(mode);
+        }
+        UpdateCustomProperties();
+    }
+
+    private void UpdateCustomProperties()
+    {
+        if (vm.Model == null) return;
+
+        if (IsRangedWeaponType)
+        {
+            rangedProps.IsRangedWeapon = true;
+            vm.Model.CustomProperties = JsonSerializer.Serialize(rangedProps, new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+        }
+    }
+
+    private void UpdateArmorAbsorption()
+    {
+        if (vm.Model == null) return;
+        vm.Model.ArmorAbsorption = JsonSerializer.Serialize(armorAbsorption, new JsonSerializerOptions { WriteIndented = false });
+    }
+
+    private void UpdateAmmoProperties()
+    {
+        if (vm.Model == null) return;
+        vm.Model.CustomProperties = JsonSerializer.Serialize(ammoProps, new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
+    }
 
     private async Task SaveData()
     {
@@ -185,5 +830,97 @@ protected override async Task OnInitializedAsync()
     private void Cancel()
     {
         NavigationManager.NavigateTo("/gamemaster/items");
+    }
+
+    // Helper classes for editing JSON properties
+    // NOTE: Property names must match the [JsonPropertyName] attributes in RangedWeaponProperties
+    private class RangedWeaponPropsEditor
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("isRangedWeapon")]
+        public bool IsRangedWeapon { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("isThrown")]
+        public bool IsThrown { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("rangedSkill")]
+        public string? RangedSkill { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("ammoType")]
+        public string? AmmoType { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("capacity")]
+        public int Capacity { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("chamberCapacity")]
+        public int ChamberCapacity { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("shortRange")]
+        public int ShortRange { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("mediumRange")]
+        public int MediumRange { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("longRange")]
+        public int LongRange { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("extremeRange")]
+        public int ExtremeRange { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("accuracyModifier")]
+        public int AccuracyModifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("baseSVModifier")]
+        public int BaseSVModifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("fireModes")]
+        public List<string> FireModes { get; set; } = new() { "Single" };
+
+        [System.Text.Json.Serialization.JsonPropertyName("burstSize")]
+        public int BurstSize { get; set; } = 3;
+
+        [System.Text.Json.Serialization.JsonPropertyName("suppressiveRounds")]
+        public int SuppressiveRounds { get; set; } = 10;
+
+        [System.Text.Json.Serialization.JsonPropertyName("reloadType")]
+        public string ReloadType { get; set; } = "Magazine";
+
+        [System.Text.Json.Serialization.JsonPropertyName("acceptsLooseAmmo")]
+        public bool AcceptsLooseAmmo { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("isDodgeable")]
+        public bool IsDodgeable { get; set; }
+
+        // Inherent AOE properties (for grenades, rockets, etc.)
+        [System.Text.Json.Serialization.JsonPropertyName("isInherentAOE")]
+        public bool IsInherentAOE { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("defaultBlastRadius")]
+        public int DefaultBlastRadius { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("defaultBlastFalloff")]
+        public string? DefaultBlastFalloff { get; set; }
+    }
+
+    private class ArmorAbsorptionEditor
+    {
+        public int Bashing { get; set; }
+        public int Cutting { get; set; }
+        public int Piercing { get; set; }
+        public int Projectile { get; set; }
+        public int Energy { get; set; }
+    }
+
+    private class AmmoPropsEditor
+    {
+        public string AmmoType { get; set; } = "";
+        public int DamageModifier { get; set; }
+        public string? SpecialEffect { get; set; }
+        public bool IsLooseAmmo { get; set; } = true;
+
+        // AOE properties (for explosive ammo)
+        public bool IsAOE { get; set; }
+        public int BlastRadius { get; set; }
+        public string? BlastFalloff { get; set; }
+        public int DirectHitBonus { get; set; }
     }
 }

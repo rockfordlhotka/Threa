@@ -110,7 +110,7 @@ else
             <option value="">-- Select a skill to add --</option>
             @foreach (var availableSkill in availableSkills)
             {
-                <option value="@availableSkill.Name">@availableSkill.Name @(!string.IsNullOrEmpty(availableSkill.Category) ? $"({availableSkill.Category})" : "")</option>
+                <option value="@availableSkill.Name">@availableSkill.Name @(availableSkill.Category != Threa.Dal.Dto.SkillCategory.Other ? $"({availableSkill.Category})" : "")</option>
             }
         </select>
         <button class="btn btn-primary" @onclick="AddNewSkillAsync" disabled="@(string.IsNullOrEmpty(selectedSkillId))">

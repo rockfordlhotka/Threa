@@ -170,6 +170,63 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(DodgeModifierProperty, value);
     }
 
+    public static readonly PropertyInfo<int?> RangeProperty = RegisterProperty<int?>(nameof(Range));
+    public int? Range
+    {
+        get => GetProperty(RangeProperty);
+        set => SetProperty(RangeProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> ArmorAbsorptionProperty = RegisterProperty<string?>(nameof(ArmorAbsorption));
+    public string? ArmorAbsorption
+    {
+        get => GetProperty(ArmorAbsorptionProperty);
+        set => SetProperty(ArmorAbsorptionProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> CustomPropertiesProperty = RegisterProperty<string?>(nameof(CustomProperties));
+    public string? CustomProperties
+    {
+        get => GetProperty(CustomPropertiesProperty);
+        set => SetProperty(CustomPropertiesProperty, value);
+    }
+
+    // Container properties
+    public static readonly PropertyInfo<bool> IsContainerProperty = RegisterProperty<bool>(nameof(IsContainer));
+    public bool IsContainer
+    {
+        get => GetProperty(IsContainerProperty);
+        set => SetProperty(IsContainerProperty, value);
+    }
+
+    public static readonly PropertyInfo<decimal?> ContainerMaxWeightProperty = RegisterProperty<decimal?>(nameof(ContainerMaxWeight));
+    public decimal? ContainerMaxWeight
+    {
+        get => GetProperty(ContainerMaxWeightProperty);
+        set => SetProperty(ContainerMaxWeightProperty, value);
+    }
+
+    public static readonly PropertyInfo<decimal?> ContainerMaxVolumeProperty = RegisterProperty<decimal?>(nameof(ContainerMaxVolume));
+    public decimal? ContainerMaxVolume
+    {
+        get => GetProperty(ContainerMaxVolumeProperty);
+        set => SetProperty(ContainerMaxVolumeProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> ContainerAllowedTypesProperty = RegisterProperty<string?>(nameof(ContainerAllowedTypes));
+    public string? ContainerAllowedTypes
+    {
+        get => GetProperty(ContainerAllowedTypesProperty);
+        set => SetProperty(ContainerAllowedTypesProperty, value);
+    }
+
+    public static readonly PropertyInfo<decimal> ContainerWeightReductionProperty = RegisterProperty<decimal>(nameof(ContainerWeightReduction));
+    public decimal ContainerWeightReduction
+    {
+        get => GetProperty(ContainerWeightReductionProperty);
+        set => SetProperty(ContainerWeightReductionProperty, value);
+    }
+
     [Create]
     private async Task Create()
     {
@@ -198,6 +255,14 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             SVModifier = 0;
             AVModifier = 0;
             DodgeModifier = 0;
+            Range = null;
+            ArmorAbsorption = null;
+            CustomProperties = null;
+            IsContainer = false;
+            ContainerMaxWeight = null;
+            ContainerMaxVolume = null;
+            ContainerAllowedTypes = null;
+            ContainerWeightReduction = 1.0m;
         }
         BusinessRules.CheckRules();
         await Task.CompletedTask;
@@ -238,6 +303,14 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             SVModifier = data.SVModifier;
             AVModifier = data.AVModifier;
             DodgeModifier = data.DodgeModifier;
+            Range = data.Range;
+            ArmorAbsorption = data.ArmorAbsorption;
+            CustomProperties = data.CustomProperties;
+            IsContainer = data.IsContainer;
+            ContainerMaxWeight = data.ContainerMaxWeight;
+            ContainerMaxVolume = data.ContainerMaxVolume;
+            ContainerAllowedTypes = data.ContainerAllowedTypes;
+            ContainerWeightReduction = data.ContainerWeightReduction;
         }
         BusinessRules.CheckRules();
     }
@@ -268,7 +341,15 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DamageType = DamageType,
             SVModifier = SVModifier,
             AVModifier = AVModifier,
-            DodgeModifier = DodgeModifier
+            DodgeModifier = DodgeModifier,
+            Range = Range,
+            ArmorAbsorption = ArmorAbsorption,
+            CustomProperties = CustomProperties,
+            IsContainer = IsContainer,
+            ContainerMaxWeight = ContainerMaxWeight,
+            ContainerMaxVolume = ContainerMaxVolume,
+            ContainerAllowedTypes = ContainerAllowedTypes,
+            ContainerWeightReduction = ContainerWeightReduction
         };
 
         var result = await dal.SaveTemplateAsync(dto);
@@ -305,15 +386,23 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DamageType = DamageType,
             SVModifier = SVModifier,
             AVModifier = AVModifier,
-            DodgeModifier = DodgeModifier
+            DodgeModifier = DodgeModifier,
+            Range = Range,
+            ArmorAbsorption = ArmorAbsorption,
+            CustomProperties = CustomProperties,
+            IsContainer = IsContainer,
+            ContainerMaxWeight = ContainerMaxWeight,
+            ContainerMaxVolume = ContainerMaxVolume,
+            ContainerAllowedTypes = ContainerAllowedTypes,
+            ContainerWeightReduction = ContainerWeightReduction
         };
 
         await dal.SaveTemplateAsync(dto);
     }
 
     [Delete]
-    private async Task Delete([Inject] IItemTemplateDal dal)
+    private async Task Delete(int id, [Inject] IItemTemplateDal dal)
     {
-        await dal.DeactivateTemplateAsync(Id);
+        await dal.DeactivateTemplateAsync(id);
     }
 }

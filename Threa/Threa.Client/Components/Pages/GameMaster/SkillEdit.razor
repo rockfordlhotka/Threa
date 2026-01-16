@@ -70,11 +70,36 @@ else
 
             <tr><td colspan="2"><hr /></td></tr>
             <tr><td colspan="2"><h4>Attributes & Training Costs</h4></td></tr>
+            <tr>
+                <td colspan="2">
+                    <small class="text-muted">
+                        Valid attributes: STR, DEX, END, INT, ITT, WIL, PHY, SOC
+                    </small>
+                </td>
+            </tr>
 
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.PrimaryAttribute)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.SecondaryAttribute)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.TertiaryAttribute)" />
-            
+            <tr>
+                <td>Primary Attribute</td>
+                <td>
+                    <input type="text" class="form-control" @bind="vm.Model.PrimaryAttribute" />
+                    <small class="text-muted">Use "/" for multiple attributes (e.g., "DEX/ITT") - values are averaged</small>
+                </td>
+            </tr>
+            <tr>
+                <td>Secondary Attribute</td>
+                <td>
+                    <input type="text" class="form-control" @bind="vm.Model.SecondaryAttribute" />
+                    <small class="text-muted">Character must have >= 8 in this attribute to learn/use skill</small>
+                </td>
+            </tr>
+            <tr>
+                <td>Tertiary Attribute</td>
+                <td>
+                    <input type="text" class="form-control" @bind="vm.Model.TertiaryAttribute" />
+                    <small class="text-muted">Character must have >= 6 in this attribute to learn/use skill</small>
+                </td>
+            </tr>
+
             <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Untrained)" />
             <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Trained)" />
 

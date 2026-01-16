@@ -10,6 +10,9 @@ public class SkillRowBase : ComponentBase
     [Parameter] public string PrimaryAttribute { get; set; } = "";
     [Parameter] public EventCallback OnUse { get; set; }
     [Parameter] public bool CanUse { get; set; } = true;
+    [Parameter] public string? DisabledReason { get; set; }
 
-    protected string TooltipText => $"{SkillName} (Level {Level}) - AS: {AbilityScore} [{PrimaryAttribute}]";
+    protected string TooltipText => string.IsNullOrEmpty(DisabledReason)
+        ? $"{SkillName} (Level {Level}) - AS: {AbilityScore} [{PrimaryAttribute}]"
+        : DisabledReason;
 }

@@ -266,7 +266,7 @@ else
             <option value="">-- Select a magic skill to add --</option>
             @foreach (var availableSkill in availableMagicSkills)
             {
-                <option value="@availableSkill.Name">@availableSkill.Name @(!string.IsNullOrEmpty(availableSkill.Category) ? $"({availableSkill.Category})" : "")</option>
+                <option value="@availableSkill.Name">@availableSkill.Name @(availableSkill.Category != Threa.Dal.Dto.SkillCategory.Other ? $"({availableSkill.Category})" : "")</option>
             }
         </select>
         <button class="btn btn-primary" @onclick="AddNewSkillAsync" disabled="@(string.IsNullOrEmpty(selectedSkillId))">
@@ -337,18 +337,17 @@ else
     {
         // Check category first for more reliable detection
         var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
-        if (skillInfo?.Category?.Equals("Mana", StringComparison.OrdinalIgnoreCase) == true)
+        if (skillInfo?.Category == Threa.Dal.Dto.SkillCategory.Mana)
             return true;
-        
+
         // Fallback to name-based detection for backward compatibility
         return skill.Name.Contains("Mana", StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsMetaMagicSkill(GameMechanics.SkillEdit skill)
     {
-        // Meta-magic skills would have a specific category or naming pattern
-        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
-        return skillInfo?.Category?.Contains("Meta-Magic", StringComparison.OrdinalIgnoreCase) ?? false;
+        // Meta-magic skills would have a specific naming pattern (not currently implemented as a category)
+        return skill.Name.Contains("Meta", StringComparison.OrdinalIgnoreCase);
     }
 
     private int GetXPCostToNextLevel(GameMechanics.SkillEdit skill)

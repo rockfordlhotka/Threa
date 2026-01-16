@@ -1,0 +1,21 @@
+Name,Description,ShortDescription,Weight,Volume,Value,Rarity,WeaponType,Skill,DamageClass,DamageType,SVModifier,AVModifier,EquipmentSlot,MinSkillLevel
+Punch,,,1,0,0,Common,Unarmed,hand-to-hand,1,Bashing,0,0,MainHand,0
+Kick,,,1,0,0,Common,Unarmed,hand-to-hand,1,Bashing,1,0,Legs,0
+Club,,,2,3,0,Common,Staff,hand-to-hand,1,Bashing,4,0,MainHand,0
+Staff,,,3,6,0,Common,Staff,polearms,1,Bashing,5,0,MainHand,0
+Pike,,,4,8,0,Common,Staff,polearms,1,Bashing,6,0,MainHand,0
+Halberd,,,5,10,0,Common,Staff,polearms,1,Bashing,7,0,MainHand,0
+Knife,,,1,1,0,Common,Dagger,light-blades,1,Cutting,1,0,MainHand,0
+Dagger,,,1,2,0,Common,Dagger,light-blades,1,Cutting,3,0,MainHand,0
+Short sword,,,2,3,0,Common,Sword,light-blades,1,Cutting,4,0,MainHand,0
+Long sword,,,3,4,0,Common,Sword,medium-blades,1,Cutting,5,0,MainHand,0
+Broad sword,,,4,5,0,Common,Sword,medium-blades,1,Cutting,6,0,MainHand,0
+Foil,,,2,4,0,Common,Sword,medium-blades,1,Piercing,4,0,MainHand,0
+Esso RazorClaw right,Retractable cybernetic claws,,1,0,0,Common,Dagger,hand-to-hand,1,Cutting,3,0,ImplantHandRight,0
+Esso RazorClaw left,Retractable cybernetic claws,,1,0,0,Common,Dagger,hand-to-hand,1,Cutting,3,0,ImplantHandLeft,0
+Tanith Swordarm right,Blade mounted to the forearm,,2,0,0,Common,Sword,hand-to-hand,1,Cutting,5,0,ImplantArmRight,0
+Tanith Swordarm left,Blade mounted to the forearm,,2,0,0,Common,Sword,hand-to-hand,1,Cutting,5,0,ImplantArmLeft,0
+Esso FootScythe right,Retractable cybernetic blade in the foot,,1,0,0,Common,Dagger,hand-to-hand,1,Cutting,5,0,ImplantLegRight,0
+Esso FootScythe left,Retractable cybernetic blade in the foot,,1,0,0,Common,Dagger,hand-to-hand,1,Cutting,5,0,ImplantLegLeft,0
+Heavy whip,,,3,2,0,Common,None,whip,1,Cutting,4,0,MainHand,0
+Light whip,,,2,2,0,Common,None,whip,1,Cutting,3,0,MainHand,0

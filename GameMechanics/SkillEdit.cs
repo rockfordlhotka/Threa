@@ -40,6 +40,26 @@ namespace GameMechanics
       private set => LoadProperty(PrimaryAttributeProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> SecondaryAttributeProperty = RegisterProperty<string?>(nameof(SecondaryAttribute));
+    /// <summary>
+    /// Secondary attribute - character must have current value >= 8 to use this skill.
+    /// </summary>
+    public string? SecondaryAttribute
+    {
+      get => GetProperty(SecondaryAttributeProperty);
+      private set => LoadProperty(SecondaryAttributeProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> TertiaryAttributeProperty = RegisterProperty<string?>(nameof(TertiaryAttribute));
+    /// <summary>
+    /// Tertiary attribute - character must have current value >= 6 to use this skill.
+    /// </summary>
+    public string? TertiaryAttribute
+    {
+      get => GetProperty(TertiaryAttributeProperty);
+      private set => LoadProperty(TertiaryAttributeProperty, value);
+    }
+
     public static readonly PropertyInfo<int> XPBankedProperty = RegisterProperty<int>(nameof(XPBanked));
     public int XPBanked
     {
@@ -184,6 +204,98 @@ namespace GameMechanics
     /// </summary>
     public bool IsManaSkill => Category == SkillCategory.Mana;
 
+    // === Attribute Requirement Constants ===
+
+    /// <summary>
+    /// Minimum attribute value required for secondary attribute.
+    /// </summary>
+    public const int SecondaryAttributeMinimum = 8;
+
+    /// <summary>
+    /// Minimum attribute value required for tertiary attribute.
+    /// </summary>
+    public const int TertiaryAttributeMinimum = 6;
+
+    // === Skill Usage Validation ===
+
+    /// <summary>
+    /// Whether this skill can be used based on attribute requirements.
+    /// Returns false if secondary attribute is below 8 or tertiary is below 6.
+    /// </summary>
+    public bool CanUse
+    {
+      get
+      {
+        var character = GetCharacter();
+        if (character == null) return true; // No character context, assume usable
+
+        // Check secondary attribute requirement (>= 8)
+        if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
+        {
+          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          if (secondaryValue < SecondaryAttributeMinimum)
+            return false;
+        }
+
+        // Check tertiary attribute requirement (>= 6)
+        if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
+        {
+          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          if (tertiaryValue < TertiaryAttributeMinimum)
+            return false;
+        }
+
+        return true;
+      }
+    }
+
+    /// <summary>
+    /// Explanation of why this skill cannot be used, or null if it can be used.
+    /// </summary>
+    public string? CannotUseReason
+    {
+      get
+      {
+        var character = GetCharacter();
+        if (character == null) return null;
+
+        var reasons = new List<string>();
+
+        // Check secondary attribute requirement (>= 8)
+        if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
+        {
+          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          if (secondaryValue < SecondaryAttributeMinimum)
+            reasons.Add($"Requires {SecondaryAttribute} >= {SecondaryAttributeMinimum}, current: {secondaryValue}");
+        }
+
+        // Check tertiary attribute requirement (>= 6)
+        if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
+        {
+          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          if (tertiaryValue < TertiaryAttributeMinimum)
+            reasons.Add($"Requires {TertiaryAttribute} >= {TertiaryAttributeMinimum}, current: {tertiaryValue}");
+        }
+
+        return reasons.Count > 0 ? string.Join("; ", reasons) : null;
+      }
+    }
+
+    /// <summary>
+    /// Gets the parent character, or null if not available.
+    /// </summary>
+    private CharacterEdit? GetCharacter()
+    {
+      try
+      {
+        return (CharacterEdit)((IParent)Parent).Parent;
+      }
+      catch
+      {
+        return null;
+      }
+    }
+
     // === Existing Skill Check Logic ===
 
     public ResultValue SkillCheck()
@@ -252,6 +364,8 @@ namespace GameMechanics
       Id = std.Id;
       Name = std.Name;
       PrimaryAttribute = std.PrimaryAttribute;
+      SecondaryAttribute = std.SecondaryAttribute;
+      TertiaryAttribute = std.TertiaryAttribute;
     }
 
     [FetchChild]
@@ -264,6 +378,8 @@ namespace GameMechanics
         Level = skill.Level;
         XPBanked = skill.XPBanked;
         PrimaryAttribute = skill.PrimaryAttribute;
+        SecondaryAttribute = skill.SecondaryAttribute;
+        TertiaryAttribute = skill.TertiaryAttribute;
 
         // Load action system properties
         ActionType = skill.ActionType;
@@ -310,6 +426,8 @@ namespace GameMechanics
         skill.Level = Level;
         skill.XPBanked = XPBanked;
         skill.PrimaryAttribute = PrimaryAttribute;
+        skill.SecondaryAttribute = SecondaryAttribute;
+        skill.TertiaryAttribute = TertiaryAttribute;
 
         // Save action system properties
         skill.ActionType = ActionType;
