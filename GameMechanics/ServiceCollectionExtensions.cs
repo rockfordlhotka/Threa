@@ -1,3 +1,4 @@
+using GameMechanics.Combat.Effects;
 using GameMechanics.Effects;
 using GameMechanics.Items;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,9 @@ public static class ServiceCollectionExtensions
     {
         // Register effect services
         services.AddScoped<ItemEffectService>();
+
+        // Register attack effect service for on-hit effect triggering
+        services.AddScoped<AttackEffectService>();
 
         // Register item management service
         services.AddScoped<ItemManagementService>();

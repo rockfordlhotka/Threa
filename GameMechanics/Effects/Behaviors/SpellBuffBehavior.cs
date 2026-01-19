@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using GameMechanics.Combat;
+using GameMechanics.Combat.Effects;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Effects.Behaviors;
@@ -44,7 +46,17 @@ public enum BuffModifierType
   /// <summary>
   /// Provides healing per tick.
   /// </summary>
-  HealingOverTime
+  HealingOverTime,
+
+  /// <summary>
+  /// Grants an effect that is applied to targets when the buffed character hits with an attack.
+  /// </summary>
+  OnHitEffect,
+
+  /// <summary>
+  /// Grants bonus damage of a specific type on attacks.
+  /// </summary>
+  BonusDamage
 }
 
 /// <summary>
@@ -71,6 +83,17 @@ public class BuffModifier
   /// For healing over time, the interval in rounds between heals.
   /// </summary>
   public int HealIntervalRounds { get; set; } = 10;
+
+  /// <summary>
+  /// For OnHitEffect type, the effect grant to apply to targets on attack hit.
+  /// </summary>
+  public AttackEffectGrant? OnHitEffectGrant { get; set; }
+
+  /// <summary>
+  /// For BonusDamage type, the type of bonus damage.
+  /// The damage amount is in the Value property.
+  /// </summary>
+  public DamageType? BonusDamageType { get; set; }
 }
 
 /// <summary>
@@ -150,6 +173,27 @@ public class SpellBuffState
     return modifier.Value > 0
       ? (int)Math.Ceiling(scaled)
       : (int)Math.Floor(scaled);
+  }
+
+  /// <summary>
+  /// Gets all on-hit effect grants from this buff's modifiers.
+  /// </summary>
+  public IEnumerable<AttackEffectGrant> GetOnHitEffects()
+  {
+    return Modifiers
+      .Where(m => m.Type == BuffModifierType.OnHitEffect && m.OnHitEffectGrant != null)
+      .Select(m => m.OnHitEffectGrant!);
+  }
+
+  /// <summary>
+  /// Gets all bonus damage grants from this buff's modifiers.
+  /// Returns tuples of (damage amount, damage type).
+  /// </summary>
+  public IEnumerable<(int Damage, DamageType Type)> GetBonusDamage()
+  {
+    return Modifiers
+      .Where(m => m.Type == BuffModifierType.BonusDamage && m.BonusDamageType.HasValue)
+      .Select(m => (GetEffectiveValue(m), m.BonusDamageType!.Value));
   }
 
   /// <summary>
@@ -321,6 +365,59 @@ public class SpellBuffState
     {
       BuffName = name,
       Description = $"Combat enhancement: STR +{strBonus}, DEX +{dexBonus}, AS +{asBonus}",
+      TotalDurationRounds = durationRounds,
+      Modifiers = modifiers
+    };
+  }
+
+  /// <summary>
+  /// Creates an attack buff that grants effects applied to targets on hit and/or bonus damage.
+  /// </summary>
+  /// <param name="name">Name of the buff (e.g., "Fire Punch", "Shocking Grasp").</param>
+  /// <param name="durationRounds">Duration of the buff in rounds.</param>
+  /// <param name="onHitEffect">Effect to apply to targets on attack hit (optional).</param>
+  /// <param name="bonusDamage">Bonus damage to add to attacks (optional).</param>
+  /// <param name="bonusDamageType">Type of bonus damage (required if bonusDamage > 0).</param>
+  /// <param name="source">The source of this buff (spell name, item, etc.).</param>
+  public static SpellBuffState CreateAttackBuff(
+    string name,
+    int durationRounds,
+    AttackEffectGrant? onHitEffect = null,
+    int bonusDamage = 0,
+    DamageType? bonusDamageType = null,
+    string? source = null)
+  {
+    var modifiers = new List<BuffModifier>();
+    var descriptionParts = new List<string>();
+
+    if (onHitEffect != null)
+    {
+      modifiers.Add(new BuffModifier
+      {
+        Type = BuffModifierType.OnHitEffect,
+        Target = "Attack",
+        OnHitEffectGrant = onHitEffect
+      });
+      descriptionParts.Add($"applies {onHitEffect.EffectName} on hit");
+    }
+
+    if (bonusDamage > 0 && bonusDamageType.HasValue)
+    {
+      modifiers.Add(new BuffModifier
+      {
+        Type = BuffModifierType.BonusDamage,
+        Target = "Attack",
+        Value = bonusDamage,
+        BonusDamageType = bonusDamageType.Value
+      });
+      descriptionParts.Add($"+{bonusDamage} {bonusDamageType.Value} damage");
+    }
+
+    return new SpellBuffState
+    {
+      BuffName = name,
+      Description = descriptionParts.Count > 0 ? string.Join(", ", descriptionParts) : "Attack enhancement",
+      Source = source ?? name,
       TotalDurationRounds = durationRounds,
       Modifiers = modifiers
     };
