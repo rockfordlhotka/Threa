@@ -294,6 +294,15 @@
                                         <td class="fw-bold text-danger">@GetMultiActionPenalty()</td>
                                     </tr>
                                 }
+                                @if (GetEffectModifier() != 0)
+                                {
+                                    <tr>
+                                        <td>Effect Modifiers:</td>
+                                        <td class="fw-bold @(GetEffectModifier() >= 0 ? "text-success" : "text-danger")">
+                                            @(GetEffectModifier() >= 0 ? "+" : "")@GetEffectModifier()
+                                        </td>
+                                    </tr>
+                                }
                                 <tr class="table-active">
                                     <td><strong>AV Base:</strong></td>
                                     <td><strong class="fs-5">@GetAVBase()</strong></td>
@@ -693,12 +702,25 @@
         return Character?.ActionPoints.MultiActionPenalty ?? 0;
     }
 
+    private int GetEffectModifier()
+    {
+        if (Character == null) return 0;
+        var weapon = GetSelectedWeapon();
+        if (weapon == null || string.IsNullOrEmpty(weapon.SkillName)) return 0;
+
+        // Look up the skill from the character to get the primary attribute
+        var skill = Character.Skills.FirstOrDefault(s => s.Name == weapon.SkillName);
+        if (skill == null) return 0;
+
+        return Character.Effects.GetAbilityScoreModifier(skill.Name, skill.PrimaryAttribute, skill.AbilityScore);
+    }
+
     private int GetAVBase()
     {
         var weapon = GetSelectedWeapon();
         if (weapon == null) return 0;
 
-        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty();
+        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty() + GetEffectModifier();
         if (attackerIsMoving) av -= 2;
         return av;
     }
@@ -778,7 +800,7 @@
         // Build request
         var request = new FirearmAttackRequest
         {
-            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty(),
+            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty() + GetEffectModifier(),
             WeaponAVModifier = weapon.WeaponAVModifier,
             AttackerIsMoving = attackerIsMoving,
             Range = selectedRange,
