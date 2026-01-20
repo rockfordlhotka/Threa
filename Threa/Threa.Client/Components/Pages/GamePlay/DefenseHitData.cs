@@ -31,4 +31,10 @@ public class DefenseHitData
     /// The RV from the shield block roll (if attempted).
     /// </summary>
     public int? ShieldBlockRV { get; set; }
+
+    /// <summary>
+    /// The called shot location, if the attacker targeted a specific body part.
+    /// If null, hit location will be determined randomly.
+    /// </summary>
+    public HitLocation? CalledShotLocation { get; set; }
 }

@@ -57,10 +57,18 @@
                                 <input class="form-check-input" type="radio" name="defenseType"
                                        id="defDodge" value="Dodge"
                                        checked="@(defenseType == DefenseTypeOption.Dodge)"
+                                       disabled="@(!CanPerformActiveDefense())"
                                        @onchange="@(() => SetDefenseType(DefenseTypeOption.Dodge))">
-                                <label class="form-check-label" for="defDodge">
+                                <label class="form-check-label @(!CanPerformActiveDefense() ? "text-muted" : "")" for="defDodge">
                                     <strong>Dodge</strong>
-                                    <small class="text-muted d-block">TV = Dodge AS + 4dF+. Costs 1 AP + 1 FAT (or 2 AP).</small>
+                                    @if (CanPerformActiveDefense())
+                                    {
+                                        <small class="text-muted d-block">TV = Dodge AS + 4dF+. Costs 1 AP + 1 FAT (or 2 AP).</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-danger d-block">Requires AP and FAT to perform active defense.</small>
+                                    }
                                 </label>
                             </div>
 
@@ -71,19 +79,23 @@
                                     <input class="form-check-input" type="radio" name="defenseType"
                                            id="defEnterParry" value="EnterParry"
                                            checked="@(defenseType == DefenseTypeOption.EnterParry)"
-                                           disabled="@(!HasWeaponEquipped)"
+                                           disabled="@(!HasWeaponEquipped || !CanPerformActiveDefense())"
                                            @onchange="@(() => SetDefenseType(DefenseTypeOption.EnterParry))">
-                                    <label class="form-check-label @(!HasWeaponEquipped ? "text-muted" : "")" for="defEnterParry">
+                                    <label class="form-check-label @(!HasWeaponEquipped || !CanPerformActiveDefense() ? "text-muted" : "")" for="defEnterParry">
                                         <strong>Enter Parry Mode</strong>
-                                        @if (HasWeaponEquipped)
+                                        @if (!HasWeaponEquipped)
+                                        {
+                                            <small class="text-danger d-block">Requires equipped weapon.</small>
+                                        }
+                                        else if (!CanPerformActiveDefense())
+                                        {
+                                            <small class="text-danger d-block">Requires AP and FAT to enter parry mode.</small>
+                                        }
+                                        else
                                         {
                                             <small class="text-muted d-block">
                                                 Costs 1 AP + 1 FAT (or 2 AP). Then parries are FREE until you take another action.
                                             </small>
-                                        }
-                                        else
-                                        {
-                                            <small class="text-danger d-block">Requires equipped weapon.</small>
                                         }
                                     </label>
                                 </div>
@@ -111,20 +123,24 @@
                                 <input class="form-check-input" type="radio" name="defenseType"
                                        id="defShield" value="ShieldBlock"
                                        checked="@(defenseType == DefenseTypeOption.ShieldBlock)"
-                                       disabled="@(!HasShieldEquipped)"
+                                       disabled="@(!HasShieldEquipped || !CanPerformActiveDefense())"
                                        @onchange="@(() => SetDefenseType(DefenseTypeOption.ShieldBlock))">
-                                <label class="form-check-label @(!HasShieldEquipped ? "text-muted" : "")" for="defShield">
+                                <label class="form-check-label @(!HasShieldEquipped || !CanPerformActiveDefense() ? "text-muted" : "")" for="defShield">
                                     <strong>Shield Block</strong>
-                                    @if (HasShieldEquipped)
+                                    @if (!HasShieldEquipped)
+                                    {
+                                        <small class="text-danger d-block">Requires equipped shield.</small>
+                                    }
+                                    else if (!CanPerformActiveDefense())
+                                    {
+                                        <small class="text-danger d-block">Requires AP and FAT to perform active defense.</small>
+                                    }
+                                    else
                                     {
                                         <small class="text-muted d-block">
                                             Roll Shield AS + 4dF+ vs TV 8. On success, absorbs damage.
                                             Can layer with other defenses. Costs 1 AP + 1 FAT (or 2 AP).
                                         </small>
-                                    }
-                                    else
-                                    {
-                                        <small class="text-danger d-block">Requires equipped shield.</small>
                                     }
                                 </label>
                             </div>
@@ -306,11 +322,35 @@
                         <strong><i class="bi bi-input-cursor-text"></i> Attacker's AV (Optional)</strong>
                     </div>
                     <div class="card-body">
-                        <div class="input-group">
+                        <div class="input-group mb-3">
                             <span class="input-group-text">AV</span>
                             <input type="number" class="form-control" @bind="attackerAV" placeholder="Enter attacker's AV">
                         </div>
-                        <small class="text-muted">Enter the attacker's AV to see if you're hit after rolling.</small>
+                        <small class="text-muted d-block mb-3">Enter the attacker's AV to see if you're hit after rolling.</small>
+                        
+                        <!-- Called Shot -->
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="calledShotCheck" 
+                                   @bind="isCalledShot">
+                            <label class="form-check-label" for="calledShotCheck">
+                                <strong>Called Shot</strong>
+                                <small class="text-muted d-block">Attacker targeted a specific body location</small>
+                            </label>
+                        </div>
+                        @if (isCalledShot)
+                        {
+                            <select class="form-select" @bind="calledShotLocation">
+                                <option value="@HitLocation.Head">Head (4.17% normally)</option>
+                                <option value="@HitLocation.Torso">Torso (45.83% normally)</option>
+                                <option value="@HitLocation.LeftArm">Left Arm (8.33% normally)</option>
+                                <option value="@HitLocation.RightArm">Right Arm (8.33% normally)</option>
+                                <option value="@HitLocation.LeftLeg">Left Leg (16.67% normally)</option>
+                                <option value="@HitLocation.RightLeg">Right Leg (16.67% normally)</option>
+                            </select>
+                            <small class="text-info d-block mt-1">
+                                <i class="bi bi-info-circle"></i> Called shots bypass random hit location roll.
+                            </small>
+                        }
                     </div>
                 </div>
             </div>
@@ -488,6 +528,11 @@
     private bool hasRolled;
     private DefenseResultData? defenseResult;
 
+    // Called shot state
+    private bool isCalledShot;
+    private HitLocation calledShotLocation = HitLocation.Torso;
+
+
     // Parry mode state
     private bool isInParryMode;
     private string parrySkillName = "";
@@ -599,6 +644,20 @@
         return Character.ActionPoints.Available >= apNeeded &&
                Character.Fatigue.Value >= fatNeeded &&
                !Character.IsPassedOut;
+    }
+
+    /// <summary>
+    /// Checks if the character has enough resources to perform any active defense.
+    /// This is used to disable active defense options in the UI when the character
+    /// doesn't have enough AP/FAT, while still allowing passive defense.
+    /// </summary>
+    private bool CanPerformActiveDefense()
+    {
+        if (Character == null) return false;
+        // Need at least 1 AP and 1 FAT (for 1AP+1FAT cost) OR 2 AP (for 2AP cost)
+        return !Character.IsPassedOut && 
+               ((Character.ActionPoints.Available >= 1 && Character.Fatigue.Value >= 1) ||
+                Character.ActionPoints.Available >= 2);
     }
 
     private bool CanDefend()
@@ -825,6 +884,11 @@
             ? $"{Character?.Name} uses passive defense: TV {defenseResult.TV} - HIT (SV {sv})"
             : $"{Character?.Name} {defenseResult.DefenseTypeName}: TV {defenseResult.TV} (rolled {(defenseResult.DiceRoll >= 0 ? "+" : "")}{defenseResult.DiceRoll}) - HIT (SV {sv})";
 
+        if (isCalledShot)
+        {
+            message += $" [Called Shot: {calledShotLocation}]";
+        }
+
         await OnDefenseComplete.InvokeAsync(message);
 
         // Transition to damage resolution
@@ -834,7 +898,8 @@
             DamageType = null, // Will be set in DamageResolution
             DamageClass = null, // Will be set in DamageResolution
             ShieldBlockSuccess = defenseResult.IsShieldBlock ? defenseResult.ShieldBlockSuccess : null,
-            ShieldBlockRV = defenseResult.IsShieldBlock ? (defenseResult.EffectiveAS + defenseResult.DiceRoll - 8) : null
+            ShieldBlockRV = defenseResult.IsShieldBlock ? (defenseResult.EffectiveAS + defenseResult.DiceRoll - 8) : null,
+            CalledShotLocation = isCalledShot ? calledShotLocation : null
         };
 
         await OnHit.InvokeAsync(hitData);
