@@ -111,6 +111,17 @@ public class TableEdit : BusinessBase<TableEdit>
     /// </summary>
     public long CurrentTimeSeconds => StartTimeSeconds + (CurrentRound * 3L);
 
+    public static readonly PropertyInfo<string> ThemeProperty = RegisterProperty<string>(nameof(Theme));
+    /// <summary>
+    /// The visual theme for this table ("fantasy" or "scifi").
+    /// Controls the overall look and feel of the UI for all players at this table.
+    /// </summary>
+    public string Theme
+    {
+        get => GetProperty(ThemeProperty);
+        set => SetProperty(ThemeProperty, value);
+    }
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -227,6 +238,7 @@ public class TableEdit : BusinessBase<TableEdit>
             Status = TableStatus.Lobby;
             CurrentRound = 0;
             IsInCombat = false;
+            Theme = "fantasy";
         }
         BusinessRules.CheckRules();
     }
@@ -285,6 +297,7 @@ public class TableEdit : BusinessBase<TableEdit>
         CombatStartedAt = dto.CombatStartedAt;
         LastTimeAdvance = dto.LastTimeAdvance;
         StartTimeSeconds = dto.StartTimeSeconds;
+        Theme = dto.Theme ?? "fantasy";
     }
 
     private void MapToDto(GameTable dto)
@@ -301,5 +314,6 @@ public class TableEdit : BusinessBase<TableEdit>
         dto.CombatStartedAt = CombatStartedAt;
         dto.LastTimeAdvance = LastTimeAdvance;
         dto.StartTimeSeconds = StartTimeSeconds;
+        dto.Theme = Theme;
     }
 }

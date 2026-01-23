@@ -1,8 +1,9 @@
-html, body {
-  background: url('/images/parchment.jpg') no-repeat center center fixed;
-  background-size: cover;
-  font-family: 'Palatino Linotype', serif;
+/* Base styles - theming is handled by themes.css */
+html {
+  min-height: 100%;
 }
+
+/* Note: body background and fonts are set in themes.css via CSS variables */
 
 a, .btn-link {
     color: #006bb7;
@@ -57,24 +58,7 @@ h1:focus {
     width: 30px;
 }
 
-.tab-buttons {
-  display: flex;
-}
-
-  .tab-buttons button {
-    padding: 10px;
-    cursor: pointer;
-    border: none;
-    background-color: #f1f1f1;
-    margin-right: 5px;
-  }
-
-    .tab-buttons button.active {
-      background-color: #ccc;
-    }
-
+/* Tab styles are handled by themes.css - keeping minimal overrides here */
 .tab-content {
-    padding: 10px;
-    border: 1px solid #ccc;
     display: block;
 }

@@ -31,6 +31,11 @@ public interface ITimeEventSubscriber : IAsyncDisposable
     event EventHandler<CharacterUpdateMessage>? CharacterUpdateReceived;
 
     /// <summary>
+    /// Event raised when a table update is received (e.g., theme change).
+    /// </summary>
+    event EventHandler<TableUpdateMessage>? TableUpdateReceived;
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

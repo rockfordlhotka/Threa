@@ -1,0 +1,819 @@
+/* ═══════════════════════════════════════════════════════════════════
+   THREA TTRPG THEMING SYSTEM
+   Two distinct visual identities: Fantasy (Arcanum) and Sci-Fi (Neon Circuit)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ARCANUM THEME - Fantasy/Medieval
+   Aged parchment, illuminated manuscript flourishes, worn leather
+   ═══════════════════════════════════════════════════════════════════ */
+:root, [data-theme="fantasy"] {
+  /* Typography */
+  --font-display: 'Cinzel', 'Palatino Linotype', serif;
+  --font-body: 'Crimson Text', 'Palatino Linotype', serif;
+  --font-mono: 'MedievalSharp', monospace;
+
+  /* Core Colors */
+  --color-bg-primary: #f4e4c1;
+  --color-bg-secondary: #e8d5a3;
+  --color-bg-tertiary: #d4c089;
+  --color-text-primary: #2d1810;
+  --color-text-secondary: #5c4033;
+  --color-text-muted: #8b7355;
+
+  /* Accent Colors */
+  --color-accent-primary: #8b4513;      /* Saddle brown - leather */
+  --color-accent-secondary: #b8860b;    /* Dark goldenrod - gilt */
+  --color-accent-gold: #daa520;         /* Goldenrod - highlights */
+  --color-accent-red: #8b0000;          /* Dark red - blood/danger */
+  --color-accent-green: #355e3b;        /* Hunter green - success */
+  --color-accent-blue: #191970;         /* Midnight blue - info */
+
+  /* UI Elements */
+  --color-card-bg: rgba(244, 228, 193, 0.95);
+  --color-card-border: #8b7355;
+  --color-card-header-bg: #5c4033;
+  --color-card-header-text: #f4e4c1;
+  --color-input-bg: #faf6ed;
+  --color-input-border: #c4a35a;
+
+  /* Header bar */
+  --color-header-bg: #3d2817;
+  --color-header-text: #f4e4c1;
+
+  /* Status Colors */
+  --color-health-full: #355e3b;
+  --color-health-mid: #b8860b;
+  --color-health-low: #8b0000;
+  --color-fatigue: #4a6fa5;
+  --color-vitality: #8b0000;
+  --color-ap: #daa520;
+
+  /* Effects & Decorations */
+  --shadow-card: 2px 3px 8px rgba(45, 24, 16, 0.3);
+  --shadow-inset: inset 0 1px 3px rgba(45, 24, 16, 0.2);
+  --border-radius: 4px;
+  --border-style: 2px solid var(--color-card-border);
+
+  /* Background */
+  --bg-image: url('/images/parchment.jpg');
+  --bg-overlay: linear-gradient(135deg, rgba(244, 228, 193, 0.1) 0%, rgba(139, 115, 85, 0.1) 100%);
+
+  /* Tab styling */
+  --tab-active-bg: var(--color-accent-primary);
+  --tab-active-text: var(--color-card-header-text);
+  --tab-inactive-bg: var(--color-bg-secondary);
+  --tab-inactive-text: var(--color-text-secondary);
+  --tab-border: var(--color-card-border);
+
+  /* Button styling */
+  --btn-primary-bg: var(--color-accent-primary);
+  --btn-primary-text: #fff;
+  --btn-danger-bg: var(--color-accent-red);
+  --btn-success-bg: var(--color-accent-green);
+  --btn-info-bg: var(--color-accent-blue);
+  --btn-warning-bg: var(--color-accent-secondary);
+
+  /* Progress bar styling */
+  --progress-bg: var(--color-bg-tertiary);
+  --progress-fat-color: #4a6fa5;
+  --progress-vit-color: #8b0000;
+  --progress-damage-color: #dc3545;
+  --progress-healing-color: #198754;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEON CIRCUIT THEME - Sci-Fi/Cyberpunk
+   Dark carbon fiber, holographic displays, neon accents
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme="scifi"] {
+  /* Typography */
+  --font-display: 'Orbitron', 'Rajdhani', sans-serif;
+  --font-body: 'Exo 2', 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', 'Fira Code', monospace;
+
+  /* Core Colors */
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #12121a;
+  --color-bg-tertiary: #1a1a25;
+  --color-text-primary: #e0e0e8;
+  --color-text-secondary: #a0a0b0;
+  --color-text-muted: #606070;
+
+  /* Accent Colors - Neon palette */
+  --color-accent-primary: #00f0ff;      /* Cyan neon */
+  --color-accent-secondary: #ff00aa;    /* Magenta neon */
+  --color-accent-gold: #ffcc00;         /* Yellow warning */
+  --color-accent-red: #ff3355;          /* Red alert */
+  --color-accent-green: #00ff88;        /* Green success */
+  --color-accent-blue: #4488ff;         /* Blue info */
+
+  /* UI Elements */
+  --color-card-bg: rgba(18, 18, 26, 0.95);
+  --color-card-border: #2a2a3a;
+  --color-card-header-bg: #1a1a25;
+  --color-card-header-text: #00f0ff;
+  --color-input-bg: #0f0f18;
+  --color-input-border: #3a3a4a;
+
+  /* Header bar */
+  --color-header-bg: #0d0d14;
+  --color-header-text: #e0e0e8;
+
+  /* Status Colors */
+  --color-health-full: #00ff88;
+  --color-health-mid: #ffcc00;
+  --color-health-low: #ff3355;
+  --color-fatigue: #4488ff;
+  --color-vitality: #ff3355;
+  --color-ap: #ffcc00;
+
+  /* Effects & Decorations */
+  --shadow-card: 0 0 20px rgba(0, 240, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-inset: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  --border-radius: 2px;
+  --border-style: 1px solid var(--color-card-border);
+
+  /* Background */
+  --bg-image: none;
+  --bg-overlay: linear-gradient(135deg, rgba(0, 240, 255, 0.03) 0%, rgba(255, 0, 170, 0.03) 100%);
+
+  /* Tab styling */
+  --tab-active-bg: transparent;
+  --tab-active-text: var(--color-accent-primary);
+  --tab-inactive-bg: transparent;
+  --tab-inactive-text: var(--color-text-muted);
+  --tab-border: var(--color-accent-primary);
+
+  /* Button styling */
+  --btn-primary-bg: transparent;
+  --btn-primary-text: var(--color-accent-primary);
+  --btn-danger-bg: transparent;
+  --btn-success-bg: transparent;
+  --btn-info-bg: transparent;
+  --btn-warning-bg: transparent;
+
+  /* Progress bar styling */
+  --progress-bg: var(--color-bg-tertiary);
+  --progress-fat-color: #4488ff;
+  --progress-vit-color: #ff3355;
+  --progress-damage-color: #ff3355;
+  --progress-healing-color: #00ff88;
+
+  /* Glow effects */
+  --glow-primary: 0 0 10px var(--color-accent-primary);
+  --glow-secondary: 0 0 10px var(--color-accent-secondary);
+  --border-glow: 0 0 5px var(--color-accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEMED COMPONENT STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Body and Background */
+body {
+  background-color: var(--color-bg-primary);
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  background-size: cover;
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-overlay);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Sci-fi scanlines effect */
+[data-theme="scifi"] body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARD STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.card {
+  background: var(--color-card-bg);
+  border: var(--border-style);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
+}
+
+/* Fantasy card corner accents */
+[data-theme="fantasy"] .card {
+  position: relative;
+}
+
+[data-theme="fantasy"] .card::before,
+[data-theme="fantasy"] .card::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-accent-gold);
+  opacity: 0.5;
+}
+
+[data-theme="fantasy"] .card::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+[data-theme="fantasy"] .card::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+.card-header {
+  background: var(--color-card-header-bg);
+  color: var(--color-card-header-text);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .card-header {
+  background: linear-gradient(90deg, var(--color-card-header-bg) 0%, #252535 100%);
+  border-bottom: 1px solid var(--color-accent-primary);
+  text-shadow: var(--glow-primary);
+  letter-spacing: 0.15em;
+  font-size: 0.9em;
+}
+
+/* Sci-fi card clip-path for angular corners */
+[data-theme="scifi"] .card {
+  clip-path: polygon(
+    0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px)
+  );
+}
+
+.card-body {
+  color: var(--color-text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHARACTER HEADER STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.character-header {
+  background-color: var(--color-header-bg) !important;
+  color: var(--color-header-text) !important;
+  border: var(--border-style);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="fantasy"] .character-header {
+  background: linear-gradient(135deg, #3d2817 0%, #2d1810 100%) !important;
+  border: 2px solid var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .character-header {
+  background: linear-gradient(90deg, #0d0d14 0%, #1a1a25 100%) !important;
+  border: 1px solid var(--color-accent-primary);
+  box-shadow: var(--glow-primary), inset 0 0 30px rgba(0, 240, 255, 0.05);
+}
+
+[data-theme="scifi"] .character-header h4,
+[data-theme="scifi"] .character-header .fw-bold {
+  text-shadow: var(--glow-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TAB STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.tab-buttons {
+  display: flex;
+  border-bottom: 2px solid var(--tab-border);
+}
+
+.tab-buttons button,
+.tab-buttons .tab-link {
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  border: none;
+  background-color: var(--tab-inactive-bg);
+  color: var(--tab-inactive-text);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85em;
+  margin-right: 2px;
+  transition: all 0.2s ease;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.tab-buttons button.active,
+.tab-buttons .tab-link.active {
+  background-color: var(--tab-active-bg);
+  color: var(--tab-active-text);
+}
+
+.tab-buttons button:hover:not(.active),
+.tab-buttons .tab-link:hover:not(.active) {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .tab-buttons button,
+[data-theme="scifi"] .tab-buttons .tab-link {
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+[data-theme="scifi"] .tab-buttons button.active,
+[data-theme="scifi"] .tab-buttons .tab-link.active {
+  background: transparent;
+  border-bottom: 2px solid var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  text-shadow: var(--glow-primary);
+}
+
+.tab-content {
+  background: var(--color-card-bg);
+  border: var(--border-style);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  padding: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   POOL BAR STYLES (FAT, VIT, AP)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.pool-bar,
+.progress {
+  background: var(--progress-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+[data-theme="fantasy"] .pool-bar,
+[data-theme="fantasy"] .progress {
+  border: 2px inset var(--color-card-border);
+}
+
+[data-theme="scifi"] .pool-bar,
+[data-theme="scifi"] .progress {
+  border: 1px solid var(--color-card-border);
+  position: relative;
+}
+
+[data-theme="scifi"] .pool-bar::before,
+[data-theme="scifi"] .progress::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.2) 2px,
+    rgba(0, 0, 0, 0.2) 4px
+  );
+  pointer-events: none;
+}
+
+/* Sci-fi progress bar glow animation */
+[data-theme="scifi"] .progress-bar {
+  box-shadow: var(--glow-primary);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTON STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.btn {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+[data-theme="scifi"] .btn-primary {
+  background: transparent;
+  border: 1px solid var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  box-shadow: var(--glow-primary);
+}
+
+[data-theme="scifi"] .btn-primary:hover {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+}
+
+[data-theme="scifi"] .btn-danger {
+  background: transparent;
+  border: 1px solid var(--color-accent-red);
+  color: var(--color-accent-red);
+  box-shadow: 0 0 10px var(--color-accent-red);
+}
+
+[data-theme="scifi"] .btn-danger:hover {
+  background: var(--color-accent-red);
+  color: var(--color-bg-primary);
+}
+
+[data-theme="scifi"] .btn-success {
+  background: transparent;
+  border: 1px solid var(--color-accent-green);
+  color: var(--color-accent-green);
+  box-shadow: 0 0 10px var(--color-accent-green);
+}
+
+[data-theme="scifi"] .btn-success:hover {
+  background: var(--color-accent-green);
+  color: var(--color-bg-primary);
+}
+
+[data-theme="scifi"] .btn-warning {
+  background: transparent;
+  border: 1px solid var(--color-accent-gold);
+  color: var(--color-accent-gold);
+  box-shadow: 0 0 10px var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .btn-warning:hover {
+  background: var(--color-accent-gold);
+  color: var(--color-bg-primary);
+}
+
+[data-theme="scifi"] .btn-info {
+  background: transparent;
+  border: 1px solid var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  box-shadow: 0 0 10px var(--color-accent-blue);
+}
+
+[data-theme="scifi"] .btn-info:hover {
+  background: var(--color-accent-blue);
+  color: var(--color-bg-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORM STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.form-control,
+.form-select {
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
+  color: var(--color-text-primary);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--color-input-bg);
+  border-color: var(--color-accent-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .form-control:focus,
+[data-theme="scifi"] .form-select:focus {
+  box-shadow: var(--glow-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGE STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.badge {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[data-theme="scifi"] .badge.bg-danger {
+  background: transparent !important;
+  border: 1px solid var(--color-accent-red);
+  color: var(--color-accent-red);
+  box-shadow: 0 0 5px var(--color-accent-red);
+}
+
+[data-theme="scifi"] .badge.bg-success {
+  background: transparent !important;
+  border: 1px solid var(--color-accent-green);
+  color: var(--color-accent-green);
+  box-shadow: 0 0 5px var(--color-accent-green);
+}
+
+[data-theme="scifi"] .badge.bg-warning {
+  background: transparent !important;
+  border: 1px solid var(--color-accent-gold);
+  color: var(--color-accent-gold) !important;
+  box-shadow: 0 0 5px var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .badge.bg-info {
+  background: transparent !important;
+  border: 1px solid var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  box-shadow: 0 0 5px var(--color-accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACTIVITY LOG STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.activity-log {
+  background-color: var(--color-card-bg) !important;
+  border: var(--border-style);
+  border-radius: var(--border-radius);
+}
+
+[data-theme="scifi"] .activity-log {
+  background: rgba(18, 18, 26, 0.9) !important;
+  border: 1px solid var(--color-card-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ALERT STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="fantasy"] .alert {
+  border-radius: var(--border-radius);
+  border-width: 2px;
+}
+
+[data-theme="scifi"] .alert {
+  background: transparent;
+  border: 1px solid;
+}
+
+[data-theme="scifi"] .alert-danger {
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
+}
+
+[data-theme="scifi"] .alert-warning {
+  border-color: var(--color-accent-gold);
+  color: var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .alert-success {
+  border-color: var(--color-accent-green);
+  color: var(--color-accent-green);
+}
+
+[data-theme="scifi"] .alert-info {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME SWITCHER STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.theme-switcher {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.theme-switcher .theme-btn {
+  padding: 0.5rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card-bg);
+  color: var(--color-text-muted);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-switcher .theme-btn:hover:not(:disabled) {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.theme-switcher .theme-btn.active {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.theme-switcher .theme-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme="scifi"] .theme-switcher .theme-btn.active {
+  box-shadow: var(--glow-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AP PIPS (ACTION POINT INDICATORS)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ap-pip {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ap-pip.available {
+  background: var(--color-ap);
+}
+
+.ap-pip.spent {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-text-muted);
+}
+
+[data-theme="scifi"] .ap-pip.available {
+  background: transparent;
+  border: 1px solid var(--color-ap);
+  color: var(--color-ap);
+  box-shadow: 0 0 8px var(--color-ap);
+}
+
+[data-theme="scifi"] .ap-pip.spent {
+  background: transparent;
+  border: 1px solid var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GM DASHBOARD STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.gm-header {
+  background-color: var(--color-header-bg) !important;
+  color: var(--color-header-text) !important;
+}
+
+[data-theme="scifi"] .gm-header {
+  border-bottom: 1px solid var(--color-accent-primary);
+  box-shadow: 0 2px 10px rgba(0, 240, 255, 0.2);
+}
+
+/* Character cards in GM view */
+.gm-character-card {
+  transition: all 0.2s ease;
+}
+
+.gm-character-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="scifi"] .gm-character-card:hover {
+  box-shadow: var(--glow-primary);
+}
+
+/* Status indicator dots */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator.connected { background: var(--color-accent-green); }
+.status-indicator.disconnected { background: var(--color-accent-red); }
+.status-indicator.away { background: var(--color-accent-gold); }
+
+[data-theme="scifi"] .status-indicator {
+  box-shadow: 0 0 6px currentColor;
+}
+
+[data-theme="scifi"] .status-indicator.connected { box-shadow: 0 0 6px var(--color-accent-green); }
+[data-theme="scifi"] .status-indicator.disconnected { box-shadow: 0 0 6px var(--color-accent-red); }
+[data-theme="scifi"] .status-indicator.away { box-shadow: 0 0 6px var(--color-accent-gold); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.modal-content {
+  background: var(--color-card-bg);
+  border: var(--border-style);
+}
+
+.modal-header {
+  background: var(--color-card-header-bg);
+  color: var(--color-card-header-text);
+  border-bottom: 2px solid var(--color-accent-gold);
+}
+
+[data-theme="scifi"] .modal-header {
+  border-bottom: 1px solid var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .modal-content {
+  clip-path: polygon(
+    0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px,
+    100% calc(100% - 12px), calc(100% - 12px) 100%,
+    12px 100%, 0 calc(100% - 12px)
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEXT UTILITIES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+[data-theme="scifi"] h1,
+[data-theme="scifi"] h2,
+[data-theme="scifi"] h3 {
+  letter-spacing: 0.1em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR / NAVIGATION
+   ═══════════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  background: var(--color-card-bg);
+  border-right: var(--border-style);
+}
+
+[data-theme="scifi"] .sidebar {
+  background: rgba(10, 10, 15, 0.95);
+  border-right: 1px solid var(--color-card-border);
+}
+
+.nav-link {
+  color: var(--color-text-secondary);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .nav-link.active {
+  text-shadow: var(--glow-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOP ROW / AUTH BAR
+   ═══════════════════════════════════════════════════════════════════ */
+
+.top-row {
+  background: var(--color-card-bg);
+  border-bottom: var(--border-style);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .top-row {
+  background: rgba(18, 18, 26, 0.9);
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+.top-row a {
+  color: var(--color-accent-primary);
+}

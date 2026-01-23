@@ -15,6 +15,7 @@ public class InMemoryMessageBus : IDisposable
     private readonly Subject<TimeResultMessage> _timeResults = new();
     private readonly Subject<ActivityLogMessage> _activityLogs = new();
     private readonly Subject<CharacterUpdateMessage> _characterUpdates = new();
+    private readonly Subject<TableUpdateMessage> _tableUpdates = new();
     private bool _disposed;
 
     /// <summary>
@@ -46,6 +47,11 @@ public class InMemoryMessageBus : IDisposable
     /// Observable stream of character update messages.
     /// </summary>
     public IObservable<CharacterUpdateMessage> CharacterUpdates => _characterUpdates.AsObservable();
+
+    /// <summary>
+    /// Observable stream of table update messages.
+    /// </summary>
+    public IObservable<TableUpdateMessage> TableUpdates => _tableUpdates.AsObservable();
 
     /// <summary>
     /// Publishes a time event message to all subscribers.
@@ -95,6 +101,14 @@ public class InMemoryMessageBus : IDisposable
         _characterUpdates.OnNext(message);
     }
 
+    /// <summary>
+    /// Publishes a table update message to all subscribers.
+    /// </summary>
+    public void PublishTableUpdate(TableUpdateMessage message)
+    {
+        _tableUpdates.OnNext(message);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -106,5 +120,6 @@ public class InMemoryMessageBus : IDisposable
         _timeResults.Dispose();
         _activityLogs.Dispose();
         _characterUpdates.Dispose();
+        _tableUpdates.Dispose();
     }
 }

@@ -297,3 +297,40 @@ public enum CharacterUpdateType
     /// <summary>Character stats changed.</summary>
     StatsChanged
 }
+
+/// <summary>
+/// Message sent when a table setting is updated by the GM.
+/// Players should react accordingly (e.g., theme change, session state).
+/// </summary>
+public class TableUpdateMessage
+{
+    /// <summary>
+    /// Unique identifier for this message.
+    /// </summary>
+    public Guid MessageId { get; init; } = Guid.NewGuid();
+
+    /// <summary>
+    /// The ID of the table that was updated.
+    /// </summary>
+    public Guid TableId { get; init; }
+
+    /// <summary>
+    /// When the update occurred.
+    /// </summary>
+    public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// The type of update (e.g., "ThemeChanged", "StatusChanged").
+    /// </summary>
+    public string UpdateType { get; init; } = string.Empty;
+
+    /// <summary>
+    /// New theme if this is a theme change ("fantasy" or "scifi").
+    /// </summary>
+    public string? Theme { get; init; }
+
+    /// <summary>
+    /// Optional description of the update.
+    /// </summary>
+    public string? Description { get; init; }
+}
