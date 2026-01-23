@@ -24,6 +24,7 @@
 @inject IActivityLogService ActivityLog
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
+@inject IJSRuntime JS
 
 @using GameMechanics.Time
 
@@ -207,73 +208,147 @@ else if (character == null)
 
 @if (character != null)
 {
-    <!-- Character Status Header -->
-    <div class="character-header" style="background-color: #2d3748; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+    <!-- Character Status Header (themed) -->
+    <div class="character-header p-3 rounded mb-3">
         <div class="d-flex flex-column gap-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-start">
-                <div>
-                    <h4 style="margin: 0;">@character.Name</h4>
-                    <small>@character.Species</small>
+            <!-- Top row: Character identity + Resource pools + Table info -->
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <!-- Character Identity -->
+                <div class="d-flex align-items-center gap-3">
+                    @if (!string.IsNullOrEmpty(character.ImageUrl))
+                    {
+                        <img src="@character.ImageUrl" alt="@character.Name"
+                             class="rounded" style="width: 48px; height: 48px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded d-flex align-items-center justify-content-center"
+                             style="width: 48px; height: 48px; background: var(--color-bg-tertiary); font-size: 1.5rem;">
+                            @(character.Name.FirstOrDefault())
+                        </div>
+                    }
+                    <div>
+                        <h4 class="mb-0" style="font-family: var(--font-display);">@character.Name</h4>
+                        <small style="color: var(--color-text-muted);">@character.Species</small>
+                    </div>
                 </div>
 
-                <div class="d-flex gap-4 flex-wrap justify-content-center">
-                    <div class="text-center" style="width: 120px;">
-                        <small>FAT</small>
-                        <div class="fw-bold">@character.Fatigue.Value / @character.Fatigue.BaseValue</div>
+                <!-- Resource Pools -->
+                <div class="d-flex gap-3 flex-wrap justify-content-center">
+                    <!-- FAT Pool -->
+                    <div class="resource-pool text-center p-2 rounded" style="min-width: 100px; background: var(--color-bg-tertiary);">
+                        <small class="d-block" style="font-family: var(--font-display); letter-spacing: 0.1em;">FAT</small>
+                        <div class="fw-bold fs-5" style="color: var(--color-fatigue);">
+                            @character.Fatigue.Value<span style="color: var(--color-text-muted);">/@character.Fatigue.BaseValue</span>
+                        </div>
                         <PendingPoolBar CurrentValue="@character.Fatigue.Value"
                                         MaxValue="@character.Fatigue.BaseValue"
                                         PendingDamage="@character.Fatigue.PendingDamage"
                                         PendingHealing="@character.Fatigue.PendingHealing"
-                                        Height="10px" />
+                                        Height="8px" />
+                        @if (character.Fatigue.PendingDamage > 0 || character.Fatigue.PendingHealing > 0)
+                        {
+                            <small class="d-block mt-1" style="font-size: 0.7rem;">
+                                @if (character.Fatigue.PendingDamage > 0)
+                                {
+                                    <span style="color: var(--color-accent-red);">-@character.Fatigue.PendingDamage</span>
+                                }
+                                @if (character.Fatigue.PendingHealing > 0)
+                                {
+                                    <span style="color: var(--color-accent-green);" class="@(character.Fatigue.PendingDamage > 0 ? "ms-1" : "")">+@character.Fatigue.PendingHealing</span>
+                                }
+                            </small>
+                        }
                     </div>
-                    <div class="text-center" style="width: 120px;">
-                        <small>VIT</small>
-                        <div class="fw-bold">@character.Vitality.Value / @character.Vitality.BaseValue</div>
+
+                    <!-- VIT Pool -->
+                    <div class="resource-pool text-center p-2 rounded" style="min-width: 100px; background: var(--color-bg-tertiary);">
+                        <small class="d-block" style="font-family: var(--font-display); letter-spacing: 0.1em;">VIT</small>
+                        <div class="fw-bold fs-5" style="color: var(--color-vitality);">
+                            @character.Vitality.Value<span style="color: var(--color-text-muted);">/@character.Vitality.BaseValue</span>
+                        </div>
                         <PendingPoolBar CurrentValue="@character.Vitality.Value"
                                         MaxValue="@character.Vitality.BaseValue"
                                         PendingDamage="@character.Vitality.PendingDamage"
                                         PendingHealing="@character.Vitality.PendingHealing"
-                                        Height="10px" />
+                                        Height="8px" />
+                        @if (character.Vitality.PendingDamage > 0 || character.Vitality.PendingHealing > 0)
+                        {
+                            <small class="d-block mt-1" style="font-size: 0.7rem;">
+                                @if (character.Vitality.PendingDamage > 0)
+                                {
+                                    <span style="color: var(--color-accent-red);">-@character.Vitality.PendingDamage</span>
+                                }
+                                @if (character.Vitality.PendingHealing > 0)
+                                {
+                                    <span style="color: var(--color-accent-green);" class="@(character.Vitality.PendingDamage > 0 ? "ms-1" : "")">+@character.Vitality.PendingHealing</span>
+                                }
+                            </small>
+                        }
                     </div>
-                    <div class="text-center">
-                        <small>AP</small>
-                        <div class="fw-bold fs-4">@character.ActionPoints.Available / @character.ActionPoints.Max</div>
-                    </div>
-                    <div class="text-center">
-                        <small>Wounds</small>
-                        <div class="fw-bold fs-4">
-                            <i class="bi bi-bandaid"></i> @GetWoundCount()
+
+                    <!-- AP Pips -->
+                    <div class="resource-pool text-center p-2 rounded" style="min-width: 90px; background: var(--color-bg-tertiary);">
+                        <small class="d-block" style="font-family: var(--font-display); letter-spacing: 0.1em;">AP</small>
+                        <div class="d-flex justify-content-center gap-1 my-1">
+                            @for (int i = 0; i < character.ActionPoints.Max; i++)
+                            {
+                                var isAvailable = i < character.ActionPoints.Available;
+                                <div class="ap-pip @(isAvailable ? "available" : "spent")">
+                                    @if (isAvailable)
+                                    {
+                                        <i class="bi bi-lightning-fill" style="font-size: 0.6rem;"></i>
+                                    }
+                                </div>
+                            }
                         </div>
+                        <small style="color: var(--color-text-muted);">@character.ActionPoints.Available / @character.ActionPoints.Max</small>
+                    </div>
+
+                    <!-- Wounds Summary -->
+                    @{
+                        var woundCount = GetWoundCount();
+                    }
+                    <div class="resource-pool text-center p-2 rounded" style="min-width: 80px; background: var(--color-bg-tertiary);">
+                        <small class="d-block" style="font-family: var(--font-display); letter-spacing: 0.1em;">WOUNDS</small>
+                        <div class="fw-bold fs-5" style="color: @(woundCount > 0 ? "var(--color-accent-red)" : "var(--color-text-muted)");">
+                            <i class="bi bi-bandaid"></i> @woundCount
+                        </div>
+                        @if (woundCount > 0)
+                        {
+                            <small style="color: var(--color-accent-red);">@(woundCount * -2) AS</small>
+                        }
                     </div>
                 </div>
 
-                <div>
-                    @if (table != null)
-                    {
-                        <div class="text-end">
-                            <small>Table: @table.Name</small>
-                            <br />
-                            <small class="text-muted">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
-                            <br />
+                <!-- Table Info -->
+                @if (table != null)
+                {
+                    <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
+                        <div style="font-family: var(--font-display); font-size: 0.85rem;">@table.Name</div>
+                        <small style="color: var(--color-text-muted);">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
+                        <div class="mt-1">
                             <span class="badge @(table.IsInCombat ? "bg-danger" : "bg-success")">
-                                @(table.IsInCombat ? "Combat" : "Exploration") - Round @table.CurrentRound
+                                @(table.IsInCombat ? "COMBAT" : "EXPLORATION")
                             </span>
+                            <span class="badge bg-info ms-1">Round @table.CurrentRound</span>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
 
+            <!-- Active Effects Row -->
             @if (character.Effects.Any())
             {
-                <div class="d-flex flex-wrap gap-2 align-items-center" style="border-top: 1px solid #4a5568; padding-top: 0.75rem;">
-                    <small class="me-2">Effects:</small>
+                <div class="d-flex flex-wrap gap-2 align-items-center pt-2" style="border-top: 1px solid var(--color-card-border);">
+                    <small class="me-2" style="font-family: var(--font-display); letter-spacing: 0.05em;">EFFECTS:</small>
                     @foreach (var effect in character.Effects)
                     {
                         <EffectIcon EffectType="@effect.EffectType.ToString()"
                                     EffectName="@effect.Name"
                                     Tooltip="@GetEffectTooltip(effect)"
                                     Stacks="@effect.CurrentStacks"
-                                    Color="white" />
+                                    Color="@GetEffectColor(effect)" />
                     }
                 </div>
             }
@@ -292,7 +367,7 @@ else if (character == null)
     </div>
 
     <!-- Tab Content -->
-    <div class="tab-content" style="padding: 1rem; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
+    <div class="tab-content">
         @if (activeTab == "Status")
         {
             <TabStatus Character="character" Table="table" />
@@ -389,6 +464,12 @@ protected override async Task OnInitializedAsync()
                 table = await tablePortal.FetchAsync(TableId);
                 SubscribeToActivityLog(TableId);
                 await SubscribeToTimeEvents(TableId);
+
+                // Apply the table's theme
+                if (table != null)
+                {
+                    await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+                }
             }
             catch (Exception ex)
             {
@@ -520,6 +601,7 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
         TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        TimeEventSubscriber.TableUpdateReceived += OnTableUpdateReceived;
         timeEventSubscribed = true;
     }
 
@@ -602,6 +684,32 @@ private async Task SelectCharacterAsync(int characterId)
         });
     }
 
+    private void OnTableUpdateReceived(object? sender, TableUpdateMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.TableId != table.Id) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Handle theme changes
+                if (e.UpdateType == "ThemeChanged" && !string.IsNullOrEmpty(e.Theme))
+                {
+                    await JS.InvokeVoidAsync("threaTheme.apply", e.Theme);
+                    // Update local table state
+                    table = await tablePortal.FetchAsync(table.Id);
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing table update: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
     private async Task UnsubscribeFromTimeEvents()
     {
         if (!timeEventSubscribed) return;
@@ -609,6 +717,7 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
         TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        TimeEventSubscriber.TableUpdateReceived -= OnTableUpdateReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
     }
@@ -657,6 +766,18 @@ private async Task SelectCharacterAsync(int characterId)
 
         return $"{effect.Name}{description}{duration}{source}";
     }
+
+    private string GetEffectColor(GameMechanics.EffectRecord effect) => effect.EffectType switch
+    {
+        Threa.Dal.Dto.EffectType.Buff => "var(--color-accent-green)",
+        Threa.Dal.Dto.EffectType.Debuff or Threa.Dal.Dto.EffectType.Poison => "var(--color-accent-red)",
+        Threa.Dal.Dto.EffectType.Wound => "var(--color-accent-red)",
+        Threa.Dal.Dto.EffectType.Disease => "var(--color-accent-secondary)",
+        Threa.Dal.Dto.EffectType.Condition => "var(--color-accent-gold)",
+        Threa.Dal.Dto.EffectType.SpellEffect => "var(--color-accent-blue)",
+        Threa.Dal.Dto.EffectType.ItemEffect => "var(--color-accent-primary)",
+        _ => "var(--color-text-primary)"
+    };
 
     // Detach confirmation methods
     private void ShowDetachConfirmation(GameMechanics.Player.CharacterInfo charInfo)

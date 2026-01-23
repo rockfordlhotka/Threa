@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using GameMechanics.Combat.Effects;
 
 namespace GameMechanics.Combat;
 
@@ -62,6 +63,87 @@ public class AmmunitionProperties
     /// <summary>Extra SV bonus for direct hit target (center of blast).</summary>
     [JsonPropertyName("directHitBonus")]
     public int DirectHitBonus { get; set; }
+
+    // ========== Attack Effect Properties ==========
+
+    /// <summary>
+    /// Structured on-hit effect definition. Takes precedence over SpecialEffect if both are set.
+    /// </summary>
+    [JsonPropertyName("onHitEffect")]
+    public AttackEffectGrant? OnHitEffect { get; set; }
+
+    /// <summary>
+    /// Gets the parsed on-hit effect, either from the structured OnHitEffect property
+    /// or by parsing the legacy SpecialEffect string.
+    /// </summary>
+    public AttackEffectGrant? GetOnHitEffect()
+    {
+        // Prefer structured effect if defined
+        if (OnHitEffect != null)
+            return OnHitEffect;
+
+        // Fall back to parsing SpecialEffect string for backwards compatibility
+        return GetParsedSpecialEffect();
+    }
+
+    /// <summary>
+    /// Parses the SpecialEffect string into a structured AttackEffectGrant.
+    /// Used for backwards compatibility with ammo that only has SpecialEffect defined.
+    /// </summary>
+    public AttackEffectGrant? GetParsedSpecialEffect()
+    {
+        if (string.IsNullOrEmpty(SpecialEffect))
+            return null;
+
+        return SpecialEffect.ToUpperInvariant() switch
+        {
+            "INCENDIARY" => AttackEffectGrant.CreateDotEffect(
+                "Burning",
+                damagePerRound: 2,
+                DamageType.Energy,
+                durationRounds: 3,
+                AmmoType ?? "Incendiary Ammo"),
+
+            "CRYO" or "FREEZING" => AttackEffectGrant.CreateDebuff(
+                "Chilled",
+                "Movement and actions slowed",
+                JsonSerializer.Serialize(new { MovementPenalty = -2, APPenalty = -1 }),
+                durationRounds: 2,
+                AmmoType ?? "Cryo Ammo"),
+
+            "SHOCK" or "ELECTRIC" => new AttackEffectGrant
+            {
+                EffectName = "Shocked",
+                Description = "Electrical damage and potential stun",
+                EffectType = Threa.Dal.Dto.EffectType.Debuff,
+                BonusDamage = 1,
+                BonusDamageType = DamageType.Energy,
+                DurationRounds = 1,
+                Source = AmmoType ?? "Shock Ammo"
+            },
+
+            "HOLLOW-POINT" or "HOLLOWPOINT" => new AttackEffectGrant
+            {
+                EffectName = "Expanded Wound",
+                Description = "Increased damage to unarmored targets",
+                BonusDamage = 2,
+                BonusDamageType = DamageType.Projectile,
+                Source = AmmoType ?? "Hollow-Point Ammo"
+            },
+
+            "EXPLOSIVE" or "HE" => new AttackEffectGrant
+            {
+                EffectName = "Explosive",
+                Description = "Area damage",
+                BonusDamage = 3,
+                BonusDamageType = DamageType.Bashing,
+                Source = AmmoType ?? "Explosive Ammo"
+            },
+
+            // Armor-piercing and tracer don't create effects (handled by penetration modifier)
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Deserializes from JSON string.

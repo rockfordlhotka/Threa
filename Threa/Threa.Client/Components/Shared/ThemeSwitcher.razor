@@ -1,0 +1,52 @@
+@namespace Threa.Client.Components.Shared
+
+@inject IJSRuntime JS
+
+<div class="theme-switcher">
+    <button class="theme-btn @(CurrentTheme == "fantasy" ? "active" : "")"
+            @onclick="SetFantasyTheme"
+            title="Arcanum (Fantasy Theme)"
+            disabled="@(!CanEdit)">
+        <i class="bi bi-book"></i>
+    </button>
+    <button class="theme-btn @(CurrentTheme == "scifi" ? "active" : "")"
+            @onclick="SetSciFiTheme"
+            title="Neon Circuit (Sci-Fi Theme)"
+            disabled="@(!CanEdit)">
+        <i class="bi bi-cpu"></i>
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentTheme { get; set; } = "fantasy";
+
+    [Parameter]
+    public bool CanEdit { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<string> OnThemeChanged { get; set; }
+
+    private Task SetFantasyTheme() => SetTheme("fantasy");
+    private Task SetSciFiTheme() => SetTheme("scifi");
+
+    private async Task SetTheme(string theme)
+    {
+        if (!CanEdit || theme == CurrentTheme) return;
+
+        // Apply theme immediately to DOM
+        await JS.InvokeVoidAsync("threaTheme.apply", theme);
+
+        // Notify parent component
+        await OnThemeChanged.InvokeAsync(theme);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Apply current theme on load
+        if (!string.IsNullOrEmpty(CurrentTheme))
+        {
+            await JS.InvokeVoidAsync("threaTheme.apply", CurrentTheme);
+        }
+    }
+}

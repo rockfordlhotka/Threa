@@ -99,10 +99,10 @@
                     <!-- Defend Button -->
                     <button class="btn btn-lg btn-info py-3"
                             @onclick="StartDefend"
-                            disabled="@(!CanAct())">
+                            disabled="@(Character?.IsPassedOut ?? true)">
                         <i class="bi bi-shield-shaded fs-4"></i>
                         <div class="fw-bold">DEFEND</div>
-                        <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                        <small class="opacity-75">Passive always available</small>
                     </button>
 
                     <!-- Rest Card -->
@@ -198,6 +198,7 @@
                           InitialDamageClass="pendingDamageClass"
                           InitialShieldBlockSuccess="pendingShieldBlockSuccess"
                           InitialShieldBlockRV="pendingShieldBlockRV"
+                          InitialCalledShotLocation="pendingCalledShotLocation"
                           EquippedItems="equippedItems"
                           ShieldSkillAS="shieldSkillAS"
                           ArmorSkillAS="armorSkillAS"
@@ -255,6 +256,7 @@
     private int? pendingDamageClass;
     private bool? pendingShieldBlockSuccess;
     private int? pendingShieldBlockRV;
+    private HitLocation? pendingCalledShotLocation;
 
     protected override async Task OnInitializedAsync()
     {
@@ -592,6 +594,7 @@
         pendingDamageClass = hitData.DamageClass;
         pendingShieldBlockSuccess = hitData.ShieldBlockSuccess;
         pendingShieldBlockRV = hitData.ShieldBlockRV;
+        pendingCalledShotLocation = hitData.CalledShotLocation;
         combatMode = CombatMode.TakeDamage;
         StateHasChanged();
     }
@@ -709,6 +712,7 @@
         pendingDamageClass = null;
         pendingShieldBlockSuccess = null;
         pendingShieldBlockRV = null;
+        pendingCalledShotLocation = null;
     }
 
 

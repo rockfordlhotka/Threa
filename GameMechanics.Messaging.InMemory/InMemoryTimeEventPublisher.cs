@@ -73,6 +73,17 @@ public class InMemoryTimeEventPublisher : ITimeEventPublisher
         return Task.CompletedTask;
     }
 
+    public Task PublishTableUpdateAsync(TableUpdateMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTableUpdate(message);
+        _logger.LogDebug("Published TableUpdateMessage: TableId={TableId}, Type={UpdateType}",
+            message.TableId, message.UpdateType);
+
+        return Task.CompletedTask;
+    }
+
     private void EnsureConnected()
     {
         if (_disposed)

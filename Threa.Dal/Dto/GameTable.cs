@@ -28,6 +28,12 @@ public class GameTable
     /// </summary>
     public long StartTimeSeconds { get; set; }
 
+    /// <summary>
+    /// The visual theme for this table ("fantasy" or "scifi").
+    /// Controls the overall look and feel of the UI for all players at this table.
+    /// </summary>
+    public string Theme { get; set; } = "fantasy";
+
     // Connected characters (managed separately for efficiency)
     public List<TableCharacter> Characters { get; set; } = [];
 

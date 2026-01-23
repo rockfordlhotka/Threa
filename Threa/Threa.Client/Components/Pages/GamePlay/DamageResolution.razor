@@ -126,6 +126,13 @@
                                     <td>Dice Roll:</td>
                                     <td class="fw-bold">@GetDicePreview()</td>
                                 </tr>
+                                @if (InitialCalledShotLocation.HasValue)
+                                {
+                                    <tr class="table-warning">
+                                        <td>Called Shot:</td>
+                                        <td class="fw-bold"><i class="bi bi-geo-alt"></i> @InitialCalledShotLocation.Value</td>
+                                    </tr>
+                                }
                                 @if (shieldBlockResult?.Success == true)
                                 {
                                     <tr class="table-info">
@@ -139,7 +146,15 @@
                     <div class="card-footer">
                         <button class="btn btn-danger btn-lg w-100" @onclick="ProceedToResolution"
                                 disabled="@(inputSV < 0)">
-                            <i class="bi bi-dice-5"></i> Roll Hit Location & Damage
+                            <i class="bi bi-dice-5"></i> 
+                            @if (InitialCalledShotLocation.HasValue)
+                            {
+                                <text>Apply Damage to @InitialCalledShotLocation.Value</text>
+                            }
+                            else
+                            {
+                                <text>Roll Hit Location &amp; Damage</text>
+                            }
                         </button>
                     </div>
                 </div>
@@ -313,18 +328,19 @@
 </div>
 
 @code {
-    [Parameter] public GameMechanics.CharacterEdit? Character { get; set; }
-    [Parameter] public GameMechanics.GamePlay.TableEdit? Table { get; set; }
-    [Parameter] public int? InitialSV { get; set; }
-    [Parameter] public DamageType? InitialDamageType { get; set; }
-    [Parameter] public int? InitialDamageClass { get; set; }
-    [Parameter] public bool? InitialShieldBlockSuccess { get; set; }
-    [Parameter] public int? InitialShieldBlockRV { get; set; }
-    [Parameter] public List<CharacterItem>? EquippedItems { get; set; }
-    [Parameter] public int ShieldSkillAS { get; set; }
-    [Parameter] public int ArmorSkillAS { get; set; }
-    [Parameter] public EventCallback OnCancel { get; set; }
-    [Parameter] public EventCallback<string> OnDamageComplete { get; set; }
+[Parameter] public GameMechanics.CharacterEdit? Character { get; set; }
+[Parameter] public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+[Parameter] public int? InitialSV { get; set; }
+[Parameter] public DamageType? InitialDamageType { get; set; }
+[Parameter] public int? InitialDamageClass { get; set; }
+[Parameter] public bool? InitialShieldBlockSuccess { get; set; }
+[Parameter] public int? InitialShieldBlockRV { get; set; }
+[Parameter] public HitLocation? InitialCalledShotLocation { get; set; }
+[Parameter] public List<CharacterItem>? EquippedItems { get; set; }
+[Parameter] public int ShieldSkillAS { get; set; }
+[Parameter] public int ArmorSkillAS { get; set; }
+[Parameter] public EventCallback OnCancel { get; set; }
+[Parameter] public EventCallback<string> OnDamageComplete { get; set; }
 
     private enum ResolutionPhase { Input, Result }
     private ResolutionPhase resolutionPhase = ResolutionPhase.Input;
@@ -451,9 +467,17 @@
     {
         if (Character == null) return;
 
-        // Determine hit location
-        var hitLocationCalc = new HitLocationCalculator(new RandomDiceRoller());
-        var hitLocation = hitLocationCalc.DetermineHitLocation();
+        // Determine hit location - use called shot if specified, otherwise random
+        HitLocation hitLocation;
+        if (InitialCalledShotLocation.HasValue)
+        {
+            hitLocation = InitialCalledShotLocation.Value;
+        }
+        else
+        {
+            var hitLocationCalc = new HitLocationCalculator(new RandomDiceRoller());
+            hitLocation = hitLocationCalc.DetermineHitLocation();
+        }
 
         // Build armor info for this location
         var armorAtLocation = BuildArmorInfoForLocation(hitLocation);

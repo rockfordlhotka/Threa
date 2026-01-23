@@ -9,22 +9,22 @@ main {
 }
 
 .sidebar {
-  background-color: transparent;
-  background-color: rgba(0,0,0,0.4);
+  background-color: var(--color-card-bg, rgba(0,0,0,0.4));
+  border-right: var(--border-style, 1px solid #ccc);
 }
 
 .top-row {
-  background-color: transparent;
-  background-color: rgba(0,0,0,0.4);
+  background-color: var(--color-card-bg, rgba(0,0,0,0.4));
+  border-bottom: var(--border-style, 1px solid #ccc);
   justify-content: flex-end;
   height: 3.5rem;
   display: flex;
   align-items: center;
-  color: white;
+  color: var(--color-text-primary, white);
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
-        color: white;
+        color: var(--color-accent-primary, #006bb7);
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;

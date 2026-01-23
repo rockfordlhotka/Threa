@@ -10,6 +10,7 @@
 @using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
 @using Threa.Services
+@using Threa.Client.Components.Shared
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
@@ -20,6 +21,7 @@
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IActivityLogService ActivityLog
 @inject ITimeEventPublisher TimeEventPublisher
+@inject IJSRuntime JS
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -35,12 +37,15 @@
 else
 {
     <!-- Header Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-dark text-white rounded">
+    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-dark text-white rounded gm-header">
         <div>
             <h4 class="mb-0">@table.Name</h4>
             <span class="badge @GetStatusBadgeClass()">@table.StatusDisplay</span>
         </div>
         <div class="d-flex gap-2 align-items-center">
+            <ThemeSwitcher CurrentTheme="@table.Theme"
+                           CanEdit="true"
+                           OnThemeChanged="ChangeTheme" />
             <div class="text-end me-3">
                 <small class="d-block text-muted">Game Time</small>
                 <span class="fw-bold">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</span>
@@ -84,35 +89,50 @@ else
                     {
                         @foreach (var character in tableCharacters)
                         {
-                            <div class="card mb-2 @(selectedCharacter?.CharacterId == character.CharacterId ? "border-primary" : "")"
+                            <div class="card gm-character-card mb-2 @(selectedCharacter?.CharacterId == character.CharacterId ? "border-primary" : "")"
                                  @onclick="() => SelectCharacter(character)"
                                  style="cursor: pointer;">
                                 <div class="card-body py-2">
-                                    <div class="d-flex justify-content-between">
-                                        <strong>@character.CharacterName</strong>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="status-indicator @GetConnectionIndicatorClass(character.ConnectionStatus)"></span>
+                                            <strong>@character.CharacterName</strong>
+                                        </div>
                                         <span class="badge @GetConnectionBadgeClass(character.ConnectionStatus)">
                                             @character.ConnectionStatusDisplay
                                         </span>
                                     </div>
-                                    <div class="d-flex gap-3 mt-1">
-                                        <small>
-                                            FAT: @character.FatValue/@character.FatMax
-                                            <div class="progress" style="height: 4px; width: 50px; display: inline-block;">
-                                                <div class="progress-bar bg-info" style="width: @GetPercent(character.FatValue, character.FatMax)%"></div>
+                                    <div class="mt-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <small style="width: 35px;">FAT</small>
+                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
+                                                <div class="progress-bar" style="width: @GetPercent(character.FatValue, character.FatMax)%; background-color: var(--progress-fat-color);"></div>
                                             </div>
-                                        </small>
-                                        <small>
-                                            VIT: @character.VitValue/@character.VitMax
-                                            <div class="progress" style="height: 4px; width: 50px; display: inline-block;">
-                                                <div class="progress-bar bg-danger" style="width: @GetPercent(character.VitValue, character.VitMax)%"></div>
+                                            <small class="text-end" style="width: 45px;">@character.FatValue/@character.FatMax</small>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small style="width: 35px;">VIT</small>
+                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
+                                                <div class="progress-bar" style="width: @GetPercent(character.VitValue, character.VitMax)%; background-color: var(--progress-vit-color);"></div>
                                             </div>
-                                        </small>
+                                            <small class="text-end" style="width: 45px;">@character.VitValue/@character.VitMax</small>
+                                        </div>
                                     </div>
-                                    <div class="mt-1">
-                                        <button class="btn btn-sm btn-outline-success" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickHeal(character)">Heal</button>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickDamage(character)">Damage</button>
+                                    @if (GetHealthStatus(character) != null)
+                                    {
+                                        <div class="mt-1">
+                                            <span class="badge @GetHealthStatusBadgeClass(character)">@GetHealthStatus(character)</span>
+                                        </div>
+                                    }
+                                    <div class="mt-2 d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick:stopPropagation="true"
+                                                @onclick="() => QuickHeal(character)">
+                                            <i class="bi bi-plus-circle"></i> Heal
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger flex-grow-1" @onclick:stopPropagation="true"
+                                                @onclick="() => QuickDamage(character)">
+                                            <i class="bi bi-dash-circle"></i> Damage
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -211,10 +231,19 @@ else
         <div class="col-md-4">
             <!-- Time Controls -->
             <div class="card mb-3">
-                <div class="card-header bg-info text-white">
-                    <strong>Time Controls</strong>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="bi bi-clock-history"></i> TIME CONTROLS</strong>
+                    <span class="badge bg-info">Round @table.CurrentRound</span>
                 </div>
                 <div class="card-body">
+                    <!-- Current Time Display -->
+                    <div class="text-center mb-3 p-2 rounded" style="background: var(--color-bg-tertiary);">
+                        <small style="color: var(--color-text-muted);">CURRENT TIME</small>
+                        <div class="fw-bold" style="font-family: var(--font-display);">
+                            @GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)
+                        </div>
+                    </div>
+
                     @if (table.Status == Threa.Dal.Dto.TableStatus.Lobby)
                     {
                         <div class="mb-3">
@@ -226,37 +255,53 @@ else
                             </small>
                         </div>
                         <button class="btn btn-success btn-lg w-100" @onclick="StartSession">
-                            Start Session
+                            <i class="bi bi-play-fill"></i> Start Session
                         </button>
                     }
                     else if (table.Status == Threa.Dal.Dto.TableStatus.Active)
                     {
-                        <div class="d-grid gap-2 mb-3">
-                            <button class="btn btn-primary" @onclick="AdvanceRound">
-                                Advance Round
+                        <!-- Quick Advance Buttons -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound">
+                                +1 Round
                             </button>
-                            <div class="input-group">
-                                <input type="number" class="form-control" @bind="roundsToAdvance"
-                                       min="1" max="100" />
-                                <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
-                                    Advance
-                                </button>
-                            </div>
+                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)">
+                                +5
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)">
+                                +10
+                            </button>
+                        </div>
+
+                        <!-- Custom Advance -->
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control" @bind="roundsToAdvance"
+                                   min="1" max="100" placeholder="Custom" />
+                            <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
+                                Advance
+                            </button>
                         </div>
 
                         <hr />
 
-                        <h6>Combat Mode</h6>
+                        <!-- Combat Mode Toggle -->
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span style="font-family: var(--font-display);">COMBAT MODE</span>
+                            @if (table.IsInCombat)
+                            {
+                                <span class="badge bg-danger me-2">ACTIVE</span>
+                            }
+                        </div>
                         @if (table.IsInCombat)
                         {
-                            <button class="btn btn-outline-success w-100" @onclick="ExitCombat">
-                                Exit Combat
+                            <button class="btn btn-outline-success w-100 mt-2" @onclick="ExitCombat">
+                                <i class="bi bi-peace"></i> End Combat
                             </button>
                         }
                         else
                         {
-                            <button class="btn btn-danger w-100" @onclick="EnterCombat">
-                                Enter Combat
+                            <button class="btn btn-danger w-100 mt-2" @onclick="EnterCombat">
+                                <i class="bi bi-shield-exclamation"></i> Enter Combat
                             </button>
                         }
                     }
@@ -369,11 +414,38 @@ else
             var charList = await characterListPortal.FetchAsync(TableId);
             tableCharacters = charList.AsEnumerable();
             npcs = new List<NpcInfo>();
+
+            // Apply the table's theme
+            if (table != null)
+            {
+                await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+            }
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to load table: {ex.Message}";
         }
+    }
+
+    private async Task ChangeTheme(string newTheme)
+    {
+        if (table == null) return;
+
+        table.Theme = newTheme;
+        await SaveTable();
+
+        // Apply theme immediately
+        await JS.InvokeVoidAsync("threaTheme.apply", newTheme);
+
+        AddLogEntry($"Theme changed to {(newTheme == "scifi" ? "Neon Circuit (Sci-Fi)" : "Arcanum (Fantasy)")}", ActivityCategory.Session);
+
+        // Notify all players that theme changed via a table update message
+        await TimeEventPublisher.PublishTableUpdateAsync(new TableUpdateMessage
+        {
+            TableId = table.Id,
+            UpdateType = "ThemeChanged",
+            Theme = newTheme
+        });
     }
 
     private void AddLogEntry(string message, ActivityCategory category = ActivityCategory.General)
@@ -450,6 +522,23 @@ else
             CampaignId = table.Id.ToString(),
             SourceId = "GM",
             Reason = $"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}"
+        });
+    }
+
+    private async Task AdvanceRoundsQuick(int count)
+    {
+        if (table == null) return;
+        table.AdvanceRounds(count);
+        await SaveTable();
+        AddLogEntry($"Advanced {count} rounds to round {table.CurrentRound}", ActivityCategory.Time);
+
+        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
+        {
+            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
+            Count = count,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            Reason = $"Advanced {count} rounds to round {table.CurrentRound}"
         });
     }
 
@@ -679,6 +768,41 @@ else
             Threa.Dal.Dto.ConnectionStatus.Away => "bg-warning",
             _ => "bg-secondary"
         };
+
+    private string GetConnectionIndicatorClass(Threa.Dal.Dto.ConnectionStatus status) =>
+        status switch
+        {
+            Threa.Dal.Dto.ConnectionStatus.Connected => "connected",
+            Threa.Dal.Dto.ConnectionStatus.Disconnected => "disconnected",
+            Threa.Dal.Dto.ConnectionStatus.Away => "away",
+            _ => ""
+        };
+
+    private string? GetHealthStatus(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        var fatPercent = GetPercent(character.FatValue, character.FatMax);
+        var vitPercent = GetPercent(character.VitValue, character.VitMax);
+
+        if (character.FatValue <= 0) return "UNCONSCIOUS";
+        if (vitPercent <= 25) return "CRITICAL";
+        if (fatPercent <= 25) return "EXHAUSTED";
+        if (vitPercent <= 50) return "INJURED";
+
+        return null;
+    }
+
+    private string GetHealthStatusBadgeClass(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        var fatPercent = GetPercent(character.FatValue, character.FatMax);
+        var vitPercent = GetPercent(character.VitValue, character.VitMax);
+
+        if (character.FatValue <= 0) return "bg-dark";
+        if (vitPercent <= 25) return "bg-danger";
+        if (fatPercent <= 25) return "bg-warning text-dark";
+        if (vitPercent <= 50) return "bg-warning text-dark";
+
+        return "bg-secondary";
+    }
 
     private int GetPercent(int value, int max) =>
         max > 0 ? (value * 100 / max) : 0;

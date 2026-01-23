@@ -400,27 +400,16 @@
                 physResult = CombatResultTables.GetPhysicalityBonus(physicalitySV);
                 physicalityBonus = physResult.SVModifier;
 
-                // Apply debuff effect for negative results
-                if (physResult.AttackerAVPenalty < 0 && physResult.PenaltyDurationRounds > 0)
-                {
-                    var debuffState = new DebuffState
-                    {
-                        AttackPenalty = physResult.AttackerAVPenalty
-                    };
-
-                    var debuff = EffectPortal.CreateChild(
-                        EffectType.Debuff,
-                        "Overexertion",
-                        null,
-                        physResult.PenaltyDurationRounds,
-                        debuffState.Serialize());
-
-                    debuff.Description = physResult.Description;
-                    debuff.Source = "Physicality Check";
-
-                    Character.Effects.AddEffect(debuff);
-                }
             }
+        }
+
+        // Store debuff info to be applied when attack completes (not during current attack)
+        int pendingDebuffPenalty = 0;
+        int pendingDebuffDuration = 0;
+        if (physResult?.AttackerAVPenalty < 0 && physResult.PenaltyDurationRounds > 0)
+        {
+            pendingDebuffPenalty = physResult.AttackerAVPenalty;
+            pendingDebuffDuration = physResult.PenaltyDurationRounds;
         }
 
         attackResult = new AttackResultData
@@ -434,8 +423,10 @@
             PhysicalityRoll = physicalityRoll,
             PhysicalitySV = physicalitySV,
             PhysicalityDamageBonus = physicalityBonus,
-            PhysicalityDebuffApplied = physResult?.AttackerAVPenalty < 0,
-            PhysicalityDebuffDescription = physResult?.Description ?? ""
+            PhysicalityDebuffApplied = pendingDebuffPenalty < 0,
+            PhysicalityDebuffDescription = physResult?.Description ?? "",
+            PendingDebuffAttackPenalty = pendingDebuffPenalty,
+            PendingDebuffDurationRounds = pendingDebuffDuration
         };
 
         hasRolled = true;
@@ -455,7 +446,34 @@
 
     private async Task CompleteAttack()
     {
-        if (attackResult == null) return;
+        if (attackResult == null || Character == null) return;
+
+        // Apply deferred debuff effect now that attack is complete
+        if (attackResult.PendingDebuffAttackPenalty < 0 && attackResult.PendingDebuffDurationRounds > 0)
+        {
+            var debuffState = new DebuffState
+            {
+                AttackPenalty = attackResult.PendingDebuffAttackPenalty
+            };
+
+            var debuff = EffectPortal.CreateChild(
+                EffectType.Debuff,
+                "Overexertion",
+                null,
+                attackResult.PendingDebuffDurationRounds,
+                debuffState.Serialize());
+
+            debuff.Description = attackResult.PhysicalityDebuffDescription;
+            debuff.Source = "Physicality Check";
+
+            Character.Effects.AddEffect(debuff);
+
+            // Save character state with the new effect
+            if (Character is Csla.Core.ISavable savable)
+            {
+                await savable.SaveAsync();
+            }
+        }
 
         var message = $"{Character?.Name} attacks with {attackResult.SkillName}: AV {attackResult.AV}";
         if (includePhysicality && attackResult.PhysicalityDamageBonus > 0)
@@ -479,5 +497,8 @@
         public int PhysicalityDamageBonus { get; set; }
         public bool PhysicalityDebuffApplied { get; set; }
         public string PhysicalityDebuffDescription { get; set; } = "";
+        // Deferred debuff data - applied when attack completes
+        public int PendingDebuffAttackPenalty { get; set; }
+        public int PendingDebuffDurationRounds { get; set; }
     }
 }
