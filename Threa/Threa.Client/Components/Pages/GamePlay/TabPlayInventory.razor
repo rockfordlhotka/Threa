@@ -209,7 +209,7 @@
                                 <div class="item-name">@GetItemDisplayName(item)</div>
                                 @if (item.Template?.IsStackable == true && item.StackSize > 1)
                                 {
-                                    <div class="item-quantity">x@item.StackSize</div>
+                                    <div class="item-quantity">@($"x{item.StackSize}")</div>
                                 }
                             </div>
                         }
@@ -539,7 +539,20 @@
 
         // Check slot compatibility (use template.EquipmentSlot)
         var template = GetTemplate(selectedItem.ItemTemplateId);
-        if (template != null && !IsSlotCompatible(template.EquipmentSlot, slot))
+        if (template == null)
+        {
+            errorMessage = "Item template not found.";
+            return;
+        }
+
+        // Check if item type can be equipped at all
+        if (!IsEquippableType(template.ItemType))
+        {
+            errorMessage = $"{template.Name} cannot be equipped (type: {template.ItemType}).";
+            return;
+        }
+
+        if (!IsSlotCompatible(template.EquipmentSlot, slot))
         {
             errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
             return;
@@ -595,26 +608,45 @@
         return item.CustomName ?? GetTemplate(item.ItemTemplateId)?.Name ?? "item";
     }
 
+    private static bool IsEquippableType(ItemType itemType)
+    {
+        // Only certain types can be equipped
+        return itemType == ItemType.Weapon ||
+               itemType == ItemType.Armor ||
+               itemType == ItemType.Shield ||
+               itemType == ItemType.Jewelry ||
+               itemType == ItemType.Clothing;
+    }
+
     private static bool IsSlotCompatible(EquipmentSlot itemSlot, EquipmentSlot targetSlot)
     {
-        // Weapons can go in MainHand, OffHand, or TwoHand
-        if (itemSlot == EquipmentSlot.MainHand || itemSlot == EquipmentSlot.OffHand || itemSlot == EquipmentSlot.TwoHand)
+        // TwoHand weapons can ONLY go in TwoHand slot
+        if (itemSlot == EquipmentSlot.TwoHand)
+        {
+            return targetSlot == EquipmentSlot.TwoHand;
+        }
+
+        // OneHand weapons (MainHand or OffHand) can go in MainHand, OffHand, or TwoHand
+        if (itemSlot == EquipmentSlot.MainHand || itemSlot == EquipmentSlot.OffHand)
         {
             return targetSlot == EquipmentSlot.MainHand ||
                    targetSlot == EquipmentSlot.OffHand ||
                    targetSlot == EquipmentSlot.TwoHand;
         }
+
         // Rings can go in any finger slot
         if (itemSlot.IsFingerSlot())
         {
             return targetSlot.IsFingerSlot();
         }
-        // EquipmentSlot.None means item can go anywhere appropriate
+
+        // EquipmentSlot.None should not be equippable (safety check)
         if (itemSlot == EquipmentSlot.None)
         {
-            return true;
+            return false;
         }
-        // Otherwise must match
+
+        // Otherwise must match exactly
         return itemSlot == targetSlot;
     }
 
@@ -623,6 +655,7 @@
         if (selectedItem == null) return false;
         var template = GetTemplate(selectedItem.ItemTemplateId);
         if (template == null) return false;
+        if (!IsEquippableType(template.ItemType)) return false;
         return IsSlotCompatible(template.EquipmentSlot, slot);
     }
 
