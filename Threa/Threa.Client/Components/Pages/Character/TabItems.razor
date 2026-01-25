@@ -232,6 +232,18 @@ else
                     <RadzenDataGridColumn TItem="ItemTemplate" Property="Weight" Title="Wt" Width="60px">
                         <Template Context="t">@t.Weight.ToString("F1")</Template>
                     </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ItemTemplate" Property="MaxStackSize" Title="Stack" Width="60px">
+                        <Template Context="t">
+                            @if (t.IsStackable)
+                            {
+                                <span>@t.MaxStackSize</span>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
         </div>
@@ -272,7 +284,19 @@ else
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="font-weight: bold;">
                                     @(item.Template?.Name ?? "Unknown Item")
-                                    @if (item.StackSize > 1)
+                                    @if (item.Template?.IsStackable == true)
+                                    {
+                                        <span style="margin-left: 0.5rem;">
+                                            x<input type="number"
+                                                   class="form-control form-control-sm d-inline-block"
+                                                   style="width: 60px; height: 24px; padding: 0 4px; font-size: 0.85em;"
+                                                   min="1"
+                                                   max="@(item.Template.MaxStackSize)"
+                                                   value="@item.StackSize"
+                                                   @onchange="@(e => UpdateQuantity(item.Id, int.Parse(e.Value?.ToString() ?? "1")))" />
+                                        </span>
+                                    }
+                                    else if (item.StackSize > 1)
                                     {
                                         <span style="color: #6c757d;"> x@item.StackSize</span>
                                     }
@@ -287,7 +311,7 @@ else
                                     @item.Template.ShortDescription
                                 </div>
                                 <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
-                                    Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
+                                    Weight: @((item.Template.Weight * item.StackSize).ToString("F1")) lbs @if(item.StackSize > 1){ <span>(@item.Template.Weight ea)</span> } | Value: @FormatCurrency(item.Template.Value)
                                 </div>
                             }
                         </div>
@@ -513,6 +537,39 @@ else
         {
             isRemovingItem = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task UpdateQuantity(Guid itemId, int newQuantity)
+    {
+        var item = allItems?.FirstOrDefault(i => i.Id == itemId);
+        if (item == null || vm?.Model?.IsPlayable == true)
+            return;
+
+        var maxStack = item.Template?.MaxStackSize ?? 1;
+
+        try
+        {
+            errorMessage = null;
+
+            if (newQuantity <= 0)
+            {
+                // Quantity 0 or less = remove item
+                await itemDal.DeleteItemAsync(itemId);
+            }
+            else
+            {
+                // Clamp to valid range and update
+                item.StackSize = Math.Clamp(newQuantity, 1, maxStack);
+                await itemDal.UpdateItemAsync(item);
+            }
+
+            await LoadItemsAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error updating quantity: {ex.Message}";
         }
     }
     
