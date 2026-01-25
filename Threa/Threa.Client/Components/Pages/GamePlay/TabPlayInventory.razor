@@ -1,27 +1,171 @@
-@* Inventory Tab for gameplay - Quick-use items and equipment *@
+@* Inventory Tab for gameplay - Grid-based inventory and equipment slots *@
+@using Threa.Dal
+@using Threa.Dal.Dto
+@using GameMechanics.Items
+
+@inject ICharacterItemDal itemDal
+@inject IItemTemplateDal templateDal
+@inject ItemManagementService itemService
+
+<style>
+    .inventory-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 8px;
+        background: var(--color-bg-secondary, #f8f9fa);
+        border-radius: 4px;
+    }
+
+    .inventory-tile {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #fff;
+        min-height: 80px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .inventory-tile:hover {
+        border-color: #adb5bd;
+        background: #e9ecef;
+    }
+
+    .inventory-tile.equipped {
+        border-color: var(--bs-success);
+        border-width: 2px;
+    }
+
+    .equipped-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--bs-success);
+        color: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .item-quantity {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 0 4px;
+        border-radius: 2px;
+        font-size: 11px;
+    }
+
+    .item-icon {
+        font-size: 24px;
+        margin-bottom: 4px;
+    }
+
+    .item-name {
+        font-size: 11px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        white-space: nowrap;
+    }
+
+    .equipment-slots-container {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .equipment-slot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        border-bottom: 1px solid #eee;
+        font-size: 0.9rem;
+    }
+
+    .equipment-slot:last-child {
+        border-bottom: none;
+    }
+
+    .slot-name {
+        color: #6c757d;
+        min-width: 120px;
+    }
+
+    .slot-item-name {
+        font-weight: 500;
+    }
+
+    .empty-slot {
+        color: #adb5bd;
+        font-style: italic;
+    }
+
+    .slot-category {
+        margin-bottom: 1rem;
+    }
+
+    .slot-category h6 {
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>
 
 <div class="row">
-    <!-- Quick Use Items -->
-    <div class="col-md-4">
+    <!-- Inventory Grid -->
+    <div class="col-md-7">
         <div class="card mb-3">
-            <div class="card-header bg-success text-white">
-                <strong>Quick Use Items</strong>
+            <div class="card-header bg-primary text-white">
+                <strong>Inventory</strong>
             </div>
             <div class="card-body">
-                @if (quickUseItems == null || !quickUseItems.Any())
+                @if (isLoading)
                 {
-                    <p class="text-muted">No consumable items available.</p>
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (inventoryItems == null || !inventoryItems.Any())
+                {
+                    <p class="text-muted text-center py-3">No items in inventory.</p>
                 }
                 else
                 {
-                    <div class="d-grid gap-2">
-                        @foreach (var item in quickUseItems)
+                    <div class="inventory-grid">
+                        @foreach (var item in inventoryItems)
                         {
-                            <button class="btn btn-outline-success d-flex justify-content-between align-items-center"
-                                    @onclick="() => UseItem(item)">
-                                <span>@item.Name</span>
-                                <span class="badge bg-secondary">x@item.Quantity</span>
-                            </button>
+                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "")"
+                                 title="@GetItemDisplayName(item)">
+                                @if (item.IsEquipped)
+                                {
+                                    <div class="equipped-badge" title="Equipped">E</div>
+                                }
+                                <div class="item-icon">@GetItemIcon(item)</div>
+                                <div class="item-name">@GetItemDisplayName(item)</div>
+                                @if (item.Template?.IsStackable == true && item.StackSize > 1)
+                                {
+                                    <div class="item-quantity">x@item.StackSize</div>
+                                }
+                            </div>
                         }
                     </div>
                 }
@@ -58,94 +202,33 @@
         </div>
     </div>
 
-    <!-- Equipped Items -->
-    <div class="col-md-8">
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                <strong>Equipped Items</strong>
+    <!-- Equipment Slots -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <strong>Equipment</strong>
             </div>
-            <div class="card-body">
-                @if (equippedItems == null || !equippedItems.Any())
+            <div class="card-body equipment-slots-container">
+                @foreach (var category in slotCategories)
                 {
-                    <p class="text-muted">No items equipped.</p>
-                }
-                else
-                {
-                    <div class="row">
-                        @foreach (var slot in GetEquipmentSlots())
+                    <div class="slot-category">
+                        <h6 class="text-muted">@category.Name</h6>
+                        @foreach (var slot in category.Slots)
                         {
-                            var item = equippedItems.FirstOrDefault(i => i.Slot == slot);
-                            <div class="col-md-4 mb-2">
-                                <div class="card @(item != null ? "" : "bg-light")">
-                                    <div class="card-body py-2 px-3">
-                                        <small class="text-muted">@slot</small>
-                                        @if (item != null)
-                                        {
-                                            <div class="fw-bold">@item.Name</div>
-                                            @if (item.HasDurability)
-                                            {
-                                                <div class="progress" style="height: 5px;">
-                                                    <div class="progress-bar @GetDurabilityColor(item.DurabilityPercent)"
-                                                         style="width: @item.DurabilityPercent%">
-                                                    </div>
-                                                </div>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <div class="text-muted">Empty</div>
-                                        }
-                                    </div>
-                                </div>
+                            var equipped = GetEquippedItem(slot);
+                            <div class="equipment-slot">
+                                <span class="slot-name">@slot.GetDisplayName()</span>
+                                @if (equipped != null)
+                                {
+                                    <span class="slot-item-name">@GetItemDisplayName(equipped)</span>
+                                }
+                                else
+                                {
+                                    <span class="empty-slot">Empty</span>
+                                }
                             </div>
                         }
                     </div>
-                }
-            </div>
-        </div>
-
-        <!-- Combat Items -->
-        <div class="card">
-            <div class="card-header">
-                <strong>Combat Items</strong>
-            </div>
-            <div class="card-body">
-                @if (combatItems == null || !combatItems.Any())
-                {
-                    <p class="text-muted">No combat items in inventory.</p>
-                }
-                else
-                {
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Type</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in combatItems)
-                            {
-                                <tr>
-                                    <td>
-                                        @item.Name
-                                        @if (item.Quantity > 1)
-                                        {
-                                            <span class="badge bg-secondary">x@item.Quantity</span>
-                                        }
-                                    </td>
-                                    <td>@item.Type</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary"
-                                                @onclick="() => ActivateItem(item)">
-                                            Use
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
                 }
             </div>
         </div>
@@ -159,39 +242,150 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
-    private List<QuickUseItem>? quickUseItems;
-    private List<EquippedItem>? equippedItems;
-    private List<CombatItem>? combatItems;
+    private List<CharacterItem>? inventoryItems;
+    private Dictionary<int, ItemTemplate>? templateCache;
+    private bool isLoading = true;
 
-    private record QuickUseItem(string Name, int Quantity, string Effect);
-    private record EquippedItem(string Slot, string Name, bool HasDurability, int DurabilityPercent);
-    private record CombatItem(string Name, string Type, int Quantity);
-
-    protected override void OnInitialized()
+    private static readonly SlotCategory[] slotCategories = new[]
     {
-        // TODO: Load items from character inventory
-        quickUseItems = new List<QuickUseItem>();
-        equippedItems = new List<EquippedItem>();
-        combatItems = new List<CombatItem>();
-    }
-
-    private string[] GetEquipmentSlots() => new[]
-    {
-        "Head", "Neck", "Chest", "Back",
-        "Main Hand", "Off Hand",
-        "Hands", "Waist", "Feet"
+        new SlotCategory("Weapons", new[] {
+            EquipmentSlot.MainHand,
+            EquipmentSlot.OffHand,
+            EquipmentSlot.TwoHand
+        }),
+        new SlotCategory("Head & Neck", new[] {
+            EquipmentSlot.Head,
+            EquipmentSlot.Face,
+            EquipmentSlot.Ears,
+            EquipmentSlot.Neck
+        }),
+        new SlotCategory("Body", new[] {
+            EquipmentSlot.Shoulders,
+            EquipmentSlot.Back,
+            EquipmentSlot.Chest,
+            EquipmentSlot.Waist
+        }),
+        new SlotCategory("Arms", new[] {
+            EquipmentSlot.ArmLeft, EquipmentSlot.ArmRight,
+            EquipmentSlot.WristLeft, EquipmentSlot.WristRight,
+            EquipmentSlot.HandLeft, EquipmentSlot.HandRight
+        }),
+        new SlotCategory("Legs & Feet", new[] {
+            EquipmentSlot.Legs,
+            EquipmentSlot.AnkleLeft, EquipmentSlot.AnkleRight,
+            EquipmentSlot.FootLeft, EquipmentSlot.FootRight
+        }),
+        new SlotCategory("Rings - Left", new[] {
+            EquipmentSlot.FingerLeft1, EquipmentSlot.FingerLeft2,
+            EquipmentSlot.FingerLeft3, EquipmentSlot.FingerLeft4,
+            EquipmentSlot.FingerLeft5
+        }),
+        new SlotCategory("Rings - Right", new[] {
+            EquipmentSlot.FingerRight1, EquipmentSlot.FingerRight2,
+            EquipmentSlot.FingerRight3, EquipmentSlot.FingerRight4,
+            EquipmentSlot.FingerRight5
+        })
     };
 
-    private string GetDurabilityColor(int percent) =>
-        percent > 50 ? "bg-success" : percent > 25 ? "bg-warning" : "bg-danger";
+    private record SlotCategory(string Name, EquipmentSlot[] Slots);
 
-    private void UseItem(QuickUseItem item)
+    protected override async Task OnInitializedAsync()
     {
-        // TODO: Use the item - send to server
+        await LoadItemsAsync();
     }
 
-    private void ActivateItem(CombatItem item)
+    protected override async Task OnParametersSetAsync()
     {
-        // TODO: Activate the combat item - send to server
+        // Reload items when character changes
+        if (Character != null)
+        {
+            await LoadItemsAsync();
+        }
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        if (Character == null || Character.Id == 0)
+        {
+            inventoryItems = new List<CharacterItem>();
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Get all items for the character
+            inventoryItems = await itemDal.GetCharacterItemsAsync(Character.Id);
+            templateCache = new Dictionary<int, ItemTemplate>();
+
+            // Load templates for all unique template IDs
+            var uniqueTemplateIds = inventoryItems
+                .Select(i => i.ItemTemplateId)
+                .Distinct()
+                .ToList();
+
+            foreach (var templateId in uniqueTemplateIds)
+            {
+                if (!templateCache.ContainsKey(templateId))
+                {
+                    var template = await templateDal.GetTemplateAsync(templateId);
+                    templateCache[templateId] = template;
+                }
+            }
+
+            // Populate template references on items
+            foreach (var item in inventoryItems)
+            {
+                if (templateCache.TryGetValue(item.ItemTemplateId, out var template))
+                {
+                    item.Template = template;
+                }
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetItemDisplayName(CharacterItem item)
+    {
+        return item.CustomName ?? item.Template?.Name ?? "Unknown Item";
+    }
+
+    private string GetItemIcon(CharacterItem item)
+    {
+        if (item.Template == null)
+            return "?";
+
+        return item.Template.ItemType switch
+        {
+            ItemType.Weapon => "W",
+            ItemType.Armor => "A",
+            ItemType.Shield => "S",
+            ItemType.Ammunition => "*",
+            ItemType.AmmoContainer => "M",
+            ItemType.Consumable => "+",
+            ItemType.Container => "[]",
+            ItemType.Jewelry => "o",
+            ItemType.Clothing => "C",
+            ItemType.Food => "F",
+            ItemType.Drink => "D",
+            ItemType.Tool => "T",
+            ItemType.Key => "K",
+            ItemType.Magic => "~",
+            ItemType.Treasure => "$",
+            ItemType.RawMaterial => "R",
+            ItemType.Miscellaneous => "?",
+            _ => "?"
+        };
+    }
+
+    private CharacterItem? GetEquippedItem(EquipmentSlot slot)
+    {
+        return inventoryItems?.FirstOrDefault(i => i.IsEquipped && i.EquippedSlot == slot);
     }
 }
