@@ -1,6 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using Csla;
+using Csla.Core;
+using Csla.Rules;
+using Csla.Rules.CommonRules;
 using Threa.Dal;
 using Threa.Dal.Dto;
 
@@ -227,6 +230,22 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(ContainerWeightReductionProperty, value);
     }
 
+    protected override void AddBusinessRules()
+    {
+        base.AddBusinessRules();
+
+        // Required field validation
+        BusinessRules.AddRule(new Required(NameProperty) { MessageText = "Name is required." });
+        BusinessRules.AddRule(new ItemTypeRequiredRule(ItemTypeProperty));
+
+        // Numeric range validation - weight and volume must be non-negative
+        BusinessRules.AddRule(new MinValue<decimal>(WeightProperty, 0) { MessageText = "Weight must be non-negative." });
+        BusinessRules.AddRule(new MinValue<decimal>(VolumeProperty, 0) { MessageText = "Volume must be non-negative." });
+
+        // Container capacity validation - warning when container has no capacity set
+        BusinessRules.AddRule(new ContainerCapacityWarningRule(IsContainerProperty, ContainerMaxWeightProperty, ContainerMaxVolumeProperty));
+    }
+
     [Create]
     private async Task Create()
     {
@@ -404,5 +423,64 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
     private async Task Delete(int id, [Inject] IItemTemplateDal dal)
     {
         await dal.DeactivateTemplateAsync(id);
+    }
+}
+
+/// <summary>
+/// Validates that ItemType is not the default value (must be explicitly set).
+/// </summary>
+public class ItemTypeRequiredRule : BusinessRule
+{
+    public ItemTypeRequiredRule(IPropertyInfo primaryProperty)
+        : base(primaryProperty)
+    {
+        InputProperties.Add(primaryProperty);
+    }
+
+    protected override void Execute(IRuleContext context)
+    {
+        var value = (ItemType)context.InputPropertyValues[PrimaryProperty]!;
+        if (value == default)
+        {
+            context.AddErrorResult("ItemType is required.");
+        }
+    }
+}
+
+/// <summary>
+/// Warning rule that flags containers without capacity defined.
+/// Per CONTEXT.md: Warning, not error - allows GM flexibility.
+/// </summary>
+public class ContainerCapacityWarningRule : BusinessRule
+{
+    private readonly IPropertyInfo _containerMaxWeightProperty;
+    private readonly IPropertyInfo _containerMaxVolumeProperty;
+
+    public ContainerCapacityWarningRule(
+        IPropertyInfo isContainerProperty,
+        IPropertyInfo containerMaxWeightProperty,
+        IPropertyInfo containerMaxVolumeProperty)
+        : base(isContainerProperty)
+    {
+        _containerMaxWeightProperty = containerMaxWeightProperty;
+        _containerMaxVolumeProperty = containerMaxVolumeProperty;
+        InputProperties.Add(isContainerProperty);
+        InputProperties.Add(containerMaxWeightProperty);
+        InputProperties.Add(containerMaxVolumeProperty);
+    }
+
+    protected override void Execute(IRuleContext context)
+    {
+        var isContainer = (bool)context.InputPropertyValues[PrimaryProperty]!;
+        if (!isContainer)
+            return;
+
+        var maxWeight = context.InputPropertyValues[_containerMaxWeightProperty] as decimal?;
+        var maxVolume = context.InputPropertyValues[_containerMaxVolumeProperty] as decimal?;
+
+        if ((maxWeight == null || maxWeight <= 0) && (maxVolume == null || maxVolume <= 0))
+        {
+            context.AddWarningResult("Container has no capacity defined. Consider setting ContainerMaxWeight or ContainerMaxVolume.");
+        }
     }
 }
