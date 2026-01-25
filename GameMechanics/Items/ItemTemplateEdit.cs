@@ -124,6 +124,13 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(IsActiveProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> TagsProperty = RegisterProperty<string?>(nameof(Tags));
+    public string? Tags
+    {
+        get => GetProperty(TagsProperty);
+        set => SetProperty(TagsProperty, value);
+    }
+
     public static readonly PropertyInfo<string?> RelatedSkillProperty = RegisterProperty<string?>(nameof(RelatedSkill));
     public string? RelatedSkill
     {
@@ -267,6 +274,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = 0;
             Rarity = ItemRarity.Common;
             IsActive = true;
+            Tags = null;
             RelatedSkill = null;
             MinSkillLevel = 0;
             DamageClass = 1;
@@ -315,6 +323,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = data.MaxDurability;
             Rarity = data.Rarity;
             IsActive = data.IsActive;
+            Tags = data.Tags;
             RelatedSkill = data.RelatedSkill;
             MinSkillLevel = data.MinSkillLevel;
             DamageClass = data.DamageClass;
@@ -354,6 +363,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = MaxDurability,
             Rarity = Rarity,
             IsActive = IsActive,
+            Tags = Tags,
             RelatedSkill = RelatedSkill,
             MinSkillLevel = MinSkillLevel,
             DamageClass = DamageClass,
@@ -399,6 +409,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = MaxDurability,
             Rarity = Rarity,
             IsActive = IsActive,
+            Tags = Tags,
             RelatedSkill = RelatedSkill,
             MinSkillLevel = MinSkillLevel,
             DamageClass = DamageClass,
