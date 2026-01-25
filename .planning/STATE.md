@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 3 - Player Item Management (character creation inventory)
+**Current focus:** Phase 3 - Character Creation Inventory - COMPLETE
 
 ## Current Position
 
-Phase: 3 of 7 (Character Creation Inventory)
-Plan: 1 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 03-01-PLAN.md
+Phase: 3 of 7 (Character Creation Inventory) - COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 03-02-PLAN.md
 
-Progress: [#########-------] 41%
+Progress: [########--------] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 11 min
-- Total execution time: 1.0 hours
+- Total execution time: 1.2 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [#########-------] 41%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 24 min | 8 min |
 | 02-gm-item-management | 3 | 44 min | 15 min |
-| 03-character-creation-inventory | 1 | 5 min | 5 min |
+| 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (5 min), 02-03 (25 min), 02-01 (11 min), 02-02 (8 min), 01-03 (12 min)
-- Trend: fast (03-01 clean execution, no fixes needed)
+- Last 5 plans: 03-02 (8 min), 03-01 (5 min), 02-03 (25 min), 02-01 (11 min), 02-02 (8 min)
+- Trend: fast (phase 3 clean execution, no fixes needed)
 
 *Updated after each plan completion*
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 - Split-view layout with Bootstrap grid for browse-and-select interfaces - 03-01
 - Single-click row adds item (no confirmation dialog) - 03-01
 - Unsaved characters (Id=0) must save before managing inventory - 03-01
+- Quantity 0 triggers item deletion (immediate removal) - 03-02
+- Carrying capacity formula: 50 lbs * 1.15^(STR-10) - 03-02
+- Overweight warning is informational only (no enforcement) - 03-02
 
 ### Pending Todos
 
@@ -76,18 +79,22 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
 Resume file: None
 
-## Phase 3 Status - IN PROGRESS
+## Phase 3 Status - COMPLETE
 
-1 of 3 plans complete:
+2 of 2 plans complete:
 - 03-01-PLAN.md: Complete - Item browser split-view with filter, search, click-to-add
+- 03-02-PLAN.md: Complete - Inline quantity editing, weight calculation, capacity warnings
 
-**Phase 3 Progress:**
+**Phase 3 Deliverables:**
 - Players can browse available items in DataGrid
 - Players can filter by type and search by name
 - Players can click to add items to inventory
 - Players can remove items from inventory
+- Players can edit quantity for stackable items inline
+- Players see weight calculation with STR-based carrying capacity
+- Players see warning when over capacity (not enforced)
 
-Next: 03-02 (quantity adjustment, item organization)
+Next: Phase 4 (Gameplay Inventory Core - view/equip/unequip/drop during play)

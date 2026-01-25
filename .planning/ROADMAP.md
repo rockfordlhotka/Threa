@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - CSLA business objects and seed test data
 - [x] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
-- [ ] **Phase 3: Character Creation Inventory** - Players add items during character creation
+- [x] **Phase 3: Character Creation Inventory** - Players add items during character creation
 - [ ] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
 - [ ] **Phase 5: Container System** - Items inside containers with capacity limits
 - [ ] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
@@ -71,8 +71,10 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: Split-View Item Browser - RadzenDataGrid browser with type filter and debounced search, single-click to add
-- [ ] 03-02: Inventory Enhancements - Inline quantity editing for stackable items, STR-based weight display with warnings
+- [x] 03-01: Split-View Item Browser - RadzenDataGrid browser with type filter and debounced search, single-click to add
+- [x] 03-02: Inventory Enhancements - Inline quantity editing for stackable items, STR-based weight display with warnings
+
+**Completed:** 2026-01-25
 
 ### Phase 4: Gameplay Inventory Core
 **Goal**: Players can view their inventory on the Play page and manage equipped items
@@ -147,7 +149,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-24 |
 | 2. GM Item Management | 3/3 | Complete | 2026-01-25 |
-| 3. Character Creation Inventory | 0/2 | Planned | - |
+| 3. Character Creation Inventory | 2/2 | Complete | 2026-01-25 |
 | 4. Gameplay Inventory Core | 0/3 | Not started | - |
 | 5. Container System | 0/2 | Not started | - |
 | 6. Item Bonuses & Combat | 0/2 | Not started | - |
