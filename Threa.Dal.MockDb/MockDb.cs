@@ -1370,6 +1370,23 @@ public static class MockDb
                 MaxStackSize = 20,
                 Rarity = ItemRarity.Common
             },
+            new ItemTemplate
+            {
+                Id = 52,
+                Name = "Frag Grenade",
+                Description = "A military fragmentation grenade. Pull pin, throw, take cover. Explodes after a short delay.",
+                ShortDescription = "Explosive grenade",
+                ItemType = ItemType.Consumable,
+                Weight = 0.5m,
+                Volume = 0.05m,
+                Value = 150,
+                IsStackable = true,
+                MaxStackSize = 5,
+                DamageClass = 3,
+                DamageType = "Explosive",
+                Rarity = ItemRarity.Uncommon,
+                CustomProperties = "{\"isThrown\":true,\"range\":30,\"areaRadius\":5,\"fuseTime\":2,\"canBeCountered\":true}"
+            },
 
             // === TOOLS ===
             new ItemTemplate
