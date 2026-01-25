@@ -50,12 +50,12 @@ Plans:
   3. GM can edit any existing template and save changes
   4. GM can filter templates by type and tags, and search by name
   5. GM can deactivate or delete templates from the library
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: Item Template List Page
-- [ ] 02-02: Item Template Edit Page
-- [ ] 02-03: Search, Filter, and Tag Management
+- [ ] 02-01: Tags Data Layer - Add Tags property to DTO, business objects, and seed data
+- [ ] 02-02: Item List Page Enhancement - RadzenDataGrid with type filter and debounced search
+- [ ] 02-03: Edit Page Tabbed Layout - RadzenTabs, Tags input, sticky action bar, search by tags
 
 ### Phase 3: Character Creation Inventory
 **Goal**: Players can browse available items and add them to their starting inventory during character creation
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-24 |
-| 2. GM Item Management | 0/3 | Not started | - |
+| 2. GM Item Management | 0/3 | Planned | - |
 | 3. Character Creation Inventory | 0/2 | Not started | - |
 | 4. Gameplay Inventory Core | 0/3 | Not started | - |
 | 5. Container System | 0/2 | Not started | - |
@@ -154,3 +154,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 ---
 *Created: 2026-01-24*
 *Phase 1 planned: 2026-01-24*
+*Phase 2 planned: 2026-01-25*
