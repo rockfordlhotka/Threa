@@ -99,7 +99,8 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
     }
 
     [Create]
-    private async Task Create(int characterId, int templateId)
+    [RunLocal]
+    private void Create(int characterId, int templateId)
     {
         using (BypassPropertyChecks)
         {
@@ -116,7 +117,6 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
             CustomProperties = null;
         }
         BusinessRules.CheckRules();
-        await Task.CompletedTask;
     }
 
     [Fetch]
