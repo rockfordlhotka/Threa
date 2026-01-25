@@ -156,6 +156,64 @@
         background: var(--color-bg-tertiary, #f8f9fa);
         border-radius: 0 0 4px 4px;
     }
+
+    .container-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .container-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #fff;
+    }
+
+    .container-item:hover {
+        background: #f0f0f0;
+    }
+
+    .container-item.selected {
+        border-color: var(--bs-primary);
+        background: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    .container-item .item-icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+    }
+
+    .container-item .item-name {
+        flex: 1;
+        font-size: 0.9rem;
+    }
+
+    .container-item .item-qty {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+
+    .inventory-tile.is-container {
+        border-style: dashed;
+    }
+
+    .inventory-tile.is-container::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: #6c757d;
+    }
 </style>
 
 @if (!string.IsNullOrEmpty(errorMessage))
@@ -267,37 +325,79 @@
         </div>
     </div>
 
-    <!-- Equipment Slots -->
+    <!-- Equipment Slots / Container Panel -->
     <div class="col-md-5">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <strong>Equipment</strong>
+        @if (selectedContainer != null)
+        {
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <strong>@GetItemName(selectedContainer)</strong>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseContainerPanel"></button>
+                </div>
+                <div class="card-body">
+                    @if (!containerContents.Any())
+                    {
+                        <p class="text-muted text-center">Container is empty.</p>
+                    }
+                    else
+                    {
+                        <div class="container-grid">
+                            @foreach (var item in containerContents)
+                            {
+                                <div class="container-item @(selectedContainerItemId == item.Id ? "selected" : "")"
+                                     @onclick="() => SelectContainerItem(item)">
+                                    <span class="item-icon">@GetItemIcon(item)</span>
+                                    <span class="item-name">@GetItemDisplayName(item)</span>
+                                    @if (item.Template?.IsStackable == true && item.StackSize > 1)
+                                    {
+                                        <span class="item-qty">x@item.StackSize</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-primary btn-sm"
+                            disabled="@(selectedContainerItem == null)"
+                            @onclick="RemoveFromContainer">
+                        Remove to Inventory
+                    </button>
+                </div>
             </div>
-            <div class="card-body equipment-slots-container">
-                @foreach (var category in slotCategories)
-                {
-                    <div class="slot-category">
-                        <h6 class="text-muted">@category.Name</h6>
-                        @foreach (var slot in category.Slots)
-                        {
-                            var equipped = GetEquippedItem(slot);
-                            <div class="equipment-slot clickable @(IsValidTarget(slot) ? "valid-target" : "")"
-                                 @onclick="() => OnEquipmentSlotClick(slot)">
-                                <span class="slot-name">@slot.GetDisplayName()</span>
-                                @if (equipped != null)
-                                {
-                                    <span class="slot-item-name">@GetItemDisplayName(equipped)</span>
-                                }
-                                else
-                                {
-                                    <span class="empty-slot">Empty</span>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <strong>Equipment</strong>
+                </div>
+                <div class="card-body equipment-slots-container">
+                    @foreach (var category in slotCategories)
+                    {
+                        <div class="slot-category">
+                            <h6 class="text-muted">@category.Name</h6>
+                            @foreach (var slot in category.Slots)
+                            {
+                                var equipped = GetEquippedItem(slot);
+                                <div class="equipment-slot clickable @(IsValidTarget(slot) ? "valid-target" : "")"
+                                     @onclick="() => OnEquipmentSlotClick(slot)">
+                                    <span class="slot-name">@slot.GetDisplayName()</span>
+                                    @if (equipped != null)
+                                    {
+                                        <span class="slot-item-name">@GetItemDisplayName(equipped)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="empty-slot">Empty</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
     </div>
 </div>
 
@@ -350,6 +450,12 @@
     private CharacterItem? selectedItem;
     private string? errorMessage;
     private string? successMessage;
+
+    // Container panel state
+    private CharacterItem? selectedContainer;
+    private List<CharacterItem> containerContents = new();
+    private Guid? selectedContainerItemId;
+    private CharacterItem? selectedContainerItem;
 
     // Drop quantity dialog state
     private int dropQuantity = 1;
@@ -613,6 +719,58 @@
     {
         if (item == null) return "item";
         return item.CustomName ?? GetTemplate(item.ItemTemplateId)?.Name ?? "item";
+    }
+
+    // Container methods
+    private bool IsContainerItem(CharacterItem item)
+    {
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null) return false;
+        return template.IsContainer || template.ItemType == ItemType.Container || template.ItemType == ItemType.AmmoContainer;
+    }
+
+    private List<CharacterItem> GetContainerContents(Guid containerId)
+    {
+        // Client-side filtering from already-loaded items (per RESEARCH.md performance recommendation)
+        if (inventoryItems == null) return new List<CharacterItem>();
+        return inventoryItems.Where(i => i.ContainerItemId == containerId).ToList();
+    }
+
+    private void OpenContainerPanel(CharacterItem container)
+    {
+        selectedContainer = container;
+        containerContents = GetContainerContents(container.Id);
+        // Clear container item selection
+        selectedContainerItemId = null;
+        selectedContainerItem = null;
+    }
+
+    private void CloseContainerPanel()
+    {
+        selectedContainer = null;
+        containerContents.Clear();
+        selectedContainerItemId = null;
+        selectedContainerItem = null;
+    }
+
+    private void SelectContainerItem(CharacterItem item)
+    {
+        if (selectedContainerItemId == item.Id)
+        {
+            selectedContainerItemId = null;
+            selectedContainerItem = null;
+        }
+        else
+        {
+            selectedContainerItemId = item.Id;
+            selectedContainerItem = item;
+        }
+    }
+
+    private async Task RemoveFromContainer()
+    {
+        // Placeholder - will be implemented in Task 2
+        await Task.CompletedTask;
     }
 
     private static bool IsEquippableType(ItemType itemType)
