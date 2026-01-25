@@ -86,7 +86,8 @@ else
         if (!string.IsNullOrWhiteSpace(searchText))
             query = query.Where(i =>
                 i.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                i.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+                i.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(i.Tags) && i.Tags.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
 
         filteredItems = query.ToList();
     }
