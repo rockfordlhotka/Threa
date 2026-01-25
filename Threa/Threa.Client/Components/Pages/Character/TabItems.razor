@@ -27,14 +27,16 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
-@if (!vm.Model.IsPlayable)
+@if (vm.Model.Id == 0)
 {
     <div class="alert alert-info">
-        <p>During character creation, you can add/remove items and adjust currency.</p>
-        <p><em>Once the character is activated, inventory changes are managed by the GM during play.</em></p>
+        <p><strong>Save your character first</strong> to manage inventory.</p>
+        <p><em>After saving, you can browse and add items to your starting inventory.</em></p>
     </div>
+    return;
 }
-else
+
+@if (vm.Model.IsPlayable)
 {
     <div class="alert alert-secondary">
         <p>Your character is <strong>active</strong>. Inventory changes are managed by the GM during play.</p>
@@ -276,19 +278,20 @@ else
         </div>
     </div>
 }
-
-<h4>Inventory Items</h4>
-@if (inventoryItems == null || !inventoryItems.Any())
-{
-    <p><em>No items in inventory.</em></p>
-}
 else
 {
-    <div class="inventory-items">
-        @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
-        {
-            <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    @* Read-only inventory view for active characters *@
+    <h4>Inventory Items</h4>
+    @if (inventoryItems == null || !inventoryItems.Any())
+    {
+        <p><em>No items in inventory.</em></p>
+    }
+    else
+    {
+        <div class="inventory-items">
+            @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
+            {
+                <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
                     <div style="font-weight: bold;">
                         @(item.Template?.Name ?? "Unknown Item")
                         @if (item.StackSize > 1)
@@ -300,49 +303,43 @@ else
                             <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
                         }
                     </div>
-                    @if (!vm.Model.IsPlayable)
+
+                    @if (item.Template != null)
                     {
-                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveItemAsync(item.Id)" disabled="@isRemovingItem">
-                            Remove
-                        </button>
+                        <div style="font-size: 0.9em; color: #6c757d;">
+                            @item.Template.ShortDescription
+                        </div>
+
+                        @* Show items inside containers *@
+                        @if (item.Template.IsContainer)
+                        {
+                            var containerContents = GetContainerContents(item.Id);
+                            if (containerContents.Any())
+                            {
+                                <div style="margin-top: 0.5rem; margin-left: 1rem; padding: 0.5rem; background-color: #fff; border-left: 3px solid #dee2e6;">
+                                    <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 0.25rem;">Contents:</div>
+                                    @foreach (var containerItem in containerContents)
+                                    {
+                                        <div style="font-size: 0.85em; margin-bottom: 0.25rem;">
+                                            - @(containerItem.Template?.Name ?? "Unknown")
+                                            @if (containerItem.StackSize > 1)
+                                            {
+                                                <span> x@containerItem.StackSize</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                        <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                            Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
+                        </div>
                     }
                 </div>
-
-                @if (item.Template != null)
-                {
-                    <div style="font-size: 0.9em; color: #6c757d;">
-                        @item.Template.ShortDescription
-                    </div>
-
-                    @* Show items inside containers *@
-                    @if (item.Template.IsContainer)
-                    {
-                        var containerContents = GetContainerContents(item.Id);
-                        if (containerContents.Any())
-                        {
-                            <div style="margin-top: 0.5rem; margin-left: 1rem; padding: 0.5rem; background-color: #fff; border-left: 3px solid #dee2e6;">
-                                <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 0.25rem;">Contents:</div>
-                                @foreach (var containerItem in containerContents)
-                                {
-                                    <div style="font-size: 0.85em; margin-bottom: 0.25rem;">
-                                        • @(containerItem.Template?.Name ?? "Unknown")
-                                        @if (containerItem.StackSize > 1)
-                                        {
-                                            <span> x@containerItem.StackSize</span>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        }
-                    }
-
-                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
-                        Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
-                    </div>
-                }
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
 }
 
 @code
