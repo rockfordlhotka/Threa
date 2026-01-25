@@ -13,7 +13,7 @@ This roadmap delivers a complete inventory and equipment management system for t
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - CSLA business objects and seed test data
-- [ ] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
+- [x] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
 - [ ] **Phase 3: Character Creation Inventory** - Players add items during character creation
 - [ ] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
 - [ ] **Phase 5: Container System** - Items inside containers with capacity limits
@@ -53,9 +53,11 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: Tags Data Layer - Add Tags property to DTO, business objects, and seed data
-- [ ] 02-02: Item List Page Enhancement - RadzenDataGrid with type filter and debounced search
-- [ ] 02-03: Edit Page Tabbed Layout - RadzenTabs, Tags input, sticky action bar, search by tags
+- [x] 02-01: Tags Data Layer - Add Tags property to DTO, business objects, and seed data
+- [x] 02-02: Item List Page Enhancement - RadzenDataGrid with type filter and debounced search
+- [x] 02-03: Edit Page Tabbed Layout - RadzenTabs, Tags input, sticky action bar, search by tags
+
+**Completed:** 2026-01-25
 
 ### Phase 3: Character Creation Inventory
 **Goal**: Players can browse available items and add them to their starting inventory during character creation
@@ -144,7 +146,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-24 |
-| 2. GM Item Management | 0/3 | Planned | - |
+| 2. GM Item Management | 3/3 | Complete | 2026-01-25 |
 | 3. Character Creation Inventory | 0/2 | Not started | - |
 | 4. Gameplay Inventory Core | 0/3 | Not started | - |
 | 5. Container System | 0/2 | Not started | - |

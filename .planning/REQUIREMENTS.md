@@ -107,18 +107,18 @@
 | DATA-05 | Phase 1: Foundation | Complete |
 | DATA-06 | Phase 1: Foundation | Complete |
 | DATA-07 | Phase 1: Foundation | Complete |
-| GM-01 | Phase 2: GM Item Management | Pending |
-| GM-02 | Phase 2: GM Item Management | Pending |
-| GM-03 | Phase 2: GM Item Management | Pending |
-| GM-04 | Phase 2: GM Item Management | Pending |
-| GM-05 | Phase 2: GM Item Management | Pending |
-| GM-06 | Phase 2: GM Item Management | Pending |
-| GM-07 | Phase 2: GM Item Management | Pending |
-| GM-08 | Phase 2: GM Item Management | Pending |
-| GM-09 | Phase 2: GM Item Management | Pending |
-| GM-10 | Phase 2: GM Item Management | Pending |
-| GM-11 | Phase 2: GM Item Management | Pending |
-| GM-12 | Phase 2: GM Item Management | Pending |
+| GM-01 | Phase 2: GM Item Management | Complete |
+| GM-02 | Phase 2: GM Item Management | Complete |
+| GM-03 | Phase 2: GM Item Management | Complete |
+| GM-04 | Phase 2: GM Item Management | Complete |
+| GM-05 | Phase 2: GM Item Management | Complete |
+| GM-06 | Phase 2: GM Item Management | Complete |
+| GM-07 | Phase 2: GM Item Management | Complete |
+| GM-08 | Phase 2: GM Item Management | Complete |
+| GM-09 | Phase 2: GM Item Management | Complete |
+| GM-10 | Phase 2: GM Item Management | Complete |
+| GM-11 | Phase 2: GM Item Management | Complete |
+| GM-12 | Phase 2: GM Item Management | Complete |
 | INV-01 | Phase 3: Character Creation Inventory | Pending |
 | INV-02 | Phase 3: Character Creation Inventory | Pending |
 | INV-03 | Phase 3: Character Creation Inventory | Pending |
