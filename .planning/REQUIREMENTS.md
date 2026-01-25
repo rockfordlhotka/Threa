@@ -125,12 +125,12 @@
 | INV-04 | Phase 3: Character Creation Inventory | Complete |
 | INV-05 | Phase 3: Character Creation Inventory | Complete |
 | INV-06 | Phase 3: Character Creation Inventory | Complete |
-| INV-07 | Phase 4: Gameplay Inventory Core | Pending |
-| INV-08 | Phase 4: Gameplay Inventory Core | Pending |
-| INV-09 | Phase 4: Gameplay Inventory Core | Pending |
-| INV-10 | Phase 4: Gameplay Inventory Core | Pending |
-| INV-11 | Phase 4: Gameplay Inventory Core | Pending |
-| INV-12 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-07 | Phase 4: Gameplay Inventory Core | Complete |
+| INV-08 | Phase 4: Gameplay Inventory Core | Complete |
+| INV-09 | Phase 4: Gameplay Inventory Core | Complete |
+| INV-10 | Phase 4: Gameplay Inventory Core | Complete |
+| INV-11 | Phase 4: Gameplay Inventory Core | Complete |
+| INV-12 | Phase 4: Gameplay Inventory Core | Complete |
 | INV-13 | Phase 5: Container System | Pending |
 | INV-14 | Phase 5: Container System | Pending |
 | INV-15 | Phase 5: Container System | Pending |

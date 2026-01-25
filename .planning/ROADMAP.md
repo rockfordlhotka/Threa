@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - CSLA business objects and seed test data
 - [x] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
 - [x] **Phase 3: Character Creation Inventory** - Players add items during character creation
-- [ ] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
+- [x] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
 - [ ] **Phase 5: Container System** - Items inside containers with capacity limits
 - [ ] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
 - [ ] **Phase 7: Item Distribution** - GM grants items to players during gameplay
@@ -89,8 +89,10 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: Inventory Grid and Equipment Slots Display - CSS grid inventory tiles, categorized equipment slot list
-- [ ] 04-02: Selection, Equip, Unequip, and Drop Actions - Two-step equip flow, curse blocking, drop with confirmation
+- [x] 04-01: Inventory Grid and Equipment Slots Display - CSS grid inventory tiles, categorized equipment slot list
+- [x] 04-02: Selection, Equip, Unequip, and Drop Actions - Two-step equip flow, curse blocking, drop with confirmation
+
+**Completed:** 2026-01-25
 
 ### Phase 5: Container System
 **Goal**: Players can organize items inside containers with weight and volume limits enforced
@@ -149,7 +151,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Foundation | 3/3 | Complete | 2026-01-24 |
 | 2. GM Item Management | 3/3 | Complete | 2026-01-25 |
 | 3. Character Creation Inventory | 2/2 | Complete | 2026-01-25 |
-| 4. Gameplay Inventory Core | 0/2 | Not started | - |
+| 4. Gameplay Inventory Core | 2/2 | Complete | 2026-01-25 |
 | 5. Container System | 0/2 | Not started | - |
 | 6. Item Bonuses & Combat | 0/2 | Not started | - |
 | 7. Item Distribution | 0/1 | Not started | - |
@@ -159,4 +161,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 *Phase 1 planned: 2026-01-24*
 *Phase 2 planned: 2026-01-25*
 *Phase 3 planned: 2026-01-25*
+*Phase 4 planned: 2026-01-25*
 *Phase 4 planned: 2026-01-25*
