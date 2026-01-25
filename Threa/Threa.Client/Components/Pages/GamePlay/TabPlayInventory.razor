@@ -254,11 +254,11 @@
                 else
                 {
                     <div class="inventory-grid">
-                        @foreach (var item in inventoryItems)
+                        @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null))
                         {
-                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "")"
+                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "")"
                                  title="@GetItemDisplayName(item)"
-                                 @onclick="() => SelectItem(item)">
+                                 @onclick="async () => await SelectItem(item)">
                                 @if (item.IsEquipped)
                                 {
                                     <div class="equipped-badge" title="Equipped">E</div>
@@ -605,9 +605,28 @@
     }
 
     // Selection methods
-    private void SelectItem(CharacterItem item)
+    private async Task SelectItem(CharacterItem item)
     {
-        // Toggle selection
+        ClearMessages();
+
+        // If user has an item selected and clicks a container, move item into container
+        if (selectedItem != null && IsContainerItem(item) && selectedItem.Id != item.Id)
+        {
+            await MoveToContainer(selectedItem.Id, item.Id);
+            return;
+        }
+
+        // If clicking a container with no item selected, open container panel
+        if (IsContainerItem(item) && selectedItem == null)
+        {
+            OpenContainerPanel(item);
+            // Also select the container in inventory (for potential drop)
+            selectedItemId = item.Id;
+            selectedItem = item;
+            return;
+        }
+
+        // Normal toggle selection
         if (selectedItemId == item.Id)
         {
             selectedItemId = null;
@@ -617,8 +636,12 @@
         {
             selectedItemId = item.Id;
             selectedItem = item;
+            // Close container panel when selecting non-container
+            if (!IsContainerItem(item))
+            {
+                CloseContainerPanel();
+            }
         }
-        ClearMessages();
     }
 
     private void ClearMessages()
@@ -767,10 +790,80 @@
         }
     }
 
+    private async Task MoveToContainer(Guid itemId, Guid containerId)
+    {
+        try
+        {
+            var result = await itemService.MoveToContainerAsync(Character!, itemId, containerId);
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            var itemName = GetItemName(inventoryItems?.FirstOrDefault(i => i.Id == itemId));
+            var containerName = GetItemName(inventoryItems?.FirstOrDefault(i => i.Id == containerId));
+            successMessage = $"Moved {itemName} into {containerName}.";
+
+            // Clear selection and refresh
+            selectedItem = null;
+            selectedItemId = null;
+            await LoadItemsAsync();
+
+            // Re-open container panel to show updated contents
+            var container = inventoryItems?.FirstOrDefault(i => i.Id == containerId);
+            if (container != null)
+            {
+                OpenContainerPanel(container);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error moving item: {ex.Message}";
+        }
+    }
+
     private async Task RemoveFromContainer()
     {
-        // Placeholder - will be implemented in Task 2
-        await Task.CompletedTask;
+        if (selectedContainerItem == null || selectedContainer == null) return;
+
+        try
+        {
+            ClearMessages();
+
+            // Move item out of container (containerItemId = null)
+            var result = await itemService.MoveToContainerAsync(Character!, selectedContainerItem.Id, null);
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            var itemName = GetItemName(selectedContainerItem);
+            successMessage = $"Removed {itemName} from container.";
+
+            // Clear container item selection
+            selectedContainerItemId = null;
+            selectedContainerItem = null;
+
+            // Refresh and re-open container panel
+            var containerId = selectedContainer.Id;
+            await LoadItemsAsync();
+
+            var container = inventoryItems?.FirstOrDefault(i => i.Id == containerId);
+            if (container != null)
+            {
+                OpenContainerPanel(container);
+            }
+            else
+            {
+                CloseContainerPanel();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error removing item: {ex.Message}";
+        }
     }
 
     private static bool IsEquippableType(ItemType itemType)
