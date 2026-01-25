@@ -2,10 +2,12 @@
 @using Threa.Dal
 @using Threa.Dal.Dto
 @using GameMechanics.Items
+@using Radzen
 
 @inject ICharacterItemDal itemDal
 @inject IItemTemplateDal templateDal
 @inject ItemManagementService itemService
+@inject DialogService DialogService
 
 <style>
     .inventory-grid {
@@ -42,6 +44,16 @@
     .inventory-tile.equipped {
         border-color: var(--bs-success);
         border-width: 2px;
+    }
+
+    .inventory-tile.selected {
+        border-color: var(--bs-primary);
+        border-width: 2px;
+        background: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    .inventory-tile.selected.equipped {
+        border-color: var(--bs-primary);
     }
 
     .equipped-badge {
@@ -126,7 +138,40 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
+
+    .equipment-slot.clickable {
+        cursor: pointer;
+    }
+
+    .equipment-slot.clickable:hover {
+        background: #f0f0f0;
+    }
+
+    .equipment-slot.valid-target {
+        background: rgba(var(--bs-success-rgb), 0.1);
+        border-color: var(--bs-success);
+    }
+
+    .inventory-actions {
+        background: var(--color-bg-tertiary, #f8f9fa);
+        border-radius: 0 0 4px 4px;
+    }
 </style>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
 
 <div class="row">
     <!-- Inventory Grid -->
@@ -153,8 +198,9 @@
                     <div class="inventory-grid">
                         @foreach (var item in inventoryItems)
                         {
-                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "")"
-                                 title="@GetItemDisplayName(item)">
+                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "")"
+                                 title="@GetItemDisplayName(item)"
+                                 @onclick="() => SelectItem(item)">
                                 @if (item.IsEquipped)
                                 {
                                     <div class="equipped-badge" title="Equipped">E</div>
@@ -172,8 +218,27 @@
             </div>
         </div>
 
+        <!-- Inventory Actions -->
+        <div class="inventory-actions mt-3 p-2 border-top">
+            <button class="btn btn-outline-danger"
+                    disabled="@(selectedItem == null)"
+                    @onclick="ConfirmDropItem">
+                <i class="bi bi-trash"></i> Drop
+            </button>
+            @if (selectedItem != null)
+            {
+                <span class="ms-3 text-muted">
+                    Selected: <strong>@GetItemName(selectedItem)</strong>
+                    @if (selectedItem.IsEquipped)
+                    {
+                        <span class="badge bg-success ms-1">Equipped</span>
+                    }
+                </span>
+            }
+        </div>
+
         <!-- Currency -->
-        <div class="card">
+        <div class="card mt-3">
             <div class="card-header">
                 <strong>Currency</strong>
             </div>
@@ -216,7 +281,8 @@
                         @foreach (var slot in category.Slots)
                         {
                             var equipped = GetEquippedItem(slot);
-                            <div class="equipment-slot">
+                            <div class="equipment-slot clickable @(IsValidTarget(slot) ? "valid-target" : "")"
+                                 @onclick="() => OnEquipmentSlotClick(slot)">
                                 <span class="slot-name">@slot.GetDisplayName()</span>
                                 @if (equipped != null)
                                 {
@@ -235,6 +301,36 @@
     </div>
 </div>
 
+@if (showDropQuantityDialog && selectedItem != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Drop @GetItemName(selectedItem)</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDropQuantity"></button>
+                </div>
+                <div class="modal-body">
+                    <p>How many do you want to drop?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity (max: @selectedItem.StackSize)</label>
+                        <input type="number" class="form-control"
+                               @bind="dropQuantity"
+                               min="1"
+                               max="@selectedItem.StackSize" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDropQuantity">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDropQuantity">
+                        Drop @dropQuantity
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter]
     public GameMechanics.CharacterEdit? Character { get; set; }
@@ -242,9 +338,22 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
     private List<CharacterItem>? inventoryItems;
     private Dictionary<int, ItemTemplate>? templateCache;
     private bool isLoading = true;
+
+    // Selection state
+    private Guid? selectedItemId;
+    private CharacterItem? selectedItem;
+    private string? errorMessage;
+    private string? successMessage;
+
+    // Drop quantity dialog state
+    private int dropQuantity = 1;
+    private bool showDropQuantityDialog = false;
 
     private static readonly SlotCategory[] slotCategories = new[]
     {
@@ -387,5 +496,250 @@
     private CharacterItem? GetEquippedItem(EquipmentSlot slot)
     {
         return inventoryItems?.FirstOrDefault(i => i.IsEquipped && i.EquippedSlot == slot);
+    }
+
+    // Selection methods
+    private void SelectItem(CharacterItem item)
+    {
+        // Toggle selection
+        if (selectedItemId == item.Id)
+        {
+            selectedItemId = null;
+            selectedItem = null;
+        }
+        else
+        {
+            selectedItemId = item.Id;
+            selectedItem = item;
+        }
+        ClearMessages();
+    }
+
+    private void ClearMessages()
+    {
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    // Equip/Unequip methods
+    private async Task OnEquipmentSlotClick(EquipmentSlot slot)
+    {
+        ClearMessages();
+
+        // If no item selected, check if we should unequip
+        if (selectedItem == null)
+        {
+            var equippedItem = GetEquippedItem(slot);
+            if (equippedItem != null)
+            {
+                await UnequipItem(equippedItem.Id);
+            }
+            return;
+        }
+
+        // Check slot compatibility (use template.EquipmentSlot)
+        var template = GetTemplate(selectedItem.ItemTemplateId);
+        if (template != null && !IsSlotCompatible(template.EquipmentSlot, slot))
+        {
+            errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
+            return;
+        }
+
+        // Check if target slot has a cursed item (auto-swap would fail)
+        var existingItem = GetEquippedItem(slot);
+        if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+        {
+            errorMessage = $"Cannot swap: {GetItemName(existingItem)} is cursed and cannot be unequipped.";
+            return;
+        }
+
+        // Equip the item (service handles auto-swap)
+        var result = await itemService.EquipItemAsync(Character!, selectedItem.Id, slot);
+        if (!result.Success)
+        {
+            errorMessage = result.ErrorMessage;
+            return;
+        }
+
+        successMessage = $"Equipped {GetItemName(selectedItem)} to {slot.GetDisplayName()}.";
+        selectedItem = null;
+        selectedItemId = null;
+        await LoadItemsAsync();
+        await NotifyCharacterChanged();
+    }
+
+    private async Task UnequipItem(Guid itemId)
+    {
+        var result = await itemService.UnequipItemAsync(Character!, itemId);
+        if (!result.Success)
+        {
+            errorMessage = result.ErrorMessage;  // Will show curse blocking message
+            return;
+        }
+
+        var itemName = GetItemName(inventoryItems?.FirstOrDefault(i => i.Id == itemId));
+        successMessage = $"Unequipped {itemName}.";
+        await LoadItemsAsync();
+        await NotifyCharacterChanged();
+    }
+
+    // Helper methods
+    private ItemTemplate? GetTemplate(int templateId)
+    {
+        return templateCache?.GetValueOrDefault(templateId);
+    }
+
+    private string GetItemName(CharacterItem? item)
+    {
+        if (item == null) return "item";
+        return item.CustomName ?? GetTemplate(item.ItemTemplateId)?.Name ?? "item";
+    }
+
+    private static bool IsSlotCompatible(EquipmentSlot itemSlot, EquipmentSlot targetSlot)
+    {
+        // Weapons can go in MainHand, OffHand, or TwoHand
+        if (itemSlot == EquipmentSlot.MainHand || itemSlot == EquipmentSlot.OffHand || itemSlot == EquipmentSlot.TwoHand)
+        {
+            return targetSlot == EquipmentSlot.MainHand ||
+                   targetSlot == EquipmentSlot.OffHand ||
+                   targetSlot == EquipmentSlot.TwoHand;
+        }
+        // Rings can go in any finger slot
+        if (itemSlot.IsFingerSlot())
+        {
+            return targetSlot.IsFingerSlot();
+        }
+        // EquipmentSlot.None means item can go anywhere appropriate
+        if (itemSlot == EquipmentSlot.None)
+        {
+            return true;
+        }
+        // Otherwise must match
+        return itemSlot == targetSlot;
+    }
+
+    private bool IsValidTarget(EquipmentSlot slot)
+    {
+        if (selectedItem == null) return false;
+        var template = GetTemplate(selectedItem.ItemTemplateId);
+        if (template == null) return false;
+        return IsSlotCompatible(template.EquipmentSlot, slot);
+    }
+
+    private async Task NotifyCharacterChanged()
+    {
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+    }
+
+    // Drop methods
+    private async Task ConfirmDropItem()
+    {
+        if (selectedItem == null) return;
+        ClearMessages();
+
+        var itemName = GetItemName(selectedItem);
+        var template = GetTemplate(selectedItem.ItemTemplateId);
+
+        // Check if item can be dropped (curse check)
+        if (!itemService.CanDropItem(Character!, selectedItem.Id))
+        {
+            errorMessage = itemService.GetDropBlockReason(Character!, selectedItem.Id)
+                ?? "This item cannot be dropped.";
+            return;
+        }
+
+        // For stackable items with quantity > 1, show quantity dialog
+        if (template?.IsStackable == true && selectedItem.StackSize > 1)
+        {
+            await ShowDropQuantityDialog();
+            return;
+        }
+
+        // Single item or non-stackable - simple confirmation
+        var confirmed = await DialogService.Confirm(
+            $"Are you sure you want to drop {itemName}? This cannot be undone.",
+            "Drop Item",
+            new ConfirmOptions
+            {
+                OkButtonText = "Drop",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed == true)
+        {
+            await DropItem(selectedItem.Id);
+        }
+    }
+
+    private Task ShowDropQuantityDialog()
+    {
+        dropQuantity = selectedItem!.StackSize;  // Default to all
+        showDropQuantityDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmDropQuantity()
+    {
+        if (selectedItem == null || dropQuantity <= 0) return;
+
+        showDropQuantityDialog = false;
+
+        if (dropQuantity >= selectedItem.StackSize)
+        {
+            // Drop entire stack
+            await DropItem(selectedItem.Id);
+        }
+        else
+        {
+            // Reduce quantity (update item, don't delete)
+            await DropPartialStack(selectedItem.Id, dropQuantity);
+        }
+    }
+
+    private void CancelDropQuantity()
+    {
+        showDropQuantityDialog = false;
+        dropQuantity = 1;
+    }
+
+    private async Task DropItem(Guid itemId)
+    {
+        var item = inventoryItems?.FirstOrDefault(i => i.Id == itemId);
+        var itemName = GetItemName(item);
+
+        var result = await itemService.RemoveItemFromInventoryAsync(Character!, itemId);
+        if (!result.Success)
+        {
+            errorMessage = result.ErrorMessage;
+            return;
+        }
+
+        successMessage = $"Dropped {itemName}.";
+        selectedItem = null;
+        selectedItemId = null;
+        await LoadItemsAsync();
+        await NotifyCharacterChanged();
+    }
+
+    private async Task DropPartialStack(Guid itemId, int quantity)
+    {
+        var item = inventoryItems?.FirstOrDefault(i => i.Id == itemId);
+        if (item == null) return;
+
+        var itemName = GetItemName(item);
+
+        // Update the item's stack size
+        item.StackSize -= quantity;
+        await itemDal.UpdateItemAsync(item);
+
+        successMessage = $"Dropped {quantity}x {itemName}.";
+        selectedItem = null;
+        selectedItemId = null;
+        await LoadItemsAsync();
+        await NotifyCharacterChanged();
     }
 }
