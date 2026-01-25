@@ -524,61 +524,68 @@
     // Equip/Unequip methods
     private async Task OnEquipmentSlotClick(EquipmentSlot slot)
     {
-        ClearMessages();
-
-        // If no item selected, check if we should unequip
-        if (selectedItem == null)
+        try
         {
-            var equippedItem = GetEquippedItem(slot);
-            if (equippedItem != null)
+            ClearMessages();
+
+            // If no item selected, check if we should unequip
+            if (selectedItem == null)
             {
-                await UnequipItem(equippedItem.Id);
+                var equippedItem = GetEquippedItem(slot);
+                if (equippedItem != null)
+                {
+                    await UnequipItem(equippedItem.Id);
+                }
+                return;
             }
-            return;
-        }
 
-        // Check slot compatibility (use template.EquipmentSlot)
-        var template = GetTemplate(selectedItem.ItemTemplateId);
-        if (template == null)
+            // Check slot compatibility (use template.EquipmentSlot)
+            var template = GetTemplate(selectedItem.ItemTemplateId);
+            if (template == null)
+            {
+                errorMessage = "Item template not found.";
+                return;
+            }
+
+            // Check if item type can be equipped at all
+            if (!IsEquippableType(template.ItemType))
+            {
+                errorMessage = $"{template.Name} cannot be equipped (type: {template.ItemType}).";
+                return;
+            }
+
+            if (!IsSlotCompatible(template.EquipmentSlot, slot))
+            {
+                errorMessage = $"This item (slot: {template.EquipmentSlot}) cannot be equipped in the {slot.GetDisplayName()} slot.";
+                return;
+            }
+
+            // Check if target slot has a cursed item (auto-swap would fail)
+            var existingItem = GetEquippedItem(slot);
+            if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+            {
+                errorMessage = $"Cannot swap: {GetItemName(existingItem)} is cursed and cannot be unequipped.";
+                return;
+            }
+
+            // Equip the item (service handles auto-swap)
+            var result = await itemService.EquipItemAsync(Character!, selectedItem.Id, slot);
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            successMessage = $"Equipped {GetItemName(selectedItem)} to {slot.GetDisplayName()}.";
+            selectedItem = null;
+            selectedItemId = null;
+            await LoadItemsAsync();
+            await NotifyCharacterChanged();
+        }
+        catch (Exception ex)
         {
-            errorMessage = "Item template not found.";
-            return;
+            errorMessage = $"Error equipping item: {ex.Message}";
         }
-
-        // Check if item type can be equipped at all
-        if (!IsEquippableType(template.ItemType))
-        {
-            errorMessage = $"{template.Name} cannot be equipped (type: {template.ItemType}).";
-            return;
-        }
-
-        if (!IsSlotCompatible(template.EquipmentSlot, slot))
-        {
-            errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
-            return;
-        }
-
-        // Check if target slot has a cursed item (auto-swap would fail)
-        var existingItem = GetEquippedItem(slot);
-        if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
-        {
-            errorMessage = $"Cannot swap: {GetItemName(existingItem)} is cursed and cannot be unequipped.";
-            return;
-        }
-
-        // Equip the item (service handles auto-swap)
-        var result = await itemService.EquipItemAsync(Character!, selectedItem.Id, slot);
-        if (!result.Success)
-        {
-            errorMessage = result.ErrorMessage;
-            return;
-        }
-
-        successMessage = $"Equipped {GetItemName(selectedItem)} to {slot.GetDisplayName()}.";
-        selectedItem = null;
-        selectedItemId = null;
-        await LoadItemsAsync();
-        await NotifyCharacterChanged();
     }
 
     private async Task UnequipItem(Guid itemId)
@@ -671,39 +678,47 @@
     private async Task ConfirmDropItem()
     {
         if (selectedItem == null) return;
-        ClearMessages();
 
-        var itemName = GetItemName(selectedItem);
-        var template = GetTemplate(selectedItem.ItemTemplateId);
-
-        // Check if item can be dropped (curse check)
-        if (!itemService.CanDropItem(Character!, selectedItem.Id))
+        try
         {
-            errorMessage = itemService.GetDropBlockReason(Character!, selectedItem.Id)
-                ?? "This item cannot be dropped.";
-            return;
-        }
+            ClearMessages();
 
-        // For stackable items with quantity > 1, show quantity dialog
-        if (template?.IsStackable == true && selectedItem.StackSize > 1)
-        {
-            await ShowDropQuantityDialog();
-            return;
-        }
+            var itemName = GetItemName(selectedItem);
+            var template = GetTemplate(selectedItem.ItemTemplateId);
 
-        // Single item or non-stackable - simple confirmation
-        var confirmed = await DialogService.Confirm(
-            $"Are you sure you want to drop {itemName}? This cannot be undone.",
-            "Drop Item",
-            new ConfirmOptions
+            // Check if item can be dropped (curse check)
+            if (!itemService.CanDropItem(Character!, selectedItem.Id))
             {
-                OkButtonText = "Drop",
-                CancelButtonText = "Cancel"
-            });
+                errorMessage = itemService.GetDropBlockReason(Character!, selectedItem.Id)
+                    ?? "This item cannot be dropped.";
+                return;
+            }
 
-        if (confirmed == true)
+            // For stackable items with quantity > 1, show quantity dialog
+            if (template?.IsStackable == true && selectedItem.StackSize > 1)
+            {
+                await ShowDropQuantityDialog();
+                return;
+            }
+
+            // Single item or non-stackable - simple confirmation
+            var confirmed = await DialogService.Confirm(
+                $"Are you sure you want to drop {itemName}? This cannot be undone.",
+                "Drop Item",
+                new ConfirmOptions
+                {
+                    OkButtonText = "Drop",
+                    CancelButtonText = "Cancel"
+                });
+
+            if (confirmed == true)
+            {
+                await DropItem(selectedItem.Id);
+            }
+        }
+        catch (Exception ex)
         {
-            await DropItem(selectedItem.Id);
+            errorMessage = $"Error dropping item: {ex.Message}";
         }
     }
 
