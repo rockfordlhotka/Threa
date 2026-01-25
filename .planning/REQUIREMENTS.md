@@ -96,11 +96,62 @@
 
 ## Traceability
 
-This section will be populated by the roadmap to show which phase implements which requirements.
-
 ### Phase Mapping
 
-(To be filled by roadmapper)
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DATA-01 | Phase 1: Foundation | Pending |
+| DATA-02 | Phase 1: Foundation | Pending |
+| DATA-03 | Phase 1: Foundation | Pending |
+| DATA-04 | Phase 1: Foundation | Pending |
+| DATA-05 | Phase 1: Foundation | Pending |
+| DATA-06 | Phase 1: Foundation | Pending |
+| DATA-07 | Phase 1: Foundation | Pending |
+| GM-01 | Phase 2: GM Item Management | Pending |
+| GM-02 | Phase 2: GM Item Management | Pending |
+| GM-03 | Phase 2: GM Item Management | Pending |
+| GM-04 | Phase 2: GM Item Management | Pending |
+| GM-05 | Phase 2: GM Item Management | Pending |
+| GM-06 | Phase 2: GM Item Management | Pending |
+| GM-07 | Phase 2: GM Item Management | Pending |
+| GM-08 | Phase 2: GM Item Management | Pending |
+| GM-09 | Phase 2: GM Item Management | Pending |
+| GM-10 | Phase 2: GM Item Management | Pending |
+| GM-11 | Phase 2: GM Item Management | Pending |
+| GM-12 | Phase 2: GM Item Management | Pending |
+| INV-01 | Phase 3: Character Creation Inventory | Pending |
+| INV-02 | Phase 3: Character Creation Inventory | Pending |
+| INV-03 | Phase 3: Character Creation Inventory | Pending |
+| INV-04 | Phase 3: Character Creation Inventory | Pending |
+| INV-05 | Phase 3: Character Creation Inventory | Pending |
+| INV-06 | Phase 3: Character Creation Inventory | Pending |
+| INV-07 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-08 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-09 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-10 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-11 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-12 | Phase 4: Gameplay Inventory Core | Pending |
+| INV-13 | Phase 5: Container System | Pending |
+| INV-14 | Phase 5: Container System | Pending |
+| INV-15 | Phase 5: Container System | Pending |
+| INV-16 | Phase 5: Container System | Pending |
+| INV-17 | Phase 5: Container System | Pending |
+| INV-18 | Phase 5: Container System | Pending |
+| BONUS-01 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-02 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-03 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-04 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-05 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-06 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-07 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-08 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-09 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-10 | Phase 6: Item Bonuses & Combat | Pending |
+| DIST-01 | Phase 7: Item Distribution | Pending |
+| DIST-02 | Phase 7: Item Distribution | Pending |
+| DIST-03 | Phase 7: Item Distribution | Pending |
+
+**Coverage Summary:** 50/50 v1 requirements mapped
 
 ---
 
