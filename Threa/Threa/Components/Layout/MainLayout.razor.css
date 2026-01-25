@@ -77,6 +77,17 @@ main {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }
+
+    /* Full-width mode: hide sidebar on desktop for Play and GM Table pages */
+    .page.full-width-mode {
+        flex-direction: column;
+    }
+
+    .page.full-width-mode .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
 }
 
 #blazor-error-ui {

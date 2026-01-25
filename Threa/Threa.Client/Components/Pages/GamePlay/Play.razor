@@ -530,6 +530,12 @@ private async Task SelectCharacterAsync(int characterId)
                     table = await tablePortal.FetchAsync(charInfo.TableId.Value);
                     SubscribeToActivityLog(charInfo.TableId.Value);
                     await SubscribeToTimeEvents(charInfo.TableId.Value);
+
+                    // Apply the table's theme
+                    if (table != null)
+                    {
+                        await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+                    }
                 }
                 catch
                 {
@@ -875,6 +881,12 @@ private async Task SelectCharacterAsync(int characterId)
                 table = await tablePortal.FetchAsync(selectedTableId);
                 SubscribeToActivityLog(selectedTableId);
                 await SubscribeToTimeEvents(selectedTableId);
+
+                // Apply the table's theme
+                if (table != null)
+                {
+                    await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+                }
 
                 // Reload the character list to reflect the change
                 await LoadCharactersAsync();

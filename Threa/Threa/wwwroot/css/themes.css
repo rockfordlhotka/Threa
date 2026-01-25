@@ -41,6 +41,13 @@
   --color-header-bg: #3d2817;
   --color-header-text: #f4e4c1;
 
+  /* Sidebar / Nav */
+  --color-sidebar-bg: rgba(61, 40, 23, 0.95);
+  --color-nav-text: #2d1810;
+  --color-nav-text-hover: #5c4033;
+  --color-nav-active-bg: rgba(139, 69, 19, 0.25);
+  --color-nav-hover-bg: rgba(139, 69, 19, 0.15);
+
   /* Status Colors */
   --color-health-full: #355e3b;
   --color-health-mid: #b8860b;
@@ -119,6 +126,13 @@
   /* Header bar */
   --color-header-bg: #0d0d14;
   --color-header-text: #e0e0e8;
+
+  /* Sidebar / Nav */
+  --color-sidebar-bg: rgba(10, 10, 15, 0.95);
+  --color-nav-text: #d7d7d7;
+  --color-nav-text-hover: #ffffff;
+  --color-nav-active-bg: rgba(255, 255, 255, 0.37);
+  --color-nav-hover-bg: rgba(255, 255, 255, 0.1);
 
   /* Status Colors */
   --color-health-full: #00ff88;
@@ -777,7 +791,7 @@ h1, h2, h3, h4, h5, h6 {
    ═══════════════════════════════════════════════════════════════════ */
 
 .sidebar {
-  background: var(--color-card-bg);
+  background: var(--color-sidebar-bg, var(--color-card-bg));
   border-right: var(--border-style);
 }
 
@@ -797,6 +811,64 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="scifi"] .nav-link.active {
   text-shadow: var(--glow-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FULL-WIDTH MODE (Play and GM Table pages)
+   Collapses sidebar and shows hamburger menu on desktop
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 641px) {
+  /* In full-width mode, show the hamburger toggler */
+  .full-width-mode .navbar-toggler {
+    display: block !important;
+    left: 1rem;
+    right: auto;
+  }
+
+  /* Move the navbar brand to the right of the hamburger */
+  .full-width-mode .navbar-brand {
+    margin-left: 3.5rem;
+  }
+
+  /* In full-width mode, hide the nav by default */
+  .full-width-mode .nav-scrollable {
+    display: none !important;
+  }
+
+  /* When toggler is checked, show nav as dropdown overlay */
+  .full-width-mode .navbar-toggler:checked ~ .nav-scrollable {
+    display: block !important;
+    position: absolute;
+    top: 3.5rem;
+    left: 0;
+    right: 0;
+    background: var(--color-header-bg);
+    z-index: 1000;
+    height: auto !important;
+    max-height: calc(100vh - 3.5rem);
+    overflow-y: auto;
+  }
+
+  /* Nav links in the dropdown should use header text colors (light on dark) */
+  .full-width-mode .navbar-toggler:checked ~ .nav-scrollable .nav-link {
+    color: var(--color-header-text) !important;
+  }
+
+  .full-width-mode .navbar-toggler:checked ~ .nav-scrollable .nav-link:hover {
+    color: var(--color-accent-gold, var(--color-accent-primary)) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .full-width-mode .navbar-toggler:checked ~ .nav-scrollable .nav-link.active {
+    color: var(--color-accent-gold, var(--color-accent-primary)) !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  /* Section headers in the dropdown */
+  .full-width-mode .navbar-toggler:checked ~ .nav-scrollable .text-light {
+    color: var(--color-header-text) !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
