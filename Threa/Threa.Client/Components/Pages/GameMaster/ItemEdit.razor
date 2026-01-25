@@ -28,7 +28,7 @@
 else
 {
     <div class="item-edit-form">
-        <RadzenTabs @bind-SelectedIndex="@selectedTabIndex">
+        <RadzenTabs @bind-SelectedIndex="@selectedTabIndex" @key="@($"tabs-{vm.Model.ItemType}")">
             <Tabs>
                 <!-- ========================== -->
                 <!-- BASIC TAB (Always visible) -->
