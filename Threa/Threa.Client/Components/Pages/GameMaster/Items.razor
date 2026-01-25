@@ -1,11 +1,14 @@
 @page "/gamemaster/items"
 
 @using GameMechanics.Items
-@using Microsoft.AspNetCore.Components.QuickGrid
+@using Threa.Dal.Dto
 @using Microsoft.AspNetCore.Authorization
+
+@implements IDisposable
 
 @inject IDataPortal<ItemTemplateList> itemListPortal
 @inject ViewModel<ItemTemplateList> vm
+@inject NavigationManager NavigationManager
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
@@ -21,28 +24,76 @@
 else
 {
     <a href="/gamemaster/items/new" class="btn btn-primary mb-3">Add New Item</a>
-    
-    <QuickGrid Items="items">
-        <PropertyColumn Title="Name" Property="@(p => p.Name)" />
-        <PropertyColumn Title="Type" Property="@(p => p.ItemType)" />
-        <PropertyColumn Title="Description" Property="@(p => p.ShortDescription)" />
-        <PropertyColumn Title="Weight" Property="@(p => p.Weight)" />
-        <PropertyColumn Title="Value" Property="@(p => p.Value)" />
-        <PropertyColumn Title="Rarity" Property="@(p => p.Rarity)" />
-        <TemplateColumn Title="Actions">
-            <a href="/gamemaster/items/@context.Id">Edit</a> | 
-            <a href="/gamemaster/items/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
-        </TemplateColumn>
-    </QuickGrid>
+
+    <div class="d-flex gap-3 mb-3 align-items-center">
+        <RadzenTextBox @bind-Value="@searchText" Placeholder="Search items..."
+            @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
+            Style="width: 300px" />
+        <RadzenDropDown TValue="ItemType?" Data="@itemTypes"
+            @bind-Value="@selectedType" Change="@(_ => ApplyFilters())"
+            Placeholder="Filter by Type" AllowClear="true" Style="width: 200px" />
+    </div>
+
+    <RadzenDataGrid Data="@filteredItems" TItem="ItemTemplateInfo"
+        AllowSorting="true" AllowPaging="true" PageSize="20"
+        RowSelect="@(item => NavigationManager.NavigateTo($"/gamemaster/items/{item.Id}"))"
+        Style="cursor: pointer">
+        <Columns>
+            <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="300px" />
+            <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="ItemType" Title="Type" Sortable="true" Width="150px" />
+        </Columns>
+    </RadzenDataGrid>
 }
 
 @code {
-    private IQueryable<ItemTemplateInfo>? items;
+    private IEnumerable<ItemTemplateInfo>? allItems;
+    private IEnumerable<ItemTemplateInfo>? filteredItems;
+    private string searchText = "";
+    private ItemType? selectedType;
+    private System.Timers.Timer? debounceTimer;
+    private const int DebounceMs = 300;
+    private readonly IEnumerable<ItemType> itemTypes = Enum.GetValues<ItemType>();
 
     protected override async Task OnParametersSetAsync()
     {
         await vm.RefreshAsync(() => itemListPortal.FetchAsync());
-        items = vm.Model?.AsQueryable();
+        allItems = vm.Model;
+        ApplyFilters();
         StateHasChanged();
+    }
+
+    private void OnSearchInput(string value)
+    {
+        searchText = value;
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new System.Timers.Timer(DebounceMs);
+        debounceTimer.Elapsed += (s, e) =>
+        {
+            debounceTimer?.Stop();
+            InvokeAsync(() => { ApplyFilters(); StateHasChanged(); });
+        };
+        debounceTimer.Start();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allItems?.AsEnumerable() ?? Enumerable.Empty<ItemTemplateInfo>();
+
+        if (selectedType.HasValue)
+            query = query.Where(i => i.ItemType == selectedType.Value);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+            query = query.Where(i =>
+                i.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                i.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+        filteredItems = query.ToList();
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
     }
 }
