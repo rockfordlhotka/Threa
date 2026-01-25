@@ -859,6 +859,94 @@ public static class MockDb
                 // Ranged weapon properties: magazine-fed, single/burst fire modes
                 CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"9mm\",\"capacity\":15,\"rangeShort\":10,\"rangeMedium\":25,\"rangeLong\":50,\"rangeExtreme\":100,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\"],\"burstSize\":3,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":3,\"isDodgeable\":false}"
             },
+            new ItemTemplate
+            {
+                Id = 105,
+                Name = "Assault Rifle",
+                Description = "A versatile automatic rifle chambered in 5.56mm. Standard military infantry weapon with multiple fire modes.",
+                ShortDescription = "5.56mm assault rifle",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Rifle,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 4.5m,
+                Volume = 0.4m,
+                Value = 1200,
+                HasDurability = true,
+                MaxDurability = 150,
+                RelatedSkill = "Rifles",
+                MinSkillLevel = 1,
+                DamageClass = 3,
+                DamageType = "Piercing",
+                Range = 200,
+                Rarity = ItemRarity.Uncommon,
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"5.56mm\",\"capacity\":30,\"rangeShort\":50,\"rangeMedium\":150,\"rangeLong\":300,\"rangeExtreme\":500,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\",\"Auto\"],\"burstSize\":3,\"sustainedBurstSize\":5,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":3,\"isDodgeable\":false}"
+            },
+            new ItemTemplate
+            {
+                Id = 106,
+                Name = "Combat Shotgun",
+                Description = "A rugged pump-action shotgun designed for close quarters combat. Devastating at short range.",
+                ShortDescription = "12 gauge shotgun",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Shotgun,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 5m,
+                Volume = 0.35m,
+                Value = 800,
+                HasDurability = true,
+                MaxDurability = 120,
+                RelatedSkill = "Shotguns",
+                MinSkillLevel = 0,
+                DamageClass = 4,
+                DamageType = "Piercing",
+                Range = 50,
+                Rarity = ItemRarity.Common,
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"12gauge\",\"capacity\":8,\"rangeShort\":10,\"rangeMedium\":25,\"rangeLong\":40,\"rangeExtreme\":60,\"weaponModifier\":2,\"baseSVModifier\":1,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":1,\"isDodgeable\":false,\"spreadPattern\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 107,
+                Name = "Compact SMG",
+                Description = "A lightweight submachine gun chambered in 9mm. High rate of fire with manageable recoil.",
+                ShortDescription = "9mm SMG",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.SMG,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 2.5m,
+                Volume = 0.15m,
+                Value = 900,
+                HasDurability = true,
+                MaxDurability = 100,
+                RelatedSkill = "SMGs",
+                MinSkillLevel = 0,
+                DamageClass = 2,
+                DamageType = "Piercing",
+                Range = 75,
+                Rarity = ItemRarity.Uncommon,
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"9mm\",\"capacity\":25,\"rangeShort\":15,\"rangeMedium\":35,\"rangeLong\":60,\"rangeExtreme\":100,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\",\"Auto\"],\"burstSize\":3,\"sustainedBurstSize\":4,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":2,\"isDodgeable\":false}"
+            },
+            new ItemTemplate
+            {
+                Id = 108,
+                Name = "Laser Pistol",
+                Description = "A compact energy weapon that fires coherent light beams. Accurate and silent, powered by rechargeable cells.",
+                ShortDescription = "Energy sidearm",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Pistol,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 0.8m,
+                Volume = 0.04m,
+                Value = 2500,
+                HasDurability = true,
+                MaxDurability = 80,
+                RelatedSkill = "Pistols",
+                MinSkillLevel = 1,
+                DamageClass = 2,
+                DamageType = "Energy",
+                Range = 75,
+                Rarity = ItemRarity.Rare,
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"PowerCell\",\"capacity\":20,\"rangeShort\":20,\"rangeMedium\":50,\"rangeLong\":75,\"rangeExtreme\":120,\"weaponModifier\":2,\"baseSVModifier\":0,\"fireModes\":[\"Single\"],\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":2,\"isDodgeable\":false,\"isEnergyWeapon\":true,\"noBulletDrop\":true}"
+            },
 
             // === AMMUNITION ===
             new ItemTemplate
@@ -926,6 +1014,81 @@ public static class MockDb
                 Rarity = ItemRarity.Common,
                 // Arrow ammunition properties
                 CustomProperties = "{\"ammoType\":\"Arrow\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 109,
+                Name = "Crossbow Bolt",
+                Description = "A short, heavy bolt designed for crossbows. Greater penetration than arrows.",
+                ShortDescription = "Crossbow bolt",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.08m,
+                Volume = 0.01m,
+                Value = 2,
+                IsStackable = true,
+                MaxStackSize = 30,
+                Rarity = ItemRarity.Common,
+                CustomProperties = "{\"ammoType\":\"Bolt\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 110,
+                Name = "5.56mm FMJ Rounds",
+                Description = "Standard 5.56mm NATO full metal jacket rifle ammunition.",
+                ShortDescription = "5.56mm ammo",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.012m,
+                Volume = 0.002m,
+                Value = 2,
+                IsStackable = true,
+                MaxStackSize = 100,
+                Rarity = ItemRarity.Common,
+                CustomProperties = "{\"ammoType\":\"5.56mm\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 111,
+                Name = "12 Gauge Buckshot",
+                Description = "Standard 12 gauge buckshot shells. Effective spread pattern for close quarters.",
+                ShortDescription = "Buckshot shells",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.04m,
+                Volume = 0.008m,
+                Value = 3,
+                IsStackable = true,
+                MaxStackSize = 25,
+                Rarity = ItemRarity.Common,
+                CustomProperties = "{\"ammoType\":\"12gauge\",\"damageModifier\":0,\"spreadPattern\":true,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 112,
+                Name = "12 Gauge Slug",
+                Description = "Solid 12 gauge slugs for greater range and penetration. Trades spread for accuracy.",
+                ShortDescription = "Slug rounds",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.05m,
+                Volume = 0.008m,
+                Value = 5,
+                IsStackable = true,
+                MaxStackSize = 25,
+                Rarity = ItemRarity.Uncommon,
+                CustomProperties = "{\"ammoType\":\"12gauge\",\"damageModifier\":1,\"rangeBonus\":1,\"spreadPattern\":false,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 113,
+                Name = "Power Cell",
+                Description = "A rechargeable energy cell for laser and plasma weapons. Can be recharged at charging stations.",
+                ShortDescription = "Energy cell",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.1m,
+                Volume = 0.02m,
+                Value = 50,
+                IsStackable = true,
+                MaxStackSize = 10,
+                Rarity = ItemRarity.Uncommon,
+                CustomProperties = "{\"ammoType\":\"PowerCell\",\"damageModifier\":0,\"isRechargeable\":true,\"maxCharges\":20,\"rechargeTime\":240}"
             },
 
             // === ARMOR ===
