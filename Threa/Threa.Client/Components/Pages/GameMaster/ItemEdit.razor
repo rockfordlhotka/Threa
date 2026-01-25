@@ -82,6 +82,35 @@ else
 
                             <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsActive)" />
 
+                            <tr>
+                                <td>Tags</td>
+                                <td>
+                                    <div class="tags-input-container">
+                                        @if (tagList.Any())
+                                        {
+                                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                                @foreach (var tag in tagList)
+                                                {
+                                                    <span class="badge bg-secondary d-flex align-items-center">
+                                                        @tag
+                                                        <button type="button" class="btn-close btn-close-white ms-1"
+                                                            style="font-size: 0.6rem;"
+                                                            @onclick="@(() => RemoveTag(tag))"></button>
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        <div class="d-flex gap-2">
+                                            <RadzenTextBox @bind-Value="@newTagInput" Placeholder="Add tag..."
+                                                @onkeydown="@OnTagKeyDown" Style="width: 200px" />
+                                            <RadzenButton Text="Add" Icon="add" Click="@AddTag"
+                                                Disabled="@string.IsNullOrWhiteSpace(newTagInput)" Size="Radzen.ButtonSize.Small" />
+                                        </div>
+                                        <small class="text-muted">Press Enter to add tag. Tags help with filtering and search.</small>
+                                    </div>
+                                </td>
+                            </tr>
+
                             @if (ShowEquipmentSection)
                             {
                                 <tr>
@@ -625,14 +654,26 @@ else
         </RadzenTabs>
 
         <!-- ========================== -->
-        <!-- SAVE/CANCEL BUTTONS -->
+        <!-- SAVE/CANCEL BUTTONS (Sticky bottom bar) -->
         <!-- ========================== -->
-        <div class="mt-3">
+        <div class="form-actions-bar">
             <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
             <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
         </div>
     </div>
 }
+
+<style>
+    .form-actions-bar {
+        position: sticky;
+        bottom: 0;
+        background: var(--rz-base-background-color, white);
+        padding: 1rem;
+        border-top: 1px solid var(--rz-border-color, #dee2e6);
+        z-index: 100;
+        margin-top: 1rem;
+    }
+</style>
 
 @code {
     [Parameter]
@@ -641,6 +682,10 @@ else
     private bool IsNewItem => Id == "new" || string.IsNullOrEmpty(Id);
     private SkillNameList? availableSkills;
     private int selectedTabIndex = 0;
+
+    // Tag management
+    private string newTagInput = "";
+    private List<string> tagList = new();
 
     // Fire mode constants (AOE is no longer a fire mode - it's a property on weapon/ammo)
     private const string FireModeSingle = "Single";
@@ -670,6 +715,7 @@ else
         vm.ModelChanged += async () =>
         {
             LoadCustomProperties();
+            LoadTags();
             await InvokeAsync(() => StateHasChanged());
         };
         vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
@@ -891,6 +937,46 @@ else
     private void Cancel()
     {
         NavigationManager.NavigateTo("/gamemaster/items");
+    }
+
+    // Tag management methods
+    private void LoadTags()
+    {
+        tagList = string.IsNullOrWhiteSpace(vm.Model?.Tags)
+            ? new List<string>()
+            : vm.Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .ToList();
+    }
+
+    private void SaveTags()
+    {
+        if (vm.Model != null)
+            vm.Model.Tags = tagList.Any() ? string.Join(",", tagList) : null;
+    }
+
+    private void AddTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTagInput) && !tagList.Contains(newTagInput.Trim(), StringComparer.OrdinalIgnoreCase))
+        {
+            tagList.Add(newTagInput.Trim().ToLowerInvariant());
+            SaveTags();
+            newTagInput = "";
+        }
+    }
+
+    private void RemoveTag(string tag)
+    {
+        tagList.Remove(tag);
+        SaveTags();
+    }
+
+    private void OnTagKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTag();
+        }
     }
 
     // Helper classes for editing JSON properties
