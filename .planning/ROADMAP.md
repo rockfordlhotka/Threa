@@ -68,11 +68,11 @@ Plans:
   2. Player can filter items by type and search by name
   3. Player can add items to starting inventory and set quantities for stackable items
   4. Player can remove items from starting inventory before finalizing
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: Character Creation Item Browser
-- [ ] 03-02: Starting Inventory Management
+- [ ] 03-01: Split-View Item Browser - RadzenDataGrid browser with type filter and debounced search, single-click to add
+- [ ] 03-02: Inventory Enhancements - Inline quantity editing for stackable items, STR-based weight display with warnings
 
 ### Phase 4: Gameplay Inventory Core
 **Goal**: Players can view their inventory on the Play page and manage equipped items
@@ -147,7 +147,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-24 |
 | 2. GM Item Management | 3/3 | Complete | 2026-01-25 |
-| 3. Character Creation Inventory | 0/2 | Not started | - |
+| 3. Character Creation Inventory | 0/2 | Planned | - |
 | 4. Gameplay Inventory Core | 0/3 | Not started | - |
 | 5. Container System | 0/2 | Not started | - |
 | 6. Item Bonuses & Combat | 0/2 | Not started | - |
@@ -157,3 +157,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 *Created: 2026-01-24*
 *Phase 1 planned: 2026-01-24*
 *Phase 2 planned: 2026-01-25*
+*Phase 3 planned: 2026-01-25*
