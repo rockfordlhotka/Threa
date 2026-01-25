@@ -1,6 +1,10 @@
 @inject ICharacterItemDal itemDal
 @inject IItemTemplateDal itemTemplateDal
 
+@using Threa.Dal.Dto
+
+@implements IDisposable
+
 @if (vm == null || vm.Model == null)
 {
     <p>Loading...</p>
@@ -135,7 +139,7 @@ else
                     </div>
                     
                     @* Show weapon combat stats *@
-                    @if (item.Template.ItemType == Threa.Dal.Dto.ItemType.Weapon)
+                    @if (item.Template.ItemType == ItemType.Weapon)
                     {
                         <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
                             <strong>Weapon Stats:</strong>
@@ -161,7 +165,7 @@ else
                     }
                     
                     @* Show armor combat stats *@
-                    @if (item.Template.ItemType == Threa.Dal.Dto.ItemType.Armor)
+                    @if (item.Template.ItemType == ItemType.Armor)
                     {
                         <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
                             <strong>Armor Stats:</strong>
@@ -199,33 +203,78 @@ else
 
 @if (!vm.Model.IsPlayable)
 {
-    <h4>Add New Item</h4>
-    @if (itemTemplates != null && itemTemplates.Any())
-    {
-        <div style="margin-bottom: 2rem;">
-            <select class="form-select" @bind="selectedItemTemplateId" style="width: 400px; display: inline-block;">
-                <option value="0">-- Select an item to add --</option>
-                @foreach (var template in itemTemplates.OrderBy(t => t.ItemType).ThenBy(t => t.Name))
-                {
-                    <option value="@template.Id">@template.Name (@template.ItemType) - @FormatCurrency(template.Value)</option>
-                }
-            </select>
-            <button class="btn btn-primary" @onclick="AddItemAsync" disabled="@(selectedItemTemplateId == 0 || isAddingItem)">
-                @if (isAddingItem)
-                {
-                    <span>Adding...</span>
-                }
-                else
-                {
-                    <span>Add Item</span>
-                }
-            </button>
+    <div class="alert alert-info mb-3">
+        <strong>Character Creation Mode:</strong> Click items in the browser to add them to your inventory.
+    </div>
+
+    <div class="row">
+        @* Left column: Item Browser *@
+        <div class="col-md-6">
+            <h4>Available Items</h4>
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <RadzenTextBox @bind-Value="@searchText" Placeholder="Search..."
+                    @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
+                    Style="width: 180px" />
+                <RadzenDropDown TValue="ItemType?" Data="@itemTypes"
+                    @bind-Value="@selectedType" Change="@(_ => ApplyFilters())"
+                    Placeholder="Type" AllowClear="true" Style="width: 140px" />
+            </div>
+
+            <RadzenDataGrid Data="@filteredTemplates" TItem="ItemTemplate"
+                AllowSorting="true" AllowPaging="true" PageSize="10"
+                RowSelect="@AddItemFromBrowser"
+                Style="cursor: pointer; max-height: 400px; overflow-y: auto">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ItemTemplate" Property="Name" Title="Name" Width="180px" />
+                    <RadzenDataGridColumn TItem="ItemTemplate" Property="ItemType" Title="Type" Width="100px" />
+                    <RadzenDataGridColumn TItem="ItemTemplate" Property="Weight" Title="Wt" Width="60px">
+                        <Template Context="t">@t.Weight.ToString("F1")</Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
         </div>
-    }
-    else
-    {
-        <p>Loading available items...</p>
-    }
+
+        @* Right column: Current Inventory *@
+        <div class="col-md-6">
+            <h4>Starting Inventory</h4>
+
+            @if (inventoryItems == null || !inventoryItems.Any())
+            {
+                <p><em>No items in inventory. Click items on the left to add them.</em></p>
+            }
+            else
+            {
+                <div class="inventory-items" style="max-height: 400px; overflow-y: auto;">
+                    @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
+                    {
+                        <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="font-weight: bold;">
+                                    @(item.Template?.Name ?? "Unknown Item")
+                                    @if (item.StackSize > 1)
+                                    {
+                                        <span style="color: #6c757d;"> x@item.StackSize</span>
+                                    }
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItemAsync(item.Id)" disabled="@isRemovingItem" title="Remove">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            @if (item.Template != null)
+                            {
+                                <div style="font-size: 0.85em; color: #6c757d;">
+                                    @item.Template.ShortDescription
+                                </div>
+                                <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                                    Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 }
 
 <h4>Inventory Items</h4>
@@ -301,15 +350,21 @@ else
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
 
-    private List<Threa.Dal.Dto.CharacterItem>? allItems;
-    private List<Threa.Dal.Dto.CharacterItem>? equippedItems;
-    private List<Threa.Dal.Dto.CharacterItem>? inventoryItems;
-    private List<Threa.Dal.Dto.ItemTemplate>? itemTemplates;
-    private int selectedItemTemplateId;
+    private List<CharacterItem>? allItems;
+    private List<CharacterItem>? equippedItems;
+    private List<CharacterItem>? inventoryItems;
+    private List<ItemTemplate>? itemTemplates;
     private bool isLoadingItems = true;
-    private bool isAddingItem = false;
     private bool isRemovingItem = false;
     private string? errorMessage;
+
+    // Debounce and filter fields for item browser
+    private string searchText = "";
+    private ItemType? selectedType;
+    private System.Timers.Timer? debounceTimer;
+    private const int DebounceMs = 300;
+    private List<ItemTemplate>? filteredTemplates;
+    private readonly IEnumerable<ItemType> itemTypes = Enum.GetValues<ItemType>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -331,6 +386,7 @@ else
         try
         {
             itemTemplates = await itemTemplateDal.GetAllTemplatesAsync();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -364,28 +420,19 @@ else
         }
     }
 
-    private async Task AddItemAsync()
+    private async Task AddItemFromBrowser(ItemTemplate template)
     {
-        if (selectedItemTemplateId == 0 || vm?.Model == null || vm.Model.Id == 0)
+        if (template == null || vm?.Model == null || vm.Model.Id == 0 || vm.Model.IsPlayable)
             return;
 
         try
         {
-            isAddingItem = true;
             errorMessage = null;
-            StateHasChanged();
 
-            var template = itemTemplates?.FirstOrDefault(t => t.Id == selectedItemTemplateId);
-            if (template == null)
-            {
-                errorMessage = "Selected item template not found.";
-                return;
-            }
-
-            var newItem = new Threa.Dal.Dto.CharacterItem
+            var newItem = new CharacterItem
             {
                 Id = Guid.NewGuid(),
-                ItemTemplateId = selectedItemTemplateId,
+                ItemTemplateId = template.Id,
                 OwnerCharacterId = vm.Model!.Id,
                 StackSize = 1,
                 CurrentDurability = template.HasDurability ? template.MaxDurability : null,
@@ -394,17 +441,41 @@ else
 
             await itemDal.AddItemAsync(newItem);
             await LoadItemsAsync();
-            selectedItemTemplateId = 0;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             errorMessage = $"Error adding item: {ex.Message}";
         }
-        finally
+    }
+
+    private void OnSearchInput(string value)
+    {
+        searchText = value;
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new System.Timers.Timer(DebounceMs);
+        debounceTimer.Elapsed += (s, e) =>
         {
-            isAddingItem = false;
-            StateHasChanged();
-        }
+            debounceTimer?.Stop();
+            InvokeAsync(() => { ApplyFilters(); StateHasChanged(); });
+        };
+        debounceTimer.Start();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = itemTemplates?.AsEnumerable() ?? Enumerable.Empty<ItemTemplate>();
+
+        if (selectedType.HasValue)
+            query = query.Where(i => i.ItemType == selectedType.Value);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+            query = query.Where(i =>
+                i.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(i.ShortDescription) && i.ShortDescription.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+
+        filteredTemplates = query.ToList();
     }
 
     private async Task RemoveItemAsync(Guid itemId)
@@ -429,52 +500,58 @@ else
         }
     }
     
-    private List<Threa.Dal.Dto.CharacterItem> GetContainerContents(Guid containerId)
+    private List<CharacterItem> GetContainerContents(Guid containerId)
     {
         if (allItems == null)
-            return new List<Threa.Dal.Dto.CharacterItem>();
-        
+            return new List<CharacterItem>();
+
         return allItems.Where(i => i.ContainerItemId == containerId).ToList();
     }
-    
-    private string GetEquippedSlotName(Threa.Dal.Dto.EquipmentSlot slot)
+
+    private string GetEquippedSlotName(EquipmentSlot slot)
     {
         return slot switch
         {
-            Threa.Dal.Dto.EquipmentSlot.Head => "Head",
-            Threa.Dal.Dto.EquipmentSlot.Face => "Face",
-            Threa.Dal.Dto.EquipmentSlot.Ears => "Ears",
-            Threa.Dal.Dto.EquipmentSlot.Neck => "Neck",
-            Threa.Dal.Dto.EquipmentSlot.Shoulders => "Shoulders",
-            Threa.Dal.Dto.EquipmentSlot.Back => "Back",
-            Threa.Dal.Dto.EquipmentSlot.Chest => "Chest",
-            Threa.Dal.Dto.EquipmentSlot.ArmLeft => "Left Arm",
-            Threa.Dal.Dto.EquipmentSlot.ArmRight => "Right Arm",
-            Threa.Dal.Dto.EquipmentSlot.WristLeft => "Left Wrist",
-            Threa.Dal.Dto.EquipmentSlot.WristRight => "Right Wrist",
-            Threa.Dal.Dto.EquipmentSlot.HandLeft => "Left Hand",
-            Threa.Dal.Dto.EquipmentSlot.HandRight => "Right Hand",
-            Threa.Dal.Dto.EquipmentSlot.Waist => "Waist",
-            Threa.Dal.Dto.EquipmentSlot.Legs => "Legs",
-            Threa.Dal.Dto.EquipmentSlot.AnkleLeft => "Left Ankle",
-            Threa.Dal.Dto.EquipmentSlot.AnkleRight => "Right Ankle",
-            Threa.Dal.Dto.EquipmentSlot.FootLeft => "Left Foot",
-            Threa.Dal.Dto.EquipmentSlot.FootRight => "Right Foot",
-            Threa.Dal.Dto.EquipmentSlot.MainHand => "Main Hand",
-            Threa.Dal.Dto.EquipmentSlot.OffHand => "Off Hand",
-            Threa.Dal.Dto.EquipmentSlot.TwoHand => "Two Hands",
-            Threa.Dal.Dto.EquipmentSlot.FingerLeft1 => "Left Ring Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerLeft2 => "Left Middle Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerLeft3 => "Left Index Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerLeft4 => "Left Thumb",
-            Threa.Dal.Dto.EquipmentSlot.FingerLeft5 => "Left Pinky",
-            Threa.Dal.Dto.EquipmentSlot.FingerRight1 => "Right Ring Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerRight2 => "Right Middle Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerRight3 => "Right Index Finger",
-            Threa.Dal.Dto.EquipmentSlot.FingerRight4 => "Right Thumb",
-            Threa.Dal.Dto.EquipmentSlot.FingerRight5 => "Right Pinky",
+            EquipmentSlot.Head => "Head",
+            EquipmentSlot.Face => "Face",
+            EquipmentSlot.Ears => "Ears",
+            EquipmentSlot.Neck => "Neck",
+            EquipmentSlot.Shoulders => "Shoulders",
+            EquipmentSlot.Back => "Back",
+            EquipmentSlot.Chest => "Chest",
+            EquipmentSlot.ArmLeft => "Left Arm",
+            EquipmentSlot.ArmRight => "Right Arm",
+            EquipmentSlot.WristLeft => "Left Wrist",
+            EquipmentSlot.WristRight => "Right Wrist",
+            EquipmentSlot.HandLeft => "Left Hand",
+            EquipmentSlot.HandRight => "Right Hand",
+            EquipmentSlot.Waist => "Waist",
+            EquipmentSlot.Legs => "Legs",
+            EquipmentSlot.AnkleLeft => "Left Ankle",
+            EquipmentSlot.AnkleRight => "Right Ankle",
+            EquipmentSlot.FootLeft => "Left Foot",
+            EquipmentSlot.FootRight => "Right Foot",
+            EquipmentSlot.MainHand => "Main Hand",
+            EquipmentSlot.OffHand => "Off Hand",
+            EquipmentSlot.TwoHand => "Two Hands",
+            EquipmentSlot.FingerLeft1 => "Left Ring Finger",
+            EquipmentSlot.FingerLeft2 => "Left Middle Finger",
+            EquipmentSlot.FingerLeft3 => "Left Index Finger",
+            EquipmentSlot.FingerLeft4 => "Left Thumb",
+            EquipmentSlot.FingerLeft5 => "Left Pinky",
+            EquipmentSlot.FingerRight1 => "Right Ring Finger",
+            EquipmentSlot.FingerRight2 => "Right Middle Finger",
+            EquipmentSlot.FingerRight3 => "Right Index Finger",
+            EquipmentSlot.FingerRight4 => "Right Thumb",
+            EquipmentSlot.FingerRight5 => "Right Pinky",
             _ => slot.ToString()
         };
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
     }
     
     private string FormatCurrency(int copperValue)
