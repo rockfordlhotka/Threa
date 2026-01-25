@@ -240,6 +240,25 @@ else
         <div class="col-md-6">
             <h4>Starting Inventory</h4>
 
+            @{
+                var totalWeight = CalculateTotalWeight();
+                var maxWeight = CalculateCarryingCapacity();
+                var isOverweight = totalWeight > maxWeight;
+            }
+            @if (isOverweight)
+            {
+                <div class="alert alert-warning py-2 mb-2">
+                    <strong>Over Capacity!</strong> Carrying @totalWeight.ToString("F1") / @maxWeight.ToString("F1") lbs
+                    <br/><small>This is allowed during character creation, but may affect gameplay.</small>
+                </div>
+            }
+            else
+            {
+                <div class="text-muted mb-2">
+                    <strong>Weight:</strong> @totalWeight.ToString("F1") / @maxWeight.ToString("F1") lbs
+                </div>
+            }
+
             @if (inventoryItems == null || !inventoryItems.Any())
             {
                 <p><em>No items in inventory. Click items on the left to add them.</em></p>
@@ -551,6 +570,26 @@ else
         debounceTimer?.Dispose();
     }
     
+    /// <summary>
+    /// Calculate carrying capacity based on STR using exponential formula.
+    /// Formula: 50 lbs * (1.15 ^ (STR - 10))
+    /// </summary>
+    private decimal CalculateCarryingCapacity()
+    {
+        // Default to STR 10 if character or attribute not available
+        var str = vm?.Model?.GetAttribute("STR") ?? 10;
+        return 50m * (decimal)Math.Pow(1.15, str - 10);
+    }
+
+    /// <summary>
+    /// Calculate total weight of all inventory items (including equipped and container contents).
+    /// </summary>
+    private decimal CalculateTotalWeight()
+    {
+        if (allItems == null) return 0;
+        return allItems.Sum(i => (decimal)(i.Template?.Weight ?? 0) * i.StackSize);
+    }
+
     private string FormatCurrency(int copperValue)
     {
         if (copperValue >= 8000)
