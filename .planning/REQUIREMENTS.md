@@ -62,13 +62,13 @@
 
 ### Test Data
 
-- [ ] **DATA-01**: Database includes 3-5 example melee weapons (swords, axes, daggers) with varied damage classes
-- [ ] **DATA-02**: Database includes 3-5 example ranged weapons (bows, crossbows) with range and damage properties
-- [ ] **DATA-03**: Database includes 3-5 example firearms (pistols, rifles, automatic weapons) with fire modes and ammo capacity
-- [ ] **DATA-04**: Database includes 2-3 example armor pieces (helmets, chest armor, shields) with absorption values
-- [ ] **DATA-05**: Database includes 2-3 example ammo types with damage modifiers
-- [ ] **DATA-06**: Database includes 1-2 example containers (backpack, pouch) with weight/volume limits
-- [ ] **DATA-07**: Database includes 1-2 example consumables (potions, grenades)
+- [x] **DATA-01**: Database includes 3-5 example melee weapons (swords, axes, daggers) with varied damage classes
+- [x] **DATA-02**: Database includes 3-5 example ranged weapons (bows, crossbows) with range and damage properties
+- [x] **DATA-03**: Database includes 3-5 example firearms (pistols, rifles, automatic weapons) with fire modes and ammo capacity
+- [x] **DATA-04**: Database includes 2-3 example armor pieces (helmets, chest armor, shields) with absorption values
+- [x] **DATA-05**: Database includes 2-3 example ammo types with damage modifiers
+- [x] **DATA-06**: Database includes 1-2 example containers (backpack, pouch) with weight/volume limits
+- [x] **DATA-07**: Database includes 1-2 example consumables (potions, grenades)
 
 ## v2 Requirements (Deferred)
 
@@ -100,13 +100,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1: Foundation | Pending |
-| DATA-02 | Phase 1: Foundation | Pending |
-| DATA-03 | Phase 1: Foundation | Pending |
-| DATA-04 | Phase 1: Foundation | Pending |
-| DATA-05 | Phase 1: Foundation | Pending |
-| DATA-06 | Phase 1: Foundation | Pending |
-| DATA-07 | Phase 1: Foundation | Pending |
+| DATA-01 | Phase 1: Foundation | Complete |
+| DATA-02 | Phase 1: Foundation | Complete |
+| DATA-03 | Phase 1: Foundation | Complete |
+| DATA-04 | Phase 1: Foundation | Complete |
+| DATA-05 | Phase 1: Foundation | Complete |
+| DATA-06 | Phase 1: Foundation | Complete |
+| DATA-07 | Phase 1: Foundation | Complete |
 | GM-01 | Phase 2: GM Item Management | Pending |
 | GM-02 | Phase 2: GM Item Management | Pending |
 | GM-03 | Phase 2: GM Item Management | Pending |

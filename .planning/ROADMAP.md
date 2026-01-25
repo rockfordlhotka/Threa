@@ -12,7 +12,7 @@ This roadmap delivers a complete inventory and equipment management system for t
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - CSLA business objects and seed test data
+- [x] **Phase 1: Foundation** - CSLA business objects and seed test data
 - [ ] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
 - [ ] **Phase 3: Character Creation Inventory** - Players add items during character creation
 - [ ] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
@@ -34,9 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md - Add validation rules to ItemTemplateEdit + unit tests
-- [ ] 01-02-PLAN.md - Create CharacterItemEdit, CharacterItemInfo, CharacterItemList + unit tests
-- [ ] 01-03-PLAN.md - Augment seed data (weapons, firearms, ammo, consumables)
+- [x] 01-01: ItemTemplate Validation & Tests
+- [x] 01-02: CharacterItem Business Objects
+- [x] 01-03: Seed Data Augmentation
+
+**Completed:** 2026-01-24
 
 ### Phase 2: GM Item Management
 **Goal**: Game Masters can create, edit, browse, search, filter, and manage item templates through the web UI
@@ -141,7 +143,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Planned | - |
+| 1. Foundation | 3/3 | Complete | 2026-01-24 |
 | 2. GM Item Management | 0/3 | Not started | - |
 | 3. Character Creation Inventory | 0/2 | Not started | - |
 | 4. Gameplay Inventory Core | 0/3 | Not started | - |
