@@ -102,7 +102,7 @@ Plans:
   1. Player can place items inside container items in their inventory
   2. Player can view contents of any container
   3. Player can remove items from containers back to main inventory
-  4. System prevents exceeding container weight, volume, or type restrictions
+  4. System warns when exceeding container weight/volume capacity (but allows placement per CONTEXT.md) and blocks nesting violations (items in nested containers, non-empty containers into containers)
 **Plans:** 2 plans
 
 Plans:
