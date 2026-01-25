@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 2 Complete - Ready for Phase 3
+**Current focus:** Phase 3 - Player Item Management (character creation inventory)
 
 ## Current Position
 
-Phase: 2 of 7 (GM Item Management) - COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 02-03-PLAN.md
+Phase: 3 of 7 (Character Creation Inventory)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-25 - Completed 03-01-PLAN.md
 
-Progress: [########--------] 35%
+Progress: [#########-------] 41%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 12 min
-- Total execution time: 0.9 hours
+- Total plans completed: 7
+- Average duration: 11 min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [########--------] 35%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 24 min | 8 min |
 | 02-gm-item-management | 3 | 44 min | 15 min |
+| 03-character-creation-inventory | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (25 min), 02-01 (11 min), 02-02 (8 min), 01-03 (12 min), 01-01 (6 min)
-- Trend: stable (02-03 longer due to Radzen component fixes)
+- Last 5 plans: 03-01 (5 min), 02-03 (25 min), 02-01 (11 min), 02-02 (8 min), 01-03 (12 min)
+- Trend: fast (03-01 clean execution, no fixes needed)
 
 *Updated after each plan completion*
 
@@ -60,6 +61,9 @@ Recent decisions affecting current work:
 - Tags stored as comma-separated string for simple filtering - 02-01
 - RadzenTabs with @key for dynamic tab visibility on enum change - 02-03
 - Radzen JS/CSS must be in App.razor for component functionality - 02-03
+- Split-view layout with Bootstrap grid for browse-and-select interfaces - 03-01
+- Single-click row adds item (no confirmation dialog) - 03-01
+- Unsaved characters (Id=0) must save before managing inventory - 03-01
 
 ### Pending Todos
 
@@ -72,20 +76,18 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed Phase 2 (GM Item Management)
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
 
-## Phase 2 Status - COMPLETE
+## Phase 3 Status - IN PROGRESS
 
-3 of 3 plans complete:
-- 02-01-PLAN.md: Complete - Tags property added to DTO, business objects, and seed data
-- 02-02-PLAN.md: Complete - RadzenDataGrid list page with filtering/search
-- 02-03-PLAN.md: Complete - Tabbed edit form with Tags input and sticky action bar
+1 of 3 plans complete:
+- 03-01-PLAN.md: Complete - Item browser split-view with filter, search, click-to-add
 
-**Phase 2 Deliverables:**
-- GM can view items in filterable/searchable list
-- GM can edit items in organized tabbed form
-- GM can manage tags on items
-- Items searchable by name, description, and tags
+**Phase 3 Progress:**
+- Players can browse available items in DataGrid
+- Players can filter by type and search by name
+- Players can click to add items to inventory
+- Players can remove items from inventory
 
-Next: Phase 03 (Player Item Management)
+Next: 03-02 (quantity adjustment, item organization)
