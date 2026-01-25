@@ -103,11 +103,11 @@ Plans:
   2. Player can view contents of any container
   3. Player can remove items from containers back to main inventory
   4. System prevents exceeding container weight, volume, or type restrictions
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 05-01: Container UI and Item Placement
-- [ ] 05-02: Container Limit Enforcement
+- [ ] 05-01: Container UI and Item Placement - Container contents panel, move-to/remove-from container functionality
+- [ ] 05-02: Container Limit Enforcement - Visual fill indicators, capacity warnings, nesting enforcement, drop confirmation
 
 ### Phase 6: Item Bonuses & Combat
 **Goal**: Equipped items provide stat bonuses and integrate with the combat system
@@ -162,4 +162,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 *Phase 2 planned: 2026-01-25*
 *Phase 3 planned: 2026-01-25*
 *Phase 4 planned: 2026-01-25*
-*Phase 4 planned: 2026-01-25*
+*Phase 5 planned: 2026-01-25*
