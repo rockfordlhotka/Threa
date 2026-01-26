@@ -59,10 +59,11 @@ Plans:
   3. User's answer is validated case-insensitively with trimmed whitespace
   4. After correct answer, user can set a new password and immediately log in
   5. Incorrect answer shows error but does not reveal correct answer
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 09-01: Password reset workflow and UI
+- [ ] 09-01-PLAN.md - Data layer extensions and PasswordRecovery business object with lockout logic
+- [ ] 09-02-PLAN.md - Password recovery UI wizard (3 steps)
 
 ### Phase 10: Admin User Management
 **Goal**: Administrators can view, enable/disable, and assign roles to all users
@@ -105,7 +106,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 16/16 | Complete | 2026-01-26 |
 | 8. Registration Foundation | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 9. Password Recovery | v1.1 | 0/1 | Not started | - |
+| 9. Password Recovery | v1.1 | 0/2 | Not started | - |
 | 10. Admin User Management | v1.1 | 0/2 | Not started | - |
 | 11. User Profiles | v1.1 | 0/2 | Not started | - |
 
