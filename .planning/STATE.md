@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 Milestone: v1.1 - IN PROGRESS
 Phase: 8 of 11 (Registration Foundation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-26 - v1.1 roadmap created
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-26 - Completed 08-01-PLAN.md
 
-Progress: v1.1 [░░░░░░░░░░░░░░░░] 0% (0/7 plans)
+Progress: v1.1 [██░░░░░░░░░░░░░░] 14% (1/7 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 15 min
-- Total execution time: 4.1 hours
+- Total plans completed: 17
+- Average duration: 16 min
+- Total execution time: 4.6 hours
 
 **By Phase (v1.0):**
 
@@ -36,11 +36,15 @@ Progress: v1.1 [░░░░░░░░░░░░░░░░] 0% (0/7 plans)
 | 06-item-bonuses-and-combat | 3 | 108 min | 36 min |
 | 07-item-distribution | 1 | 4 min | 4 min |
 
-**Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 06-03 (90 min), 06-02 (10 min), 06-01 (4 min), 05-02 (15 min)
-- Trend: steady execution velocity
+**By Phase (v1.1):**
 
-*v1.1 metrics will be tracked starting Phase 8*
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 08-registration-foundation | 1/2 | 31 min | 31 min |
+
+**Recent Trend:**
+- Last 5 plans: 08-01 (31 min), 07-01 (4 min), 06-03 (90 min), 06-02 (10 min), 06-01 (4 min)
+- Trend: steady execution velocity
 
 ## Accumulated Context
 
@@ -54,26 +58,29 @@ Recent decisions affecting current work:
 - [v1.1]: First registered user becomes Admin automatically
 - [v1.1]: Initials fallback when no email provided for Gravatar
 - [v1.1]: Case-insensitive, trimmed secret answer validation
+- [08-01]: BCrypt cost factor 12 (matches existing AdminUserEdit pattern)
+- [08-01]: MockDb updated to support pre-hashed passwords and new DTO fields
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 **Known Technical Debt (non-blocking, from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
 - Weapon filtering logic in UI layer (should move to GameMechanics)
 - Case sensitivity inconsistencies in skill/template comparisons
 - OnCharacterChanged callback not wired in Play.razor
+- Pre-existing failing test: UnequipItemAsync_RemovesEquipEffects
 
 ## Session Continuity
 
-Last session: 2026-01-26
-Stopped at: v1.1 roadmap created
+Last session: 2026-01-26T08:06:53Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
 
 ---
-*Next: `/gsd:plan-phase 8` to plan Registration Foundation*
+*Next: Execute 08-02-PLAN.md (Registration UI)*
