@@ -117,7 +117,7 @@ namespace Threa.Dal.MockDb
         {
             lock (MockDb.Players)
             {
-                var existingPlayer = MockDb.Players.Where(r => r.Id == id).FirstOrDefault() 
+                var existingPlayer = MockDb.Players.Where(r => r.Id == id).FirstOrDefault()
                     ?? throw new NotFoundException($"{nameof(Player)} {id}");
 
                 if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
@@ -131,6 +131,111 @@ namespace Threa.Dal.MockDb
                 }
 
                 existingPlayer.HashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, existingPlayer.Salt);
+                return Task.CompletedTask;
+            }
+        }
+
+        public Task<string?> GetSecretQuestionAsync(string username)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.FirstOrDefault(p => p.Email == username);
+                // Return null for unknown user (prevents enumeration)
+                return Task.FromResult(player?.SecretQuestion);
+            }
+        }
+
+        public Task<bool> IsRecoveryLockedOutAsync(string username)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.FirstOrDefault(p => p.Email == username);
+                if (player == null) return Task.FromResult(false);
+
+                var isLockedOut = player.RecoveryLockoutUntil.HasValue &&
+                                  player.RecoveryLockoutUntil.Value > DateTime.UtcNow;
+                return Task.FromResult(isLockedOut);
+            }
+        }
+
+        public Task<int> GetRemainingRecoveryAttemptsAsync(string username)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.FirstOrDefault(p => p.Email == username);
+                if (player == null) return Task.FromResult(3); // Default for unknown (don't reveal)
+
+                const int maxAttempts = 3;
+                var remaining = maxAttempts - player.FailedRecoveryAttempts;
+                return Task.FromResult(remaining > 0 ? remaining : 0);
+            }
+        }
+
+        public Task<bool> ValidateSecretAnswerAsync(string username, string answer)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.FirstOrDefault(p => p.Email == username);
+                if (player == null) return Task.FromResult(false);
+
+                // Check lockout
+                if (player.RecoveryLockoutUntil.HasValue &&
+                    player.RecoveryLockoutUntil.Value > DateTime.UtcNow)
+                {
+                    return Task.FromResult(false);
+                }
+
+                // Clear expired lockout
+                if (player.RecoveryLockoutUntil.HasValue &&
+                    player.RecoveryLockoutUntil.Value <= DateTime.UtcNow)
+                {
+                    player.FailedRecoveryAttempts = 0;
+                    player.RecoveryLockoutUntil = null;
+                }
+
+                // Normalize answer (trim + lowercase) and compare
+                var normalizedAnswer = answer?.Trim().ToLowerInvariant() ?? string.Empty;
+                var isCorrect = player.SecretAnswer == normalizedAnswer;
+
+                if (isCorrect)
+                {
+                    // Reset attempts on success
+                    player.FailedRecoveryAttempts = 0;
+                    player.RecoveryLockoutUntil = null;
+                }
+                else
+                {
+                    // Increment failed attempts
+                    player.FailedRecoveryAttempts++;
+
+                    // Lockout after 3 failed attempts (15 minutes)
+                    if (player.FailedRecoveryAttempts >= 3)
+                    {
+                        player.RecoveryLockoutUntil = DateTime.UtcNow.AddMinutes(15);
+                    }
+                }
+
+                return Task.FromResult(isCorrect);
+            }
+        }
+
+        public Task ResetPasswordAsync(string username, string newPassword)
+        {
+            lock (MockDb.Players)
+            {
+                var player = MockDb.Players.FirstOrDefault(p => p.Email == username);
+                if (player == null)
+                    throw new NotFoundException($"Player {username}");
+
+                // Hash new password with BCrypt
+                var salt = BCrypt.Net.BCrypt.GenerateSalt(12);
+                player.Salt = salt;
+                player.HashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, salt);
+
+                // Clear recovery state
+                player.FailedRecoveryAttempts = 0;
+                player.RecoveryLockoutUntil = null;
+
                 return Task.CompletedTask;
             }
         }
