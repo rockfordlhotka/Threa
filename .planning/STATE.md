@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 4 - Gameplay Inventory Core - COMPLETE
+**Current focus:** Phase 5 - Container System - IN PROGRESS
 
 ## Current Position
 
-Phase: 4 of 7 (Gameplay Inventory Core) - COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 04-02-PLAN.md
+Phase: 5 of 7 (Container System)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-25 - Completed 05-01-PLAN.md
 
-Progress: [##########------] 57%
+Progress: [###########-----] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 10 min
-- Total execution time: 1.7 hours
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [##########------] 57%
 | 02-gm-item-management | 3 | 44 min | 15 min |
 | 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 | 04-gameplay-inventory-core | 2 | 18 min | 9 min |
+| 05-container-system | 1 | 12 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (15 min), 04-01 (3 min), 03-02 (8 min), 03-01 (5 min), 02-03 (25 min)
-- Trend: steady (some checkpoint iterations for bug fixes, but overall efficient)
+- Last 5 plans: 05-01 (12 min), 04-02 (15 min), 04-01 (3 min), 03-02 (8 min), 03-01 (5 min)
+- Trend: steady execution velocity
 
 *Updated after each plan completion*
 
@@ -80,6 +81,11 @@ Recent decisions affecting current work:
 - Stackable drops prompt for quantity before confirmation - 04-02
 - All item operations use ItemManagementService (curse handling, effects) - 04-02
 - Radzen DialogService registered in Program.cs for confirmation dialogs - 04-02
+- Container panel replaces equipment slots in right column when open - 05-01
+- Two-phase container move flow (select item then click container) - 05-01
+- Click container without selection opens panel - 05-01
+- Client-side filtering for container contents (items already loaded) - 05-01
+- Dashed border visual indicator for container tiles - 05-01
 
 ### Pending Todos
 
@@ -92,25 +98,20 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 04-01-PLAN.md
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
 
-## Phase 4 Status - COMPLETE
+## Phase 5 Status - IN PROGRESS
 
-2 of 2 plans complete:
-- 04-01-PLAN.md: Complete - Inventory grid with CSS tiles, equipment slots categorized list
-- 04-02-PLAN.md: Complete - Item selection, equip/unequip, drop with confirmations
+1 of 2 plans complete:
+- 05-01-PLAN.md: Complete - Container contents panel, move-to/remove-from container functionality
+- 05-02-PLAN.md: Pending - Container capacity enforcement, visual fill indicators, nesting rules
 
-**Phase 4 Deliverables:**
-- Players can view all items in inventory as responsive CSS grid tiles
-- Players can see item icons, names, quantity badges, equipped badges
-- Players can view all equipment slots grouped by 7 categories (32 slots)
-- Players can select items (toggle selection with click)
-- Players can equip items to appropriate slots (two-step flow)
-- Players can unequip items by clicking occupied slots
-- Auto-swap works when equipping to filled slot (with curse blocking)
-- Players can drop items with confirmation dialogs
-- Stackable items prompt for quantity when dropping
-- All operations integrate with ItemManagementService for curse handling
+**Phase 5 Deliverables (so far):**
+- Players can click a container tile to see its contents in a side panel
+- Players can select an item and click a container tile to move item into container
+- Players can select an item in container panel and click Remove to move it back to inventory
+- Inventory grid filters to show only top-level items (not items in containers)
+- Container tiles have dashed border visual indicator
 
-Next: Phase 5 (Container System - items inside containers with capacity limits)
+Next: Plan 05-02 (Capacity enforcement, fill indicators, nesting rules)
