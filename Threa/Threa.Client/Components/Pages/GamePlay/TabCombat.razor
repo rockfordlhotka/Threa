@@ -388,21 +388,25 @@
         {
             var category = GetSkillCategory(skill);
 
-            if (category == "Weapon")
+            // Show skill if it matches an equipped weapon's RelatedSkill
+            if (equippedWeaponSkillNames.Contains(skill.Name))
             {
-                // Only show weapon skills for equipped weapons
-                if (equippedWeaponSkillNames.Contains(skill.Name))
-                {
-                    result.Add(skill);
-                    attackSkills.Add(skill);
+                result.Add(skill);
+                attackSkills.Add(skill);
 
-                    // Track weapon skill AS and name for parry
-                    if (weaponSkillAS == 0)
-                    {
-                        weaponSkillAS = skill.AbilityScore;
-                        weaponSkillName = skill.Name;
-                    }
+                // Track weapon skill AS and name for parry
+                if (weaponSkillAS == 0)
+                {
+                    weaponSkillAS = skill.AbilityScore;
+                    weaponSkillName = skill.Name;
                 }
+            }
+            else if (category == "Weapon")
+            {
+                // Also include skills categorized as Weapon (ActionType.Attack) even if no matching equipment
+                // This handles unarmed/improvised combat
+                result.Add(skill);
+                attackSkills.Add(skill);
             }
             else if (category == "Attribute")
             {
