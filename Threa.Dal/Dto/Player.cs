@@ -12,4 +12,6 @@ public class Player
     public bool IsEnabled { get; set; } = true;
     public string SecretQuestion { get; set; } = string.Empty;
     public string SecretAnswer { get; set; } = string.Empty;  // Stored lowercase, trimmed
+    public int FailedRecoveryAttempts { get; set; } = 0;
+    public DateTime? RecoveryLockoutUntil { get; set; }
 }
