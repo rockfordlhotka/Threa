@@ -4,17 +4,17 @@
 
 See: .planning/PROJECT.md (updated 2026-01-26)
 
-**Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** v1.0 milestone complete - Ready to plan next milestone
+**Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
+**Current focus:** v1.1 User Management & Authentication
 
 ## Current Position
 
-Milestone: v1.0 - COMPLETE (Shipped 2026-01-26)
-Next: Define v2 milestone goals
-Status: Ready to plan next milestone
-Last activity: 2026-01-26 - v1.0 milestone archived
+Milestone: v1.1 - IN PROGRESS
+Phase: Not started (defining requirements)
+Status: Researching Gravatar integration
+Last activity: 2026-01-26 - v1.1 milestone started
 
-Progress: v1.0 [################] 100%
+Progress: v1.1 [░░░░░░░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

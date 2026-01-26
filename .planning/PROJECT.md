@@ -1,12 +1,22 @@
-# Threa Inventory & Equipment System
+# Threa TTRPG Assistant
 
 ## What This Is
 
-A complete inventory and equipment management system for the Threa TTRPG assistant that allows Game Masters to create and manage item templates (weapons, armor, ammo, consumables), and players to equip items, manage inventory, and benefit from item bonuses during character creation and gameplay.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, and user authentication with role-based access control.
 
 ## Core Value
 
-Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
+Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
+
+## Current Milestone: v1.1 User Management & Authentication
+
+**Goal:** Enable self-service user registration and admin user management without email dependency.
+
+**Target features:**
+- Self-service user registration with secret question/answer for password recovery
+- Admin user management (enable/disable users, role assignment)
+- Enhanced user profiles with display names, email, and Gravatar integration
+- First registered user automatically becomes admin
 
 ## Requirements
 
@@ -46,9 +56,17 @@ These capabilities exist in the codebase:
 
 ### Active
 
-New capabilities for next milestone:
+New capabilities for v1.1:
 
-(To be defined during next milestone planning)
+- [ ] New users can self-register with username, password (min 6 chars), and secret Q&A
+- [ ] First registered user automatically becomes Admin
+- [ ] Users can reset password using secret Q&A (case-insensitive, trimmed answer)
+- [ ] Admin can view list of all users
+- [ ] Admin can enable/disable users (preserves data)
+- [ ] Admin can change user roles (User/GameMaster/Admin)
+- [ ] Users can set display name (shown in UI, separate from login username)
+- [ ] Users can optionally provide email address
+- [ ] User avatars display via Gravatar (based on email if provided)
 
 ### Out of Scope
 
@@ -146,4 +164,4 @@ Users are already familiar with:
 | Defer player-to-player trading to v2 | Scope management, GM distribution sufficient for v1 | ✓ Good (v1.0) |
 
 ---
-*Last updated: 2026-01-26 after v1.0 milestone completion*
+*Last updated: 2026-01-26 after v1.1 milestone start*
