@@ -309,25 +309,29 @@
         var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
         hasShieldEquipped = offHand?.Template?.ItemType == ItemType.Shield;
 
-        // Load ranged weapons
+        // Load ranged weapons using WeaponSelector
         rangedWeapons = new List<RangedWeaponInfo>();
-        foreach (var item in equippedItems.Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
-                                                       i.EquippedSlot == EquipmentSlot.OffHand))
+        var detectedRangedWeapons = WeaponSelector.GetRangedWeapons(equippedItemInfos).ToList();
+        foreach (var weaponInfo in detectedRangedWeapons)
         {
+            var item = weaponInfo.Item;
+            // Try to load advanced ranged properties (fire modes, ammo, etc.) from CustomProperties
             var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
-            if (rangedProps?.IsRangedWeapon == true)
+
+            // If rangedProps exists, use it; otherwise create basic ranged weapon with defaults
+            if (rangedProps != null || item.Template?.Range.HasValue == true)
             {
                 var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
-                // Use the ranged skill from weapon properties, fall back to RelatedSkill for backward compatibility
-                var skillName = !string.IsNullOrWhiteSpace(rangedProps.RangedSkill)
+                // Use the ranged skill from weapon properties, fall back to RelatedSkill, then template RelatedSkill
+                var skillName = !string.IsNullOrWhiteSpace(rangedProps?.RangedSkill)
                     ? rangedProps.RangedSkill
                     : item.Template?.RelatedSkill ?? "";
                 var skill = Character.Skills.FirstOrDefault(s => s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
 
                 // Check weapon's inherent AOE (grenades, rockets)
-                bool isAOECapable = rangedProps.IsInherentAOE;
-                int blastRadius = rangedProps.DefaultBlastRadius;
-                string? blastFalloff = rangedProps.DefaultBlastFalloff;
+                bool isAOECapable = rangedProps?.IsInherentAOE ?? false;
+                int blastRadius = rangedProps?.DefaultBlastRadius ?? 0;
+                string? blastFalloff = rangedProps?.DefaultBlastFalloff;
                 bool aoeFromAmmo = false;
                 int directHitBonus = 0;
 
@@ -340,25 +344,25 @@
                     Name = item.Template?.Name ?? "Unknown",
                     SkillName = skillName,
                     SkillAS = skill?.AbilityScore ?? 0,
-                    WeaponAVModifier = rangedProps.AccuracyModifier,
-                    BaseSV = rangedProps.BaseSVModifier,
+                    WeaponAVModifier = rangedProps?.AccuracyModifier ?? weaponInfo.Template.AVModifier,
+                    BaseSV = rangedProps?.BaseSVModifier ?? weaponInfo.Template.SVModifier,
                     LoadedAmmo = ammoState.LoadedAmmo,
-                    Capacity = rangedProps.Capacity,
+                    Capacity = rangedProps?.Capacity ?? 0,
                     LoadedAmmoType = ammoState.LoadedAmmoType,
                     AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
-                    IsDodgeable = rangedProps.IsDodgeable,
-                    SupportsSingle = rangedProps.HasFireMode(FireMode.Single),
-                    SupportsBurst = rangedProps.HasFireMode(FireMode.Burst),
-                    SupportsSuppression = rangedProps.HasFireMode(FireMode.Suppression),
+                    IsDodgeable = rangedProps?.IsDodgeable ?? true,
+                    SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
+                    SupportsBurst = rangedProps?.HasFireMode(FireMode.Burst) ?? false,
+                    SupportsSuppression = rangedProps?.HasFireMode(FireMode.Suppression) ?? false,
                     IsAOECapable = isAOECapable,
                     BlastRadius = blastRadius,
                     BlastFalloff = blastFalloff,
                     AOEFromAmmo = aoeFromAmmo,
                     DirectHitBonus = directHitBonus,
-                    ShortRange = rangedProps.ShortRange,
-                    MediumRange = rangedProps.MediumRange,
-                    LongRange = rangedProps.LongRange,
-                    ExtremeRange = rangedProps.ExtremeRange
+                    ShortRange = rangedProps?.ShortRange ?? 10,
+                    MediumRange = rangedProps?.MediumRange ?? 20,
+                    LongRange = rangedProps?.LongRange ?? 40,
+                    ExtremeRange = rangedProps?.ExtremeRange ?? 60
                 });
             }
         }
