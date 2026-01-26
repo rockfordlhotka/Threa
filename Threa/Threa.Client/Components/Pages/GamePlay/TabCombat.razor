@@ -381,8 +381,6 @@
         // Collect skill names from both melee weapons (RelatedSkill) and ranged weapons (RangedSkill in CustomProperties)
         var equippedWeaponSkillNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // DEBUG: Log what we found
-        Console.WriteLine($"[TabCombat] Found {weaponItems.Count} weapon items");
         foreach (var item in weaponItems)
         {
             // Check melee weapon skill (RelatedSkill)
@@ -392,8 +390,6 @@
             var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
             var rangedSkill = rangedProps?.RangedSkill;
 
-            Console.WriteLine($"[TabCombat]   - {item.Template?.Name ?? "NO TEMPLATE"} (slot: {item.EquippedSlot}, MeleeSkill: {meleeSkill ?? "NULL"}, RangedSkill: {rangedSkill ?? "NULL"})");
-
             // Add both skills if they exist
             if (!string.IsNullOrWhiteSpace(meleeSkill))
                 equippedWeaponSkillNames.Add(meleeSkill);
@@ -401,23 +397,17 @@
                 equippedWeaponSkillNames.Add(rangedSkill);
         }
 
-        Console.WriteLine($"[TabCombat] Equipped weapon skill names: {string.Join(", ", equippedWeaponSkillNames)}");
-
         var skills = Character.Skills.ToList();
         var result = new List<GameMechanics.SkillEdit>();
         attackSkills = new List<GameMechanics.SkillEdit>();
 
-        Console.WriteLine($"[TabCombat] Checking {skills.Count} skills against equipped weapons");
-
         foreach (var skill in skills)
         {
             var category = GetSkillCategory(skill);
-            Console.WriteLine($"[TabCombat]   Checking skill: '{skill.Name}' (ID: {skill.Id}, ActionType: {skill.ActionType}, Category: {category})");
 
             // Show skill if it matches an equipped weapon's RelatedSkill (compare against Id, not Name)
             if (equippedWeaponSkillNames.Contains(skill.Id))
             {
-                Console.WriteLine($"[TabCombat]   ✓ Adding skill '{skill.Name}' (matched equipped weapon)");
                 result.Add(skill);
                 attackSkills.Add(skill);
 
