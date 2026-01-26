@@ -378,17 +378,28 @@
                        (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield))
             .ToList();
 
+        // Collect skill names from both melee weapons (RelatedSkill) and ranged weapons (RangedSkill in CustomProperties)
+        var equippedWeaponSkillNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // DEBUG: Log what we found
         Console.WriteLine($"[TabCombat] Found {weaponItems.Count} weapon items");
         foreach (var item in weaponItems)
         {
-            Console.WriteLine($"[TabCombat]   - {item.Template?.Name ?? "NO TEMPLATE"} (slot: {item.EquippedSlot}, RelatedSkill: {item.Template?.RelatedSkill ?? "NULL"})");
-        }
+            // Check melee weapon skill (RelatedSkill)
+            var meleeSkill = item.Template?.RelatedSkill;
 
-        var equippedWeaponSkillNames = weaponItems
-            .Select(i => i.Template?.RelatedSkill)
-            .Where(name => name != null)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Check ranged weapon skill (in RangedWeaponProperties JSON)
+            var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
+            var rangedSkill = rangedProps?.RangedSkill;
+
+            Console.WriteLine($"[TabCombat]   - {item.Template?.Name ?? "NO TEMPLATE"} (slot: {item.EquippedSlot}, MeleeSkill: {meleeSkill ?? "NULL"}, RangedSkill: {rangedSkill ?? "NULL"})");
+
+            // Add both skills if they exist
+            if (!string.IsNullOrWhiteSpace(meleeSkill))
+                equippedWeaponSkillNames.Add(meleeSkill);
+            if (!string.IsNullOrWhiteSpace(rangedSkill))
+                equippedWeaponSkillNames.Add(rangedSkill);
+        }
 
         Console.WriteLine($"[TabCombat] Equipped weapon skill names: {string.Join(", ", equippedWeaponSkillNames)}");
 
