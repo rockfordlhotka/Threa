@@ -12,8 +12,9 @@ Players can equip weapons and armor that directly affect their combat effectiven
 
 ### Validated
 
-These capabilities already exist in the codebase:
+These capabilities exist in the codebase:
 
+**Pre-existing (before v1.0):**
 - ✓ CSLA.NET business objects with data portal operations — existing
 - ✓ ItemTemplate DTO with properties for weapons, armor, damage, bonuses — existing
 - ✓ CharacterItem DTO for character inventory instances — existing
@@ -25,40 +26,55 @@ These capabilities already exist in the codebase:
 - ✓ Play page with combat, skills, magic, defense tabs — existing
 - ✓ Equipment slots defined (MainHand, OffHand, Head, Chest, etc.) — existing
 
+**Delivered in v1.0 (2026-01-26):**
+- ✓ GM can create new item templates via web UI — v1.0
+- ✓ GM can edit existing item templates (all properties: basic, combat stats, bonuses) — v1.0
+- ✓ GM can browse/search item templates (filter by type, search by name, tags) — v1.0
+- ✓ GM can deactivate/delete item templates — v1.0
+- ✓ Players can browse available item templates during character creation — v1.0
+- ✓ Players can add items to character starting inventory — v1.0
+- ✓ Players can view inventory on Play page — v1.0
+- ✓ Players can equip items to equipment slots — v1.0
+- ✓ Players can unequip items back to inventory — v1.0
+- ✓ Players can drop/destroy items from inventory — v1.0
+- ✓ Items stored in containers (bags) are tracked with parent-child relationships — v1.0
+- ✓ GM can grant items to players during gameplay — v1.0
+- ✓ Equipped items apply skill bonuses to character Ability Scores — v1.0
+- ✓ Equipped items apply attribute modifiers to character attributes — v1.0
+- ✓ Multiple item bonuses stack correctly according to design rules — v1.0
+- ✓ Seed database with 10-20 example items for testing (52 items shipped) — v1.0
+
 ### Active
 
-New capabilities being built:
+New capabilities for next milestone:
 
-- [ ] GM can create new item templates via web UI
-- [ ] GM can edit existing item templates (all properties: basic, combat stats, bonuses)
-- [ ] GM can browse/search item templates (filter by type, search by name, tags)
-- [ ] GM can deactivate/delete item templates
-- [ ] Players can browse available item templates during character creation
-- [ ] Players can add items to character starting inventory
-- [ ] Players can view inventory on Play page
-- [ ] Players can equip items to equipment slots
-- [ ] Players can unequip items back to inventory
-- [ ] Players can drop/destroy items from inventory
-- [ ] Items stored in containers (bags) are tracked with parent-child relationships
-- [ ] GM can grant items to players during gameplay
-- [ ] Players can give items to other players
-- [ ] Equipped items apply skill bonuses to character Ability Scores
-- [ ] Equipped items apply attribute modifiers to character attributes
-- [ ] Multiple item bonuses stack correctly according to design rules
-- [ ] Seed database with 10-20 example items for testing (swords, guns, armor, ammo)
+(To be defined during next milestone planning)
 
 ### Out of Scope
 
-Explicitly excluded from this milestone:
+Explicitly excluded (may be considered for future milestones):
 
 - Item crafting system — Complex, separate feature set
 - Durability degradation mechanics — Field exists but auto-decay not needed yet
-- Marketplace/economy/vendor system — Trading focus is player-to-player
+- Marketplace/economy/vendor system — Trading focus is player-to-player initially
 - Item enchanting/upgrading — Future enhancement
-- Item sets or combos — Single-item bonuses only for v1
-- Visual item icons/sprites — Text-based for now
+- Item sets or combos — Single-item bonuses sufficient for v1.0
+- Visual item icons/sprites — Text-based UI works well
+- Player-to-player trading — Deferred from v1.0 scope
 
 ## Context
+
+**Current State (v1.0 Shipped):**
+The Threa TTRPG Assistant now has a complete inventory and equipment management system integrated with the existing combat system. Key achievements:
+- 52 seed items (weapons, armor, ammo, containers, consumables) available for testing
+- GM can create and manage item templates with full CRUD operations
+- Players can manage inventory during character creation and gameplay
+- Equipment slots with equip/unequip functionality
+- Container system with nesting rules and capacity tracking
+- Item bonuses (skill bonuses, attribute modifiers) integrated with combat
+- Real-time item distribution from GM to players via messaging
+- 38 passing unit tests across ItemTemplate, CharacterItem, and ItemBonusCalculator
+- Codebase: ~16,000+ lines of inventory/equipment code across 80 files
 
 **Existing System:**
 The codebase already has a working TTRPG combat system with:
@@ -72,10 +88,11 @@ The codebase already has a working TTRPG combat system with:
 - Ability Score calculation: `AS = Attribute + Skill Level - 5 + Modifiers`
 
 **Integration Point:**
-Items need to provide the `+ Modifiers` portion of the Ability Score formula. The EQUIPMENT_SYSTEM.md design doc specifies:
+Items provide the `+ Modifiers` portion of the Ability Score formula via ItemBonusCalculator:
 - Skill bonuses: Add directly to skill level before AS calculation
 - Attribute modifiers: Add to base attribute, which cascades to ALL skills using that attribute
 - Stacking rules: Multiple items with same bonus type stack additively
+- Combat integration: Equipped weapons provide damage class, SV/AV modifiers; armor provides absorption
 
 **Technical Environment:**
 - .NET 10, C# 12+
@@ -90,6 +107,13 @@ Users are already familiar with:
 - TTRPG concepts (equipment slots, weapons, armor, inventory)
 - The existing combat system (they've been testing melee/ranged attacks)
 - The Play page layout (tabs for Status, Combat, Skills, Magic, Defense, Inventory)
+- Item management workflows from v1.0 release
+
+**Known Technical Debt (from v1.0):**
+- ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
+- Weapon filtering logic in UI layer (should move to GameMechanics)
+- Case sensitivity inconsistencies in skill/template comparisons
+- OnCharacterChanged callback not wired in Play.razor (minor UX improvement)
 
 ## Constraints
 
@@ -104,12 +128,22 @@ Users are already familiar with:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Build on existing DAL, don't refactor | DAL interfaces are well-designed and match needs exactly | — Pending |
-| GM manages item templates, players get instances | Separation of concerns: GM curates library, players don't spawn arbitrary items | — Pending |
-| Include container support in v1 | User explicitly requested it; foundational for inventory UX | — Pending |
-| Include player-to-player trading in v1 | User explicitly requested it; enables collaborative play | — Pending |
-| Bonus calculation on equip/unequip only | Performance: Don't recalculate on every property access | — Pending |
-| Seed data with test items | User explicitly requested it; critical for testing combat integration | — Pending |
+| Build on existing DAL, don't refactor | DAL interfaces are well-designed and match needs exactly | ✓ Good (v1.0) |
+| GM manages item templates, players get instances | Separation of concerns: GM curates library, players don't spawn arbitrary items | ✓ Good (v1.0) |
+| Include container support in v1 | User explicitly requested it; foundational for inventory UX | ✓ Good (v1.0) |
+| Bonus calculation on equip/unequip only | Performance: Don't recalculate on every property access | ✓ Good (v1.0) |
+| Seed data with test items (52 items) | User requested it; critical for testing combat integration | ✓ Good (v1.0) |
+| CSLA CommonRules + custom rules for validation | Standard pattern for ItemTemplate validation | ✓ Good (v1.0) |
+| Container capacity warnings not errors | GM flexibility per design (magic bags allowed) | ✓ Good (v1.0) |
+| Tags as comma-separated string | Simple filtering without complex data structure | ✓ Good (v1.0) |
+| RadzenDataGrid with debounced search (300ms) | Responsive UI without performance issues | ✓ Good (v1.0) |
+| CSS Grid for inventory tiles | Flexible layout, better than RadzenDataGrid for this UI | ✓ Good (v1.0) |
+| Two-step equip flow (select then click slot) | Prevents accidental equips, better UX | ✓ Good (v1.0) |
+| Container nesting: one level, empty only | Prevents complexity, enforced with blocking validation | ✓ Good (v1.0) |
+| Capacity warnings non-blocking | Allows placement with warning per design | ✓ Good (v1.0) |
+| ItemBonusCalculator service | Clean separation, easily testable (17 unit tests) | ✓ Good (v1.0) |
+| CharacterUpdateMessage for inventory changes | Reuse existing infrastructure, no new message types | ✓ Good (v1.0) |
+| Defer player-to-player trading to v2 | Scope management, GM distribution sufficient for v1 | ✓ Good (v1.0) |
 
 ---
-*Last updated: 2026-01-24 after initialization*
+*Last updated: 2026-01-26 after v1.0 milestone completion*

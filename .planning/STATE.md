@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-24)
+See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 7 - Item Distribution - COMPLETE (Inventory Milestone Complete)
+**Current focus:** v1.0 milestone complete - Ready to plan next milestone
 
 ## Current Position
 
-Phase: 7 of 7 (Item Distribution) - COMPLETE
-Plan: 1 of 1 in current phase
-Status: Phase complete - INVENTORY MILESTONE COMPLETE
-Last activity: 2026-01-26 - Completed 07-01-PLAN.md
+Milestone: v1.0 - COMPLETE (Shipped 2026-01-26)
+Next: Define v2 milestone goals
+Status: Ready to plan next milestone
+Last activity: 2026-01-26 - v1.0 milestone archived
 
-Progress: [################] 100%
+Progress: v1.0 [################] 100%
 
 ## Performance Metrics
 
@@ -104,44 +104,36 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None.
+None - v1.0 milestone complete.
 
 ### Blockers/Concerns
 
-None.
+None - v1.0 milestone complete.
+
+**Known Technical Debt (non-blocking):**
+- ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
+- Weapon filtering logic in UI layer (should move to GameMechanics)
+- Case sensitivity inconsistencies in skill/template comparisons
+- OnCharacterChanged callback not wired in Play.razor
 
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Completed 07-01-PLAN.md (Inventory Milestone Complete)
+Stopped at: v1.0 milestone archived
 Resume file: None
 
-## Phase 7 Status - COMPLETE
+## v1.0 Milestone - SHIPPED
 
-1 of 1 plans complete:
-- 07-01-PLAN.md: Complete - GM Item Distribution panel, InventoryChanged message type, real-time updates
+**Phases:** 1-7 (16 plans)
+**Timeline:** 3 days (2026-01-24 to 2026-01-26)
+**Requirements:** 50/50 (100%)
 
-**Phase 7 Deliverables:**
-- CharacterUpdateType.InventoryChanged enum value for inventory change notifications
-- Item Distribution panel on GM Table page with search and filter
-- Grant workflow: select item + select character + set quantity + grant button
-- ItemManagementService integration for effect handling
-- Real-time player inventory updates via CharacterUpdateMessage
-- Activity log shows item grants
+**Archives:**
+- .planning/milestones/v1-ROADMAP.md
+- .planning/milestones/v1-REQUIREMENTS.md
+- .planning/milestones/v1-MILESTONE-AUDIT.md
 
-## Inventory Milestone Summary
+**Summary:**
+Complete inventory and equipment management system with GM item template management, player inventory (character creation and gameplay), container system, item bonuses integrated with combat, and real-time GM item distribution.
 
-All 7 phases complete. The inventory system now provides:
-
-| Phase | Feature |
-|-------|---------|
-| 01 | Item templates, character items, CSLA business objects |
-| 02 | GM item template management UI (browse, create, edit) |
-| 03 | Character inventory management during creation |
-| 04 | Gameplay inventory UI with equipment slots |
-| 05 | Container system with nesting and capacity |
-| 06 | Item bonuses affecting attributes and combat |
-| 07 | GM item distribution with real-time updates |
-
-**Total Execution Time:** 4.1 hours across 16 plans
-**Average Plan Duration:** 15 minutes
+**Next:** Run `/gsd:new-milestone` to define v2 goals

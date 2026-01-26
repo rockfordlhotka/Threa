@@ -1,39 +1,49 @@
+# Requirements Archive: v1.0 Threa Inventory & Equipment System
+
+**Archived:** 2026-01-26
+**Status:** ✅ SHIPPED
+
+This is the archived requirements specification for v1.0.
+For current requirements, see `.planning/REQUIREMENTS.md` (will be created for next milestone).
+
+---
+
 # Requirements
 
 ## v1 Requirements
 
 ### GM Item Management
 
-- [ ] **GM-01**: GM can create new item template with basic properties (name, description, type, equipment slot, weight, volume, value)
-- [ ] **GM-02**: GM can set combat properties on item templates (damage class, damage type, SV modifier, AV modifier, range, fire modes, ammo capacity)
-- [ ] **GM-03**: GM can add skill bonuses to item templates (specify skill name and bonus amount)
-- [ ] **GM-04**: GM can add attribute modifiers to item templates (specify attribute and modifier amount)
-- [ ] **GM-05**: GM can add special effects to item templates (equipped effects, on-use effects, trigger conditions)
-- [ ] **GM-06**: GM can edit existing item templates and save changes
-- [ ] **GM-07**: GM can browse item template library filtered by item type (weapon, armor, ammo, consumable, container, misc)
-- [ ] **GM-08**: GM can search item templates by name
-- [ ] **GM-09**: GM can add custom tags to item templates for categorization
-- [ ] **GM-10**: GM can filter item templates by tags
-- [ ] **GM-11**: GM can deactivate item templates to hide them from player selection
-- [ ] **GM-12**: GM can delete item templates that have never been instantiated
+- [x] **GM-01**: GM can create new item template with basic properties (name, description, type, equipment slot, weight, volume, value)
+- [x] **GM-02**: GM can set combat properties on item templates (damage class, damage type, SV modifier, AV modifier, range, fire modes, ammo capacity)
+- [x] **GM-03**: GM can add skill bonuses to item templates (specify skill name and bonus amount)
+- [x] **GM-04**: GM can add attribute modifiers to item templates (specify attribute and modifier amount)
+- [x] **GM-05**: GM can add special effects to item templates (equipped effects, on-use effects, trigger conditions)
+- [x] **GM-06**: GM can edit existing item templates and save changes
+- [x] **GM-07**: GM can browse item template library filtered by item type (weapon, armor, ammo, consumable, container, misc)
+- [x] **GM-08**: GM can search item templates by name
+- [x] **GM-09**: GM can add custom tags to item templates for categorization
+- [x] **GM-10**: GM can filter item templates by tags
+- [x] **GM-11**: GM can deactivate item templates to hide them from player selection
+- [x] **GM-12**: GM can delete item templates that have never been instantiated
 
 ### Player Inventory - Character Creation
 
-- [ ] **INV-01**: Player can browse available item templates during character creation
-- [ ] **INV-02**: Player can filter item templates by type during character creation
-- [ ] **INV-03**: Player can search item templates by name during character creation
-- [ ] **INV-04**: Player can add item instance to character starting inventory from template
-- [ ] **INV-05**: Player can remove item from starting inventory before finalizing character
-- [ ] **INV-06**: Player can set initial quantity for stackable items
+- [x] **INV-01**: Player can browse available item templates during character creation
+- [x] **INV-02**: Player can filter item templates by type during character creation
+- [x] **INV-03**: Player can search item templates by name during character creation
+- [x] **INV-04**: Player can add item instance to character starting inventory from template
+- [x] **INV-05**: Player can remove item from starting inventory before finalizing character
+- [x] **INV-06**: Player can set initial quantity for stackable items
 
 ### Player Inventory - Gameplay
 
-- [ ] **INV-07**: Player can view all items in their inventory on Play page
-- [ ] **INV-08**: Player can view all equipped items in equipment slots on Play page
-- [ ] **INV-09**: Player can equip item from inventory to appropriate equipment slot
-- [ ] **INV-10**: Player can unequip item from equipment slot back to inventory
-- [ ] **INV-11**: Player can drop item from inventory (permanently removes from character)
-- [ ] **INV-12**: Player can destroy item from inventory (permanently removes from character)
+- [x] **INV-07**: Player can view all items in their inventory on Play page
+- [x] **INV-08**: Player can view all equipped items in equipment slots on Play page
+- [x] **INV-09**: Player can equip item from inventory to appropriate equipment slot
+- [x] **INV-10**: Player can unequip item from equipment slot back to inventory
+- [x] **INV-11**: Player can drop item from inventory (permanently removes from character)
+- [x] **INV-12**: Player can destroy item from inventory (permanently removes from character)
 - [x] **INV-13**: Player can place item inside container item in inventory
 - [x] **INV-14**: Player can remove item from container back to main inventory
 - [x] **INV-15**: Player can view items contained within a container
@@ -151,18 +161,23 @@
 | DIST-02 | Phase 7: Item Distribution | Complete |
 | DIST-03 | Phase 7: Item Distribution | Complete |
 
-**Coverage Summary:** 50/50 v1 requirements mapped
+**Coverage Summary:** 50/50 v1 requirements complete (100%)
 
 ---
 
-## Requirements Validation Criteria
+## Milestone Summary
 
-Each requirement must be:
-- **Testable**: Can verify through UI interaction or automated test
-- **User-centric**: Describes what user can do, not how system implements it
-- **Atomic**: Single capability per requirement
-- **Independent**: Minimal dependencies on other requirements
+**Shipped:** 50 of 50 v1 requirements
+**Adjusted:** None (all requirements delivered as originally specified)
+**Dropped:** Player-to-player trading (TRADE-01 to TRADE-04) deferred to v2
+
+**Implementation Highlights:**
+- 52 seed items (247% over minimum 21 items)
+- 38 unit tests across ItemTemplate, CharacterItem, and ItemBonusCalculator
+- Real-time messaging infrastructure for inventory updates
+- Container system with nesting enforcement and capacity tracking
+- Full combat integration with weapon selection and armor absorption
 
 ---
 
-*Last updated: 2026-01-24*
+*Archived: 2026-01-26 as part of v1.0 milestone completion*

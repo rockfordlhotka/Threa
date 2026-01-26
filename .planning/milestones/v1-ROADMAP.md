@@ -1,26 +1,14 @@
-# Roadmap: Threa Inventory & Equipment System
+# Milestone v1: Threa Inventory & Equipment System
+
+**Status:** ✅ SHIPPED 2026-01-26
+**Phases:** 1-7
+**Total Plans:** 16
 
 ## Overview
 
 This roadmap delivers a complete inventory and equipment management system for the Threa TTRPG assistant. Starting from CSLA business object foundation and seed data, it progresses through GM item management, player inventory (character creation and gameplay), container support, and culminates with item bonuses integrating into the existing combat system. Each phase builds on the previous, creating a functional item system that Game Masters can populate and players can use in combat.
 
 ## Phases
-
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 1: Foundation** - CSLA business objects and seed test data
-- [x] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
-- [x] **Phase 3: Character Creation Inventory** - Players add items during character creation
-- [x] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
-- [x] **Phase 5: Container System** - Items inside containers with capacity limits
-- [x] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
-- [x] **Phase 7: Item Distribution** - GM grants items to players during gameplay
-
-## Phase Details
 
 ### Phase 1: Foundation
 **Goal**: ItemTemplate and CharacterItem business objects exist with full CSLA data portal operations, and the database contains example items for testing
@@ -164,11 +152,43 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 7. Item Distribution | 1/1 | Complete | 2026-01-26 |
 
 ---
+
+## Milestone Summary
+
+**Key Decisions:**
+
+- Build on existing DAL interfaces (no refactoring) - proven approach
+- GM manages templates, players get instances - clear separation
+- Container support in v1 - foundational for UX
+- Bonus calculation on equip/unequip only - performance optimization
+- Tags as comma-separated string - simple and effective
+- CSS Grid for inventory tiles - better than RadzenDataGrid for this UI
+- Two-step equip flow - prevents accidents
+- Container nesting: one level, empty only - enforced with validation
+- ItemBonusCalculator service - clean separation, testable
+- CharacterUpdateMessage for inventory changes - reuse infrastructure
+
+**Issues Resolved:**
+
+- CSLA business object validation patterns established
+- Radzen component integration (RadzenDataGrid, RadzenTabs)
+- Real-time messaging for inventory changes
+- Container capacity and nesting rules implemented
+- Item bonus calculation and combat integration
+
+**Technical Debt Incurred:**
+
+- ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
+- Weapon filtering logic in UI layer (should move to GameMechanics)
+- Case sensitivity inconsistencies in skill/template comparisons
+- OnCharacterChanged callback not wired in Play.razor
+
+---
+
+*For current project status, see .planning/PROJECT.md and .planning/MILESTONES.md*
+
+---
+
 *Created: 2026-01-24*
-*Phase 1 planned: 2026-01-24*
-*Phase 2 planned: 2026-01-25*
-*Phase 3 planned: 2026-01-25*
-*Phase 4 planned: 2026-01-25*
-*Phase 5 planned: 2026-01-25*
-*Phase 6 planned: 2026-01-25*
-*Phase 7 planned: 2026-01-25*
+*Shipped: 2026-01-26*
+*Archived: 2026-01-26*
