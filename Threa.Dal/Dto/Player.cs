@@ -14,4 +14,6 @@ public class Player
     public string SecretAnswer { get; set; } = string.Empty;  // Stored lowercase, trimmed
     public int FailedRecoveryAttempts { get; set; } = 0;
     public DateTime? RecoveryLockoutUntil { get; set; }
+    public string ContactEmail { get; set; } = string.Empty;  // For Gravatar (separate from Email which stores username)
+    public bool UseGravatar { get; set; } = true;  // Default to using Gravatar when ContactEmail provided
 }

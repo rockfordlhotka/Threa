@@ -92,7 +92,9 @@ namespace Threa.Dal.MockDb
                         Roles = obj.Roles,
                         IsEnabled = obj.IsEnabled,
                         SecretQuestion = obj.SecretQuestion,
-                        SecretAnswer = obj.SecretAnswer
+                        SecretAnswer = obj.SecretAnswer,
+                        ContactEmail = obj.ContactEmail,
+                        UseGravatar = obj.UseGravatar
                     };
                     MockDb.Players.Add(existingPlayer);
                 }
@@ -103,6 +105,8 @@ namespace Threa.Dal.MockDb
                     existingPlayer.IsEnabled = obj.IsEnabled;
                     existingPlayer.SecretQuestion = obj.SecretQuestion;
                     existingPlayer.SecretAnswer = obj.SecretAnswer;
+                    existingPlayer.ContactEmail = obj.ContactEmail;
+                    existingPlayer.UseGravatar = obj.UseGravatar;
                     if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
                         existingPlayer.Salt = BCrypt.Net.BCrypt.GenerateSalt(12);
                     var hashedPassword = BCrypt.Net.BCrypt.HashPassword(obj.HashedPassword, existingPlayer.Salt);
