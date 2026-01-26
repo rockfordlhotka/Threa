@@ -528,7 +528,12 @@
             CombatStanceBehavior.EndParryMode(Character);
         }
         selectedSkill = skill;
-        combatMode = CombatMode.Attack;
+
+        // Check if this skill matches a ranged weapon
+        var isRangedSkill = rangedWeapons.Any(w => w.SkillName.Equals(skill.Id, StringComparison.OrdinalIgnoreCase));
+
+        // Route to ranged attack mode for ranged skills, melee attack mode otherwise
+        combatMode = isRangedSkill ? CombatMode.RangedAttack : CombatMode.Attack;
     }
 
     private void StartDefend()
