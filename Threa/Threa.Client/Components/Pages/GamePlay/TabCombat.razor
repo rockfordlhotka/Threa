@@ -297,7 +297,7 @@
 
         // Detect melee weapons using WeaponSelector
         var meleeWeapons = WeaponSelector.GetMeleeWeapons(equippedItemInfos).ToList();
-        hasWeaponEquipped = meleeWeapons.Any();
+        // Note: hasWeaponEquipped will be set after ranged weapons are detected (line ~365)
 
         // Extract first melee weapon's modifiers for attack mode
         var selectedMeleeWeapon = meleeWeapons.FirstOrDefault();
@@ -363,6 +363,9 @@
             }
         }
         hasRangedWeaponEquipped = rangedWeapons.Any();
+
+        // Set hasWeaponEquipped to true if EITHER melee or ranged weapons are equipped
+        hasWeaponEquipped = meleeWeapons.Any() || rangedWeapons.Any();
 
         // Get equipped weapon skill names (exclude shields from weapons)
         var equippedWeaponSkillNames = equippedItems
