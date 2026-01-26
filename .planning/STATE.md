@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 5 - Container System - COMPLETE
+**Current focus:** Phase 6 - Item Bonuses & Combat - In Progress
 
 ## Current Position
 
-Phase: 5 of 7 (Container System) - COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 05-02-PLAN.md
+Phase: 6 of 7 (Item Bonuses & Combat)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-25 - Completed 06-01-PLAN.md
 
-Progress: [############----] 71%
+Progress: [#############---] 76%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 10 min
-- Total execution time: 2.1 hours
+- Total execution time: 2.2 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [############----] 71%
 | 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 | 04-gameplay-inventory-core | 2 | 18 min | 9 min |
 | 05-container-system | 2 | 27 min | 13.5 min |
+| 06-item-bonuses-and-combat | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (15 min), 05-01 (12 min), 04-02 (15 min), 04-01 (3 min), 03-02 (8 min)
+- Last 5 plans: 06-01 (4 min), 05-02 (15 min), 05-01 (12 min), 04-02 (15 min), 04-01 (3 min)
 - Trend: steady execution velocity
 
 *Updated after each plan completion*
@@ -92,6 +93,8 @@ Recent decisions affecting current work:
 - Drop container dialog has Cancel/Empty First/Drop All options - 05-02
 - Fill indicator colors: gray (empty), green (<75%), yellow (75-99%), red (100%+) - 05-02
 - ContainerWeightReduction multiplier applied to contents weight - 05-02
+- Only FlatBonus type bonuses are calculated (PercentageBonus ignored per CONTEXT.md) - 06-01
+- Case-insensitive comparison for attribute/skill names in bonus calculation - 06-01
 
 ### Pending Todos
 
@@ -104,25 +107,19 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 05-02-PLAN.md (Phase 5 complete)
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
-## Phase 5 Status - COMPLETE
+## Phase 6 Status - In Progress
 
-2 of 2 plans complete:
-- 05-01-PLAN.md: Complete - Container contents panel, move-to/remove-from container functionality
-- 05-02-PLAN.md: Complete - Container capacity enforcement, visual fill indicators, nesting rules
+1 of 2 plans complete:
+- 06-01-PLAN.md: Complete - ItemBonusCalculator, EquippedItemInfo, AttributeBonusBreakdown, unit tests
+- 06-02-PLAN.md: Pending - Combat integration (pending)
 
-**Phase 5 Deliverables:**
-- Players can click a container tile to see its contents in a side panel
-- Players can select an item and click a container tile to move item into container
-- Players can select an item in container panel and click Remove to move it back to inventory
-- Inventory grid filters to show only top-level items (not items in containers)
-- Container tiles have dashed border visual indicator
-- Container tiles show color-coded fill indicators (gray/green/yellow/red)
-- Container panel header displays weight and volume capacity status
-- Capacity/type warnings display but don't block operations
-- Nesting rules enforced (blocks nested container placement)
-- Drop container with contents shows three-option dialog
+**Phase 6 Deliverables (Completed so far):**
+- ItemBonusCalculator service computes flat bonuses from equipped items
+- EquippedItemInfo value object combines CharacterItem + ItemTemplate
+- AttributeBonusBreakdown shows base + item + effect contributions
+- 17 unit tests covering bonus calculation scenarios
 
-Next: Phase 6 (Item Bonuses & Combat - equipped items affect stats and combat)
+Next: Plan 06-02 (Combat Integration - apply item bonuses to attack/defense)
