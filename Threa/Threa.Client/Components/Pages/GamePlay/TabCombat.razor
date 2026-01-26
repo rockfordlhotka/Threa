@@ -2,6 +2,7 @@
 @using GameMechanics.Messaging
 @using GameMechanics.Effects.Behaviors
 @using GameMechanics.Combat
+@using GameMechanics.Items
 @using Threa.Dal.Dto
 @using Threa.Dal
 @using Threa.Client.Components.Shared
@@ -173,6 +174,9 @@
                     Table="Table"
                     AvailableSkills="attackSkills"
                     SelectedSkill="selectedSkill"
+                    WeaponAVModifier="meleeWeaponAVModifier"
+                    WeaponSVModifier="meleeWeaponSVModifier"
+                    WeaponDamageClass="meleeWeaponDamageClass"
                     OnCancel="ReturnToDefault"
                     OnAttackComplete="OnAttackComplete" />
     }
@@ -250,6 +254,11 @@
     private List<RangedWeaponInfo> rangedWeapons = new();
     private List<AmmoSourceInfo> availableAmmoSources = new();
 
+    // Weapon modifiers for melee attacks (from equipped weapon template)
+    private int meleeWeaponAVModifier;
+    private int meleeWeaponSVModifier;
+    private int meleeWeaponDamageClass = 1;
+
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
     private DamageType? pendingDamageType;
@@ -280,11 +289,24 @@
 
         equippedItems = await CharacterItemDal.GetEquippedItemsAsync(Character.Id);
 
-        // Detect equipped weapons and shields
-        var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
-        var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
+        // Convert to EquippedItemInfo for weapon/armor filtering
+        var equippedItemInfos = equippedItems
+            .Where(i => i.Template != null)
+            .Select(i => new EquippedItemInfo(i, i.Template!))
+            .ToList();
 
-        hasWeaponEquipped = mainHand != null;
+        // Detect melee weapons using WeaponSelector
+        var meleeWeapons = WeaponSelector.GetMeleeWeapons(equippedItemInfos).ToList();
+        hasWeaponEquipped = meleeWeapons.Any();
+
+        // Extract first melee weapon's modifiers for attack mode
+        var selectedMeleeWeapon = meleeWeapons.FirstOrDefault();
+        meleeWeaponAVModifier = selectedMeleeWeapon?.Template.AVModifier ?? 0;
+        meleeWeaponSVModifier = selectedMeleeWeapon?.Template.SVModifier ?? 0;
+        meleeWeaponDamageClass = selectedMeleeWeapon?.Template.DamageClass ?? 1;
+
+        // Detect shields
+        var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
         hasShieldEquipped = offHand?.Template?.ItemType == ItemType.Shield;
 
         // Load ranged weapons
