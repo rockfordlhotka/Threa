@@ -1,6 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Csla;
+using Csla.Core;
+using Csla.Rules;
+using Microsoft.Extensions.DependencyInjection;
 using Threa.Dal;
 
 namespace GameMechanics.Player;
@@ -90,6 +94,59 @@ public class AdminUserEdit : BusinessBase<AdminUserEdit>
             IsPlayer = roles.Contains(Roles.Player, StringComparer.OrdinalIgnoreCase);
         }
         BusinessRules.CheckRules();
+    }
+
+    protected override void AddBusinessRules()
+    {
+        base.AddBusinessRules();
+        // Register rule against IsEnabled - triggers when IsEnabled or IsAdministrator changes
+        BusinessRules.AddRule(new LastAdminProtectionRule(IsEnabledProperty));
+        BusinessRules.AddRule(new LastAdminProtectionRule(IsAdministratorProperty));
+    }
+
+    /// <summary>
+    /// Validates that disabling user or removing Admin role doesn't leave system without admins.
+    /// </summary>
+    private class LastAdminProtectionRule : BusinessRuleAsync
+    {
+        public LastAdminProtectionRule(IPropertyInfo primaryProperty)
+            : base(primaryProperty)
+        {
+            InputProperties.Add(IsEnabledProperty);
+            InputProperties.Add(IsAdministratorProperty);
+            IsAsync = true;
+            ProvideTargetWhenAsync = true;
+        }
+
+        protected override async Task ExecuteAsync(IRuleContext context)
+        {
+            var target = (AdminUserEdit)context.Target!;
+            var isEnabled = (bool)context.InputPropertyValues[IsEnabledProperty]!;
+            var isAdmin = (bool)context.InputPropertyValues[IsAdministratorProperty]!;
+
+            // Only check if this change would remove an enabled admin
+            if (!isEnabled || !isAdmin)
+            {
+                var dal = target.ApplicationContext.GetRequiredService<IPlayerDal>();
+                var enabledAdminCount = await dal.CountEnabledAdminsAsync();
+
+                // Check if this user is currently an enabled admin in the database
+                var currentUser = await dal.GetPlayerAsync(target.Id);
+                if (currentUser != null)
+                {
+                    var currentRoles = currentUser.Roles?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                        ?? Array.Empty<string>();
+                    var wasEnabledAdmin = currentUser.IsEnabled &&
+                        currentRoles.Contains(Roles.Administrator, StringComparer.OrdinalIgnoreCase);
+
+                    // If they were an enabled admin and this change would leave 0 enabled admins, block
+                    if (wasEnabledAdmin && enabledAdminCount <= 1)
+                    {
+                        context.AddErrorResult("System must have at least one enabled administrator.");
+                    }
+                }
+            }
+        }
     }
 
     [Update]
