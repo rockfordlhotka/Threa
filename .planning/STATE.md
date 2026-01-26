@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 11 - User Profiles (IN PROGRESS)
+**Current focus:** Milestone v1.1 COMPLETE
 
 ## Current Position
 
-Milestone: v1.1 - IN PROGRESS
+Milestone: v1.1 - COMPLETE
 Phase: 11 of 11 (User Profiles)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-26 - Completed 11-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Milestone complete
+Last activity: 2026-01-26 - Completed 11-02-PLAN.md
 
-Progress: v1.1 [████████████████] 100% (7/7 plans)
+Progress: v1.1 [████████████████] 100% (8/8 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 14 min
-- Total execution time: 5.6 hours
+- Total execution time: 5.7 hours
 
 **By Phase (v1.0):**
 
@@ -43,10 +43,10 @@ Progress: v1.1 [████████████████] 100% (7/7 plan
 | 08-registration-foundation | 2/2 | 33 min | 16.5 min |
 | 09-password-recovery | 2/2 | 19 min | 9.5 min |
 | 10-admin-user-management | 2/2 | 11 min | 5.5 min |
-| 11-user-profiles | 1/2 | 24 min | 24 min |
+| 11-user-profiles | 2/2 | 29 min | 14.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-01 (24 min), 10-02 (2 min), 10-01 (9 min), 09-02 (3 min), 09-01 (16 min)
+- Last 5 plans: 11-02 (5 min), 11-01 (24 min), 10-02 (2 min), 10-01 (9 min), 09-02 (3 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -74,6 +74,8 @@ Recent decisions affecting current work:
 - [11-01]: Profanity.Detector library for content filtering (handles Scunthorpe problem)
 - [11-01]: ContactEmail separate from Email (which stores username) for Gravatar
 - [11-01]: UseGravatar defaults to true
+- [11-02]: UserAvatar component uses RadzenGravatar when email provided and UseGravatar enabled
+- [11-02]: Admin user list shows initials (Email field contains username, not actual email)
 
 ### Pending Todos
 
@@ -92,9 +94,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-26T22:55:00Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-01-26T23:05:00Z
+Stopped at: Completed 11-02-PLAN.md (Milestone v1.1 complete)
 Resume file: None
 
 ---
-*Next: Execute 11-02 Profile UI plan*
+*Milestone v1.1 complete - all phases delivered*
