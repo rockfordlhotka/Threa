@@ -388,7 +388,7 @@
         var equippedWeaponSkillNames = weaponItems
             .Select(i => i.Template?.RelatedSkill)
             .Where(name => name != null)
-            .ToHashSet();
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         Console.WriteLine($"[TabCombat] Equipped weapon skill names: {string.Join(", ", equippedWeaponSkillNames)}");
 
