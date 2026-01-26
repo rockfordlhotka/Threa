@@ -520,10 +520,19 @@
         selectedSkill = skill;
 
         // Check if this skill matches a ranged weapon
+        Console.WriteLine($"[StartAttackWithSkill] Skill: {skill.Name} (ID: {skill.Id})");
+        Console.WriteLine($"[StartAttackWithSkill] rangedWeapons count: {rangedWeapons.Count}");
+        foreach (var rw in rangedWeapons)
+        {
+            Console.WriteLine($"[StartAttackWithSkill]   - {rw.Name} (SkillName: {rw.SkillName})");
+        }
+
         var isRangedSkill = rangedWeapons.Any(w => w.SkillName.Equals(skill.Id, StringComparison.OrdinalIgnoreCase));
+        Console.WriteLine($"[StartAttackWithSkill] isRangedSkill: {isRangedSkill}");
 
         // Route to ranged attack mode for ranged skills, melee attack mode otherwise
         combatMode = isRangedSkill ? CombatMode.RangedAttack : CombatMode.Attack;
+        Console.WriteLine($"[StartAttackWithSkill] Routing to: {combatMode}");
     }
 
     private void StartDefend()
