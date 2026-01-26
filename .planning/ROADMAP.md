@@ -126,9 +126,11 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md - ItemBonusCalculator service with unit tests
-- [ ] 06-02-PLAN.md - CharacterEdit integration and UI stat display with breakdowns
-- [ ] 06-03-PLAN.md - Combat system integration (weapon selection, armor absorption)
+- [x] 06-01: ItemBonusCalculator service with unit tests
+- [x] 06-02: CharacterEdit integration and UI stat display with breakdowns
+- [x] 06-03: Combat system integration (weapon selection, armor absorption)
+
+**Completed:** 2026-01-25
 
 ### Phase 7: Item Distribution
 **Goal**: Game Masters can grant items to players during gameplay sessions
@@ -156,7 +158,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Character Creation Inventory | 2/2 | Complete | 2026-01-25 |
 | 4. Gameplay Inventory Core | 2/2 | Complete | 2026-01-25 |
 | 5. Container System | 2/2 | Complete | 2026-01-25 |
-| 6. Item Bonuses & Combat | 0/3 | Planned | - |
+| 6. Item Bonuses & Combat | 3/3 | Complete | 2026-01-25 |
 | 7. Item Distribution | 0/1 | Not started | - |
 
 ---

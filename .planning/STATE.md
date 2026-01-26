@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 6 of 7 (Item Bonuses & Combat)
-Plan: 2 of 2 in current phase
+Phase: 6 of 7 (Item Bonuses & Combat) - COMPLETE
+Plan: 3 of 3 in current phase
 Status: Phase complete
-Last activity: 2026-01-26 - Completed 06-02-PLAN.md
+Last activity: 2026-01-25 - Completed 06-03-PLAN.md
 
-Progress: [##############--] 88%
+Progress: [##############--] 86%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 10 min
-- Total execution time: 2.4 hours
+- Total plans completed: 15
+- Average duration: 16 min
+- Total execution time: 4.0 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [##############--] 88%
 | 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 | 04-gameplay-inventory-core | 2 | 18 min | 9 min |
 | 05-container-system | 2 | 27 min | 13.5 min |
-| 06-item-bonuses-and-combat | 2 | 14 min | 7 min |
+| 06-item-bonuses-and-combat | 3 | 108 min | 36 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-02 (10 min), 06-01 (4 min), 05-02 (15 min), 05-01 (12 min), 04-02 (15 min)
+- Last 5 plans: 06-03 (90 min), 06-02 (10 min), 06-01 (4 min), 05-02 (15 min), 05-01 (12 min)
 - Trend: steady execution velocity
 
 *Updated after each plan completion*
@@ -112,11 +112,12 @@ Last session: 2026-01-26
 Stopped at: Completed 06-02-PLAN.md
 Resume file: None
 
-## Phase 6 Status - Complete
+## Phase 6 Status - COMPLETE
 
-2 of 2 plans complete:
+3 of 3 plans complete:
 - 06-01-PLAN.md: Complete - ItemBonusCalculator, EquippedItemInfo, AttributeBonusBreakdown, unit tests
 - 06-02-PLAN.md: Complete - CharacterEdit integration, Play page loading, TabStatus display
+- 06-03-PLAN.md: Complete - Combat system integration, weapon/armor from equipped items
 
 **Phase 6 Deliverables:**
 - ItemBonusCalculator service computes flat bonuses from equipped items
@@ -129,5 +130,15 @@ Resume file: None
 - Play page loads equipped items on character fetch
 - TabStatus shows attributes with color-coded breakdown
 - DAL method GetEquippedItemsWithTemplatesAsync for efficient loading
+- WeaponSelector filters weapons by melee/ranged mode (supports advanced sci-fi weapons)
+- EquipmentLocationMapper maps equipment slots to hit locations
+- Combat UI routes to correct attack mode based on weapon type
+- Weapon skills appear when weapons equipped (melee vs ranged)
+- Equipped armor provides absorption values in damage resolution
+- Armor skill modifier applies to absorption correctly
 
-Next: Phase 7 (Polish & Edge Cases)
+**Technical Debt:**
+- ArmorInfoFactory orphaned (not used, DamageResolution has duplicate logic)
+- Weapon/skill filtering logic in UI should be in GameMechanics layer
+
+Next: Phase 7 (Item Distribution - GM grants items to players during gameplay)

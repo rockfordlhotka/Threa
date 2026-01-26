@@ -49,16 +49,16 @@
 
 ### Item Bonuses & Integration
 
-- [ ] **BONUS-01**: When item with skill bonuses is equipped, bonuses apply to character's Ability Score calculations
-- [ ] **BONUS-02**: When item with attribute modifiers is equipped, modifiers apply to character's base attributes
-- [ ] **BONUS-03**: Attribute modifiers cascade to all skills using that attribute
-- [ ] **BONUS-04**: Multiple items with same skill bonus stack additively
-- [ ] **BONUS-05**: Multiple items with same attribute modifier stack additively
-- [ ] **BONUS-06**: When item is unequipped, bonuses are removed from character calculations
-- [ ] **BONUS-07**: Combat system uses equipped weapon properties (damage class, SV/AV modifiers) in attack resolution
-- [ ] **BONUS-08**: Equipped armor provides absorption values for damage resolution
-- [ ] **BONUS-09**: Equipped ranged weapons appear in ranged attack mode weapon selection
-- [ ] **BONUS-10**: Equipped melee weapons appear in melee attack mode weapon selection
+- [x] **BONUS-01**: When item with skill bonuses is equipped, bonuses apply to character's Ability Score calculations
+- [x] **BONUS-02**: When item with attribute modifiers is equipped, modifiers apply to character's base attributes
+- [x] **BONUS-03**: Attribute modifiers cascade to all skills using that attribute
+- [x] **BONUS-04**: Multiple items with same skill bonus stack additively
+- [x] **BONUS-05**: Multiple items with same attribute modifier stack additively
+- [x] **BONUS-06**: When item is unequipped, bonuses are removed from character calculations
+- [x] **BONUS-07**: Combat system uses equipped weapon properties (damage class, SV/AV modifiers) in attack resolution
+- [x] **BONUS-08**: Equipped armor provides absorption values for damage resolution
+- [x] **BONUS-09**: Equipped ranged weapons appear in ranged attack mode weapon selection
+- [x] **BONUS-10**: Equipped melee weapons appear in melee attack mode weapon selection
 
 ### Test Data
 
@@ -137,16 +137,16 @@
 | INV-16 | Phase 5: Container System | Complete |
 | INV-17 | Phase 5: Container System | Complete |
 | INV-18 | Phase 5: Container System | Complete |
-| BONUS-01 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-02 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-03 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-04 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-05 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-06 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-07 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-08 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-09 | Phase 6: Item Bonuses & Combat | Pending |
-| BONUS-10 | Phase 6: Item Bonuses & Combat | Pending |
+| BONUS-01 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-02 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-03 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-04 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-05 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-06 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-07 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-08 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-09 | Phase 6: Item Bonuses & Combat | Complete |
+| BONUS-10 | Phase 6: Item Bonuses & Combat | Complete |
 | DIST-01 | Phase 7: Item Distribution | Pending |
 | DIST-02 | Phase 7: Item Distribution | Pending |
 | DIST-03 | Phase 7: Item Distribution | Pending |
