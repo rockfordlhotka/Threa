@@ -14,6 +14,11 @@
 
 <h1>Login</h1>
 
+@if (Registered)
+{
+    <div class="alert alert-success">Registration successful! Please log in with your new account.</div>
+}
+
 <div>
     <div class="alert-danger">@Message</div>
     <EditForm Model="UserInfoModel" OnSubmit="LoginUser" FormName="loginform">
@@ -26,10 +31,13 @@
             <InputText type="password" @bind-Value="UserInfoModel!.Password" />
         </div>
         <button class="btn btn-primary">Login</button>
+        <a href="/register" class="btn btn-link">Don't have an account? Register</a>
     </EditForm>
 </div>
 
 @code {
+    [SupplyParameterFromQuery]
+    public bool Registered { get; set; }
 
     [SupplyParameterFromForm]
     public UserInfo? UserInfoModel { get; set; }
