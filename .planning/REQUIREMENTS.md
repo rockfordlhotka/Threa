@@ -18,12 +18,12 @@ Requirements for v1.1 User Management & Authentication milestone. Each maps to r
 
 ### User Management (Admin)
 
-- [ ] **USER-01**: Admin can view list of all users with username, display name, roles, and enabled status
-- [ ] **USER-02**: Admin can disable a user account (user locked out, data preserved)
-- [ ] **USER-03**: Admin can enable a previously disabled user account
-- [ ] **USER-04**: Admin can assign roles to users (User, GameMaster, Admin)
-- [ ] **USER-05**: Admin can remove roles from users
-- [ ] **USER-06**: Disabled users cannot log in
+- [x] **USER-01**: Admin can view list of all users with username, display name, roles, and enabled status
+- [x] **USER-02**: Admin can disable a user account (user locked out, data preserved)
+- [x] **USER-03**: Admin can enable a previously disabled user account
+- [x] **USER-04**: Admin can assign roles to users (User, GameMaster, Admin)
+- [x] **USER-05**: Admin can remove roles from users
+- [x] **USER-06**: Disabled users cannot log in
 
 ### User Profile
 
@@ -83,12 +83,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-04 | Phase 9 | Complete |
 | AUTH-05 | Phase 9 | Complete |
 | AUTH-06 | Phase 9 | Complete |
-| USER-01 | Phase 10 | Pending |
-| USER-02 | Phase 10 | Pending |
-| USER-03 | Phase 10 | Pending |
-| USER-04 | Phase 10 | Pending |
-| USER-05 | Phase 10 | Pending |
-| USER-06 | Phase 10 | Pending |
+| USER-01 | Phase 10 | Complete |
+| USER-02 | Phase 10 | Complete |
+| USER-03 | Phase 10 | Complete |
+| USER-04 | Phase 10 | Complete |
+| USER-05 | Phase 10 | Complete |
+| USER-06 | Phase 10 | Complete |
 | PROF-01 | Phase 11 | Pending |
 | PROF-02 | Phase 11 | Pending |
 | PROF-03 | Phase 11 | Pending |

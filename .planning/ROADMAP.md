@@ -29,7 +29,7 @@ See MILESTONES.md for v1.0 details.
 
 - [x] **Phase 8: Registration Foundation** - Self-service registration with first-user-as-Admin (2026-01-26)
 - [x] **Phase 9: Password Recovery** - Secret Q&A password reset workflow (2026-01-26)
-- [ ] **Phase 10: Admin User Management** - Admin panel for user control
+- [x] **Phase 10: Admin User Management** - Admin panel for user control (2026-01-26)
 - [ ] **Phase 11: User Profiles** - Enhanced profiles with Gravatar avatars
 
 ## Phase Details
@@ -107,7 +107,7 @@ Plans:
 | 1-7 | v1.0 | 16/16 | Complete | 2026-01-26 |
 | 8. Registration Foundation | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 10. Admin User Management | v1.1 | 0/2 | Planned | - |
+| 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 0/2 | Not started | - |
 
 ---
