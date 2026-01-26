@@ -115,6 +115,11 @@ public class ItemTemplate
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Comma-separated list of custom tags for categorization.
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
     /// Related skill name (for weapons, the skill used to attack).
     /// </summary>
     public string? RelatedSkill { get; set; }

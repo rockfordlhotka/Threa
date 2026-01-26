@@ -1,0 +1,106 @@
+@page "/register"
+
+@using GameMechanics.Player
+@using Csla
+
+@inject IDataPortal<UserRegistration> portal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Threa - Register</PageTitle>
+
+<h1>Create Account</h1>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-danger">@Message</div>
+}
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success">@SuccessMessage</div>
+}
+
+<EditForm Model="RegistrationModel" OnSubmit="RegisterUser" FormName="registerform">
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <InputText class="form-control" @bind-Value="RegistrationModel!.Username" />
+        <small class="form-text text-muted">3-50 characters</small>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText type="password" class="form-control" @bind-Value="RegistrationModel!.Password" />
+        <small class="form-text text-muted">Minimum 6 characters</small>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Secret Question</label>
+        <InputText class="form-control" @bind-Value="RegistrationModel!.SecretQuestion" />
+        <small class="form-text text-muted">Used for password recovery</small>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Secret Answer</label>
+        <InputText class="form-control" @bind-Value="RegistrationModel!.SecretAnswer" />
+        <small class="form-text text-muted">Case-insensitive</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Register</button>
+    <a href="/login" class="btn btn-link">Already have an account? Login</a>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    public RegistrationInfo? RegistrationModel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        RegistrationModel ??= new();
+    }
+
+    public string Message { get; set; } = "";
+    public string SuccessMessage { get; set; } = "";
+
+    private async Task RegisterUser()
+    {
+        Message = "";
+        SuccessMessage = "";
+
+        try
+        {
+            var registration = await portal.CreateAsync();
+            registration.Username = RegistrationModel!.Username;
+            registration.Password = RegistrationModel!.Password;
+            registration.SecretQuestion = RegistrationModel!.SecretQuestion;
+            registration.SecretAnswer = RegistrationModel!.SecretAnswer;
+
+            if (!registration.IsSavable)
+            {
+                // Show validation errors from broken rules
+                var errors = registration.BrokenRulesCollection
+                    .Where(r => r.Severity == Csla.Rules.RuleSeverity.Error)
+                    .Select(r => r.Description);
+                Message = string.Join("; ", errors);
+                return;
+            }
+
+            registration = await registration.SaveAsync();
+
+            // Redirect to login after successful registration
+            NavigationManager.NavigateTo("/login?registered=true");
+        }
+        catch (DataPortalException ex)
+        {
+            // Handle business exceptions (like duplicate username)
+            Message = ex.BusinessExceptionMessage ?? ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Message = $"Registration failed: {ex.Message}";
+        }
+    }
+
+    public class RegistrationInfo
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string SecretQuestion { get; set; } = string.Empty;
+        public string SecretAnswer { get; set; } = string.Empty;
+    }
+}

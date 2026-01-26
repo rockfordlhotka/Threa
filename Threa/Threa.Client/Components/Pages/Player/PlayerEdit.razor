@@ -1,10 +1,11 @@
-﻿@page "/player/playeredit"
+@page "/player/playeredit"
 @rendermode InteractiveServer
 
 @attribute [Authorize]
 
 @using GameMechanics.Player
 @using System.Security.Claims
+@using Threa.Client.Components.Shared
 
 @inject IDataPortal<GameMechanics.Player.PlayerEdit> playerPortal
 @inject ViewModel<GameMechanics.Player.PlayerEdit> vm
@@ -12,30 +13,86 @@
 @inject Threa.Services.RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 
-<h3>Player Profile</h3>
+<h3>My Profile</h3>
 
 <div class="alert-danger">@vm.ViewModelErrorText</div>
 
 @if (vm.Model == null)
 {
-    <p>Loading...</p>
+    <div>Loading...</div>
+    <img src="images/busy.gif" class="busy-animation" />
 }
 else
 {
-    <table>
-        <thead>
-            <tr><th></th><th></th></tr>
-        </thead>
-        <tbody>
-            <LabelRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Email)" />
-            <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
-        </tbody>
-    </table>
-    <button 
-        type="button" 
-        @onclick="SaveData" 
-        class="btn btn-primary" 
-        disabled="@(!vm.Model.IsSavable)">Save</button>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Profile Settings</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username (for login)</label>
+                        <input type="text" class="form-control" value="@vm.Model.Email" disabled
+                               title="Username cannot be changed" />
+                        <div class="form-text">Your login username cannot be changed.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Display Name <span class="text-danger">*</span></label>
+                        <TextInput Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+                        <div class="form-text">This name is shown throughout the app (1-50 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Email (optional)</label>
+                        <TextInput Property="vm.GetPropertyInfo<string>(() => vm.Model.ContactEmail)" />
+                        <div class="form-text">Used for Gravatar avatar. Not visible to other users.</div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="useGravatar"
+                               checked="@vm.Model.UseGravatar"
+                               @onchange="@(e => vm.Model.UseGravatar = (bool)(e.Value ?? false))" />
+                        <label class="form-check-label" for="useGravatar">
+                            Use Gravatar for my avatar
+                        </label>
+                        <div class="form-text">When disabled, your initials will be shown instead.</div>
+                    </div>
+
+                    <button type="button"
+                            @onclick="SaveData"
+                            class="btn btn-primary"
+                            disabled="@(!vm.Model.IsSavable)">
+                        Save Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Avatar Preview</h5>
+                    <div class="mb-3">
+                        <UserAvatar Email="@vm.Model.ContactEmail"
+                                    DisplayName="@vm.Model.Name"
+                                    Size="128"
+                                    UseGravatar="@vm.Model.UseGravatar" />
+                    </div>
+                    <p class="text-muted small">
+                        @if (vm.Model.UseGravatar && !string.IsNullOrWhiteSpace(vm.Model.ContactEmail))
+                        {
+                            <span>Showing Gravatar for your email</span>
+                        }
+                        else
+                        {
+                            <span>Showing initials from your display name</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {

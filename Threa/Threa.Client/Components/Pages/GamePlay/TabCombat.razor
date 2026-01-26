@@ -2,6 +2,7 @@
 @using GameMechanics.Messaging
 @using GameMechanics.Effects.Behaviors
 @using GameMechanics.Combat
+@using GameMechanics.Items
 @using Threa.Dal.Dto
 @using Threa.Dal
 @using Threa.Client.Components.Shared
@@ -173,6 +174,9 @@
                     Table="Table"
                     AvailableSkills="attackSkills"
                     SelectedSkill="selectedSkill"
+                    WeaponAVModifier="meleeWeaponAVModifier"
+                    WeaponSVModifier="meleeWeaponSVModifier"
+                    WeaponDamageClass="meleeWeaponDamageClass"
                     OnCancel="ReturnToDefault"
                     OnAttackComplete="OnAttackComplete" />
     }
@@ -250,6 +254,11 @@
     private List<RangedWeaponInfo> rangedWeapons = new();
     private List<AmmoSourceInfo> availableAmmoSources = new();
 
+    // Weapon modifiers for melee attacks (from equipped weapon template)
+    private int meleeWeaponAVModifier;
+    private int meleeWeaponSVModifier;
+    private int meleeWeaponDamageClass = 1;
+
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
     private DamageType? pendingDamageType;
@@ -280,32 +289,50 @@
 
         equippedItems = await CharacterItemDal.GetEquippedItemsAsync(Character.Id);
 
-        // Detect equipped weapons and shields
-        var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
-        var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
+        // Convert to EquippedItemInfo for weapon/armor filtering
+        var equippedItemInfos = equippedItems
+            .Where(i => i.Template != null)
+            .Select(i => new EquippedItemInfo(i, i.Template!))
+            .ToList();
 
-        hasWeaponEquipped = mainHand != null;
+        // Detect melee weapons using WeaponSelector
+        var meleeWeapons = WeaponSelector.GetMeleeWeapons(equippedItemInfos).ToList();
+        // Note: hasWeaponEquipped will be set after ranged weapons are detected (line ~365)
+
+        // Extract first melee weapon's modifiers for attack mode
+        var selectedMeleeWeapon = meleeWeapons.FirstOrDefault();
+        meleeWeaponAVModifier = selectedMeleeWeapon?.Template.AVModifier ?? 0;
+        meleeWeaponSVModifier = selectedMeleeWeapon?.Template.SVModifier ?? 0;
+        meleeWeaponDamageClass = selectedMeleeWeapon?.Template.DamageClass ?? 1;
+
+        // Detect shields
+        var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
         hasShieldEquipped = offHand?.Template?.ItemType == ItemType.Shield;
 
-        // Load ranged weapons
+        // Load ranged weapons using WeaponSelector
         rangedWeapons = new List<RangedWeaponInfo>();
-        foreach (var item in equippedItems.Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
-                                                       i.EquippedSlot == EquipmentSlot.OffHand))
+        var detectedRangedWeapons = WeaponSelector.GetRangedWeapons(equippedItemInfos).ToList();
+        foreach (var weaponInfo in detectedRangedWeapons)
         {
+            var item = weaponInfo.Item;
+
+            // Try to load advanced ranged properties (fire modes, ammo, etc.) from CustomProperties
             var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
-            if (rangedProps?.IsRangedWeapon == true)
+
+            // If rangedProps exists, use it; otherwise create basic ranged weapon with defaults
+            if (rangedProps != null || item.Template?.Range.HasValue == true)
             {
                 var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
-                // Use the ranged skill from weapon properties, fall back to RelatedSkill for backward compatibility
-                var skillName = !string.IsNullOrWhiteSpace(rangedProps.RangedSkill)
+                // Use the ranged skill from weapon properties, fall back to RelatedSkill, then template RelatedSkill
+                var skillName = !string.IsNullOrWhiteSpace(rangedProps?.RangedSkill)
                     ? rangedProps.RangedSkill
                     : item.Template?.RelatedSkill ?? "";
-                var skill = Character.Skills.FirstOrDefault(s => s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
+                var skill = Character.Skills.FirstOrDefault(s => s.Id.Equals(skillName, StringComparison.OrdinalIgnoreCase));
 
                 // Check weapon's inherent AOE (grenades, rockets)
-                bool isAOECapable = rangedProps.IsInherentAOE;
-                int blastRadius = rangedProps.DefaultBlastRadius;
-                string? blastFalloff = rangedProps.DefaultBlastFalloff;
+                bool isAOECapable = rangedProps?.IsInherentAOE ?? false;
+                int blastRadius = rangedProps?.DefaultBlastRadius ?? 0;
+                string? blastFalloff = rangedProps?.DefaultBlastFalloff;
                 bool aoeFromAmmo = false;
                 int directHitBonus = 0;
 
@@ -318,37 +345,58 @@
                     Name = item.Template?.Name ?? "Unknown",
                     SkillName = skillName,
                     SkillAS = skill?.AbilityScore ?? 0,
-                    WeaponAVModifier = rangedProps.AccuracyModifier,
-                    BaseSV = rangedProps.BaseSVModifier,
+                    WeaponAVModifier = rangedProps?.AccuracyModifier ?? weaponInfo.Template.AVModifier,
+                    BaseSV = rangedProps?.BaseSVModifier ?? weaponInfo.Template.SVModifier,
                     LoadedAmmo = ammoState.LoadedAmmo,
-                    Capacity = rangedProps.Capacity,
+                    Capacity = rangedProps?.Capacity ?? 0,
                     LoadedAmmoType = ammoState.LoadedAmmoType,
                     AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
-                    IsDodgeable = rangedProps.IsDodgeable,
-                    SupportsSingle = rangedProps.HasFireMode(FireMode.Single),
-                    SupportsBurst = rangedProps.HasFireMode(FireMode.Burst),
-                    SupportsSuppression = rangedProps.HasFireMode(FireMode.Suppression),
+                    IsDodgeable = rangedProps?.IsDodgeable ?? true,
+                    SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
+                    SupportsBurst = rangedProps?.HasFireMode(FireMode.Burst) ?? false,
+                    SupportsSuppression = rangedProps?.HasFireMode(FireMode.Suppression) ?? false,
                     IsAOECapable = isAOECapable,
                     BlastRadius = blastRadius,
                     BlastFalloff = blastFalloff,
                     AOEFromAmmo = aoeFromAmmo,
                     DirectHitBonus = directHitBonus,
-                    ShortRange = rangedProps.ShortRange,
-                    MediumRange = rangedProps.MediumRange,
-                    LongRange = rangedProps.LongRange,
-                    ExtremeRange = rangedProps.ExtremeRange
+                    ShortRange = rangedProps?.ShortRange ?? 10,
+                    MediumRange = rangedProps?.MediumRange ?? 20,
+                    LongRange = rangedProps?.LongRange ?? 40,
+                    ExtremeRange = rangedProps?.ExtremeRange ?? 60
                 });
             }
         }
         hasRangedWeaponEquipped = rangedWeapons.Any();
 
+        // Set hasWeaponEquipped to true if EITHER melee or ranged weapons are equipped
+        hasWeaponEquipped = meleeWeapons.Any() || rangedWeapons.Any();
+
         // Get equipped weapon skill names (exclude shields from weapons)
-        var equippedWeaponSkillNames = equippedItems
+        var weaponItems = equippedItems
             .Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
+                       i.EquippedSlot == EquipmentSlot.TwoHand ||
                        (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield))
-            .Select(i => i.Template?.Name)
-            .Where(name => name != null)
-            .ToHashSet();
+            .ToList();
+
+        // Collect skill names from both melee weapons (RelatedSkill) and ranged weapons (RangedSkill in CustomProperties)
+        var equippedWeaponSkillNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in weaponItems)
+        {
+            // Check melee weapon skill (RelatedSkill)
+            var meleeSkill = item.Template?.RelatedSkill;
+
+            // Check ranged weapon skill (in RangedWeaponProperties JSON)
+            var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
+            var rangedSkill = rangedProps?.RangedSkill;
+
+            // Add both skills if they exist
+            if (!string.IsNullOrWhiteSpace(meleeSkill))
+                equippedWeaponSkillNames.Add(meleeSkill);
+            if (!string.IsNullOrWhiteSpace(rangedSkill))
+                equippedWeaponSkillNames.Add(rangedSkill);
+        }
 
         var skills = Character.Skills.ToList();
         var result = new List<GameMechanics.SkillEdit>();
@@ -358,21 +406,25 @@
         {
             var category = GetSkillCategory(skill);
 
-            if (category == "Weapon")
+            // Show skill if it matches an equipped weapon's RelatedSkill (compare against Id, not Name)
+            if (equippedWeaponSkillNames.Contains(skill.Id))
             {
-                // Only show weapon skills for equipped weapons
-                if (equippedWeaponSkillNames.Contains(skill.Name))
-                {
-                    result.Add(skill);
-                    attackSkills.Add(skill);
+                result.Add(skill);
+                attackSkills.Add(skill);
 
-                    // Track weapon skill AS and name for parry
-                    if (weaponSkillAS == 0)
-                    {
-                        weaponSkillAS = skill.AbilityScore;
-                        weaponSkillName = skill.Name;
-                    }
+                // Track weapon skill AS and name for parry
+                if (weaponSkillAS == 0)
+                {
+                    weaponSkillAS = skill.AbilityScore;
+                    weaponSkillName = skill.Name;
                 }
+            }
+            else if (category == "Weapon")
+            {
+                // Also include skills categorized as Weapon (ActionType.Attack) even if no matching equipment
+                // This handles unarmed/improvised combat
+                result.Add(skill);
+                attackSkills.Add(skill);
             }
             else if (category == "Attribute")
             {
@@ -467,7 +519,12 @@
             CombatStanceBehavior.EndParryMode(Character);
         }
         selectedSkill = skill;
-        combatMode = CombatMode.Attack;
+
+        // Check if this skill matches a ranged weapon
+        var isRangedSkill = rangedWeapons.Any(w => w.SkillName.Equals(skill.Id, StringComparison.OrdinalIgnoreCase));
+
+        // Route to ranged attack mode for ranged skills, melee attack mode otherwise
+        combatMode = isRangedSkill ? CombatMode.RangedAttack : CombatMode.Attack;
     }
 
     private void StartDefend()

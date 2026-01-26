@@ -613,7 +613,8 @@ public static class MockDb
                 Value = 2,
                 IsStackable = true,
                 MaxStackSize = 100,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "material,crafting"
             },
             new ItemTemplate
             {
@@ -627,7 +628,8 @@ public static class MockDb
                 Value = 3,
                 IsStackable = true,
                 MaxStackSize = 50,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "material,crafting"
             },
 
             // === WEAPONS ===
@@ -649,7 +651,8 @@ public static class MockDb
                 MinSkillLevel = 0,
                 DamageClass = 2,
                 DamageType = "Cutting",
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "melee,starter-gear"
             },
             new ItemTemplate
             {
@@ -670,6 +673,7 @@ public static class MockDb
                 DamageClass = 2,
                 DamageType = "Cutting",
                 Rarity = ItemRarity.Rare,
+                Tags = "melee,magical",
                 SkillBonuses =
                 [
                     new ItemSkillBonus
@@ -700,7 +704,8 @@ public static class MockDb
                 MinSkillLevel = 2,
                 DamageClass = 3,
                 DamageType = "Cutting",
-                Rarity = ItemRarity.Uncommon
+                Rarity = ItemRarity.Uncommon,
+                Tags = "melee,starter-gear"
             },
             new ItemTemplate
             {
@@ -720,7 +725,8 @@ public static class MockDb
                 MinSkillLevel = 0,
                 DamageClass = 1,
                 DamageType = "Piercing",
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "melee,starter-gear"
             },
             new ItemTemplate
             {
@@ -742,8 +748,102 @@ public static class MockDb
                 DamageType = "Piercing",
                 Range = 100,
                 Rarity = ItemRarity.Common,
+                Tags = "ranged,starter-gear",
                 // Ranged weapon properties for shortbow
                 CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"Arrow\",\"capacity\":1,\"rangeShort\":20,\"rangeMedium\":40,\"rangeLong\":80,\"rangeExtreme\":120,\"weaponModifier\":0,\"baseSVModifier\":0,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":1,\"isDodgeable\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 15,
+                Name = "War Spear",
+                Description = "A long spear effective for both melee and thrown attacks.",
+                ShortDescription = "Versatile spear",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Polearm,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 4m,
+                Volume = 0.3m,
+                Value = 120,
+                HasDurability = true,
+                MaxDurability = 90,
+                RelatedSkill = "Spears",
+                MinSkillLevel = 0,
+                DamageClass = 2,
+                DamageType = "Piercing",
+                Range = 10,
+                Rarity = ItemRarity.Common,
+                Tags = "melee,starter-gear"
+            },
+            new ItemTemplate
+            {
+                Id = 16,
+                Name = "Longbow",
+                Description = "A tall, powerful bow requiring considerable strength to draw. Excellent range and penetration.",
+                ShortDescription = "Powerful longbow",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Bow,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 3m,
+                Volume = 0.4m,
+                Value = 200,
+                HasDurability = true,
+                MaxDurability = 100,
+                RelatedSkill = "Bows",
+                MinSkillLevel = 2,
+                DamageClass = 3,
+                DamageType = "Piercing",
+                Range = 150,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ranged,starter-gear",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"Arrow\",\"capacity\":1,\"rangeShort\":30,\"rangeMedium\":60,\"rangeLong\":120,\"rangeExtreme\":180,\"weaponModifier\":0,\"baseSVModifier\":0,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":1,\"isDodgeable\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 17,
+                Name = "Heavy Crossbow",
+                Description = "A powerful crossbow with a mechanical crank for drawing. Slow to reload but devastating.",
+                ShortDescription = "Heavy crossbow",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Crossbow,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 6m,
+                Volume = 0.5m,
+                Value = 300,
+                HasDurability = true,
+                MaxDurability = 120,
+                RelatedSkill = "Crossbows",
+                MinSkillLevel = 1,
+                DamageClass = 4,
+                DamageType = "Piercing",
+                Range = 120,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ranged,starter-gear",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"Bolt\",\"capacity\":1,\"rangeShort\":30,\"rangeMedium\":60,\"rangeLong\":100,\"rangeExtreme\":150,\"weaponModifier\":1,\"baseSVModifier\":1,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":2,\"isDodgeable\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 18,
+                Name = "Throwing Knives (Set of 6)",
+                Description = "A balanced set of six throwing knives designed for quick, accurate throws.",
+                ShortDescription = "6 throwing knives",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Thrown,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 0.6m,
+                Volume = 0.03m,
+                Value = 60,
+                HasDurability = true,
+                MaxDurability = 40,
+                RelatedSkill = "Daggers",
+                MinSkillLevel = 0,
+                DamageClass = 1,
+                DamageType = "Piercing",
+                Range = 20,
+                IsStackable = true,
+                MaxStackSize = 6,
+                Rarity = ItemRarity.Common,
+                Tags = "ranged,starter-gear",
+                CustomProperties = "{\"isRangedWeapon\":true,\"isDodgeable\":true,\"rangeShort\":5,\"rangeMedium\":10,\"rangeLong\":15,\"rangeExtreme\":25}"
             },
 
             // === RANGED WEAPONS (SCI-FI) ===
@@ -767,8 +867,101 @@ public static class MockDb
                 DamageType = "Piercing",
                 Range = 50,
                 Rarity = ItemRarity.Common,
+                Tags = "ranged,firearm,modern",
                 // Ranged weapon properties: magazine-fed, single/burst fire modes
                 CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"9mm\",\"capacity\":15,\"rangeShort\":10,\"rangeMedium\":25,\"rangeLong\":50,\"rangeExtreme\":100,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\"],\"burstSize\":3,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":3,\"isDodgeable\":false}"
+            },
+            new ItemTemplate
+            {
+                Id = 105,
+                Name = "Assault Rifle",
+                Description = "A versatile automatic rifle chambered in 5.56mm. Standard military infantry weapon with multiple fire modes.",
+                ShortDescription = "5.56mm assault rifle",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Rifle,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 4.5m,
+                Volume = 0.4m,
+                Value = 1200,
+                HasDurability = true,
+                MaxDurability = 150,
+                RelatedSkill = "Rifles",
+                MinSkillLevel = 1,
+                DamageClass = 3,
+                DamageType = "Piercing",
+                Range = 200,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ranged,firearm,modern",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"5.56mm\",\"capacity\":30,\"rangeShort\":50,\"rangeMedium\":150,\"rangeLong\":300,\"rangeExtreme\":500,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\",\"Auto\"],\"burstSize\":3,\"sustainedBurstSize\":5,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":3,\"isDodgeable\":false}"
+            },
+            new ItemTemplate
+            {
+                Id = 106,
+                Name = "Combat Shotgun",
+                Description = "A rugged pump-action shotgun designed for close quarters combat. Devastating at short range.",
+                ShortDescription = "12 gauge shotgun",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Shotgun,
+                EquipmentSlot = EquipmentSlot.TwoHand,
+                Weight = 5m,
+                Volume = 0.35m,
+                Value = 800,
+                HasDurability = true,
+                MaxDurability = 120,
+                RelatedSkill = "Shotguns",
+                MinSkillLevel = 0,
+                DamageClass = 4,
+                DamageType = "Piercing",
+                Range = 50,
+                Rarity = ItemRarity.Common,
+                Tags = "ranged,firearm,modern",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"12gauge\",\"capacity\":8,\"rangeShort\":10,\"rangeMedium\":25,\"rangeLong\":40,\"rangeExtreme\":60,\"weaponModifier\":2,\"baseSVModifier\":1,\"fireModes\":[\"Single\"],\"reloadType\":\"Single\",\"reloadRoundsPerTick\":1,\"isDodgeable\":false,\"spreadPattern\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 107,
+                Name = "Compact SMG",
+                Description = "A lightweight submachine gun chambered in 9mm. High rate of fire with manageable recoil.",
+                ShortDescription = "9mm SMG",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.SMG,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 2.5m,
+                Volume = 0.15m,
+                Value = 900,
+                HasDurability = true,
+                MaxDurability = 100,
+                RelatedSkill = "SMGs",
+                MinSkillLevel = 0,
+                DamageClass = 2,
+                DamageType = "Piercing",
+                Range = 75,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ranged,firearm,modern",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"9mm\",\"capacity\":25,\"rangeShort\":15,\"rangeMedium\":35,\"rangeLong\":60,\"rangeExtreme\":100,\"weaponModifier\":1,\"baseSVModifier\":0,\"fireModes\":[\"Single\",\"Burst\",\"Auto\"],\"burstSize\":3,\"sustainedBurstSize\":4,\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":2,\"isDodgeable\":false}"
+            },
+            new ItemTemplate
+            {
+                Id = 108,
+                Name = "Laser Pistol",
+                Description = "A compact energy weapon that fires coherent light beams. Accurate and silent, powered by rechargeable cells.",
+                ShortDescription = "Energy sidearm",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Pistol,
+                EquipmentSlot = EquipmentSlot.MainHand,
+                Weight = 0.8m,
+                Volume = 0.04m,
+                Value = 2500,
+                HasDurability = true,
+                MaxDurability = 80,
+                RelatedSkill = "Pistols",
+                MinSkillLevel = 1,
+                DamageClass = 2,
+                DamageType = "Energy",
+                Range = 75,
+                Rarity = ItemRarity.Rare,
+                Tags = "ranged,firearm,modern",
+                CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"PowerCell\",\"capacity\":20,\"rangeShort\":20,\"rangeMedium\":50,\"rangeLong\":75,\"rangeExtreme\":120,\"weaponModifier\":2,\"baseSVModifier\":0,\"fireModes\":[\"Single\"],\"reloadType\":\"Magazine\",\"reloadRoundsPerTick\":2,\"isDodgeable\":false,\"isEnergyWeapon\":true,\"noBulletDrop\":true}"
             },
 
             // === AMMUNITION ===
@@ -785,6 +978,7 @@ public static class MockDb
                 IsStackable = true,
                 MaxStackSize = 100,
                 Rarity = ItemRarity.Common,
+                Tags = "ammunition",
                 // Ammunition properties
                 CustomProperties = "{\"ammoType\":\"9mm\",\"damageModifier\":0,\"isLooseAmmo\":true}"
             },
@@ -801,6 +995,7 @@ public static class MockDb
                 IsStackable = true,
                 MaxStackSize = 100,
                 Rarity = ItemRarity.Uncommon,
+                Tags = "ammunition",
                 // Ammunition properties with damage bonus
                 CustomProperties = "{\"ammoType\":\"9mm\",\"damageModifier\":2,\"specialEffect\":\"Hollow-Point\",\"isLooseAmmo\":true}"
             },
@@ -819,6 +1014,7 @@ public static class MockDb
                 ContainerMaxVolume = 0.02m,
                 ContainerAllowedTypes = "9mm",
                 Rarity = ItemRarity.Common,
+                Tags = "ammunition,container",
                 // Magazine state - capacity and ammo type
                 CustomProperties = "{\"ammoType\":\"9mm\",\"capacity\":15,\"currentAmmo\":0,\"ammoDamageModifier\":0}"
             },
@@ -835,8 +1031,89 @@ public static class MockDb
                 IsStackable = true,
                 MaxStackSize = 50,
                 Rarity = ItemRarity.Common,
+                Tags = "ammunition",
                 // Arrow ammunition properties
                 CustomProperties = "{\"ammoType\":\"Arrow\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 109,
+                Name = "Crossbow Bolt",
+                Description = "A short, heavy bolt designed for crossbows. Greater penetration than arrows.",
+                ShortDescription = "Crossbow bolt",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.08m,
+                Volume = 0.01m,
+                Value = 2,
+                IsStackable = true,
+                MaxStackSize = 30,
+                Rarity = ItemRarity.Common,
+                Tags = "ammunition",
+                CustomProperties = "{\"ammoType\":\"Bolt\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 110,
+                Name = "5.56mm FMJ Rounds",
+                Description = "Standard 5.56mm NATO full metal jacket rifle ammunition.",
+                ShortDescription = "5.56mm ammo",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.012m,
+                Volume = 0.002m,
+                Value = 2,
+                IsStackable = true,
+                MaxStackSize = 100,
+                Rarity = ItemRarity.Common,
+                Tags = "ammunition",
+                CustomProperties = "{\"ammoType\":\"5.56mm\",\"damageModifier\":0,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 111,
+                Name = "12 Gauge Buckshot",
+                Description = "Standard 12 gauge buckshot shells. Effective spread pattern for close quarters.",
+                ShortDescription = "Buckshot shells",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.04m,
+                Volume = 0.008m,
+                Value = 3,
+                IsStackable = true,
+                MaxStackSize = 25,
+                Rarity = ItemRarity.Common,
+                Tags = "ammunition",
+                CustomProperties = "{\"ammoType\":\"12gauge\",\"damageModifier\":0,\"spreadPattern\":true,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 112,
+                Name = "12 Gauge Slug",
+                Description = "Solid 12 gauge slugs for greater range and penetration. Trades spread for accuracy.",
+                ShortDescription = "Slug rounds",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.05m,
+                Volume = 0.008m,
+                Value = 5,
+                IsStackable = true,
+                MaxStackSize = 25,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ammunition",
+                CustomProperties = "{\"ammoType\":\"12gauge\",\"damageModifier\":1,\"rangeBonus\":1,\"spreadPattern\":false,\"isLooseAmmo\":true}"
+            },
+            new ItemTemplate
+            {
+                Id = 113,
+                Name = "Power Cell",
+                Description = "A rechargeable energy cell for laser and plasma weapons. Can be recharged at charging stations.",
+                ShortDescription = "Energy cell",
+                ItemType = ItemType.Ammunition,
+                Weight = 0.1m,
+                Volume = 0.02m,
+                Value = 50,
+                IsStackable = true,
+                MaxStackSize = 10,
+                Rarity = ItemRarity.Uncommon,
+                Tags = "ammunition",
+                CustomProperties = "{\"ammoType\":\"PowerCell\",\"damageModifier\":0,\"isRechargeable\":true,\"maxCharges\":20,\"rechargeTime\":240}"
             },
 
             // === ARMOR ===
@@ -855,7 +1132,8 @@ public static class MockDb
                 MaxDurability = 80,
                 DodgeModifier = -1,
                 ArmorAbsorption = "{\"Cutting\": 2, \"Piercing\": 1, \"Bashing\": 1}",
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "armor,starter-gear"
             },
             new ItemTemplate
             {
@@ -872,7 +1150,8 @@ public static class MockDb
                 MaxDurability = 150,
                 DodgeModifier = -3,
                 ArmorAbsorption = "{\"Cutting\": 4, \"Piercing\": 3, \"Bashing\": 2}",
-                Rarity = ItemRarity.Uncommon
+                Rarity = ItemRarity.Uncommon,
+                Tags = "armor,starter-gear"
             },
             new ItemTemplate
             {
@@ -889,7 +1168,8 @@ public static class MockDb
                 MaxDurability = 100,
                 DodgeModifier = 0,
                 ArmorAbsorption = "{\"Cutting\": 3, \"Piercing\": 3, \"Bashing\": 2}",
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "armor,starter-gear"
             },
             new ItemTemplate
             {
@@ -904,7 +1184,8 @@ public static class MockDb
                 Value = 100,
                 HasDurability = true,
                 MaxDurability = 60,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "armor,starter-gear,shield"
             },
             new ItemTemplate
             {
@@ -919,7 +1200,8 @@ public static class MockDb
                 Value = 40,
                 HasDurability = true,
                 MaxDurability = 60,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "armor,starter-gear"
             },
 
             // === CONTAINERS ===
@@ -937,7 +1219,8 @@ public static class MockDb
                 IsContainer = true,
                 ContainerMaxWeight = 50m,
                 ContainerMaxVolume = 10m,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "container,utility"
             },
             new ItemTemplate
             {
@@ -953,7 +1236,8 @@ public static class MockDb
                 IsContainer = true,
                 ContainerMaxWeight = 3m,
                 ContainerMaxVolume = 0.5m,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "container,utility"
             },
             new ItemTemplate
             {
@@ -970,7 +1254,8 @@ public static class MockDb
                 ContainerMaxWeight = 5m,
                 ContainerMaxVolume = 0.5m,
                 ContainerAllowedTypes = "Arrow,Bolt",
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "container,utility"
             },
             new ItemTemplate
             {
@@ -986,7 +1271,8 @@ public static class MockDb
                 ContainerMaxWeight = 100m,
                 ContainerMaxVolume = 20m,
                 ContainerWeightReduction = 0.1m,
-                Rarity = ItemRarity.Epic
+                Rarity = ItemRarity.Epic,
+                Tags = "container,magical"
             },
 
             // === JEWELRY WITH BONUSES ===
@@ -1002,6 +1288,7 @@ public static class MockDb
                 Volume = 0.001m,
                 Value = 8000,
                 Rarity = ItemRarity.Rare,
+                Tags = "jewelry,magical",
                 AttributeModifiers =
                 [
                     new ItemAttributeModifier
@@ -1026,6 +1313,7 @@ public static class MockDb
                 Volume = 0.1m,
                 Value = 30000,
                 Rarity = ItemRarity.Epic,
+                Tags = "jewelry,magical",
                 AttributeModifiers =
                 [
                     new ItemAttributeModifier
@@ -1052,6 +1340,7 @@ public static class MockDb
                 HasDurability = true,
                 MaxDurability = 100,
                 Rarity = ItemRarity.Rare,
+                Tags = "armor,magical",
                 AttributeModifiers =
                 [
                     new ItemAttributeModifier
@@ -1076,6 +1365,7 @@ public static class MockDb
                 Volume = 0.01m,
                 Value = 12000,
                 Rarity = ItemRarity.Rare,
+                Tags = "jewelry,magical",
                 AttributeModifiers =
                 [
                     new ItemAttributeModifier
@@ -1102,7 +1392,8 @@ public static class MockDb
                 Value = 60,
                 IsStackable = true,
                 MaxStackSize = 20,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "consumable"
             },
             new ItemTemplate
             {
@@ -1116,7 +1407,26 @@ public static class MockDb
                 Value = 40,
                 IsStackable = true,
                 MaxStackSize = 20,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "consumable"
+            },
+            new ItemTemplate
+            {
+                Id = 52,
+                Name = "Frag Grenade",
+                Description = "A military fragmentation grenade. Pull pin, throw, take cover. Explodes after a short delay.",
+                ShortDescription = "Explosive grenade",
+                ItemType = ItemType.Consumable,
+                Weight = 0.5m,
+                Volume = 0.05m,
+                Value = 150,
+                IsStackable = true,
+                MaxStackSize = 5,
+                DamageClass = 3,
+                DamageType = "Explosive",
+                Rarity = ItemRarity.Uncommon,
+                Tags = "consumable",
+                CustomProperties = "{\"isThrown\":true,\"range\":30,\"areaRadius\":5,\"fuseTime\":2,\"canBeCountered\":true}"
             },
 
             // === TOOLS ===
@@ -1134,7 +1444,8 @@ public static class MockDb
                 MaxStackSize = 10,
                 HasDurability = true,
                 MaxDurability = 60,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "tool,utility"
             },
             new ItemTemplate
             {
@@ -1149,7 +1460,8 @@ public static class MockDb
                 HasDurability = true,
                 MaxDurability = 20,
                 RelatedSkill = "Lockpicking",
-                Rarity = ItemRarity.Uncommon
+                Rarity = ItemRarity.Uncommon,
+                Tags = "tool,utility"
             },
             new ItemTemplate
             {
@@ -1161,7 +1473,8 @@ public static class MockDb
                 Weight = 10m,
                 Volume = 2m,
                 Value = 20,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "tool,utility"
             },
 
             // === TREASURE ===
@@ -1177,7 +1490,8 @@ public static class MockDb
                 Value = 400,
                 IsStackable = true,
                 MaxStackSize = 1000,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "treasure,currency"
             },
             new ItemTemplate
             {
@@ -1191,7 +1505,8 @@ public static class MockDb
                 Value = 20,
                 IsStackable = true,
                 MaxStackSize = 1000,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "treasure,currency"
             },
             new ItemTemplate
             {
@@ -1205,7 +1520,8 @@ public static class MockDb
                 Value = 1,
                 IsStackable = true,
                 MaxStackSize = 1000,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "treasure,currency"
             },
             new ItemTemplate
             {
@@ -1219,7 +1535,8 @@ public static class MockDb
                 Value = 15,
                 IsStackable = true,
                 MaxStackSize = 50,
-                Rarity = ItemRarity.Uncommon
+                Rarity = ItemRarity.Uncommon,
+                Tags = "treasure"
             },
 
             // === FOOD & DRINK ===
@@ -1235,7 +1552,8 @@ public static class MockDb
                 Value = 5,
                 IsStackable = true,
                 MaxStackSize = 30,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "food,consumable"
             },
             new ItemTemplate
             {
@@ -1247,7 +1565,8 @@ public static class MockDb
                 Weight = 4m,
                 Volume = 0.2m,
                 Value = 10,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "drink,consumable"
             },
 
             // === CLOTHING ===
@@ -1262,7 +1581,8 @@ public static class MockDb
                 Weight = 2m,
                 Volume = 0.3m,
                 Value = 20,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "clothing,starter-gear"
             },
             new ItemTemplate
             {
@@ -1275,7 +1595,8 @@ public static class MockDb
                 Weight = 0.5m,
                 Volume = 0.1m,
                 Value = 5,
-                Rarity = ItemRarity.Common
+                Rarity = ItemRarity.Common,
+                Tags = "clothing,starter-gear"
             }
         ];
     }

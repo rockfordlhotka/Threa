@@ -62,3 +62,14 @@ h1:focus {
 .tab-content {
     display: block;
 }
+
+/* UserAvatar initials fallback styling */
+.threa-avatar-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--rz-primary), var(--rz-primary-dark, var(--rz-primary)));
+    color: var(--rz-on-primary, white);
+    font-weight: 600;
+    text-transform: uppercase;
+}

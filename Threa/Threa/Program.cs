@@ -3,6 +3,7 @@ using GameMechanics;
 using GameMechanics.Messaging.InMemory;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Radzen;
 using Threa.Components;
 using Threa.Dal;
 using Threa.Services;
@@ -33,6 +34,12 @@ builder.Services.AddCsla(o => o
 builder.Services.AddSqlite();
 builder.Services.AddGameMechanics();
 builder.Services.AddInMemoryMessaging();
+
+// Radzen services
+builder.Services.AddScoped<DialogService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<TooltipService>();
+builder.Services.AddScoped<ContextMenuService>();
 
 var app = builder.Build();
 

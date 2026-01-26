@@ -277,6 +277,13 @@ public class CharacterItemDal : ICharacterItemDal
         }
     }
 
+    public async Task<List<CharacterItem>> GetEquippedItemsWithTemplatesAsync(int characterId)
+    {
+        var items = await GetEquippedItemsAsync(characterId);
+        // Filter to only items that have valid templates
+        return items.Where(i => i.Template != null).ToList();
+    }
+
     private async Task PopulateTemplateAsync(CharacterItem item)
     {
         try

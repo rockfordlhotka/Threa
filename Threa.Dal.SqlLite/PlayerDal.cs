@@ -207,7 +207,7 @@ public class PlayerDal : IPlayerDal
 
     public async Task ChangePassword(int id, string oldPassword, string newPassword)
     {
-        var existingPlayer = await GetPlayerAsync(id) 
+        var existingPlayer = await GetPlayerAsync(id)
             ?? throw new NotFoundException($"{nameof(Player)} {id}");
         try
         {
@@ -234,5 +234,107 @@ public class PlayerDal : IPlayerDal
         {
             throw new OperationFailedException("Error changing password", ex);
         }
+    }
+
+    public async Task<string?> GetSecretQuestionAsync(string username)
+    {
+        var player = await GetPlayerByEmailAsync(username);
+        // Return null for unknown user (prevents enumeration)
+        return player?.SecretQuestion;
+    }
+
+    public async Task<bool> IsRecoveryLockedOutAsync(string username)
+    {
+        var player = await GetPlayerByEmailAsync(username);
+        if (player == null) return false;
+
+        return player.RecoveryLockoutUntil.HasValue &&
+               player.RecoveryLockoutUntil.Value > DateTime.UtcNow;
+    }
+
+    public async Task<int> GetRemainingRecoveryAttemptsAsync(string username)
+    {
+        var player = await GetPlayerByEmailAsync(username);
+        if (player == null) return 3; // Default for unknown (don't reveal)
+
+        const int maxAttempts = 3;
+        var remaining = maxAttempts - player.FailedRecoveryAttempts;
+        return remaining > 0 ? remaining : 0;
+    }
+
+    public async Task<bool> ValidateSecretAnswerAsync(string username, string answer)
+    {
+        var player = await GetPlayerByEmailAsync(username);
+        if (player == null) return false;
+
+        // Check lockout
+        if (player.RecoveryLockoutUntil.HasValue &&
+            player.RecoveryLockoutUntil.Value > DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        // Clear expired lockout
+        if (player.RecoveryLockoutUntil.HasValue &&
+            player.RecoveryLockoutUntil.Value <= DateTime.UtcNow)
+        {
+            player.FailedRecoveryAttempts = 0;
+            player.RecoveryLockoutUntil = null;
+        }
+
+        // Normalize answer (trim + lowercase) and compare
+        var normalizedAnswer = answer?.Trim().ToLowerInvariant() ?? string.Empty;
+        var isCorrect = player.SecretAnswer == normalizedAnswer;
+
+        if (isCorrect)
+        {
+            // Reset attempts on success
+            player.FailedRecoveryAttempts = 0;
+            player.RecoveryLockoutUntil = null;
+        }
+        else
+        {
+            // Increment failed attempts
+            player.FailedRecoveryAttempts++;
+
+            // Lockout after 3 failed attempts (15 minutes)
+            if (player.FailedRecoveryAttempts >= 3)
+            {
+                player.RecoveryLockoutUntil = DateTime.UtcNow.AddMinutes(15);
+            }
+        }
+
+        // Persist changes
+        await SavePlayerAsync(player);
+
+        return isCorrect;
+    }
+
+    public async Task ResetPasswordAsync(string username, string newPassword)
+    {
+        var player = await GetPlayerByEmailAsync(username)
+            ?? throw new NotFoundException($"Player {username}");
+
+        // Hash new password with BCrypt
+        var salt = BCrypt.Net.BCrypt.GenerateSalt(12);
+        player.Salt = salt;
+        player.HashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, salt);
+
+        // Clear recovery state
+        player.FailedRecoveryAttempts = 0;
+        player.RecoveryLockoutUntil = null;
+
+        await SavePlayerAsync(player);
+    }
+
+    public async Task<int> CountEnabledAdminsAsync()
+    {
+        // Fetch all players and filter in C# (consistent with JSON storage pattern)
+        var players = await GetAllPlayersAsync();
+        return players.Count(p =>
+            p.IsEnabled &&
+            p.Roles != null &&
+            p.Roles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Contains("Administrator", StringComparer.OrdinalIgnoreCase));
     }
 }

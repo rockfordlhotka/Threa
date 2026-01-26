@@ -25,8 +25,10 @@
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IJSRuntime JS
+@inject ICharacterItemDal CharacterItemDal
 
 @using GameMechanics.Time
+@using Threa.Dal
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -500,6 +502,13 @@ private async Task LoadTablesAsync()
     }
 }
 
+private async Task LoadEquippedItemsAsync()
+{
+    if (character == null) return;
+    var equippedItems = await CharacterItemDal.GetEquippedItemsWithTemplatesAsync(character.Id);
+    character.SetEquippedItems(equippedItems);
+}
+
 private async Task SelectCharacterAsync(int characterId)
 {
     try
@@ -521,7 +530,8 @@ private async Task SelectCharacterAsync(int characterId)
         {
             // Character is attached to a table or we couldn't find info - just load and play
             character = await characterPortal.FetchAsync(characterId);
-            
+            await LoadEquippedItemsAsync();
+
             // If attached to a table, load the table too
             if (charInfo?.TableId != null)
             {
@@ -680,6 +690,7 @@ private async Task SelectCharacterAsync(int characterId)
             {
                 // Refresh the character to get the updated state
                 character = await characterPortal.FetchAsync(character.Id);
+                await LoadEquippedItemsAsync();
                 StateHasChanged();
             }
             catch (Exception ex)
@@ -849,6 +860,7 @@ private async Task SelectCharacterAsync(int characterId)
         {
             errorMessage = null;
             character = await characterPortal.FetchAsync(characterToAttach.Id);
+            await LoadEquippedItemsAsync();
             AddLogEntry($"Playing as {character.Name} (no table)", ActivityCategory.Player);
         }
         catch (Exception ex)
@@ -878,6 +890,7 @@ private async Task SelectCharacterAsync(int characterId)
             {
                 // Load the character and table
                 character = await characterPortal.FetchAsync(characterToAttach.Id);
+                await LoadEquippedItemsAsync();
                 table = await tablePortal.FetchAsync(selectedTableId);
                 SubscribeToActivityLog(selectedTableId);
                 await SubscribeToTimeEvents(selectedTableId);

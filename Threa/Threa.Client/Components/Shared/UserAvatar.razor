@@ -1,0 +1,53 @@
+@* UserAvatar.razor - Displays Gravatar when email provided, initials otherwise *@
+
+@if (!string.IsNullOrWhiteSpace(Email) && UseGravatar)
+{
+    <RadzenGravatar Email="@Email"
+                    Size="@Size"
+                    AlternateText="@GetAltText()"
+                    Style="@GetStyle()" />
+}
+else
+{
+    <div class="threa-avatar-initials" style="@GetInitialsStyle()">
+        @GetInitials()
+    </div>
+}
+
+@code {
+    /// <summary>Contact email for Gravatar lookup</summary>
+    [Parameter] public string? Email { get; set; }
+
+    /// <summary>Display name for initials fallback and alt text</summary>
+    [Parameter] public string? DisplayName { get; set; }
+
+    /// <summary>Avatar size in pixels (square)</summary>
+    [Parameter] public int Size { get; set; } = 48;
+
+    /// <summary>Whether to use Gravatar when email is provided</summary>
+    [Parameter] public bool UseGravatar { get; set; } = true;
+
+    /// <summary>Whether avatar should be round</summary>
+    [Parameter] public bool Round { get; set; } = true;
+
+    private string GetAltText() =>
+        string.IsNullOrWhiteSpace(DisplayName) ? "User avatar" : $"{DisplayName}'s avatar";
+
+    private string GetStyle() =>
+        Round ? "border-radius: 50%;" : "";
+
+    private string GetInitialsStyle() =>
+        $"width:{Size}px;height:{Size}px;font-size:{Size * 0.4}px;" +
+        (Round ? "border-radius:50%;" : "");
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrWhiteSpace(DisplayName))
+            return "?";
+
+        var parts = DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+            : DisplayName[0].ToString().ToUpperInvariant();
+    }
+}

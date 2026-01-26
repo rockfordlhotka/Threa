@@ -99,6 +99,15 @@
                                     <td>Boost:</td>
                                     <td class="fw-bold text-success">+@boostValue</td>
                                 </tr>
+                                @if (WeaponAVModifier != 0)
+                                {
+                                    <tr>
+                                        <td>Weapon Modifier:</td>
+                                        <td class="fw-bold @(WeaponAVModifier >= 0 ? "text-success" : "text-danger")">
+                                            @(WeaponAVModifier >= 0 ? "+" : "")@WeaponAVModifier
+                                        </td>
+                                    </tr>
+                                }
                                 @if (GetMultiActionPenalty() != 0)
                                 {
                                     <tr>
@@ -264,6 +273,15 @@
     [Parameter]
     public EventCallback<string> OnAttackComplete { get; set; }
 
+    [Parameter]
+    public int WeaponAVModifier { get; set; }
+
+    [Parameter]
+    public int WeaponSVModifier { get; set; }
+
+    [Parameter]
+    public int WeaponDamageClass { get; set; } = 1;
+
     private int selectedSkillIndex;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
     private int boostValue;
@@ -314,7 +332,7 @@
     {
         var skill = GetSelectedSkill();
         if (skill == null) return 0;
-        return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier();
+        return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier() + WeaponAVModifier;
     }
 
     private int GetMaxBoostAP()

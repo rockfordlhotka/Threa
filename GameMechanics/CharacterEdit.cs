@@ -1,13 +1,16 @@
 ﻿using Csla;
 using Csla.Core;
 using Csla.Rules;
+using GameMechanics.Items;
 using GameMechanics.Reference;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
@@ -15,6 +18,33 @@ namespace GameMechanics
   public class CharacterEdit : BusinessBase<CharacterEdit>
   {
     public bool IsBeingSaved { get; set; }
+
+    // Static calculator for item bonuses (stateless, thread-safe)
+    private static readonly ItemBonusCalculator _itemBonusCalculator = new();
+
+    // Non-CSLA property for equipped items (loaded on demand for bonus calculations)
+    [NonSerialized]
+    private List<EquippedItemInfo>? _equippedItems;
+
+    /// <summary>
+    /// Sets equipped items for bonus calculations. Call this after fetching character.
+    /// </summary>
+    /// <param name="items">Character items with templates populated.</param>
+    public void SetEquippedItems(IEnumerable<CharacterItem> items)
+    {
+      _equippedItems = items
+        .Where(i => i.Template != null)
+        .Select(i => new EquippedItemInfo(i, i.Template!))
+        .ToList();
+    }
+
+    /// <summary>
+    /// Clears equipped items cache. Call when items are modified.
+    /// </summary>
+    public void ClearEquippedItems()
+    {
+      _equippedItems = null;
+    }
 
     protected override void OnChildChanged(ChildChangedEventArgs e)
     {
@@ -304,16 +334,84 @@ namespace GameMechanics
     }
 
     /// <summary>
-    /// Gets the effective attribute value including all active effect modifiers.
+    /// Gets the effective attribute value including item bonuses and effect modifiers.
     /// Use this for game mechanics calculations (combat, skills, etc.).
+    /// Per CONTEXT.md: layered calculation - base + items + effects.
     /// </summary>
     /// <param name="attributeName">The attribute name (STR, DEX, END, INT, ITT, WIL, PHY).</param>
-    /// <returns>The effective attribute value after effect modifiers.</returns>
+    /// <returns>The effective attribute value after all modifiers.</returns>
     public int GetEffectiveAttribute(string attributeName)
     {
       var baseValue = GetAttribute(attributeName);
-      var modifier = Effects.GetAttributeModifier(attributeName, baseValue);
-      return baseValue + modifier;
+
+      // Layer 1: Item bonuses (per CONTEXT.md layered calculation)
+      var itemBonus = _equippedItems != null
+        ? _itemBonusCalculator.GetAttributeBonus(_equippedItems, attributeName)
+        : 0;
+
+      // Layer 2: Effect modifiers (applied after item bonuses)
+      var effectModifier = Effects.GetAttributeModifier(attributeName, baseValue + itemBonus);
+
+      return baseValue + itemBonus + effectModifier;
+    }
+
+    /// <summary>
+    /// Gets detailed breakdown of attribute value including item bonuses.
+    /// </summary>
+    /// <param name="attributeName">The attribute name (STR, DEX, etc.).</param>
+    /// <returns>Breakdown showing base value, item bonus, and effect bonus.</returns>
+    public AttributeBonusBreakdown GetAttributeBreakdown(string attributeName)
+    {
+      var baseValue = GetAttribute(attributeName);
+      var itemBonus = _equippedItems != null
+        ? _itemBonusCalculator.GetAttributeBonus(_equippedItems, attributeName)
+        : 0;
+      var effectBonus = Effects.GetAttributeModifier(attributeName, baseValue + itemBonus);
+
+      return new AttributeBonusBreakdown
+      {
+        AttributeName = attributeName,
+        BaseValue = baseValue,
+        ItemBonus = itemBonus,
+        EffectBonus = effectBonus
+      };
+    }
+
+    /// <summary>
+    /// Gets detailed breakdown of item bonuses for an attribute.
+    /// </summary>
+    /// <param name="attributeName">The attribute name (STR, DEX, etc.).</param>
+    /// <returns>List of (ItemName, Bonus) tuples for each contributing item.</returns>
+    public List<(string ItemName, int Bonus)> GetAttributeItemBreakdown(string attributeName)
+    {
+      return _equippedItems != null
+        ? _itemBonusCalculator.GetAttributeBonusBreakdown(_equippedItems, attributeName)
+        : new List<(string, int)>();
+    }
+
+    /// <summary>
+    /// Gets the item skill bonus for a specific skill.
+    /// Used when calculating Ability Scores: AS = Attribute + SkillLevel + ItemSkillBonus - 5 + Modifiers
+    /// </summary>
+    /// <param name="skillName">The skill name to get bonus for.</param>
+    /// <returns>Total skill bonus from equipped items.</returns>
+    public int GetSkillItemBonus(string skillName)
+    {
+      return _equippedItems != null
+        ? _itemBonusCalculator.GetSkillBonus(_equippedItems, skillName)
+        : 0;
+    }
+
+    /// <summary>
+    /// Gets detailed breakdown of skill bonuses from each equipped item.
+    /// </summary>
+    /// <param name="skillName">The skill name to get breakdown for.</param>
+    /// <returns>List of (ItemName, Bonus) tuples for each contributing item.</returns>
+    public List<(string ItemName, int Bonus)> GetSkillItemBreakdown(string skillName)
+    {
+      return _equippedItems != null
+        ? _itemBonusCalculator.GetSkillBonusBreakdown(_equippedItems, skillName)
+        : new List<(string, int)>();
     }
 
     /// <summary>

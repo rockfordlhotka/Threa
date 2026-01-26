@@ -1,18 +1,24 @@
 @page "/admin/users"
+@rendermode InteractiveServer
 
 @using GameMechanics.Player
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Threa.Client.Components.Shared
 
 @inject IDataPortal<AdminUserList> userListPortal
 @inject ViewModel<AdminUserList> vm
-@inject NavigationManager NavigationManager
+@inject DialogService DialogService
 
 @attribute [Authorize(Roles = "Administrator")]
 
 <h3>Manage Users</h3>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
@@ -21,22 +27,33 @@
 }
 else
 {
-    <QuickGrid Items="users">
-        <PropertyColumn Title="Email" Property="@(p => p.Email)" />
-        <PropertyColumn Title="Name" Property="@(p => p.Name)" />
-        <PropertyColumn Title="Roles" Property="@(p => p.Roles)" />
-        <TemplateColumn Title="Status">
+    <QuickGrid Items="users" Class="table table-striped">
+        <TemplateColumn Title="" Width="50px">
+            <UserAvatar Email="@context.Email"
+                        DisplayName="@context.Name"
+                        Size="32"
+                        UseGravatar="true" />
+        </TemplateColumn>
+        <PropertyColumn Title="Username" Property="@(p => p.Email)" Sortable="true" />
+        <PropertyColumn Title="Display Name" Property="@(p => p.Name)" Sortable="true" />
+        <PropertyColumn Title="Roles" Property="@(p => p.Roles)" Sortable="true" />
+        <TemplateColumn Title="Status" Sortable="true" SortBy="@enabledSort">
             @if (context.IsEnabled)
             {
                 <span class="badge bg-success">Enabled</span>
             }
             else
             {
-                <span class="badge bg-danger">Disabled</span>
+                <span>
+                    <i class="bi bi-lock-fill text-danger me-1" title="Account disabled"></i>
+                    <span class="text-danger">Disabled</span>
+                </span>
             }
         </TemplateColumn>
-        <TemplateColumn>
-            <a href="admin/users/@context.Id">Edit</a>
+        <TemplateColumn Title="Actions">
+            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUserAsync(context.Id)">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </button>
         </TemplateColumn>
     </QuickGrid>
 }
@@ -44,10 +61,38 @@ else
 @code {
     private IQueryable<AdminUserInfo>? users;
 
+    // Sort by enabled status (enabled first, then disabled)
+    private GridSort<AdminUserInfo> enabledSort = GridSort<AdminUserInfo>
+        .ByDescending(p => p.IsEnabled);
+
     protected override async Task OnParametersSetAsync()
+    {
+        await RefreshListAsync();
+    }
+
+    private async Task RefreshListAsync()
     {
         await vm.RefreshAsync(() => userListPortal.FetchAsync());
         users = vm.Model?.AsQueryable();
         StateHasChanged();
+    }
+
+    private async Task EditUserAsync(int userId)
+    {
+        var result = await DialogService.OpenAsync<UserEditModal>(
+            "Edit User",
+            new Dictionary<string, object> { { "UserId", userId } },
+            new DialogOptions
+            {
+                Width = "500px",
+                CloseDialogOnOverlayClick = false,
+                ShowClose = true
+            });
+
+        // Refresh list if save was successful
+        if (result is bool saved && saved)
+        {
+            await RefreshListAsync();
+        }
     }
 }
