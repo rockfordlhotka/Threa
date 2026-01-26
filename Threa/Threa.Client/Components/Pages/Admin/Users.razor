@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.AspNetCore.Authorization
 @using Radzen
+@using Threa.Client.Components.Shared
 
 @inject IDataPortal<AdminUserList> userListPortal
 @inject ViewModel<AdminUserList> vm
@@ -27,6 +28,12 @@
 else
 {
     <QuickGrid Items="users" Class="table table-striped">
+        <TemplateColumn Title="" Width="50px">
+            <UserAvatar Email="@context.Email"
+                        DisplayName="@context.Name"
+                        Size="32"
+                        UseGravatar="true" />
+        </TemplateColumn>
         <PropertyColumn Title="Username" Property="@(p => p.Email)" Sortable="true" />
         <PropertyColumn Title="Display Name" Property="@(p => p.Name)" Sortable="true" />
         <PropertyColumn Title="Roles" Property="@(p => p.Roles)" Sortable="true" />
