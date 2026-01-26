@@ -258,6 +258,13 @@
         <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
     </div>
 }
+@if (!string.IsNullOrEmpty(warningMessage))
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @warningMessage
+        <button type="button" class="btn-close" @onclick="() => warningMessage = null"></button>
+    </div>
+}
 
 <div class="row">
     <!-- Inventory Grid -->
@@ -499,6 +506,7 @@
     private CharacterItem? selectedItem;
     private string? errorMessage;
     private string? successMessage;
+    private string? warningMessage;
 
     // Container panel state
     private CharacterItem? selectedContainer;
@@ -709,6 +717,7 @@
     {
         errorMessage = null;
         successMessage = null;
+        warningMessage = null;
     }
 
     // Equip/Unequip methods
@@ -922,10 +931,75 @@
         }
     }
 
+    private string? ValidateContainerTypeRestriction(CharacterItem item, CharacterItem container)
+    {
+        var containerTemplate = GetTemplate(container.ItemTemplateId);
+        if (string.IsNullOrEmpty(containerTemplate?.ContainerAllowedTypes))
+            return null; // No restrictions
+
+        var itemTemplate = GetTemplate(item.ItemTemplateId);
+        if (itemTemplate == null) return null;
+
+        var allowedTypes = containerTemplate.ContainerAllowedTypes
+            .Split(',')
+            .Select(t => t.Trim())
+            .ToList();
+
+        if (!allowedTypes.Contains(itemTemplate.ItemType.ToString()))
+        {
+            return $"This container is designed for {containerTemplate.ContainerAllowedTypes}. " +
+                   $"Placing {itemTemplate.ItemType} items may not be ideal.";
+        }
+
+        return null;
+    }
+
+    private string? CheckCapacityWarning(CharacterItem item, CharacterItem container)
+    {
+        var containerTemplate = GetTemplate(container.ItemTemplateId);
+        var itemTemplate = GetTemplate(item.ItemTemplateId);
+        if (containerTemplate == null || itemTemplate == null) return null;
+
+        var capacity = GetContainerCapacity(container);
+        var itemWeight = itemTemplate.Weight * item.StackSize * containerTemplate.ContainerWeightReduction;
+        var itemVolume = itemTemplate.Volume * item.StackSize;
+
+        var newWeight = capacity.CurrentWeight + itemWeight;
+        var newVolume = capacity.CurrentVolume + itemVolume;
+
+        var warnings = new List<string>();
+
+        if (capacity.MaxWeight < decimal.MaxValue && newWeight > capacity.MaxWeight)
+            warnings.Add($"weight ({newWeight:0.#}/{capacity.MaxWeight:0.#} lbs)");
+
+        if (capacity.MaxVolume < decimal.MaxValue && newVolume > capacity.MaxVolume)
+            warnings.Add($"volume ({newVolume:0.#}/{capacity.MaxVolume:0.#})");
+
+        if (warnings.Any())
+            return $"This will exceed container {string.Join(" and ", warnings)}.";
+
+        return null;
+    }
+
     private async Task MoveToContainer(Guid itemId, Guid containerId)
     {
         try
         {
+            var item = inventoryItems?.FirstOrDefault(i => i.Id == itemId);
+            var container = inventoryItems?.FirstOrDefault(i => i.Id == containerId);
+
+            if (item == null || container == null)
+            {
+                errorMessage = "Item or container not found.";
+                return;
+            }
+
+            // Check type restriction (warning only - does not block)
+            var typeWarning = ValidateContainerTypeRestriction(item, container);
+
+            // Check capacity (warning only - does not block)
+            var capacityWarning = CheckCapacityWarning(item, container);
+
             var result = await itemService.MoveToContainerAsync(Character!, itemId, containerId);
             if (!result.Success)
             {
@@ -933,9 +1007,18 @@
                 return;
             }
 
-            var itemName = GetItemName(inventoryItems?.FirstOrDefault(i => i.Id == itemId));
-            var containerName = GetItemName(inventoryItems?.FirstOrDefault(i => i.Id == containerId));
+            var itemName = GetItemName(item);
+            var containerName = GetItemName(container);
             successMessage = $"Moved {itemName} into {containerName}.";
+
+            // Show warnings if any (item was still moved successfully)
+            var warnings = new List<string>();
+            if (typeWarning != null) warnings.Add(typeWarning);
+            if (capacityWarning != null) warnings.Add(capacityWarning);
+            if (warnings.Any())
+            {
+                warningMessage = string.Join(" ", warnings);
+            }
 
             // Clear selection and refresh
             selectedItem = null;
@@ -943,10 +1026,10 @@
             await LoadItemsAsync();
 
             // Re-open container panel to show updated contents
-            var container = inventoryItems?.FirstOrDefault(i => i.Id == containerId);
-            if (container != null)
+            var updatedContainer = inventoryItems?.FirstOrDefault(i => i.Id == containerId);
+            if (updatedContainer != null)
             {
-                OpenContainerPanel(container);
+                OpenContainerPanel(updatedContainer);
             }
         }
         catch (Exception ex)
