@@ -1,0 +1,5 @@
+---
+phase: 08-registration-foundation
+verified: 2026-01-26T08:17:29Z
+status: human_needed
+score: 4/4 must-haves verified
