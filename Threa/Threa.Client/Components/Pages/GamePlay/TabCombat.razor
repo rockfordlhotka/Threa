@@ -312,21 +312,16 @@
         // Load ranged weapons using WeaponSelector
         rangedWeapons = new List<RangedWeaponInfo>();
         var detectedRangedWeapons = WeaponSelector.GetRangedWeapons(equippedItemInfos).ToList();
-        Console.WriteLine($"[LoadEquipmentAndSkills] WeaponSelector found {detectedRangedWeapons.Count} ranged weapons");
         foreach (var weaponInfo in detectedRangedWeapons)
         {
             var item = weaponInfo.Item;
-            Console.WriteLine($"[LoadEquipmentAndSkills]   Processing: {item.Template?.Name} (Range: {item.Template?.Range})");
 
             // Try to load advanced ranged properties (fire modes, ammo, etc.) from CustomProperties
             var rangedProps = RangedWeaponProperties.FromJson(item.Template?.CustomProperties);
-            Console.WriteLine($"[LoadEquipmentAndSkills]     rangedProps: {(rangedProps != null ? "EXISTS" : "NULL")}");
-            Console.WriteLine($"[LoadEquipmentAndSkills]     Range.HasValue: {item.Template?.Range.HasValue}");
 
             // If rangedProps exists, use it; otherwise create basic ranged weapon with defaults
             if (rangedProps != null || item.Template?.Range.HasValue == true)
             {
-                Console.WriteLine($"[LoadEquipmentAndSkills]     ✓ Condition met, adding to rangedWeapons list");
                 var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
                 // Use the ranged skill from weapon properties, fall back to RelatedSkill, then template RelatedSkill
                 var skillName = !string.IsNullOrWhiteSpace(rangedProps?.RangedSkill)
@@ -526,19 +521,10 @@
         selectedSkill = skill;
 
         // Check if this skill matches a ranged weapon
-        Console.WriteLine($"[StartAttackWithSkill] Skill: {skill.Name} (ID: {skill.Id})");
-        Console.WriteLine($"[StartAttackWithSkill] rangedWeapons count: {rangedWeapons.Count}");
-        foreach (var rw in rangedWeapons)
-        {
-            Console.WriteLine($"[StartAttackWithSkill]   - {rw.Name} (SkillName: {rw.SkillName})");
-        }
-
         var isRangedSkill = rangedWeapons.Any(w => w.SkillName.Equals(skill.Id, StringComparison.OrdinalIgnoreCase));
-        Console.WriteLine($"[StartAttackWithSkill] isRangedSkill: {isRangedSkill}");
 
         // Route to ranged attack mode for ranged skills, melee attack mode otherwise
         combatMode = isRangedSkill ? CombatMode.RangedAttack : CombatMode.Attack;
-        Console.WriteLine($"[StartAttackWithSkill] Routing to: {combatMode}");
     }
 
     private void StartDefend()
