@@ -5,16 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.1 User Management & Authentication
+**Current focus:** Phase 8 - Registration Foundation
 
 ## Current Position
 
 Milestone: v1.1 - IN PROGRESS
-Phase: Not started (defining requirements)
-Status: Researching Gravatar integration
-Last activity: 2026-01-26 - v1.1 milestone started
+Phase: 8 of 11 (Registration Foundation)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-01-26 - v1.1 roadmap created
 
-Progress: v1.1 [░░░░░░░░░░░░░░░░] 0%
+Progress: v1.1 [░░░░░░░░░░░░░░░░] 0% (0/7 plans)
 
 ## Performance Metrics
 
@@ -23,7 +24,7 @@ Progress: v1.1 [░░░░░░░░░░░░░░░░] 0%
 - Average duration: 15 min
 - Total execution time: 4.1 hours
 
-**By Phase:**
+**By Phase (v1.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -39,7 +40,7 @@ Progress: v1.1 [░░░░░░░░░░░░░░░░] 0%
 - Last 5 plans: 07-01 (4 min), 06-03 (90 min), 06-02 (10 min), 06-01 (4 min), 05-02 (15 min)
 - Trend: steady execution velocity
 
-*Updated after each plan completion*
+*v1.1 metrics will be tracked starting Phase 8*
 
 ## Accumulated Context
 
@@ -48,69 +49,21 @@ Progress: v1.1 [░░░░░░░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Build on existing DAL interfaces (IItemTemplateDal, ICharacterItemDal) - no refactoring
-- GM manages templates, players get instances - separation of concerns
-- Include container support in v1 - user requested
-- Bonus calculation on equip/unequip only - performance optimization
-- Use WeaponType.Polearm for spears (no dedicated Spear enum) - 01-03
-- Ranged weapon CustomProperties JSON pattern established (fire modes, range bands, capacity) - 01-03
-- Ammunition CustomProperties JSON pattern established (ammoType, damageModifier, isLooseAmmo) - 01-03
-- CSLA CommonRules + custom rules for ItemTemplate validation - 01-01
-- Container capacity validation is warning, not error (GM flexibility) - 01-01
-- Used [RunLocal] + sync Create for CharacterItemEdit (test compatibility) - 01-02
-- String properties initialized to empty by CSLA - tests check IsNullOrEmpty - 01-02
-- Used IEnumerable instead of IQueryable for client-side filtering - 02-02
-- RadzenDataGrid with RowSelect for click-to-edit navigation pattern - 02-02
-- 300ms debounce pattern for search input - 02-02
-- Tags stored as comma-separated string for simple filtering - 02-01
-- RadzenTabs with @key for dynamic tab visibility on enum change - 02-03
-- Radzen JS/CSS must be in App.razor for component functionality - 02-03
-- Split-view layout with Bootstrap grid for browse-and-select interfaces - 03-01
-- Single-click row adds item (no confirmation dialog) - 03-01
-- Unsaved characters (Id=0) must save before managing inventory - 03-01
-- Quantity 0 triggers item deletion (immediate removal) - 03-02
-- Carrying capacity formula: 50 lbs * 1.15^(STR-10) - 03-02
-- Overweight warning is informational only (no enforcement) - 03-02
-- CSS Grid for inventory tiles (not RadzenDataGrid) per CONTEXT.md - 04-01
-- Text-based item type icons for MVP (no IconUrl field exists) - 04-01
-- Implant slots excluded from equipment display (deferred) - 04-01
-- SlotCategory record pattern for grouping equipment slots - 04-01
-- Two-step equip flow: select item then click slot (prevents accidents) - 04-02
-- IsEquippableType() check prevents ammunition/consumables from being equipped - 04-02
-- TwoHand weapons ONLY equip to TwoHand slot (rifles must use TwoHand) - 04-02
-- OneHand weapons (MainHand/OffHand) can equip to any weapon slot - 04-02
-- Always confirm before dropping items (per CONTEXT.md) - 04-02
-- Stackable drops prompt for quantity before confirmation - 04-02
-- All item operations use ItemManagementService (curse handling, effects) - 04-02
-- Radzen DialogService registered in Program.cs for confirmation dialogs - 04-02
-- Container panel replaces equipment slots in right column when open - 05-01
-- Two-phase container move flow (select item then click container) - 05-01
-- Click container without selection opens panel - 05-01
-- Client-side filtering for container contents (items already loaded) - 05-01
-- Dashed border visual indicator for container tiles - 05-01
-- Capacity/type warnings are non-blocking (placement succeeds with warning) - 05-02
-- Nesting validation is blocking (one-level only per CONTEXT.md) - 05-02
-- Empty containers CAN be nested, non-empty containers cannot - 05-02
-- Drop container dialog has Cancel/Empty First/Drop All options - 05-02
-- Fill indicator colors: gray (empty), green (<75%), yellow (75-99%), red (100%+) - 05-02
-- ContainerWeightReduction multiplier applied to contents weight - 05-02
-- Only FlatBonus type bonuses are calculated (PercentageBonus ignored per CONTEXT.md) - 06-01
-- Case-insensitive comparison for attribute/skill names in bonus calculation - 06-01
-- Layered attribute calculation: base + items + effects (effects applied to post-item value) - 06-02
-- Non-serialized equipped items field (loaded on-demand, not persisted) - 06-02
-- Reuse existing CharacterUpdateMessage infrastructure for inventory notifications - 07-01
-- Item search limited to 15 results for performance - 07-01
-- Non-stackable items force quantity to 1 on grant - 07-01
+- [v1.1]: Secret Q&A for password recovery (no email sending capability)
+- [v1.1]: RadzenGravatar for avatars (already available in Radzen.Blazor 8.4.2)
+- [v1.1]: First registered user becomes Admin automatically
+- [v1.1]: Initials fallback when no email provided for Gravatar
+- [v1.1]: Case-insensitive, trimmed secret answer validation
 
 ### Pending Todos
 
-None - v1.0 milestone complete.
+None yet.
 
 ### Blockers/Concerns
 
-None - v1.0 milestone complete.
+None yet.
 
-**Known Technical Debt (non-blocking):**
+**Known Technical Debt (non-blocking, from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
 - Weapon filtering logic in UI layer (should move to GameMechanics)
 - Case sensitivity inconsistencies in skill/template comparisons
@@ -119,21 +72,8 @@ None - v1.0 milestone complete.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: v1.0 milestone archived
+Stopped at: v1.1 roadmap created
 Resume file: None
 
-## v1.0 Milestone - SHIPPED
-
-**Phases:** 1-7 (16 plans)
-**Timeline:** 3 days (2026-01-24 to 2026-01-26)
-**Requirements:** 50/50 (100%)
-
-**Archives:**
-- .planning/milestones/v1-ROADMAP.md
-- .planning/milestones/v1-REQUIREMENTS.md
-- .planning/milestones/v1-MILESTONE-AUDIT.md
-
-**Summary:**
-Complete inventory and equipment management system with GM item template management, player inventory (character creation and gameplay), container system, item bonuses integrated with combat, and real-time GM item distribution.
-
-**Next:** Run `/gsd:new-milestone` to define v2 goals
+---
+*Next: `/gsd:plan-phase 8` to plan Registration Foundation*
