@@ -38,4 +38,10 @@ public interface IPlayerDal
     /// Gets the number of remaining recovery attempts before lockout.
     /// </summary>
     Task<int> GetRemainingRecoveryAttemptsAsync(string username);
+
+    /// <summary>
+    /// Counts enabled users with Administrator role.
+    /// Used by last-admin protection rule.
+    /// </summary>
+    Task<int> CountEnabledAdminsAsync();
 }

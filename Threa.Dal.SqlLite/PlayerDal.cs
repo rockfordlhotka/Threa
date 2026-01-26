@@ -326,4 +326,15 @@ public class PlayerDal : IPlayerDal
 
         await SavePlayerAsync(player);
     }
+
+    public async Task<int> CountEnabledAdminsAsync()
+    {
+        // Fetch all players and filter in C# (consistent with JSON storage pattern)
+        var players = await GetAllPlayersAsync();
+        return players.Count(p =>
+            p.IsEnabled &&
+            p.Roles != null &&
+            p.Roles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Contains("Administrator", StringComparer.OrdinalIgnoreCase));
+    }
 }

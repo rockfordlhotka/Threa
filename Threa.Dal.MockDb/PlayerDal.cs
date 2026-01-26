@@ -239,5 +239,18 @@ namespace Threa.Dal.MockDb
                 return Task.CompletedTask;
             }
         }
+
+        public Task<int> CountEnabledAdminsAsync()
+        {
+            lock (MockDb.Players)
+            {
+                var count = MockDb.Players.Count(p =>
+                    p.IsEnabled &&
+                    p.Roles != null &&
+                    p.Roles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                        .Contains("Administrator", StringComparer.OrdinalIgnoreCase));
+                return Task.FromResult(count);
+            }
+        }
     }
 }
