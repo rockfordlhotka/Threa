@@ -19,6 +19,11 @@
     <div class="alert alert-success">Registration successful! Please log in with your new account.</div>
 }
 
+@if (PasswordReset)
+{
+    <div class="alert alert-success">Password reset successful! Please log in with your new password.</div>
+}
+
 <div>
     <div class="alert-danger">@Message</div>
     <EditForm Model="UserInfoModel" OnSubmit="LoginUser" FormName="loginform">
@@ -31,13 +36,20 @@
             <InputText type="password" @bind-Value="UserInfoModel!.Password" />
         </div>
         <button class="btn btn-primary">Login</button>
-        <a href="/register" class="btn btn-link">Don't have an account? Register</a>
+        <div class="mt-2">
+            <a href="/register" class="btn btn-link">Don't have an account? Register</a>
+            <span class="text-muted">|</span>
+            <a href="/forgot-password" class="btn btn-link">Forgot password?</a>
+        </div>
     </EditForm>
 </div>
 
 @code {
     [SupplyParameterFromQuery]
     public bool Registered { get; set; }
+
+    [SupplyParameterFromQuery]
+    public bool PasswordReset { get; set; }
 
     [SupplyParameterFromForm]
     public UserInfo? UserInfoModel { get; set; }
