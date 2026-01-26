@@ -11,6 +11,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using Threa.Services
 @using Threa.Client.Components.Shared
+@using Threa.Dal
+@using Threa.Dal.Dto
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
@@ -22,6 +24,8 @@
 @inject IActivityLogService ActivityLog
 @inject ITimeEventPublisher TimeEventPublisher
 @inject IJSRuntime JS
+@inject IItemTemplateDal itemTemplateDal
+@inject GameMechanics.Items.ItemManagementService itemManagementService
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -162,6 +166,75 @@ else
                                         @onclick="() => RemoveNpc(npc.Id)">Remove</button>
                             </div>
                         }
+                    }
+                </div>
+            </div>
+
+            <!-- Item Distribution Panel -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Item Distribution</strong>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter -->
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" placeholder="Search items..."
+                                   @bind="itemSearchText" @bind:event="oninput" />
+                            <select class="form-select" @bind="selectedItemType" style="max-width: 100px;">
+                                <option value="">All</option>
+                                @foreach (var type in itemTypes)
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Item List -->
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
+                        @if (!filteredTemplates.Any())
+                        {
+                            <p class="text-muted small p-2 mb-0">No items found.</p>
+                        }
+                        else
+                        {
+                            @foreach (var template in filteredTemplates)
+                            {
+                                <div class="p-2 border-bottom item-row @(selectedTemplate?.Id == template.Id ? "bg-primary text-white" : "")"
+                                     style="cursor: pointer;"
+                                     @onclick="() => SelectTemplate(template)">
+                                    <strong>@template.Name</strong>
+                                    <small class="ms-1 @(selectedTemplate?.Id == template.Id ? "" : "text-muted")">(@template.ItemType)</small>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Grant Controls -->
+                    @if (selectedTemplate != null && selectedCharacter != null)
+                    {
+                        <div class="mt-2 p-2 bg-light rounded">
+                            <div class="small mb-1">
+                                Grant <strong>@selectedTemplate.Name</strong> to <strong>@selectedCharacter.CharacterName</strong>
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">Qty</span>
+                                <input type="number" class="form-control" @bind="grantQuantity"
+                                       min="1" max="@(selectedTemplate.IsStackable ? 999 : 1)" style="max-width: 80px;" />
+                                <button class="btn btn-success" @onclick="GrantItemToCharacter">
+                                    <i class="bi bi-gift"></i> Grant
+                                </button>
+                            </div>
+                            @if (!selectedTemplate.IsStackable && grantQuantity > 1)
+                            {
+                                <small class="text-warning">This item is not stackable. Quantity will be 1.</small>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mt-2 mb-0">Select an item and a character to grant.</p>
                     }
                 </div>
             </div>
@@ -372,6 +445,25 @@ else
     private int roundsToAdvance = 5;
     private string announcementText = "";
 
+    // Item distribution state
+    private List<ItemTemplate>? allTemplates;
+    private ItemType? selectedItemType;
+    private string itemSearchText = "";
+    private ItemTemplate? selectedTemplate;
+    private int grantQuantity = 1;
+
+    private IEnumerable<ItemTemplate> filteredTemplates =>
+        allTemplates?
+            .Where(t => t.IsActive)
+            .Where(t => selectedItemType == null || t.ItemType == selectedItemType)
+            .Where(t => string.IsNullOrEmpty(itemSearchText) ||
+                        t.Name.Contains(itemSearchText, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(t => t.Name)
+            .Take(15)
+        ?? Enumerable.Empty<ItemTemplate>();
+
+    private static readonly ItemType[] itemTypes = Enum.GetValues<ItemType>();
+
     private record NpcInfo(Guid Id, string Name);
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -420,6 +512,9 @@ else
             {
                 await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
             }
+
+            // Load item templates for item distribution
+            allTemplates = await itemTemplateDal.GetAllTemplatesAsync();
         }
         catch (Exception ex)
         {
@@ -819,4 +914,64 @@ else
             ActivityCategory.Player => "text-muted",
             _ => ""
         };
+
+    private void SelectTemplate(ItemTemplate template)
+    {
+        selectedTemplate = selectedTemplate?.Id == template.Id ? null : template;
+        grantQuantity = 1;
+    }
+
+    private async Task GrantItemToCharacter()
+    {
+        if (selectedCharacter == null || selectedTemplate == null || table == null)
+            return;
+
+        try
+        {
+            // Fetch full CharacterEdit for ItemManagementService
+            var targetCharacter = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+
+            // Create the item instance
+            var newItem = new CharacterItem
+            {
+                Id = Guid.NewGuid(),
+                ItemTemplateId = selectedTemplate.Id,
+                OwnerCharacterId = selectedCharacter.CharacterId,
+                StackSize = selectedTemplate.IsStackable ? grantQuantity : 1,
+                CurrentDurability = selectedTemplate.HasDurability ? selectedTemplate.MaxDurability : null,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Add via service (handles effects)
+            var result = await itemManagementService.AddItemToInventoryAsync(targetCharacter, newItem);
+
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            // Notify player to refresh inventory
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = selectedCharacter.CharacterId,
+                UpdateType = CharacterUpdateType.InventoryChanged,
+                CampaignId = table.Id.ToString(),
+                SourceId = "GM",
+                Description = $"Granted {(selectedTemplate.IsStackable ? grantQuantity : 1)}x {selectedTemplate.Name}"
+            });
+
+            // Log the action
+            var qty = selectedTemplate.IsStackable ? grantQuantity : 1;
+            AddLogEntry($"Granted {qty}x {selectedTemplate.Name} to {selectedCharacter.CharacterName}", ActivityCategory.General);
+
+            // Reset for next grant
+            grantQuantity = 1;
+            selectedTemplate = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to grant item: {ex.Message}";
+        }
+    }
 }
