@@ -326,7 +326,7 @@
                 var skillName = !string.IsNullOrWhiteSpace(rangedProps?.RangedSkill)
                     ? rangedProps.RangedSkill
                     : item.Template?.RelatedSkill ?? "";
-                var skill = Character.Skills.FirstOrDefault(s => s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
+                var skill = Character.Skills.FirstOrDefault(s => s.Id.Equals(skillName, StringComparison.OrdinalIgnoreCase));
 
                 // Check weapon's inherent AOE (grenades, rockets)
                 bool isAOECapable = rangedProps?.IsInherentAOE ?? false;
