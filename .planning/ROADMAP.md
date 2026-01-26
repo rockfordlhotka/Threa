@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: GM Item Management** - Item template CRUD operations for Game Masters
 - [x] **Phase 3: Character Creation Inventory** - Players add items during character creation
 - [x] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
-- [ ] **Phase 5: Container System** - Items inside containers with capacity limits
+- [x] **Phase 5: Container System** - Items inside containers with capacity limits
 - [ ] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
 - [ ] **Phase 7: Item Distribution** - GM grants items to players during gameplay
 
@@ -123,11 +123,12 @@ Plans:
   5. Combat attack resolution uses equipped weapon properties (damage class, SV/AV modifiers)
   6. Equipped armor provides absorption values during damage resolution
   7. Equipped weapons appear in appropriate combat mode weapon selection (melee/ranged)
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 06-01: Bonus Calculation Engine
-- [ ] 06-02: Combat System Integration
+- [ ] 06-01-PLAN.md - ItemBonusCalculator service with unit tests
+- [ ] 06-02-PLAN.md - CharacterEdit integration and UI stat display with breakdowns
+- [ ] 06-03-PLAN.md - Combat system integration (weapon selection, armor absorption)
 
 ### Phase 7: Item Distribution
 **Goal**: Game Masters can grant items to players during gameplay sessions
@@ -155,7 +156,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Character Creation Inventory | 2/2 | Complete | 2026-01-25 |
 | 4. Gameplay Inventory Core | 2/2 | Complete | 2026-01-25 |
 | 5. Container System | 2/2 | Complete | 2026-01-25 |
-| 6. Item Bonuses & Combat | 0/2 | Not started | - |
+| 6. Item Bonuses & Combat | 0/3 | Planned | - |
 | 7. Item Distribution | 0/1 | Not started | - |
 
 ---
@@ -165,3 +166,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 *Phase 3 planned: 2026-01-25*
 *Phase 4 planned: 2026-01-25*
 *Phase 5 planned: 2026-01-25*
+*Phase 6 planned: 2026-01-25*
