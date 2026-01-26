@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 6 - Item Bonuses & Combat - In Progress
+**Current focus:** Phase 6 - Item Bonuses & Combat - Complete
 
 ## Current Position
 
 Phase: 6 of 7 (Item Bonuses & Combat)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 06-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-26 - Completed 06-02-PLAN.md
 
-Progress: [#############---] 76%
+Progress: [##############--] 88%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 10 min
-- Total execution time: 2.2 hours
+- Total execution time: 2.4 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [#############---] 76%
 | 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 | 04-gameplay-inventory-core | 2 | 18 min | 9 min |
 | 05-container-system | 2 | 27 min | 13.5 min |
-| 06-item-bonuses-and-combat | 1 | 4 min | 4 min |
+| 06-item-bonuses-and-combat | 2 | 14 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (4 min), 05-02 (15 min), 05-01 (12 min), 04-02 (15 min), 04-01 (3 min)
+- Last 5 plans: 06-02 (10 min), 06-01 (4 min), 05-02 (15 min), 05-01 (12 min), 04-02 (15 min)
 - Trend: steady execution velocity
 
 *Updated after each plan completion*
@@ -95,6 +95,8 @@ Recent decisions affecting current work:
 - ContainerWeightReduction multiplier applied to contents weight - 05-02
 - Only FlatBonus type bonuses are calculated (PercentageBonus ignored per CONTEXT.md) - 06-01
 - Case-insensitive comparison for attribute/skill names in bonus calculation - 06-01
+- Layered attribute calculation: base + items + effects (effects applied to post-item value) - 06-02
+- Non-serialized equipped items field (loaded on-demand, not persisted) - 06-02
 
 ### Pending Todos
 
@@ -106,20 +108,26 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-25
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-01-26
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
 
-## Phase 6 Status - In Progress
+## Phase 6 Status - Complete
 
-1 of 2 plans complete:
+2 of 2 plans complete:
 - 06-01-PLAN.md: Complete - ItemBonusCalculator, EquippedItemInfo, AttributeBonusBreakdown, unit tests
-- 06-02-PLAN.md: Pending - Combat integration (pending)
+- 06-02-PLAN.md: Complete - CharacterEdit integration, Play page loading, TabStatus display
 
-**Phase 6 Deliverables (Completed so far):**
+**Phase 6 Deliverables:**
 - ItemBonusCalculator service computes flat bonuses from equipped items
 - EquippedItemInfo value object combines CharacterItem + ItemTemplate
 - AttributeBonusBreakdown shows base + item + effect contributions
 - 17 unit tests covering bonus calculation scenarios
+- CharacterEdit.GetEffectiveAttribute includes item bonuses
+- CharacterEdit.GetAttributeBreakdown for UI display
+- CharacterEdit.GetSkillItemBonus for Ability Score calculations
+- Play page loads equipped items on character fetch
+- TabStatus shows attributes with color-coded breakdown
+- DAL method GetEquippedItemsWithTemplatesAsync for efficient loading
 
-Next: Plan 06-02 (Combat Integration - apply item bonuses to attack/defense)
+Next: Phase 7 (Polish & Edge Cases)
