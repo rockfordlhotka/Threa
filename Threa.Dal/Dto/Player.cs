@@ -10,4 +10,6 @@ public class Player
     public string ImageUrl { get; set; } = string.Empty;
     public string? Roles { get; set; }
     public bool IsEnabled { get; set; } = true;
+    public string SecretQuestion { get; set; } = string.Empty;
+    public string SecretAnswer { get; set; } = string.Empty;  // Stored lowercase, trimmed
 }
