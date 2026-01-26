@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Character Creation Inventory** - Players add items during character creation
 - [x] **Phase 4: Gameplay Inventory Core** - View, equip, unequip, drop items during play
 - [x] **Phase 5: Container System** - Items inside containers with capacity limits
-- [ ] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
+- [x] **Phase 6: Item Bonuses & Combat** - Equipped items affect character stats and combat
 - [ ] **Phase 7: Item Distribution** - GM grants items to players during gameplay
 
 ## Phase Details
@@ -141,10 +141,10 @@ Plans:
   2. GM can select item template and quantity to grant
   3. GM can grant item to specific player character
   4. Granted items appear immediately in player inventory
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 07-01: GM Item Distribution UI
+- [ ] 07-01-PLAN.md - Add Item Distribution panel to GM Table with real-time player notification
 
 ## Progress
 
@@ -169,3 +169,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 *Phase 4 planned: 2026-01-25*
 *Phase 5 planned: 2026-01-25*
 *Phase 6 planned: 2026-01-25*
+*Phase 7 planned: 2026-01-25*
