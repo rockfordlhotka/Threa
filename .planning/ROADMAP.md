@@ -43,11 +43,11 @@ See MILESTONES.md for v1.0 details.
   2. First registered user in the system automatically has Admin role after registration completes
   3. Subsequent registered users have User role by default (not Admin, not GameMaster)
   4. Duplicate usernames are rejected with clear error message
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 08-01: Registration data layer and business objects
-- [ ] 08-02: Registration UI and first-user-admin logic
+- [ ] 08-01-PLAN.md - Data layer and UserRegistration business object with validation, first-user-admin logic
+- [ ] 08-02-PLAN.md - Registration UI page and login page link
 
 ### Phase 9: Password Recovery
 **Goal**: Users who forget their password can reset it using their secret question/answer
@@ -104,7 +104,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 16/16 | Complete | 2026-01-26 |
-| 8. Registration Foundation | v1.1 | 0/2 | Not started | - |
+| 8. Registration Foundation | v1.1 | 0/2 | Planned | - |
 | 9. Password Recovery | v1.1 | 0/1 | Not started | - |
 | 10. Admin User Management | v1.1 | 0/2 | Not started | - |
 | 11. User Profiles | v1.1 | 0/2 | Not started | - |
