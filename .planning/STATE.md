@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Players can equip weapons and armor that directly affect their combat effectiveness, and Game Masters can create and distribute items that integrate seamlessly with the existing combat system.
-**Current focus:** Phase 5 - Container System - IN PROGRESS
+**Current focus:** Phase 5 - Container System - COMPLETE
 
 ## Current Position
 
 Phase: 5 of 7 (Container System)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-25 - Completed 05-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 05-02-PLAN.md
 
-Progress: [###########-----] 65%
+Progress: [############----] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 10 min
-- Total execution time: 1.9 hours
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [###########-----] 65%
 | 02-gm-item-management | 3 | 44 min | 15 min |
 | 03-character-creation-inventory | 2 | 13 min | 6.5 min |
 | 04-gameplay-inventory-core | 2 | 18 min | 9 min |
-| 05-container-system | 1 | 12 min | 12 min |
+| 05-container-system | 2 | 27 min | 13.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (12 min), 04-02 (15 min), 04-01 (3 min), 03-02 (8 min), 03-01 (5 min)
+- Last 5 plans: 05-02 (15 min), 05-01 (12 min), 04-02 (15 min), 04-01 (3 min), 03-02 (8 min)
 - Trend: steady execution velocity
 
 *Updated after each plan completion*
@@ -86,6 +86,12 @@ Recent decisions affecting current work:
 - Click container without selection opens panel - 05-01
 - Client-side filtering for container contents (items already loaded) - 05-01
 - Dashed border visual indicator for container tiles - 05-01
+- Capacity/type warnings are non-blocking (placement succeeds with warning) - 05-02
+- Nesting validation is blocking (one-level only per CONTEXT.md) - 05-02
+- Empty containers CAN be nested, non-empty containers cannot - 05-02
+- Drop container dialog has Cancel/Empty First/Drop All options - 05-02
+- Fill indicator colors: gray (empty), green (<75%), yellow (75-99%), red (100%+) - 05-02
+- ContainerWeightReduction multiplier applied to contents weight - 05-02
 
 ### Pending Todos
 
@@ -98,20 +104,25 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 05-01-PLAN.md
+Stopped at: Completed 05-02-PLAN.md (Phase 5 complete)
 Resume file: None
 
-## Phase 5 Status - IN PROGRESS
+## Phase 5 Status - COMPLETE
 
-1 of 2 plans complete:
+2 of 2 plans complete:
 - 05-01-PLAN.md: Complete - Container contents panel, move-to/remove-from container functionality
-- 05-02-PLAN.md: Pending - Container capacity enforcement, visual fill indicators, nesting rules
+- 05-02-PLAN.md: Complete - Container capacity enforcement, visual fill indicators, nesting rules
 
-**Phase 5 Deliverables (so far):**
+**Phase 5 Deliverables:**
 - Players can click a container tile to see its contents in a side panel
 - Players can select an item and click a container tile to move item into container
 - Players can select an item in container panel and click Remove to move it back to inventory
 - Inventory grid filters to show only top-level items (not items in containers)
 - Container tiles have dashed border visual indicator
+- Container tiles show color-coded fill indicators (gray/green/yellow/red)
+- Container panel header displays weight and volume capacity status
+- Capacity/type warnings display but don't block operations
+- Nesting rules enforced (blocks nested container placement)
+- Drop container with contents shows three-option dialog
 
-Next: Plan 05-02 (Capacity enforcement, fill indicators, nesting rules)
+Next: Phase 06 (Item Effects and Conditions)
