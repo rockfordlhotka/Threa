@@ -374,6 +374,7 @@
         // Get equipped weapon skill names (exclude shields from weapons)
         var equippedWeaponSkillNames = equippedItems
             .Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
+                       i.EquippedSlot == EquipmentSlot.TwoHand ||
                        (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield))
             .Select(i => i.Template?.RelatedSkill)
             .Where(name => name != null)
