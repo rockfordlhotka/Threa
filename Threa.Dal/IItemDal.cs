@@ -112,4 +112,11 @@ public interface ICharacterItemDal
     /// <param name="itemId">The item to move.</param>
     /// <param name="containerItemId">The container to move it into (null for direct inventory).</param>
     Task MoveToContainerAsync(Guid itemId, Guid? containerItemId);
+
+    /// <summary>
+    /// Gets equipped items for a character with their templates populated.
+    /// Used for bonus calculations where template data is required.
+    /// </summary>
+    /// <param name="characterId">The character ID.</param>
+    Task<List<CharacterItem>> GetEquippedItemsWithTemplatesAsync(int characterId);
 }

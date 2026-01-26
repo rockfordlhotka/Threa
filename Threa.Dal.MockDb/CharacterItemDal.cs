@@ -158,6 +158,16 @@ public class CharacterItemDal : ICharacterItemDal
         }
     }
 
+    public Task<List<CharacterItem>> GetEquippedItemsWithTemplatesAsync(int characterId)
+    {
+        var items = MockDb.CharacterItems
+            .Where(i => i.OwnerCharacterId == characterId && i.IsEquipped)
+            .Select(i => PopulateTemplate(i))
+            .Where(i => i.Template != null)
+            .ToList();
+        return Task.FromResult(items);
+    }
+
     private CharacterItem PopulateTemplate(CharacterItem item)
     {
         item.Template = MockDb.ItemTemplates.FirstOrDefault(t => t.Id == item.ItemTemplateId);
