@@ -401,6 +401,7 @@
         foreach (var skill in skills)
         {
             var category = GetSkillCategory(skill);
+            Console.WriteLine($"[TabCombat]   Checking skill: '{skill.Name}' (ActionType: {skill.ActionType}, Category: {category})");
 
             // Show skill if it matches an equipped weapon's RelatedSkill
             if (equippedWeaponSkillNames.Contains(skill.Name))
