@@ -43,9 +43,9 @@
 
 ### Item Distribution
 
-- [ ] **DIST-01**: GM can grant item instance to player character by selecting template and quantity
-- [ ] **DIST-02**: GM can see which characters are in the current game table for item distribution
-- [ ] **DIST-03**: Granted items appear in player inventory immediately
+- [x] **DIST-01**: GM can grant item instance to player character by selecting template and quantity
+- [x] **DIST-02**: GM can see which characters are in the current game table for item distribution
+- [x] **DIST-03**: Granted items appear in player inventory immediately
 
 ### Item Bonuses & Integration
 
@@ -147,9 +147,9 @@
 | BONUS-08 | Phase 6: Item Bonuses & Combat | Complete |
 | BONUS-09 | Phase 6: Item Bonuses & Combat | Complete |
 | BONUS-10 | Phase 6: Item Bonuses & Combat | Complete |
-| DIST-01 | Phase 7: Item Distribution | Pending |
-| DIST-02 | Phase 7: Item Distribution | Pending |
-| DIST-03 | Phase 7: Item Distribution | Pending |
+| DIST-01 | Phase 7: Item Distribution | Complete |
+| DIST-02 | Phase 7: Item Distribution | Complete |
+| DIST-03 | Phase 7: Item Distribution | Complete |
 
 **Coverage Summary:** 50/50 v1 requirements mapped
 
