@@ -214,6 +214,34 @@
         height: 3px;
         background: #6c757d;
     }
+
+    .inventory-tile.container-empty::before {
+        background: #6c757d;
+    }
+
+    .inventory-tile.container-partial {
+        border-color: var(--bs-success);
+    }
+
+    .inventory-tile.container-partial::before {
+        background: var(--bs-success);
+    }
+
+    .inventory-tile.container-warning {
+        border-color: var(--bs-warning);
+    }
+
+    .inventory-tile.container-warning::before {
+        background: var(--bs-warning);
+    }
+
+    .inventory-tile.container-full {
+        border-color: var(--bs-danger);
+    }
+
+    .inventory-tile.container-full::before {
+        background: var(--bs-danger);
+    }
 </style>
 
 @if (!string.IsNullOrEmpty(errorMessage))
@@ -256,7 +284,7 @@
                     <div class="inventory-grid">
                         @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null))
                         {
-                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "")"
+                            <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "") @GetContainerFillClass(item)"
                                  title="@GetItemDisplayName(item)"
                                  @onclick="async () => await SelectItem(item)">
                                 @if (item.IsEquipped)
@@ -330,9 +358,30 @@
         @if (selectedContainer != null)
         {
             <div class="card">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <strong>@GetItemName(selectedContainer)</strong>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseContainerPanel"></button>
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>@GetItemName(selectedContainer)</strong>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseContainerPanel"></button>
+                    </div>
+                    @{ var capacity = GetContainerCapacity(selectedContainer); }
+                    <div class="small mt-1">
+                        @if (capacity.MaxWeight < decimal.MaxValue)
+                        {
+                            <span class="@(capacity.WeightPercent >= 100 ? "text-warning" : "")">
+                                Weight: @capacity.CurrentWeight.ToString("0.#")/@capacity.MaxWeight.ToString("0.#") lbs
+                            </span>
+                        }
+                        @if (capacity.MaxVolume < decimal.MaxValue)
+                        {
+                            <span class="ms-2 @(capacity.VolumePercent >= 100 ? "text-warning" : "")">
+                                Volume: @capacity.CurrentVolume.ToString("0.#")/@capacity.MaxVolume.ToString("0.#")
+                            </span>
+                        }
+                        @if (capacity.IsOverCapacity)
+                        {
+                            <span class="badge bg-warning text-dark ms-2">Over Capacity</span>
+                        }
+                    </div>
                 </div>
                 <div class="card-body">
                     @if (!containerContents.Any())
@@ -503,6 +552,18 @@
     };
 
     private record SlotCategory(string Name, EquipmentSlot[] Slots);
+
+    private record ContainerCapacity
+    {
+        public decimal CurrentWeight { get; init; }
+        public decimal MaxWeight { get; init; }
+        public decimal CurrentVolume { get; init; }
+        public decimal MaxVolume { get; init; }
+        public decimal WeightPercent { get; init; }
+        public decimal VolumePercent { get; init; }
+        public decimal FillPercent => Math.Max(WeightPercent, VolumePercent);
+        public bool IsOverCapacity { get; init; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -750,6 +811,77 @@
         var template = GetTemplate(item.ItemTemplateId);
         if (template == null) return false;
         return template.IsContainer || template.ItemType == ItemType.Container || template.ItemType == ItemType.AmmoContainer;
+    }
+
+    private ContainerCapacity GetContainerCapacity(CharacterItem container)
+    {
+        var template = GetTemplate(container.ItemTemplateId);
+        if (template == null || !IsContainerItem(container))
+            return new ContainerCapacity();
+
+        var contents = GetContainerContents(container.Id);
+
+        decimal currentWeight = 0;
+        decimal currentVolume = 0;
+
+        foreach (var item in contents)
+        {
+            var itemTemplate = GetTemplate(item.ItemTemplateId);
+            if (itemTemplate == null) continue;
+
+            currentWeight += itemTemplate.Weight * item.StackSize;
+            currentVolume += itemTemplate.Volume * item.StackSize;
+        }
+
+        // Apply magical weight reduction (e.g., Bag of Holding has < 1.0)
+        currentWeight *= template.ContainerWeightReduction;
+
+        var maxWeight = template.ContainerMaxWeight ?? decimal.MaxValue;
+        var maxVolume = template.ContainerMaxVolume ?? decimal.MaxValue;
+
+        var weightPercent = maxWeight < decimal.MaxValue && maxWeight > 0
+            ? (currentWeight / maxWeight) * 100
+            : 0;
+        var volumePercent = maxVolume < decimal.MaxValue && maxVolume > 0
+            ? (currentVolume / maxVolume) * 100
+            : 0;
+
+        return new ContainerCapacity
+        {
+            CurrentWeight = currentWeight,
+            MaxWeight = maxWeight,
+            CurrentVolume = currentVolume,
+            MaxVolume = maxVolume,
+            WeightPercent = weightPercent,
+            VolumePercent = volumePercent,
+            IsOverCapacity = (maxWeight < decimal.MaxValue && currentWeight > maxWeight) ||
+                             (maxVolume < decimal.MaxValue && currentVolume > maxVolume)
+        };
+    }
+
+    private string GetContainerFillClass(CharacterItem item)
+    {
+        if (!IsContainerItem(item)) return "";
+
+        var capacity = GetContainerCapacity(item);
+
+        if (capacity.FillPercent >= 100) return "container-full";
+        if (capacity.FillPercent >= 75) return "container-warning";
+        if (capacity.FillPercent > 0) return "container-partial";
+        return "container-empty";
+    }
+
+    private string GetCapacityDisplay(CharacterItem container)
+    {
+        var capacity = GetContainerCapacity(container);
+        var parts = new List<string>();
+
+        if (capacity.MaxWeight < decimal.MaxValue)
+            parts.Add($"{capacity.CurrentWeight:0.#}/{capacity.MaxWeight:0.#} lbs");
+        if (capacity.MaxVolume < decimal.MaxValue)
+            parts.Add($"{capacity.CurrentVolume:0.#}/{capacity.MaxVolume:0.#} vol");
+
+        return string.Join(" | ", parts);
     }
 
     private List<CharacterItem> GetContainerContents(Guid containerId)
