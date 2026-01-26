@@ -981,6 +981,31 @@
         return null;
     }
 
+    private string? ValidateNesting(CharacterItem item, CharacterItem container)
+    {
+        // Check if target container is itself inside another container (BLOCKS placement)
+        if (container.ContainerItemId.HasValue)
+        {
+            return "Cannot place items in a container that is inside another container. " +
+                   "Remove the container from its parent first.";
+        }
+
+        // If item being moved is a container with contents, block placement (BLOCKS)
+        // Empty containers CAN be nested (one level) per CONTEXT.md
+        if (IsContainerItem(item))
+        {
+            var nestedContents = GetContainerContents(item.Id);
+            if (nestedContents.Any())
+            {
+                return "Cannot place a container with items inside another container. " +
+                       "Empty the container first.";
+            }
+            // Empty container - allowed to nest (one level only)
+        }
+
+        return null; // Nesting is valid
+    }
+
     private async Task MoveToContainer(Guid itemId, Guid containerId)
     {
         try
@@ -991,6 +1016,14 @@
             if (item == null || container == null)
             {
                 errorMessage = "Item or container not found.";
+                return;
+            }
+
+            // Check nesting (BLOCKING - returns error, does not proceed)
+            var nestingError = ValidateNesting(item, container);
+            if (nestingError != null)
+            {
+                errorMessage = nestingError;
                 return;
             }
 
@@ -1160,6 +1193,17 @@
                 return;
             }
 
+            // Check if this is a container with contents
+            if (IsContainerItem(selectedItem))
+            {
+                var contents = GetContainerContents(selectedItem.Id);
+                if (contents.Any())
+                {
+                    await ConfirmDropContainerWithContents(selectedItem, contents);
+                    return;
+                }
+            }
+
             // For stackable items with quantity > 1, show quantity dialog
             if (template?.IsStackable == true && selectedItem.StackSize > 1)
             {
@@ -1185,6 +1229,57 @@
         catch (Exception ex)
         {
             errorMessage = $"Error dropping item: {ex.Message}";
+        }
+    }
+
+    private async Task ConfirmDropContainerWithContents(CharacterItem container, List<CharacterItem> contents)
+    {
+        var containerName = GetItemName(container);
+        var itemCount = contents.Count;
+        var totalItems = contents.Sum(c => c.StackSize);
+
+        var message = $"'{containerName}' contains {itemCount} item(s) ({totalItems} total). " +
+                      "What would you like to do?";
+
+        // Use custom dialog with three options
+        var result = await DialogService.OpenAsync("Drop Container?", ds =>
+            @<div>
+                <p>@message</p>
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button class="btn btn-secondary" @onclick="() => ds.Close(false)">Cancel</button>
+                    <button class="btn btn-outline-primary" @onclick='() => ds.Close("empty")'>Empty First</button>
+                    <button class="btn btn-danger" @onclick='() => ds.Close("drop")'>Drop All</button>
+                </div>
+            </div>
+        );
+
+        if (result is string action)
+        {
+            if (action == "drop")
+            {
+                // Drop container with all contents
+                // First drop all contents
+                foreach (var item in contents)
+                {
+                    await itemService.RemoveItemFromInventoryAsync(Character!, item.Id);
+                }
+                // Then drop the container
+                await DropItem(container.Id);
+            }
+            else if (action == "empty")
+            {
+                // Move all contents out of container
+                foreach (var item in contents)
+                {
+                    await itemService.MoveToContainerAsync(Character!, item.Id, null);
+                }
+                successMessage = $"Emptied {containerName}. Select it again to drop.";
+                await LoadItemsAsync();
+                // Keep container selected
+                selectedItem = inventoryItems?.FirstOrDefault(i => i.Id == container.Id);
+                selectedItemId = container.Id;
+                CloseContainerPanel();
+            }
         }
     }
 
