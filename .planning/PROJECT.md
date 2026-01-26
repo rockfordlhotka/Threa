@@ -8,15 +8,16 @@ A web-based TTRPG assistant for the Threa game system that helps players manage 
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: v1.1 User Management & Authentication
+## Current Milestone: Ready for Next Milestone
 
-**Goal:** Enable self-service user registration and admin user management without email dependency.
+**v1.1 User Management & Authentication** shipped on 2026-01-26. See `.planning/MILESTONES.md` for full details.
 
-**Target features:**
-- Self-service user registration with secret question/answer for password recovery
-- Admin user management (enable/disable users, role assignment)
-- Enhanced user profiles with display names, email, and Gravatar integration
-- First registered user automatically becomes admin
+**Status:** No active milestone. Run `/gsd:new-milestone` to start the next phase of development.
+
+**Recent Achievement (v1.1):**
+- Complete user management and authentication system
+- Self-service registration, password recovery, admin controls, user profiles
+- 19/19 requirements satisfied, 100% integration verified
 
 ## Requirements
 
@@ -35,6 +36,17 @@ These capabilities exist in the codebase:
 - ✓ Character creation and edit pages — existing
 - ✓ Play page with combat, skills, magic, defense tabs — existing
 - ✓ Equipment slots defined (MainHand, OffHand, Head, Chest, etc.) — existing
+
+**Delivered in v1.1 (2026-01-26):**
+- ✓ New users can self-register with username, password (min 6 chars), and secret Q&A — v1.1
+- ✓ First registered user automatically becomes Admin — v1.1
+- ✓ Users can reset password using secret Q&A (case-insensitive, trimmed answer) — v1.1
+- ✓ Admin can view list of all users — v1.1
+- ✓ Admin can enable/disable users (preserves data) — v1.1
+- ✓ Admin can change user roles (User/GameMaster/Admin) — v1.1
+- ✓ Users can set display name (shown in UI, separate from login username) — v1.1
+- ✓ Users can optionally provide email address — v1.1
+- ✓ User avatars display via Gravatar (based on email if provided) — v1.1
 
 **Delivered in v1.0 (2026-01-26):**
 - ✓ GM can create new item templates via web UI — v1.0
@@ -56,17 +68,7 @@ These capabilities exist in the codebase:
 
 ### Active
 
-New capabilities for v1.1:
-
-- [ ] New users can self-register with username, password (min 6 chars), and secret Q&A
-- [ ] First registered user automatically becomes Admin
-- [ ] Users can reset password using secret Q&A (case-insensitive, trimmed answer)
-- [ ] Admin can view list of all users
-- [ ] Admin can enable/disable users (preserves data)
-- [ ] Admin can change user roles (User/GameMaster/Admin)
-- [ ] Users can set display name (shown in UI, separate from login username)
-- [ ] Users can optionally provide email address
-- [ ] User avatars display via Gravatar (based on email if provided)
+No active requirements. Next milestone will define new requirements via `/gsd:new-milestone`.
 
 ### Out of Scope
 
@@ -82,8 +84,18 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.0 Shipped):**
-The Threa TTRPG Assistant now has a complete inventory and equipment management system integrated with the existing combat system. Key achievements:
+**Current State (v1.1 Shipped):**
+The Threa TTRPG Assistant now has complete user management, authentication, and inventory systems. Key components:
+
+**v1.1 User Management & Authentication (2026-01-26):**
+- Self-service user registration with first-user-as-admin
+- Password recovery via secret Q&A with brute-force protection
+- Admin user management with last-admin protection safety feature
+- User profiles with Gravatar avatars and profanity filtering
+- 25 unit tests for authentication business logic
+- Codebase: ~2,300 lines of user management code across 49 files
+
+**v1.0 Inventory & Equipment System (2026-01-26):**
 - 52 seed items (weapons, armor, ammo, containers, consumables) available for testing
 - GM can create and manage item templates with full CRUD operations
 - Players can manage inventory during character creation and gameplay
@@ -164,4 +176,4 @@ Users are already familiar with:
 | Defer player-to-player trading to v2 | Scope management, GM distribution sufficient for v1 | ✓ Good (v1.0) |
 
 ---
-*Last updated: 2026-01-26 after v1.1 milestone start*
+*Last updated: 2026-01-26 after v1.1 milestone completion*
