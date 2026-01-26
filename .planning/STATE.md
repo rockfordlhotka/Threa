@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 10 - Admin User Management (COMPLETE)
+**Current focus:** Phase 11 - User Profiles (IN PROGRESS)
 
 ## Current Position
 
 Milestone: v1.1 - IN PROGRESS
-Phase: 10 of 11 (Admin User Management)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-26 - Completed 10-02-PLAN.md
+Phase: 11 of 11 (User Profiles)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-26 - Completed 11-01-PLAN.md
 
-Progress: v1.1 [██████████░░░░░░] 86% (6/7 plans)
+Progress: v1.1 [████████████████] 100% (7/7 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 14 min
-- Total execution time: 5.2 hours
+- Total execution time: 5.6 hours
 
 **By Phase (v1.0):**
 
@@ -43,9 +43,10 @@ Progress: v1.1 [██████████░░░░░░] 86% (6/7 plans
 | 08-registration-foundation | 2/2 | 33 min | 16.5 min |
 | 09-password-recovery | 2/2 | 19 min | 9.5 min |
 | 10-admin-user-management | 2/2 | 11 min | 5.5 min |
+| 11-user-profiles | 1/2 | 24 min | 24 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-02 (2 min), 10-01 (9 min), 09-02 (3 min), 09-01 (16 min), 08-02 (2 min)
+- Last 5 plans: 11-01 (24 min), 10-02 (2 min), 10-01 (9 min), 09-02 (3 min), 09-01 (16 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [10-01]: Register LastAdminProtectionRule for both IsEnabled and IsAdministrator properties
 - [10-02]: Modal edit pattern with DialogService.OpenAsync and result callback for list refresh
 - [10-02]: Self-edit warning banner when admin edits their own account
+- [11-01]: Profanity.Detector library for content filtering (handles Scunthorpe problem)
+- [11-01]: ContactEmail separate from Email (which stores username) for Gravatar
+- [11-01]: UseGravatar defaults to true
 
 ### Pending Todos
 
@@ -88,9 +92,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-26T18:58:52Z
-Stopped at: Completed 10-02-PLAN.md
+Last session: 2026-01-26T22:55:00Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
 
 ---
-*Next: Execute Phase 11 - Profile Management*
+*Next: Execute 11-02 Profile UI plan*
