@@ -28,7 +28,7 @@ See MILESTONES.md for v1.0 details.
 **Milestone Goal:** Enable self-service user registration and admin user management without email dependency. Users can register, recover passwords via secret Q&A, and manage profiles with Gravatar integration.
 
 - [x] **Phase 8: Registration Foundation** - Self-service registration with first-user-as-Admin (2026-01-26)
-- [ ] **Phase 9: Password Recovery** - Secret Q&A password reset workflow
+- [x] **Phase 9: Password Recovery** - Secret Q&A password reset workflow (2026-01-26)
 - [ ] **Phase 10: Admin User Management** - Admin panel for user control
 - [ ] **Phase 11: User Profiles** - Enhanced profiles with Gravatar avatars
 
@@ -75,11 +75,11 @@ Plans:
   3. Admin can enable a previously disabled user account
   4. Admin can assign and remove roles (User, GameMaster, Admin) to any user
   5. Disabled users are blocked at login with appropriate message
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 10-01: User management data layer and business objects
-- [ ] 10-02: Admin user management UI
+- [ ] 10-01-PLAN.md - DAL and LastAdminProtectionRule business rule
+- [ ] 10-02-PLAN.md - Admin user management UI with modal editing
 
 ### Phase 11: User Profiles
 **Goal**: Users can customize their profiles with display names, email, and Gravatar-based avatars
@@ -107,7 +107,7 @@ Plans:
 | 1-7 | v1.0 | 16/16 | Complete | 2026-01-26 |
 | 8. Registration Foundation | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 10. Admin User Management | v1.1 | 0/2 | Not started | - |
+| 10. Admin User Management | v1.1 | 0/2 | Planned | - |
 | 11. User Profiles | v1.1 | 0/2 | Not started | - |
 
 ---
