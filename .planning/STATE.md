@@ -9,7 +9,7 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 5 of 7 (Container System)
+Phase: 5 of 7 (Container System) - COMPLETE
 Plan: 2 of 2 in current phase
 Status: Phase complete
 Last activity: 2026-01-25 - Completed 05-02-PLAN.md
@@ -125,4 +125,4 @@ Resume file: None
 - Nesting rules enforced (blocks nested container placement)
 - Drop container with contents shows three-option dialog
 
-Next: Phase 06 (Item Effects and Conditions)
+Next: Phase 6 (Item Bonuses & Combat - equipped items affect stats and combat)

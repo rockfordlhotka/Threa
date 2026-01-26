@@ -34,12 +34,12 @@
 - [ ] **INV-10**: Player can unequip item from equipment slot back to inventory
 - [ ] **INV-11**: Player can drop item from inventory (permanently removes from character)
 - [ ] **INV-12**: Player can destroy item from inventory (permanently removes from character)
-- [ ] **INV-13**: Player can place item inside container item in inventory
-- [ ] **INV-14**: Player can remove item from container back to main inventory
-- [ ] **INV-15**: Player can view items contained within a container
-- [ ] **INV-16**: Container weight limits are enforced (cannot exceed container max weight)
-- [ ] **INV-17**: Container volume limits are enforced (cannot exceed container max volume)
-- [ ] **INV-18**: Container type restrictions are enforced (only allowed item types can be stored)
+- [x] **INV-13**: Player can place item inside container item in inventory
+- [x] **INV-14**: Player can remove item from container back to main inventory
+- [x] **INV-15**: Player can view items contained within a container
+- [x] **INV-16**: Container weight limits are enforced (cannot exceed container max weight)
+- [x] **INV-17**: Container volume limits are enforced (cannot exceed container max volume)
+- [x] **INV-18**: Container type restrictions are enforced (only allowed item types can be stored)
 
 ### Item Distribution
 
@@ -131,12 +131,12 @@
 | INV-10 | Phase 4: Gameplay Inventory Core | Complete |
 | INV-11 | Phase 4: Gameplay Inventory Core | Complete |
 | INV-12 | Phase 4: Gameplay Inventory Core | Complete |
-| INV-13 | Phase 5: Container System | Pending |
-| INV-14 | Phase 5: Container System | Pending |
-| INV-15 | Phase 5: Container System | Pending |
-| INV-16 | Phase 5: Container System | Pending |
-| INV-17 | Phase 5: Container System | Pending |
-| INV-18 | Phase 5: Container System | Pending |
+| INV-13 | Phase 5: Container System | Complete |
+| INV-14 | Phase 5: Container System | Complete |
+| INV-15 | Phase 5: Container System | Complete |
+| INV-16 | Phase 5: Container System | Complete |
+| INV-17 | Phase 5: Container System | Complete |
+| INV-18 | Phase 5: Container System | Complete |
 | BONUS-01 | Phase 6: Item Bonuses & Combat | Pending |
 | BONUS-02 | Phase 6: Item Bonuses & Combat | Pending |
 | BONUS-03 | Phase 6: Item Bonuses & Combat | Pending |

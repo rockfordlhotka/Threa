@@ -106,8 +106,10 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 05-01: Container UI and Item Placement - Container contents panel, move-to/remove-from container functionality
-- [ ] 05-02: Container Limit Enforcement - Visual fill indicators, capacity warnings, nesting enforcement, drop confirmation
+- [x] 05-01: Container UI and Item Placement - Container contents panel, move-to/remove-from container functionality
+- [x] 05-02: Container Limit Enforcement - Visual fill indicators, capacity warnings, nesting enforcement, drop confirmation
+
+**Completed:** 2026-01-25
 
 ### Phase 6: Item Bonuses & Combat
 **Goal**: Equipped items provide stat bonuses and integrate with the combat system
@@ -152,7 +154,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. GM Item Management | 3/3 | Complete | 2026-01-25 |
 | 3. Character Creation Inventory | 2/2 | Complete | 2026-01-25 |
 | 4. Gameplay Inventory Core | 2/2 | Complete | 2026-01-25 |
-| 5. Container System | 0/2 | Not started | - |
+| 5. Container System | 2/2 | Complete | 2026-01-25 |
 | 6. Item Bonuses & Combat | 0/2 | Not started | - |
 | 7. Item Distribution | 0/1 | Not started | - |
 
