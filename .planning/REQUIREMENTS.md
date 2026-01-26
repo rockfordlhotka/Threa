@@ -89,13 +89,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-04 | Phase 10 | Complete |
 | USER-05 | Phase 10 | Complete |
 | USER-06 | Phase 10 | Complete |
-| PROF-01 | Phase 11 | Pending |
-| PROF-02 | Phase 11 | Pending |
-| PROF-03 | Phase 11 | Pending |
-| PROF-04 | Phase 11 | Pending |
-| PROF-05 | Phase 11 | Pending |
-| PROF-06 | Phase 11 | Pending |
-| PROF-07 | Phase 11 | Pending |
+| PROF-01 | Phase 11 | Complete |
+| PROF-02 | Phase 11 | Complete |
+| PROF-03 | Phase 11 | Complete |
+| PROF-04 | Phase 11 | Complete |
+| PROF-05 | Phase 11 | Complete |
+| PROF-06 | Phase 11 | Complete |
+| PROF-07 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 19 total

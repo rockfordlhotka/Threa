@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 Inventory & Equipment System** - Phases 1-7 (shipped 2026-01-26)
-- [ ] **v1.1 User Management & Authentication** - Phases 8-11 (in progress)
+- [x] **v1.1 User Management & Authentication** - Phases 8-11 (shipped 2026-01-26)
 
 ## Phases
 
@@ -95,8 +95,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md - Data layer, DTO extensions, profanity filter rule, and PlayerEdit BO enhancements
-- [ ] 11-02-PLAN.md - UserAvatar component, profile edit UI with Gravatar preview, avatar integration in nav and admin
+- [x] 11-01-PLAN.md - Data layer, DTO extensions, profanity filter rule, and PlayerEdit BO enhancements
+- [x] 11-02-PLAN.md - UserAvatar component, profile edit UI with Gravatar preview, avatar integration in nav and admin
 
 ## Progress
 
@@ -108,7 +108,7 @@ Plans:
 | 8. Registration Foundation | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 11. User Profiles | v1.1 | 0/2 | Planned | - |
+| 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
 
 ---
 *Roadmap created: 2026-01-26*
