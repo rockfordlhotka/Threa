@@ -62,8 +62,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md - Data layer extensions and PasswordRecovery business object with lockout logic
-- [ ] 09-02-PLAN.md - Password recovery UI wizard (3 steps)
+- [x] 09-01-PLAN.md - Data layer extensions and PasswordRecovery business object with lockout logic
+- [x] 09-02-PLAN.md - Password recovery UI wizard (3 steps)
 
 ### Phase 10: Admin User Management
 **Goal**: Administrators can view, enable/disable, and assign roles to all users
@@ -106,7 +106,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 16/16 | Complete | 2026-01-26 |
 | 8. Registration Foundation | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 9. Password Recovery | v1.1 | 0/2 | Not started | - |
+| 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 10. Admin User Management | v1.1 | 0/2 | Not started | - |
 | 11. User Profiles | v1.1 | 0/2 | Not started | - |
 
