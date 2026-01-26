@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Csla;
+using Csla.Rules.CommonRules;
 using Threa.Dal;
 
 namespace GameMechanics.Player
@@ -38,6 +39,34 @@ namespace GameMechanics.Player
             set => SetProperty(ImageUrlProperty, value);
         }
 
+        public static readonly PropertyInfo<string> ContactEmailProperty = RegisterProperty<string>(nameof(ContactEmail));
+        public string ContactEmail
+        {
+            get => GetProperty(ContactEmailProperty);
+            set => SetProperty(ContactEmailProperty, value);
+        }
+
+        public static readonly PropertyInfo<bool> UseGravatarProperty = RegisterProperty<bool>(nameof(UseGravatar));
+        public bool UseGravatar
+        {
+            get => GetProperty(UseGravatarProperty);
+            set => SetProperty(UseGravatarProperty, value);
+        }
+
+        protected override void AddBusinessRules()
+        {
+            base.AddBusinessRules();
+
+            // Display name validation
+            BusinessRules.AddRule(new Required(NameProperty)
+                { MessageText = "Display name is required" });
+            BusinessRules.AddRule(new MinLength(NameProperty, 1)
+                { MessageText = "Display name is required" });
+            BusinessRules.AddRule(new MaxLength(NameProperty, 50)
+                { MessageText = "Display name cannot exceed 50 characters" });
+            BusinessRules.AddRule(new NoProfanityRule(NameProperty));
+        }
+
         [Fetch]
         private async Task Fetch(int id, [Inject] IPlayerDal dal)
         {
@@ -54,6 +83,8 @@ namespace GameMechanics.Player
                 Name = data.Name;
                 Email = data.Email;
                 ImageUrl = data.ImageUrl;
+                ContactEmail = data.ContactEmail;
+                UseGravatar = data.UseGravatar;
             }
             BusinessRules.CheckRules();
         }
@@ -67,7 +98,9 @@ namespace GameMechanics.Player
                 Id = Id,
                 Name = Name,
                 Email = Email,
-                ImageUrl = ImageUrl
+                ImageUrl = ImageUrl,
+                ContactEmail = ContactEmail,
+                UseGravatar = UseGravatar
             };
             var result = await dal.SavePlayerAsync(player);
             LoadProperty(IdProperty, result.Id);
