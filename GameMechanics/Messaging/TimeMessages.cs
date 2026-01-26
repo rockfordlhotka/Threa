@@ -295,7 +295,9 @@ public enum CharacterUpdateType
     /// <summary>An effect was removed.</summary>
     EffectRemoved,
     /// <summary>Character stats changed.</summary>
-    StatsChanged
+    StatsChanged,
+    /// <summary>Inventory was modified (item added, removed, or changed).</summary>
+    InventoryChanged
 }
 
 /// <summary>
