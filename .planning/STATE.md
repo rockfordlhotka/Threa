@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 Milestone: v1.2
 Phase: 12 of 16 (Table Foundation)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-27 - Completed 12-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-27 - Completed 12-02-PLAN.md
 
-Progress: v1.2 [##..................] 10% (5 phases, 43 requirements)
+Progress: v1.2 [####................] 20% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
-- Average duration: 14 min
-- Total execution time: 5.75 hours
+- Total plans completed: 26
+- Average duration: 13 min
+- Total execution time: 5.8 hours
 
 **By Phase (v1.0):**
 
@@ -49,10 +49,10 @@ Progress: v1.2 [##..................] 10% (5 phases, 43 requirements)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 12-table-foundation | 1/2 | 3 min | 3 min |
+| 12-table-foundation | 2/2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (3 min), 11-02 (5 min), 11-01 (24 min), 10-02 (2 min), 10-01 (9 min)
+- Last 5 plans: 12-02 (2 min), 12-01 (3 min), 11-02 (5 min), 11-01 (24 min), 10-02 (2 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -62,6 +62,9 @@ Progress: v1.2 [##..................] 10% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: Bootstrap table for campaign list (simpler than RadzenDataGrid)
+- [v1.2]: ThemeIndicator component for reusable theme badges
+- [v1.2]: Theme.js readyState check for Blazor script timing
 - [v1.2]: Theme preview via JS interop during campaign creation
 - [v1.2]: Sci-Fi default epoch = 13569465600 (Year 2400)
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
@@ -86,8 +89,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 12-01-PLAN.md
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ---
-*Phase 12 in progress - next: 12-02-PLAN.md*
+*Phase 12 complete - next: /gsd:plan-phase 13*
