@@ -1,5 +1,6 @@
 using Csla;
 using System;
+using System.Linq;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.GamePlay;
@@ -109,6 +110,65 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
         private set => LoadProperty(ActionPointMaxProperty, value);
     }
 
+    // Pending pool properties
+    public static readonly PropertyInfo<int> FatPendingDamageProperty = RegisterProperty<int>(nameof(FatPendingDamage));
+    public int FatPendingDamage
+    {
+        get => GetProperty(FatPendingDamageProperty);
+        private set => LoadProperty(FatPendingDamageProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> FatPendingHealingProperty = RegisterProperty<int>(nameof(FatPendingHealing));
+    public int FatPendingHealing
+    {
+        get => GetProperty(FatPendingHealingProperty);
+        private set => LoadProperty(FatPendingHealingProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> VitPendingDamageProperty = RegisterProperty<int>(nameof(VitPendingDamage));
+    public int VitPendingDamage
+    {
+        get => GetProperty(VitPendingDamageProperty);
+        private set => LoadProperty(VitPendingDamageProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> VitPendingHealingProperty = RegisterProperty<int>(nameof(VitPendingHealing));
+    public int VitPendingHealing
+    {
+        get => GetProperty(VitPendingHealingProperty);
+        private set => LoadProperty(VitPendingHealingProperty, value);
+    }
+
+    // Status count properties
+    public static readonly PropertyInfo<int> WoundCountProperty = RegisterProperty<int>(nameof(WoundCount));
+    public int WoundCount
+    {
+        get => GetProperty(WoundCountProperty);
+        private set => LoadProperty(WoundCountProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> EffectCountProperty = RegisterProperty<int>(nameof(EffectCount));
+    public int EffectCount
+    {
+        get => GetProperty(EffectCountProperty);
+        private set => LoadProperty(EffectCountProperty, value);
+    }
+
+    // Tooltip summary string properties
+    public static readonly PropertyInfo<string> WoundSummaryProperty = RegisterProperty<string>(nameof(WoundSummary));
+    public string WoundSummary
+    {
+        get => GetProperty(WoundSummaryProperty);
+        private set => LoadProperty(WoundSummaryProperty, value);
+    }
+
+    public static readonly PropertyInfo<string> EffectSummaryProperty = RegisterProperty<string>(nameof(EffectSummary));
+    public string EffectSummary
+    {
+        get => GetProperty(EffectSummaryProperty);
+        private set => LoadProperty(EffectSummaryProperty, value);
+    }
+
     public string ConnectionStatusDisplay => ConnectionStatus switch
     {
         ConnectionStatus.Connected => "Connected",
@@ -137,6 +197,30 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
             VitMax = character.VitBaseValue;
             ActionPoints = character.ActionPointAvailable;
             ActionPointMax = character.ActionPointMax;
+
+            // Load pending pool values
+            FatPendingDamage = character.FatPendingDamage;
+            FatPendingHealing = character.FatPendingHealing;
+            VitPendingDamage = character.VitPendingDamage;
+            VitPendingHealing = character.VitPendingHealing;
+
+            // Calculate wound and effect counts from Effects list
+            var wounds = character.Effects?.Where(e => e.EffectType == EffectType.Wound).ToList() ?? [];
+            var nonWoundEffects = character.Effects?.Where(e => e.EffectType != EffectType.Wound).ToList() ?? [];
+
+            WoundCount = wounds.Count;
+            EffectCount = nonWoundEffects.Count;
+
+            // Build wound summary (e.g., "Light x2, Serious x1")
+            var woundGroups = wounds
+                .GroupBy(e => e.Name)
+                .Select(g => g.Count() > 1 ? $"{g.Key} x{g.Count()}" : g.Key);
+            WoundSummary = string.Join(", ", woundGroups);
+
+            // Build effect summary (e.g., "Poison (3 rnd), Blessed, Shield Spell")
+            var effectDescriptions = nonWoundEffects
+                .Select(e => e.RoundsRemaining.HasValue ? $"{e.Name} ({e.RoundsRemaining} rnd)" : e.Name);
+            EffectSummary = string.Join(", ", effectDescriptions);
         }
     }
 }
