@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 14 - Dashboard Core (COMPLETE)
+**Current focus:** Phase 15 - Dashboard Details (In progress)
 
 ## Current Position
 
 Milestone: v1.2
-Phase: 14 of 16 (Dashboard Core)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 - Completed 14-03-PLAN.md
+Phase: 15 of 16 (Dashboard Details)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-27 - Completed 15-01-PLAN.md
 
-Progress: v1.2 [############........] 58% (5 phases, 43 requirements)
+Progress: v1.2 [#############.......] 64% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
-- Average duration: 12 min
-- Total execution time: 6.8 hours
+- Total plans completed: 34
+- Average duration: 11 min
+- Total execution time: 6.9 hours
 
 **By Phase (v1.0):**
 
@@ -52,10 +52,11 @@ Progress: v1.2 [############........] 58% (5 phases, 43 requirements)
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
 | 13-join-workflow | 4/4 | 17 min | 4 min |
 | 14-dashboard-core | 3/3 | 38 min | 13 min |
+| 15-dashboard-details | 1/3 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-03 (21 min), 14-02 (4 min), 14-01 (13 min), 13-03 (5 min), 13-04 (4 min)
-- Trend: steady execution velocity (14-03 longer due to checkpoint fixes)
+- Last 5 plans: 15-01 (6 min), 14-03 (21 min), 14-02 (4 min), 14-01 (13 min), 13-03 (5 min)
+- Trend: steady execution velocity
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Progress: v1.2 [############........] 58% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: CharacterDetailModal opens at 90% screen size
+- [v1.2]: GmNotes stored per table-character pair (table-context specific)
+- [v1.2]: Character switcher dropdown in modal header
 - [v1.2]: Round advance buttons disabled when not in combat mode
 - [v1.2]: ITimeEventSubscriber subscription pattern for GM dashboard real-time updates
 - [v1.2]: 500ms delay before refreshing character list after time events
@@ -76,14 +80,7 @@ Recent decisions affecting current work:
 - [v1.2]: Effects loaded via ICharacterEffectDal in TableCharacterList.Fetch
 - [v1.2]: JoinRequest DTO with status enum (Pending, Approved, Denied)
 - [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
-- [v1.2]: Campaign description required during creation
-- [v1.2]: Bootstrap table for campaign list (simpler than RadzenDataGrid)
-- [v1.2]: ThemeIndicator component for reusable theme badges
-- [v1.2]: Theme.js readyState check for Blazor script timing
-- [v1.2]: Theme preview via JS interop during campaign creation
-- [v1.2]: Sci-Fi default epoch = 13569465600 (Year 2400)
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
-- [v1.1]: RabbitMQ messaging infrastructure exists for time propagation
 
 ### Pending Todos
 
@@ -103,8 +100,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 14-03-PLAN.md
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None
 
 ---
-*Phase 14 complete - next: execute Phase 15 planning*
+*Phase 15 in progress - 1/3 plans complete*
