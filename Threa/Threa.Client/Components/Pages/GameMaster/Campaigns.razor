@@ -13,6 +13,7 @@
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
+@inject IDataPortal<GameMechanics.GamePlay.PendingRequestCountFetcher> pendingCountPortal
 
 <PageTitle>My Campaigns</PageTitle>
 
@@ -67,7 +68,15 @@
                         @foreach (var table in tables)
                         {
                             <tr style="cursor: pointer;" @onclick="() => OpenCampaign(table.Id)">
-                                <td class="fw-medium">@table.Name</td>
+                                <td class="fw-medium">
+                                    @table.Name
+                                    @if (GetPendingCount(table.Id) > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark ms-2">
+                                            <i class="bi bi-person-plus me-1"></i>@GetPendingCount(table.Id) pending
+                                        </span>
+                                    }
+                                </td>
                                 <td>
                                     <ThemeIndicator Theme="@table.Theme" />
                                 </td>
@@ -85,6 +94,7 @@
 @code {
     private IEnumerable<GameMechanics.GamePlay.TableInfo>? tables;
     private string? errorMessage;
+    private Dictionary<Guid, int> pendingCounts = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,11 +113,30 @@
             var tableList = await tableListPortal.FetchAsync();
             // Sort by CreatedAt descending (newest first)
             tables = tableList.OrderByDescending(t => t.CreatedAt).AsEnumerable();
+
+            // Load pending counts for each table
+            foreach (var table in tables)
+            {
+                try
+                {
+                    var countFetcher = await pendingCountPortal.ExecuteAsync(table.Id);
+                    pendingCounts[table.Id] = countFetcher.Count;
+                }
+                catch
+                {
+                    pendingCounts[table.Id] = 0;
+                }
+            }
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to load campaigns: {ex.Message}";
         }
+    }
+
+    private int GetPendingCount(Guid tableId)
+    {
+        return pendingCounts.TryGetValue(tableId, out var count) ? count : 0;
     }
 
     private void CreateNewCampaign()
