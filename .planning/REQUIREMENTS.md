@@ -112,13 +112,55 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Populated by roadmapper) | | |
+| TBL-01 | Phase 12 | Pending |
+| TBL-02 | Phase 12 | Pending |
+| TBL-03 | Phase 12 | Pending |
+| TBL-04 | Phase 12 | Pending |
+| TBL-05 | Phase 12 | Pending |
+| JOIN-01 | Phase 13 | Pending |
+| JOIN-02 | Phase 13 | Pending |
+| JOIN-03 | Phase 13 | Pending |
+| JOIN-04 | Phase 13 | Pending |
+| JOIN-05 | Phase 13 | Pending |
+| JOIN-06 | Phase 13 | Pending |
+| JOIN-07 | Phase 13 | Pending |
+| JOIN-08 | Phase 13 | Pending |
+| JOIN-09 | Phase 13 | Pending |
+| JOIN-10 | Phase 13 | Pending |
+| JOIN-11 | Phase 13 | Pending |
+| DASH-01 | Phase 14 | Pending |
+| DASH-02 | Phase 14 | Pending |
+| DASH-03 | Phase 14 | Pending |
+| DASH-04 | Phase 14 | Pending |
+| DASH-05 | Phase 14 | Pending |
+| DASH-06 | Phase 14 | Pending |
+| DASH-07 | Phase 14 | Pending |
+| DASH-08 | Phase 15 | Pending |
+| DASH-09 | Phase 15 | Pending |
+| DASH-10 | Phase 15 | Pending |
+| DASH-11 | Phase 15 | Pending |
+| DASH-12 | Phase 15 | Pending |
+| DASH-13 | Phase 15 | Pending |
+| TIME-01 | Phase 16 | Pending |
+| TIME-02 | Phase 16 | Pending |
+| TIME-03 | Phase 16 | Pending |
+| TIME-04 | Phase 16 | Pending |
+| TIME-05 | Phase 16 | Pending |
+| TIME-06 | Phase 16 | Pending |
+| TIME-07 | Phase 16 | Pending |
+| TIME-08 | Phase 16 | Pending |
+| TIME-09 | Phase 16 | Pending |
+| TIME-10 | Phase 16 | Pending |
+| TIME-11 | Phase 16 | Pending |
+| TIME-12 | Phase 16 | Pending |
+| TIME-13 | Phase 16 | Pending |
+| TIME-14 | Phase 16 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 43 total
-- Mapped to phases: (pending roadmap)
-- Unmapped: (pending roadmap)
+- Mapped to phases: 43
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-26 after initial definition*
+*Last updated: 2026-01-26 - Traceability updated for v1.2 roadmap*

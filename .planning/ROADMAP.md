@@ -2,9 +2,9 @@
 
 ## Milestones
 
-- ✅ **v1.0 Inventory & Equipment System** - Phases 1-7 (shipped 2026-01-26) - [Archive](milestones/v1.0-ROADMAP.md)
-- ✅ **v1.1 User Management & Authentication** - Phases 8-11 (shipped 2026-01-26) - [Archive](milestones/v1.1-ROADMAP.md)
-- 📋 **Next Milestone** - Run `/gsd:new-milestone` to define next focus
+- [x] **v1.0 Inventory & Equipment System** - Phases 1-7 (shipped 2026-01-26) - [Archive](milestones/v1.0-ROADMAP.md)
+- [x] **v1.1 User Management & Authentication** - Phases 8-11 (shipped 2026-01-26) - [Archive](milestones/v1.1-ROADMAP.md)
+- [ ] **v1.2 GM Table & Campaign Management** - Phases 12-16 (in progress)
 
 ## Phases
 
@@ -25,7 +25,7 @@ See MILESTONES.md for v1.0 details.
 </details>
 
 <details>
-<summary>✅ v1.1 User Management & Authentication (Phases 8-11) — SHIPPED 2026-01-26</summary>
+<summary>v1.1 User Management & Authentication (Phases 8-11) - SHIPPED 2026-01-26</summary>
 
 See [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
@@ -43,11 +43,111 @@ See [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 </details>
 
+### v1.2 GM Table & Campaign Management (In Progress)
+
+**Milestone Goal:** Enable Game Masters to create and manage campaign tables with player character joining, real-time status monitoring, and comprehensive time control.
+
+**Phase Numbering:**
+- Integer phases (12, 13, 14...): Planned milestone work
+- Decimal phases (12.1, 12.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 12: Table Foundation** - GM creates and manages campaign tables
+- [ ] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
+- [ ] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
+- [ ] **Phase 15: Dashboard Details** - Detailed views, real-time updates, NPC placeholder
+- [ ] **Phase 16: Time Management** - Round-based and calendar time control
+
 ## Phase Details
 
-_No active phases. Run `/gsd:new-milestone` to define the next milestone and its phases._
+### Phase 12: Table Foundation
+**Goal**: GMs can create campaign tables and navigate to manage them
+**Depends on**: Nothing (first phase of v1.2)
+**Requirements**: TBL-01, TBL-02, TBL-03, TBL-04, TBL-05
+**Success Criteria** (what must be TRUE):
+  1. GM can create a new campaign table with a name they choose
+  2. GM can select Fantasy or Sci-Fi theme when creating campaign
+  3. GM can set a starting epoch time for the campaign world
+  4. GM can see all campaigns they have created in a list
+  5. GM can open a campaign to access its management dashboard
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+
+### Phase 13: Join Workflow
+**Goal**: Players can request to join campaigns with characters, GMs can review and approve/deny
+**Depends on**: Phase 12
+**Requirements**: JOIN-01, JOIN-02, JOIN-03, JOIN-04, JOIN-05, JOIN-06, JOIN-07, JOIN-08, JOIN-09, JOIN-10, JOIN-11
+**Success Criteria** (what must be TRUE):
+  1. Player can browse available campaign tables and select one to join
+  2. Player can choose one of their characters and submit a join request
+  3. GM sees pending join requests and can view full character details (sheet, inventory, narrative)
+  4. GM can approve a request (character becomes active at table) or deny it (character remains unattached)
+  5. GM can remove a character from an active table
+  6. Character cannot be active in more than one campaign simultaneously
+  7. Player receives notification when their join request is approved or denied
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: TBD
+- [ ] 13-02: TBD
+
+### Phase 14: Dashboard Core
+**Goal**: GM dashboard displays compact status cards for all active characters
+**Depends on**: Phase 13
+**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-07
+**Success Criteria** (what must be TRUE):
+  1. GM dashboard shows compact cards for all active characters at the table
+  2. Each card displays Fatigue and Vitality health pools
+  3. Each card displays current wounds and pending damage/healing pools
+  4. Each card displays current Action Points
+  5. Each card displays count of active effects on the character
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+### Phase 15: Dashboard Details
+**Goal**: GM can view detailed character information and dashboard updates in real-time
+**Depends on**: Phase 14
+**Requirements**: DASH-08, DASH-09, DASH-10, DASH-11, DASH-12, DASH-13
+**Success Criteria** (what must be TRUE):
+  1. GM can click a character card to view detailed information
+  2. Detailed view shows character sheet (attributes, skills, levels)
+  3. Detailed view shows inventory and equipped items
+  4. Detailed view shows narrative information (appearance, backstory)
+  5. Dashboard automatically updates when any character's state changes (no manual refresh needed)
+  6. Dashboard includes labeled placeholder area for future NPC functionality
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+- [ ] 15-02: TBD
+
+### Phase 16: Time Management
+**Goal**: GM can control time flow with multiple increments and round-based mode
+**Depends on**: Phase 15
+**Requirements**: TIME-01, TIME-02, TIME-03, TIME-04, TIME-05, TIME-06, TIME-07, TIME-08, TIME-09, TIME-10, TIME-11, TIME-12, TIME-13, TIME-14
+**Success Criteria** (what must be TRUE):
+  1. GM can advance time by round (6 seconds), minute, turn (10 minutes), hour, day, or week
+  2. GM can enter and exit "in rounds" mode for detailed combat tracking
+  3. Round-by-round advancement is only available when in "in rounds" mode
+  4. Time advancement propagates to all characters at table via messaging
+  5. Characters automatically process time changes (pending damage/healing, effect expiration, AP recovery)
+  6. GM dashboard reflects character state changes after time processing
+  7. Player Play page displays "in rounds" indicator when table is in round mode, hidden otherwise
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: TBD
+- [ ] 16-02: TBD
 
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -56,7 +156,12 @@ _No active phases. Run `/gsd:new-milestone` to define the next milestone and its
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
+| 12. Table Foundation | v1.2 | 0/? | Not started | - |
+| 13. Join Workflow | v1.2 | 0/? | Not started | - |
+| 14. Dashboard Core | v1.2 | 0/? | Not started | - |
+| 15. Dashboard Details | v1.2 | 0/? | Not started | - |
+| 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-26*
+*Last updated: 2026-01-26 - v1.2 phases added*

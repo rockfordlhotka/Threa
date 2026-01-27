@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Milestone v1.2 - GM Table & Campaign Management
+**Current focus:** Phase 12 - Table Foundation
 
 ## Current Position
 
 Milestone: v1.2
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-01-26 - Milestone v1.2 started
+Phase: 12 of 16 (Table Foundation)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-01-26 - Roadmap created for v1.2 milestone
 
-Progress: v1.2 [—] 0%
+Progress: v1.2 [....................] 0% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
@@ -56,26 +56,9 @@ Progress: v1.2 [—] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v1.1]: Secret Q&A for password recovery (no email sending capability)
-- [v1.1]: RadzenGravatar for avatars (already available in Radzen.Blazor 8.4.2)
-- [v1.1]: First registered user becomes Admin automatically
-- [v1.1]: Initials fallback when no email provided for Gravatar
-- [v1.1]: Case-insensitive, trimmed secret answer validation
-- [08-01]: BCrypt cost factor 12 (matches existing AdminUserEdit pattern)
-- [08-01]: MockDb updated to support pre-hashed passwords and new DTO fields
-- [08-02]: CSLA SaveAsync result must be assigned (CSLA0006 analyzer rule)
-- [09-01]: CSLA CommandBase with step-based execution for multi-step recovery workflow
-- [09-01]: Empty secret question for unknown user (prevents enumeration)
-- [09-02]: Query parameter routing (?passwordreset=true) for success message on login
-- [10-01]: Use GetRequiredService instead of CreateInstanceDI for interface resolution in async rules
-- [10-01]: Register LastAdminProtectionRule for both IsEnabled and IsAdministrator properties
-- [10-02]: Modal edit pattern with DialogService.OpenAsync and result callback for list refresh
-- [10-02]: Self-edit warning banner when admin edits their own account
-- [11-01]: Profanity.Detector library for content filtering (handles Scunthorpe problem)
-- [11-01]: ContactEmail separate from Email (which stores username) for Gravatar
-- [11-01]: UseGravatar defaults to true
-- [11-02]: UserAvatar component uses RadzenGravatar when email provided and UseGravatar enabled
-- [11-02]: Admin user list shows initials (Email field contains username, not actual email)
+- [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
+- [v1.1]: RabbitMQ messaging infrastructure exists for time propagation
+- [v1.0]: GM table page exists with round advancement (foundation for v1.2 time management)
 
 ### Pending Todos
 
@@ -94,9 +77,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-26T23:05:00Z
-Stopped at: Completed 11-02-PLAN.md (Milestone v1.1 complete)
+Last session: 2026-01-26
+Stopped at: Roadmap created for v1.2 milestone
 Resume file: None
 
 ---
-*Milestone v1.1 complete - all phases delivered*
+*v1.2 roadmap ready - next: /gsd:plan-phase 12*
