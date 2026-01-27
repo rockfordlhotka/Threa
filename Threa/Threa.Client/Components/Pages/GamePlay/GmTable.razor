@@ -504,6 +504,9 @@ else
     }
 }
 
+@* RadzenDialog must be in the interactive context for DialogService to work *@
+<RadzenDialog />
+
 @code {
     [Parameter]
     public Guid TableId { get; set; }
@@ -929,21 +932,29 @@ else
         // Also select the character for the center panel
         selectedCharacter = character;
 
-        await DialogService.OpenAsync<CharacterDetailModal>(
-            character.CharacterName,
-            new Dictionary<string, object>
-            {
-                { "CharacterId", character.CharacterId },
-                { "TableId", TableId },
-                { "AllCharacters", tableCharacters ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>() }
-            },
-            new DialogOptions
-            {
-                Width = "90%",
-                Height = "90%",
-                CloseDialogOnOverlayClick = false,
-                ShowClose = false  // We have our own close button
-            });
+        try
+        {
+            await DialogService.OpenAsync<CharacterDetailModal>(
+                character.CharacterName,
+                new Dictionary<string, object>
+                {
+                    { "CharacterId", character.CharacterId },
+                    { "TableId", TableId },
+                    { "AllCharacters", tableCharacters ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>() }
+                },
+                new DialogOptions
+                {
+                    Width = "90%",
+                    Height = "90%",
+                    CloseDialogOnOverlayClick = false,
+                    ShowClose = false  // We have our own close button
+                });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to open character details: {ex.Message}";
+            AddLogEntry($"Error opening modal: {ex.Message}", ActivityCategory.General);
+        }
     }
 
     private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
