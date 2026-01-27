@@ -53,7 +53,7 @@ See [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 12: Table Foundation** - GM creates and manages campaign tables
+- [x] **Phase 12: Table Foundation** - GM creates and manages campaign tables
 - [ ] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
 - [ ] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
 - [ ] **Phase 15: Dashboard Details** - Detailed views, real-time updates, NPC placeholder
@@ -74,8 +74,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md - TableInfo extension and CampaignCreate page
-- [ ] 12-02-PLAN.md - Campaign list view and theme infrastructure
+- [x] 12-01-PLAN.md - TableInfo extension and CampaignCreate page
+- [x] 12-02-PLAN.md - Campaign list view and theme infrastructure
 
 ### Phase 13: Join Workflow
 **Goal**: Players can request to join campaigns with characters, GMs can review and approve/deny
@@ -157,7 +157,7 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 12. Table Foundation | v1.2 | 0/2 | Planned | - |
+| 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
 | 13. Join Workflow | v1.2 | 0/? | Not started | - |
 | 14. Dashboard Core | v1.2 | 0/? | Not started | - |
 | 15. Dashboard Details | v1.2 | 0/? | Not started | - |
@@ -165,4 +165,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-26 - Phase 12 plans created*
+*Last updated: 2026-01-26 - Phase 12 complete*

@@ -9,11 +9,11 @@ Requirements for milestone v1.2: GM Table & Campaign Management
 
 ### Table Management
 
-- [ ] **TBL-01**: GM can create new campaign table with name
-- [ ] **TBL-02**: GM can select theme for campaign (Fantasy or Sci-Fi)
-- [ ] **TBL-03**: GM can set epoch start time when creating campaign
-- [ ] **TBL-04**: GM can view list of all their campaigns
-- [ ] **TBL-05**: GM can open/access a specific campaign to manage it
+- [x] **TBL-01**: GM can create new campaign table with name
+- [x] **TBL-02**: GM can select theme for campaign (Fantasy or Sci-Fi)
+- [x] **TBL-03**: GM can set epoch start time when creating campaign
+- [x] **TBL-04**: GM can view list of all their campaigns
+- [x] **TBL-05**: GM can open/access a specific campaign to manage it
 
 ### Character Joining
 
@@ -112,11 +112,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TBL-01 | Phase 12 | Pending |
-| TBL-02 | Phase 12 | Pending |
-| TBL-03 | Phase 12 | Pending |
-| TBL-04 | Phase 12 | Pending |
-| TBL-05 | Phase 12 | Pending |
+| TBL-01 | Phase 12 | Complete |
+| TBL-02 | Phase 12 | Complete |
+| TBL-03 | Phase 12 | Complete |
+| TBL-04 | Phase 12 | Complete |
+| TBL-05 | Phase 12 | Complete |
 | JOIN-01 | Phase 13 | Pending |
 | JOIN-02 | Phase 13 | Pending |
 | JOIN-03 | Phase 13 | Pending |
