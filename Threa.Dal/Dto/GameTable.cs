@@ -69,6 +69,11 @@ public class TableCharacter
     public DateTime? LeftAt { get; set; }
     public ConnectionStatus ConnectionStatus { get; set; }
     public DateTime? LastActivity { get; set; }
+
+    /// <summary>
+    /// GM-only notes for this character at this table. Not visible to players.
+    /// </summary>
+    public string? GmNotes { get; set; }
 }
 
 /// <summary>

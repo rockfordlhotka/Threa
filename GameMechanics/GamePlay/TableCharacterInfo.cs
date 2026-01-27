@@ -169,6 +169,16 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
         private set => LoadProperty(EffectSummaryProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> GmNotesProperty = RegisterProperty<string?>(nameof(GmNotes));
+    /// <summary>
+    /// GM-only notes for this character at this table. Not visible to players.
+    /// </summary>
+    public string? GmNotes
+    {
+        get => GetProperty(GmNotesProperty);
+        private set => LoadProperty(GmNotesProperty, value);
+    }
+
     public string ConnectionStatusDisplay => ConnectionStatus switch
     {
         ConnectionStatus.Connected => "Connected",
@@ -222,5 +232,8 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
                 .Select(e => e.RoundsRemaining.HasValue ? $"{e.Name} ({e.RoundsRemaining} rnd)" : e.Name);
             EffectSummary = string.Join(", ", effectDescriptions);
         }
+
+        // Load GM notes from table character record
+        GmNotes = tableChar.GmNotes;
     }
 }

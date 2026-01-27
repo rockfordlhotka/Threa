@@ -90,4 +90,9 @@ public interface ITableDal
     /// A character can only be attached to one table at a time.
     /// </summary>
     Task<GameTable?> GetTableForCharacterAsync(int characterId);
+
+    /// <summary>
+    /// Updates the GM notes for a specific character at a specific table.
+    /// </summary>
+    Task UpdateGmNotesAsync(Guid tableId, int characterId, string? notes);
 }

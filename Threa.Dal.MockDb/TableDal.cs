@@ -151,4 +151,15 @@ public class TableDal : ITableDal
         var table = MockDb.Tables.FirstOrDefault(t => t.Id == tableCharacter.TableId);
         return Task.FromResult(table);
     }
+
+    public Task UpdateGmNotesAsync(Guid tableId, int characterId, string? notes)
+    {
+        var tableCharacter = MockDb.TableCharacters
+            .FirstOrDefault(tc => tc.TableId == tableId && tc.CharacterId == characterId);
+        if (tableCharacter != null)
+        {
+            tableCharacter.GmNotes = notes;
+        }
+        return Task.CompletedTask;
+    }
 }
