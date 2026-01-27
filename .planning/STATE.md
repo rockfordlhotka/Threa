@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 13 - Join Workflow
+**Current focus:** Phase 14 - Dashboard Core
 
 ## Current Position
 
 Milestone: v1.2
-Phase: 13 of 16 (Join Workflow)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 - Completed 13-03-PLAN.md
+Phase: 14 of 16 (Dashboard Core)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-27 - Completed 14-01-PLAN.md
 
-Progress: v1.2 [########............] 40% (5 phases, 43 requirements)
+Progress: v1.2 [#########...........] 45% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30
+- Total plans completed: 31
 - Average duration: 12 min
-- Total execution time: 6.2 hours
+- Total execution time: 6.4 hours
 
 **By Phase (v1.0):**
 
@@ -51,9 +51,10 @@ Progress: v1.2 [########............] 40% (5 phases, 43 requirements)
 |-------|-------|-------|----------|
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
 | 13-join-workflow | 4/4 | 17 min | 4 min |
+| 14-dashboard-core | 1/3 | 13 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-03 (5 min), 13-04 (4 min), 13-02 (2 min), 13-01 (6 min), 12-02 (2 min)
+- Last 5 plans: 14-01 (13 min), 13-03 (5 min), 13-04 (4 min), 13-02 (2 min), 13-01 (6 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -63,6 +64,9 @@ Progress: v1.2 [########............] 40% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: WoundSummary groups by name with count suffix (Light x2, Serious)
+- [v1.2]: EffectSummary includes duration suffix when RoundsRemaining has value
+- [v1.2]: Effects loaded via ICharacterEffectDal in TableCharacterList.Fetch
 - [v1.2]: JoinRequest DTO with status enum (Pending, Approved, Denied)
 - [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
 - [v1.2]: Campaign description required during creation
@@ -92,8 +96,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 13-03-PLAN.md
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
 
 ---
-*Phase 13 complete - next: /gsd:plan-phase 14*
+*Phase 14 in progress - next: execute 14-02-PLAN.md*
