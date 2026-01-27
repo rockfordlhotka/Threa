@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 14 - Dashboard Core
+**Current focus:** Phase 14 - Dashboard Core (COMPLETE)
 
 ## Current Position
 
 Milestone: v1.2
 Phase: 14 of 16 (Dashboard Core)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-27 - Completed 14-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-27 - Completed 14-03-PLAN.md
 
-Progress: v1.2 [##########..........] 48% (5 phases, 43 requirements)
+Progress: v1.2 [############........] 58% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 33
 - Average duration: 12 min
-- Total execution time: 6.5 hours
+- Total execution time: 6.8 hours
 
 **By Phase (v1.0):**
 
@@ -51,11 +51,11 @@ Progress: v1.2 [##########..........] 48% (5 phases, 43 requirements)
 |-------|-------|-------|----------|
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
 | 13-join-workflow | 4/4 | 17 min | 4 min |
-| 14-dashboard-core | 2/3 | 17 min | 8.5 min |
+| 14-dashboard-core | 3/3 | 38 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-02 (4 min), 14-01 (13 min), 13-03 (5 min), 13-04 (4 min), 13-02 (2 min)
-- Trend: steady execution velocity
+- Last 5 plans: 14-03 (21 min), 14-02 (4 min), 14-01 (13 min), 13-03 (5 min), 13-04 (4 min)
+- Trend: steady execution velocity (14-03 longer due to checkpoint fixes)
 
 ## Accumulated Context
 
@@ -64,6 +64,11 @@ Progress: v1.2 [##########..........] 48% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: Round advance buttons disabled when not in combat mode
+- [v1.2]: ITimeEventSubscriber subscription pattern for GM dashboard real-time updates
+- [v1.2]: 500ms delay before refreshing character list after time events
+- [v1.2]: Use AddEffect() instead of Add() for proper effect stacking
+- [v1.2]: CSS specificity: .component.card.border-state for themed borders
 - [v1.2]: CharacterStatusCard health state borders: green/yellow/red/dark
 - [v1.2]: PendingPoolBar reused for consistent health visualization
 - [v1.2]: WoundSummary groups by name with count suffix (Light x2, Serious)
@@ -98,8 +103,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 14-02-PLAN.md
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None
 
 ---
-*Phase 14 in progress - next: execute 14-03-PLAN.md*
+*Phase 14 complete - next: execute Phase 15 planning*
