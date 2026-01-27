@@ -18,6 +18,7 @@ public class TableCharacterList : ReadOnlyListBase<TableCharacterList, TableChar
     private async Task FetchAsync(Guid tableId,
         [Inject] ITableDal tableDal,
         [Inject] ICharacterDal characterDal,
+        [Inject] ICharacterEffectDal effectDal,
         [Inject] IChildDataPortal<TableCharacterInfo> characterPortal)
     {
         var tableCharacters = await tableDal.GetTableCharactersAsync(tableId);
@@ -31,6 +32,12 @@ public class TableCharacterList : ReadOnlyListBase<TableCharacterList, TableChar
                 try
                 {
                     character = await characterDal.GetCharacterAsync(tc.CharacterId);
+
+                    // Populate effects for wound/effect counting in TableCharacterInfo
+                    if (character != null)
+                    {
+                        character.Effects = await effectDal.GetCharacterEffectsAsync(tc.CharacterId);
+                    }
                 }
                 catch
                 {
