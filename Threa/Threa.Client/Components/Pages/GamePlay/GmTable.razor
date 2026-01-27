@@ -22,7 +22,6 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
-@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IActivityLogService ActivityLog
 @inject ITimeEventPublisher TimeEventPublisher
 @inject IJSRuntime JS
@@ -30,7 +29,6 @@
 @inject GameMechanics.Items.ItemManagementService itemManagementService
 @inject IDataPortal<GameMechanics.GamePlay.JoinRequestList> joinRequestListPortal
 @inject IDataPortal<GameMechanics.GamePlay.JoinRequestProcessor> processorPortal
-@inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ApplicationContext applicationContext
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject DialogService DialogService
@@ -72,7 +70,7 @@ else
 
     <div class="row">
         <!-- Left Panel: Characters/NPCs -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             @* Pending Join Requests Section - only shown when requests exist *@
             @if (pendingRequests != null && pendingRequests.Any())
             {
@@ -259,76 +257,8 @@ else
             </div>
         </div>
 
-        <!-- Center Panel: Selected Entity Details -->
-        <div class="col-md-4">
-            @if (selectedCharacter != null)
-            {
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <strong>@selectedCharacter.CharacterName</strong>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Species:</strong> @selectedCharacter.Species</p>
-                        <p><strong>FAT:</strong> @selectedCharacter.FatValue / @selectedCharacter.FatMax</p>
-                        <p><strong>VIT:</strong> @selectedCharacter.VitValue / @selectedCharacter.VitMax</p>
-                        <p><strong>AP:</strong> @selectedCharacter.ActionPoints / @selectedCharacter.ActionPointMax</p>
-
-                        <hr />
-
-                        <h6>Apply Damage</h6>
-                        <div class="input-group mb-2">
-                            <input type="number" class="form-control" placeholder="Amount" @bind="damageAmount" min="1" />
-                            <select class="form-select" @bind="damageType" style="max-width: 120px;">
-                                <option value="FAT">FAT</option>
-                                <option value="VIT">VIT</option>
-                            </select>
-                            <button class="btn btn-danger" @onclick="ApplyDamage">Apply</button>
-                        </div>
-
-                        <h6>Apply Healing</h6>
-                        <div class="input-group mb-2">
-                            <input type="number" class="form-control" placeholder="Amount" @bind="healAmount" min="1" />
-                            <select class="form-select" @bind="healType" style="max-width: 120px;">
-                                <option value="FAT">FAT</option>
-                                <option value="VIT">VIT</option>
-                            </select>
-                            <button class="btn btn-success" @onclick="ApplyHealing">Apply</button>
-                        </div>
-
-                        <h6>Apply Effect</h6>
-                        <div class="input-group mb-2">
-                            <select class="form-select" @bind="selectedEffect">
-                                <option value="">Select effect...</option>
-                                <option value="Stunned">Stunned</option>
-                                <option value="Blinded">Blinded</option>
-                                <option value="Prone">Prone</option>
-                            </select>
-                            <button class="btn btn-warning" @onclick="ApplyEffect"
-                                    disabled="@(string.IsNullOrEmpty(selectedEffect))">Apply</button>
-                        </div>
-
-                        <hr />
-
-                        <div class="d-grid">
-                            <button class="btn btn-outline-danger" @onclick="() => ConfirmRemoveCharacter(selectedCharacter)">
-                                <i class="bi bi-x-circle me-1"></i>Remove from Table
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="card">
-                    <div class="card-body text-center text-muted">
-                        <p>Select a character to view details and apply actions.</p>
-                    </div>
-                </div>
-            }
-        </div>
-
         <!-- Right Panel: Time Controls & Activity -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <!-- Time Controls -->
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -478,30 +408,6 @@ else
         </div>
     </div>
 
-    @* Character Removal Confirmation Modal *@
-    @if (showRemoveConfirm && characterToRemove != null)
-    {
-        <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">Remove Character</h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Are you sure you want to remove <strong>@characterToRemove.CharacterName</strong> from this table?</p>
-                        <p class="text-muted small">The character will no longer be attached to this campaign and the player will need to submit a new join request to rejoin.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
-                        <button type="button" class="btn btn-danger" @onclick="ExecuteRemoveCharacter">
-                            <i class="bi bi-x-circle"></i> Remove
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 }
 
 @* RadzenDialog must be in the interactive context for DialogService to work *@
@@ -519,11 +425,6 @@ else
     private IDisposable? activityLogSubscription;
 
     // Form fields
-    private int damageAmount = 1;
-    private string damageType = "FAT";
-    private int healAmount = 1;
-    private string healType = "FAT";
-    private string selectedEffect = "";
     private int roundsToAdvance = 5;
     private string announcementText = "";
 
@@ -538,8 +439,6 @@ else
     private IEnumerable<GameMechanics.GamePlay.JoinRequestInfo>? pendingRequests;
     private int? expandedCharacterId;
     private GameMechanics.CharacterEdit? expandedCharacter;
-    private bool showRemoveConfirm;
-    private GameMechanics.GamePlay.TableCharacterInfo? characterToRemove;
     private bool isProcessingRequest;
     private bool timeEventSubscribed;
 
@@ -929,12 +828,12 @@ else
 
     private async Task OpenCharacterDetails(GameMechanics.GamePlay.TableCharacterInfo character)
     {
-        // Also select the character for the center panel
+        // Select the character for item distribution
         selectedCharacter = character;
 
         try
         {
-            await DialogService.OpenAsync<CharacterDetailModal>(
+            var result = await DialogService.OpenAsync<CharacterDetailModal>(
                 character.CharacterName,
                 new Dictionary<string, object>
                 {
@@ -949,151 +848,19 @@ else
                     CloseDialogOnOverlayClick = true,
                     ShowClose = false  // We have our own close button
                 });
+
+            // If character was removed via modal, refresh the list
+            if (result as string == "removed")
+            {
+                AddLogEntry($"Removed {character.CharacterName} from table", ActivityCategory.Player);
+                await RefreshCharacterListAsync();
+                selectedCharacter = null;
+            }
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to open character details: {ex.Message}";
             AddLogEntry($"Error opening modal: {ex.Message}", ActivityCategory.General);
-        }
-    }
-
-    private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
-    {
-        AddLogEntry($"Quick healed {character.CharacterName}", ActivityCategory.Health);
-    }
-
-    private void QuickDamage(GameMechanics.GamePlay.TableCharacterInfo character)
-    {
-        AddLogEntry($"Quick damaged {character.CharacterName}", ActivityCategory.Health);
-    }
-
-    private async Task ApplyDamage()
-    {
-        if (selectedCharacter == null || table == null) return;
-
-        try
-        {
-            // Fetch the character, apply damage, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
-
-            if (damageType == "FAT")
-            {
-                character.Fatigue.PendingDamage += damageAmount;
-            }
-            else // VIT
-            {
-                character.Vitality.PendingDamage += damageAmount;
-            }
-
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}", ActivityCategory.Health);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.Damage,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = $"{damageAmount} {damageType} damage"
-            });
-
-            // Refresh the table character list to show updated values
-            var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to apply damage: {ex.Message}";
-        }
-    }
-
-    private async Task ApplyHealing()
-    {
-        if (selectedCharacter == null || table == null) return;
-
-        try
-        {
-            // Fetch the character, apply healing, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
-
-            if (healType == "FAT")
-            {
-                character.Fatigue.PendingHealing += healAmount;
-            }
-            else // VIT
-            {
-                character.Vitality.PendingHealing += healAmount;
-            }
-
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}", ActivityCategory.Health);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.Healing,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = $"{healAmount} {healType} healing"
-            });
-
-            // Refresh the table character list to show updated values
-            var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to apply healing: {ex.Message}";
-        }
-    }
-
-    private async Task ApplyEffect()
-    {
-        if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect) || table == null) return;
-
-        try
-        {
-            // Fetch the character, add effect, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
-
-            // Create the effect with appropriate type and duration
-            var effect = await effectPortal.CreateChildAsync(
-                Threa.Dal.Dto.EffectType.Condition,  // Stunned, Blinded, Prone are all conditions
-                selectedEffect,  // Name
-                (string?)null,   // Location (null for global effects)
-                (int?)null,      // DurationRounds (null = permanent until removed)
-                (string?)null    // BehaviorState
-            );
-            effect.Source = "GM";
-
-            character.Effects.AddEffect(effect);
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.EffectAdded,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = selectedEffect
-            });
-
-            // Refresh the table character list to show updated values
-            var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
-
-            selectedEffect = "";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to apply effect: {ex.Message}";
         }
     }
 
@@ -1320,53 +1087,5 @@ else
     {
         return int.Parse(applicationContext.Principal.Claims
             .First(c => c.Type == ClaimTypes.NameIdentifier).Value);
-    }
-
-    // Character Removal Methods
-    private void ConfirmRemoveCharacter(GameMechanics.GamePlay.TableCharacterInfo character)
-    {
-        characterToRemove = character;
-        showRemoveConfirm = true;
-    }
-
-    private void CancelRemove()
-    {
-        characterToRemove = null;
-        showRemoveConfirm = false;
-    }
-
-    private async Task ExecuteRemoveCharacter()
-    {
-        if (characterToRemove == null || table == null) return;
-
-        try
-        {
-            var result = await detacherPortal.ExecuteAsync(characterToRemove.CharacterId);
-
-            if (result.Success)
-            {
-                AddLogEntry($"Removed {characterToRemove.CharacterName} from table", ActivityCategory.Player);
-                var charList = await characterListPortal.FetchAsync(TableId);
-                tableCharacters = charList.AsEnumerable();
-
-                if (selectedCharacter?.CharacterId == characterToRemove.CharacterId)
-                {
-                    selectedCharacter = null;
-                }
-            }
-            else
-            {
-                errorMessage = result.ErrorMessage;
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to remove character: {ex.Message}";
-        }
-        finally
-        {
-            characterToRemove = null;
-            showRemoveConfirm = false;
-        }
     }
 }

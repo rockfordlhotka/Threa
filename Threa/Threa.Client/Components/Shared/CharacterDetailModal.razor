@@ -64,6 +64,14 @@
                                           InitialGmNotes="@currentGmNotes"
                                           OnGmNotesChanged="@((notes) => currentGmNotes = notes)" />
             }
+            else if (activeTab == "GM Actions")
+            {
+                <CharacterDetailGmActions Character="character"
+                                          CharacterId="selectedCharacterId"
+                                          TableId="TableId"
+                                          OnCharacterRemoved="OnCharacterRemoved"
+                                          OnCharacterUpdated="OnCharacterUpdated" />
+            }
         }
         else
         {
@@ -85,7 +93,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["Character Sheet", "Inventory", "Narrative"];
+    private static readonly string[] tabNames = ["Character Sheet", "Inventory", "Narrative", "GM Actions"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
@@ -165,6 +173,18 @@
     private void Close()
     {
         DialogService.Close();
+    }
+
+    private async Task OnCharacterUpdated()
+    {
+        // Reload the character to reflect changes
+        await LoadCharacterAsync();
+    }
+
+    private void OnCharacterRemoved()
+    {
+        // Close the modal - the character has been removed from the table
+        DialogService.Close("removed");
     }
 
     public async ValueTask DisposeAsync()
