@@ -30,6 +30,13 @@ window.threaTheme = {
 };
 
 // Auto-initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+// Handle both initial load and cases where DOM is already loaded
+// (e.g., when script loads after Blazor hydration or enhanced navigation)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        window.threaTheme.init();
+    });
+} else {
+    // DOM already loaded, init immediately
     window.threaTheme.init();
-});
+}
