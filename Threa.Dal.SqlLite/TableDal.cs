@@ -461,4 +461,28 @@ public class TableDal : ITableDal
             throw new OperationFailedException("Error updating GM notes", ex);
         }
     }
+
+    public async Task<string?> GetGmNotesAsync(Guid tableId, int characterId)
+    {
+        try
+        {
+            var sql = "SELECT Json FROM TableCharacters WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@TableId", tableId.ToString());
+            command.Parameters.AddWithValue("@CharacterId", characterId);
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (!reader.Read())
+                return null;
+
+            string json = reader.GetString(0);
+            var tableChar = JsonSerializer.Deserialize<TableCharacter>(json);
+            return tableChar?.GmNotes;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error getting GM notes", ex);
+        }
+    }
 }

@@ -162,4 +162,11 @@ public class TableDal : ITableDal
         }
         return Task.CompletedTask;
     }
+
+    public Task<string?> GetGmNotesAsync(Guid tableId, int characterId)
+    {
+        var tableCharacter = MockDb.TableCharacters
+            .FirstOrDefault(tc => tc.TableId == tableId && tc.CharacterId == characterId);
+        return Task.FromResult(tableCharacter?.GmNotes);
+    }
 }

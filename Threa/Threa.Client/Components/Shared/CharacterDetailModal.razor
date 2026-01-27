@@ -147,9 +147,8 @@
         {
             character = await characterPortal.FetchAsync(selectedCharacterId);
 
-            // Load GM notes from TableCharacterInfo (added in Plan 15-01)
-            var tableChar = AllCharacters.FirstOrDefault(tc => tc.CharacterId == selectedCharacterId);
-            currentGmNotes = tableChar?.GmNotes;
+            // Load GM notes directly from DAL to ensure we get the latest saved value
+            currentGmNotes = await tableDal.GetGmNotesAsync(TableId, selectedCharacterId);
         }
         catch
         {
