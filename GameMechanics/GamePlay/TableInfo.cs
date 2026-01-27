@@ -66,6 +66,26 @@ public class TableInfo : ReadOnlyBase<TableInfo>
         private set => LoadProperty(LastActivityAtProperty, value);
     }
 
+    public static readonly PropertyInfo<string> ThemeProperty = RegisterProperty<string>(nameof(Theme));
+    /// <summary>
+    /// The visual theme for this table ("fantasy" or "scifi").
+    /// </summary>
+    public string Theme
+    {
+        get => GetProperty(ThemeProperty);
+        private set => LoadProperty(ThemeProperty, value);
+    }
+
+    public static readonly PropertyInfo<long> StartTimeSecondsProperty = RegisterProperty<long>(nameof(StartTimeSeconds));
+    /// <summary>
+    /// The in-game start time in seconds from epoch 0.
+    /// </summary>
+    public long StartTimeSeconds
+    {
+        get => GetProperty(StartTimeSecondsProperty);
+        private set => LoadProperty(StartTimeSecondsProperty, value);
+    }
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -86,5 +106,7 @@ public class TableInfo : ReadOnlyBase<TableInfo>
         IsInCombat = table.IsInCombat;
         CreatedAt = table.CreatedAt;
         LastActivityAt = table.LastActivityAt;
+        Theme = table.Theme ?? "fantasy";
+        StartTimeSeconds = table.StartTimeSeconds;
     }
 }
