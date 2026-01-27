@@ -13,6 +13,7 @@
 @using Threa.Client.Components.Shared
 @using Threa.Dal
 @using Threa.Dal.Dto
+@using System.Security.Claims
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
@@ -26,6 +27,10 @@
 @inject IJSRuntime JS
 @inject IItemTemplateDal itemTemplateDal
 @inject GameMechanics.Items.ItemManagementService itemManagementService
+@inject IDataPortal<GameMechanics.GamePlay.JoinRequestList> joinRequestListPortal
+@inject IDataPortal<GameMechanics.GamePlay.JoinRequestProcessor> processorPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
+@inject ApplicationContext applicationContext
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -77,6 +82,86 @@ else
     <div class="row">
         <!-- Left Panel: Characters/NPCs -->
         <div class="col-md-4">
+            @* Pending Join Requests Section - only shown when requests exist *@
+            @if (pendingRequests != null && pendingRequests.Any())
+            {
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-warning text-dark">
+                        <strong><i class="bi bi-person-plus me-1"></i>Pending Join Requests</strong>
+                        <span class="badge bg-dark">@pendingRequests.Count()</span>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        @foreach (var request in pendingRequests)
+                        {
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong>@request.CharacterName</strong>
+                                            <small class="text-muted d-block">@request.Species</small>
+                                        </div>
+                                        <small class="text-muted">@request.RequestedAt.ToString("MMM d")</small>
+                                    </div>
+
+                                    @* Expandable character details *@
+                                    <div class="mb-2">
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ToggleCharacterDetails(request.CharacterId)">
+                                            <i class="bi @(expandedCharacterId == request.CharacterId ? "bi-chevron-up" : "bi-eye")"></i>
+                                            @(expandedCharacterId == request.CharacterId ? "Hide Details" : "View Character")
+                                        </button>
+                                    </div>
+
+                                    @if (expandedCharacterId == request.CharacterId && expandedCharacter != null)
+                                    {
+                                        <div class="border rounded p-2 mb-2 bg-light" style="font-size: 0.85rem;">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <strong>Attributes:</strong>
+                                                    <ul class="list-unstyled mb-0 small">
+                                                        @foreach (var attr in expandedCharacter.AttributeList)
+                                                        {
+                                                            <li>@attr.Name: @attr.Value</li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                                <div class="col-6">
+                                                    <strong>Health:</strong>
+                                                    <ul class="list-unstyled mb-0 small">
+                                                        <li>FAT: @expandedCharacter.Fatigue.Value / @expandedCharacter.Fatigue.BaseValue</li>
+                                                        <li>VIT: @expandedCharacter.Vitality.Value / @expandedCharacter.Vitality.BaseValue</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(expandedCharacter.Description))
+                                            {
+                                                <div class="mt-2">
+                                                    <strong>Description:</strong>
+                                                    <p class="mb-0 small">@expandedCharacter.Description</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-success btn-sm flex-grow-1"
+                                                disabled="@isProcessingRequest"
+                                                @onclick="() => ApproveRequest(request.Id)">
+                                            <i class="bi bi-check-lg"></i> Approve
+                                        </button>
+                                        <button class="btn btn-danger btn-sm flex-grow-1"
+                                                disabled="@isProcessingRequest"
+                                                @onclick="() => DenyRequest(request.Id)">
+                                            <i class="bi bi-x-lg"></i> Deny
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Characters at Table</strong>
@@ -138,6 +223,11 @@ else
                                             <i class="bi bi-dash-circle"></i> Damage
                                         </button>
                                     </div>
+                                    <button class="btn btn-sm btn-outline-danger w-100 mt-1"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => ConfirmRemoveCharacter(character)">
+                                        <i class="bi bi-x-circle"></i> Remove from Table
+                                    </button>
                                 </div>
                             </div>
                         }
@@ -422,6 +512,31 @@ else
             </div>
         </div>
     </div>
+
+    @* Character Removal Confirmation Modal *@
+    @if (showRemoveConfirm && characterToRemove != null)
+    {
+        <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Remove Character</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to remove <strong>@characterToRemove.CharacterName</strong> from this table?</p>
+                        <p class="text-muted small">The character will no longer be attached to this campaign and the player will need to submit a new join request to rejoin.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="ExecuteRemoveCharacter">
+                            <i class="bi bi-x-circle"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -451,6 +566,14 @@ else
     private string itemSearchText = "";
     private ItemTemplate? selectedTemplate;
     private int grantQuantity = 1;
+
+    // Join request state
+    private IEnumerable<GameMechanics.GamePlay.JoinRequestInfo>? pendingRequests;
+    private int? expandedCharacterId;
+    private GameMechanics.CharacterEdit? expandedCharacter;
+    private bool showRemoveConfirm;
+    private GameMechanics.GamePlay.TableCharacterInfo? characterToRemove;
+    private bool isProcessingRequest;
 
     private IEnumerable<ItemTemplate> filteredTemplates =>
         allTemplates?
@@ -515,10 +638,26 @@ else
 
             // Load item templates for item distribution
             allTemplates = await itemTemplateDal.GetAllTemplatesAsync();
+
+            // Load pending join requests
+            await LoadPendingRequests();
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to load table: {ex.Message}";
+        }
+    }
+
+    private async Task LoadPendingRequests()
+    {
+        try
+        {
+            var list = await joinRequestListPortal.FetchAsync(TableId);
+            pendingRequests = list.AsEnumerable();
+        }
+        catch
+        {
+            pendingRequests = Enumerable.Empty<GameMechanics.GamePlay.JoinRequestInfo>();
         }
     }
 
@@ -972,6 +1111,146 @@ else
         catch (Exception ex)
         {
             errorMessage = $"Failed to grant item: {ex.Message}";
+        }
+    }
+
+    // Join Request Methods
+    private async Task ToggleCharacterDetails(int characterId)
+    {
+        if (expandedCharacterId == characterId)
+        {
+            expandedCharacterId = null;
+            expandedCharacter = null;
+        }
+        else
+        {
+            expandedCharacterId = characterId;
+            try
+            {
+                expandedCharacter = await characterPortal.FetchAsync(characterId);
+            }
+            catch
+            {
+                expandedCharacter = null;
+            }
+        }
+    }
+
+    private async Task ApproveRequest(Guid requestId)
+    {
+        if (table == null) return;
+        isProcessingRequest = true;
+
+        try
+        {
+            var gameMasterId = GetCurrentUserId();
+            var result = await processorPortal.ExecuteAsync(requestId, true, gameMasterId);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Approved join request for {result.CharacterName}", ActivityCategory.Player);
+                await LoadPendingRequests();
+                var charList = await characterListPortal.FetchAsync(TableId);
+                tableCharacters = charList.AsEnumerable();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to approve: {ex.Message}";
+        }
+        finally
+        {
+            isProcessingRequest = false;
+            expandedCharacterId = null;
+            expandedCharacter = null;
+        }
+    }
+
+    private async Task DenyRequest(Guid requestId)
+    {
+        if (table == null) return;
+        isProcessingRequest = true;
+
+        try
+        {
+            var gameMasterId = GetCurrentUserId();
+            var result = await processorPortal.ExecuteAsync(requestId, false, gameMasterId);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Denied join request for {result.CharacterName}", ActivityCategory.Player);
+                await LoadPendingRequests();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to deny: {ex.Message}";
+        }
+        finally
+        {
+            isProcessingRequest = false;
+        }
+    }
+
+    private int GetCurrentUserId()
+    {
+        return int.Parse(applicationContext.Principal.Claims
+            .First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+    }
+
+    // Character Removal Methods
+    private void ConfirmRemoveCharacter(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        characterToRemove = character;
+        showRemoveConfirm = true;
+    }
+
+    private void CancelRemove()
+    {
+        characterToRemove = null;
+        showRemoveConfirm = false;
+    }
+
+    private async Task ExecuteRemoveCharacter()
+    {
+        if (characterToRemove == null || table == null) return;
+
+        try
+        {
+            var result = await detacherPortal.ExecuteAsync(characterToRemove.CharacterId);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Removed {characterToRemove.CharacterName} from table", ActivityCategory.Player);
+                var charList = await characterListPortal.FetchAsync(TableId);
+                tableCharacters = charList.AsEnumerable();
+
+                if (selectedCharacter?.CharacterId == characterToRemove.CharacterId)
+                {
+                    selectedCharacter = null;
+                }
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to remove character: {ex.Message}";
+        }
+        finally
+        {
+            characterToRemove = null;
+            showRemoveConfirm = false;
         }
     }
 }
