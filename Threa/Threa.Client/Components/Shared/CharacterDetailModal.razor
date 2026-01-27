@@ -1,8 +1,10 @@
+@using GameMechanics
 @using GameMechanics.GamePlay
 @using Radzen
 @using Threa.Dal
+@using Threa.Client.Components.Shared
 
-@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject IDataPortal<CharacterEdit> characterPortal
 @inject DialogService DialogService
 @inject ITableDal tableDal
 
@@ -44,27 +46,19 @@
         {
             @if (activeTab == "Character Sheet")
             {
-                <div class="text-center py-5">
-                    <i class="bi bi-person-badge fs-1 text-muted"></i>
-                    <p class="text-muted mt-3">Character Sheet content coming in Plan 02</p>
-                    <small class="text-muted">Full character stats, attributes, and skills will be displayed here.</small>
-                </div>
+                <CharacterDetailSheet Character="character" />
             }
             else if (activeTab == "Inventory")
             {
-                <div class="text-center py-5">
-                    <i class="bi bi-backpack2 fs-1 text-muted"></i>
-                    <p class="text-muted mt-3">Inventory content coming in Plan 02</p>
-                    <small class="text-muted">Equipment slots and carried items will be displayed here.</small>
-                </div>
+                <CharacterDetailInventory Character="character" />
             }
             else if (activeTab == "Narrative")
             {
-                <div class="text-center py-5">
-                    <i class="bi bi-journal-text fs-1 text-muted"></i>
-                    <p class="text-muted mt-3">Narrative content coming in Plan 02</p>
-                    <small class="text-muted">Appearance, backstory, notes, and GM notes will be displayed here.</small>
-                </div>
+                <CharacterDetailNarrative Character="character"
+                                          TableId="TableId"
+                                          CharacterId="selectedCharacterId"
+                                          InitialGmNotes="@currentGmNotes"
+                                          OnGmNotesChanged="@((notes) => currentGmNotes = notes)" />
             }
         }
         else
@@ -91,7 +85,8 @@
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
-    private GameMechanics.CharacterEdit? character;
+    private CharacterEdit? character;
+    private string? currentGmNotes;
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,10 +107,15 @@
         try
         {
             character = await characterPortal.FetchAsync(selectedCharacterId);
+
+            // Load GM notes from TableCharacterInfo (added in Plan 15-01)
+            var tableChar = AllCharacters.FirstOrDefault(tc => tc.CharacterId == selectedCharacterId);
+            currentGmNotes = tableChar?.GmNotes;
         }
         catch
         {
             character = null;
+            currentGmNotes = null;
         }
         finally
         {
