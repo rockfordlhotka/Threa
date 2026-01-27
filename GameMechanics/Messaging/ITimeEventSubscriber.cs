@@ -36,6 +36,11 @@ public interface ITimeEventSubscriber : IAsyncDisposable
     event EventHandler<TableUpdateMessage>? TableUpdateReceived;
 
     /// <summary>
+    /// Event raised when a join request is received.
+    /// </summary>
+    event EventHandler<JoinRequestMessage>? JoinRequestReceived;
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

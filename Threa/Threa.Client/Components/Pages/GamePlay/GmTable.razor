@@ -580,6 +580,7 @@ else
 
         TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        TimeEventSubscriber.JoinRequestReceived += OnJoinRequestReceived;
         timeEventSubscribed = true;
     }
 
@@ -609,6 +610,20 @@ else
         });
     }
 
+    private void OnJoinRequestReceived(object? sender, JoinRequestMessage e)
+    {
+        // Only process if this request is for our table and it's a new pending request
+        if (table == null || e.TableId != table.Id || e.Status != JoinRequestStatus.Pending)
+            return;
+
+        // Refresh the pending requests list to show the new request
+        InvokeAsync(async () =>
+        {
+            await LoadPendingRequests();
+            StateHasChanged();
+        });
+    }
+
     private async Task RefreshCharacterListAsync()
     {
         try
@@ -634,6 +649,7 @@ else
 
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        TimeEventSubscriber.JoinRequestReceived -= OnJoinRequestReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
     }

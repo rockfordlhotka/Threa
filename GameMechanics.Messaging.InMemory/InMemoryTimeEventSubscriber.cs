@@ -15,6 +15,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     private IDisposable? _combatStateSubscription;
     private IDisposable? _characterUpdateSubscription;
     private IDisposable? _tableUpdateSubscription;
+    private IDisposable? _joinRequestSubscription;
 
     private bool _connected;
     private bool _subscribed;
@@ -33,6 +34,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     public event EventHandler<CombatStateMessage>? CombatStateReceived;
     public event EventHandler<CharacterUpdateMessage>? CharacterUpdateReceived;
     public event EventHandler<TableUpdateMessage>? TableUpdateReceived;
+    public event EventHandler<JoinRequestMessage>? JoinRequestReceived;
 
     public bool IsConnected => _connected && !_disposed;
     public bool IsSubscribed => _subscribed && !_disposed;
@@ -89,6 +91,13 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
             TableUpdateReceived?.Invoke(this, msg);
         });
 
+        _joinRequestSubscription = _bus.JoinRequests.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received JoinRequestMessage: RequestId={RequestId}, Status={Status}",
+                msg.RequestId, msg.Status);
+            JoinRequestReceived?.Invoke(this, msg);
+        });
+
         _subscribed = true;
         _logger.LogInformation("Subscribed to in-memory time events");
 
@@ -104,12 +113,14 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
         _combatStateSubscription?.Dispose();
         _characterUpdateSubscription?.Dispose();
         _tableUpdateSubscription?.Dispose();
+        _joinRequestSubscription?.Dispose();
 
         _timeEventSubscription = null;
         _timeSkipSubscription = null;
         _combatStateSubscription = null;
         _characterUpdateSubscription = null;
         _tableUpdateSubscription = null;
+        _joinRequestSubscription = null;
 
         _subscribed = false;
         _logger.LogInformation("Unsubscribed from in-memory time events");

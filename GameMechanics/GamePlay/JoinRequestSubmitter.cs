@@ -1,4 +1,5 @@
 using Csla;
+using GameMechanics.Messaging;
 using System;
 using System.Threading.Tasks;
 using Threa.Dal;
@@ -41,7 +42,8 @@ public class JoinRequestSubmitter : CommandBase<JoinRequestSubmitter>
         int playerId,
         [Inject] IJoinRequestDal joinRequestDal,
         [Inject] ICharacterDal characterDal,
-        [Inject] ITableDal tableDal)
+        [Inject] ITableDal tableDal,
+        [Inject] ITimeEventPublisher timeEventPublisher)
     {
         try
         {
@@ -100,6 +102,20 @@ public class JoinRequestSubmitter : CommandBase<JoinRequestSubmitter>
             request.RequestedAt = DateTime.UtcNow;
 
             var saved = await joinRequestDal.SaveRequestAsync(request);
+
+            // Publish join request message for real-time GM notification
+            await timeEventPublisher.PublishJoinRequestAsync(new JoinRequestMessage
+            {
+                RequestId = saved.Id,
+                CharacterId = characterId,
+                PlayerId = playerId,
+                TableId = tableId,
+                Status = JoinRequestStatus.Pending,
+                CharacterName = character.Name,
+                TableName = table.Name,
+                CampaignId = tableId.ToString(),
+                SourceId = playerId.ToString()
+            });
 
             LoadProperty(SuccessProperty, true);
             LoadProperty(RequestIdProperty, saved.Id);
