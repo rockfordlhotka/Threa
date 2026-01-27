@@ -54,7 +54,7 @@ See [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Table Foundation** - GM creates and manages campaign tables
-- [ ] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
+- [x] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
 - [ ] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
 - [ ] **Phase 15: Dashboard Details** - Detailed views, real-time updates, NPC placeholder
 - [ ] **Phase 16: Time Management** - Round-based and calendar time control
@@ -92,10 +92,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 13-01-PLAN.md - Data layer foundation (JoinRequest DTO, DAL, Description field, messaging)
-- [ ] 13-02-PLAN.md - Business logic (JoinRequestSubmitter, JoinRequestProcessor, JoinRequestList)
-- [ ] 13-03-PLAN.md - Player UI (BrowseCampaigns, MyJoinRequests pages)
-- [ ] 13-04-PLAN.md - GM UI (pending badges, review section, character removal)
+- [x] 13-01-PLAN.md - Data layer foundation (JoinRequest DTO, DAL, Description field, messaging)
+- [x] 13-02-PLAN.md - Business logic (JoinRequestSubmitter, JoinRequestProcessor, JoinRequestList)
+- [x] 13-03-PLAN.md - Player UI (BrowseCampaigns, MyJoinRequests pages)
+- [x] 13-04-PLAN.md - GM UI (pending badges, review section, character removal)
 
 ### Phase 14: Dashboard Core
 **Goal**: GM dashboard displays compact status cards for all active characters
@@ -160,11 +160,11 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
-| 13. Join Workflow | v1.2 | 0/4 | Planned | - |
+| 13. Join Workflow | v1.2 | 4/4 | Complete | 2026-01-27 |
 | 14. Dashboard Core | v1.2 | 0/? | Not started | - |
 | 15. Dashboard Details | v1.2 | 0/? | Not started | - |
 | 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-27 - Phase 13 planned (4 plans)*
+*Last updated: 2026-01-27 - Phase 13 complete*

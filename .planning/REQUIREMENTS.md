@@ -17,17 +17,17 @@ Requirements for milestone v1.2: GM Table & Campaign Management
 
 ### Character Joining
 
-- [ ] **JOIN-01**: Player can browse available campaign tables
-- [ ] **JOIN-02**: Player can select character to join a campaign table
-- [ ] **JOIN-03**: Player can submit join request for character to table
-- [ ] **JOIN-04**: GM can view list of pending join requests for their table
-- [ ] **JOIN-05**: GM can view full character details from join request (sheet, inventory, narrative)
-- [ ] **JOIN-06**: GM can approve join request (character becomes active at table)
-- [ ] **JOIN-07**: GM can deny join request (character remains unattached)
-- [ ] **JOIN-08**: GM can remove character from active table
-- [ ] **JOIN-09**: Character can only be active in one campaign at a time
-- [ ] **JOIN-10**: Player receives notification when join request is approved
-- [ ] **JOIN-11**: Player receives notification when join request is denied
+- [x] **JOIN-01**: Player can browse available campaign tables
+- [x] **JOIN-02**: Player can select character to join a campaign table
+- [x] **JOIN-03**: Player can submit join request for character to table
+- [x] **JOIN-04**: GM can view list of pending join requests for their table
+- [x] **JOIN-05**: GM can view full character details from join request (sheet, inventory, narrative)
+- [x] **JOIN-06**: GM can approve join request (character becomes active at table)
+- [x] **JOIN-07**: GM can deny join request (character remains unattached)
+- [x] **JOIN-08**: GM can remove character from active table
+- [x] **JOIN-09**: Character can only be active in one campaign at a time
+- [x] **JOIN-10**: Player receives notification when join request is approved
+- [x] **JOIN-11**: Player receives notification when join request is denied
 
 ### Dashboard Display
 
