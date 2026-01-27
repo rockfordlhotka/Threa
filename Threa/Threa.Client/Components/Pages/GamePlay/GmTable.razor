@@ -338,6 +338,14 @@ else
                             <button class="btn btn-warning" @onclick="ApplyEffect"
                                     disabled="@(string.IsNullOrEmpty(selectedEffect))">Apply</button>
                         </div>
+
+                        <hr />
+
+                        <div class="d-grid">
+                            <button class="btn btn-outline-danger" @onclick="() => ConfirmRemoveCharacter(selectedCharacter)">
+                                <i class="bi bi-x-circle me-1"></i>Remove from Table
+                            </button>
+                        </div>
                     </div>
                 </div>
             }
