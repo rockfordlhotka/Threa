@@ -48,13 +48,28 @@
         }
         else if (character != null)
         {
-            @if (activeTab == "Character Sheet")
+            @if (activeTab == "GM Actions")
+            {
+                <CharacterDetailGmActions Character="character"
+                                          CharacterId="selectedCharacterId"
+                                          TableId="TableId"
+                                          OnCharacterRemoved="OnCharacterRemoved"
+                                          OnCharacterUpdated="OnCharacterUpdated" />
+            }
+            else if (activeTab == "Character Sheet")
             {
                 <CharacterDetailSheet Character="character" />
             }
             else if (activeTab == "Inventory")
             {
                 <CharacterDetailInventory Character="character" />
+            }
+            else if (activeTab == "Grant Items")
+            {
+                <CharacterDetailItemDistribution Character="character"
+                                                  CharacterId="selectedCharacterId"
+                                                  TableId="TableId"
+                                                  OnItemGranted="OnCharacterUpdated" />
             }
             else if (activeTab == "Narrative")
             {
@@ -63,14 +78,6 @@
                                           CharacterId="selectedCharacterId"
                                           InitialGmNotes="@currentGmNotes"
                                           OnGmNotesChanged="@((notes) => currentGmNotes = notes)" />
-            }
-            else if (activeTab == "GM Actions")
-            {
-                <CharacterDetailGmActions Character="character"
-                                          CharacterId="selectedCharacterId"
-                                          TableId="TableId"
-                                          OnCharacterRemoved="OnCharacterRemoved"
-                                          OnCharacterUpdated="OnCharacterUpdated" />
             }
         }
         else
@@ -93,7 +100,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["Character Sheet", "Inventory", "Narrative", "GM Actions"];
+    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Inventory", "Grant Items", "Narrative"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
