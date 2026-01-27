@@ -909,20 +909,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Health state borders using theme colors */
-.character-status-card.border-success {
-    border-color: var(--color-accent-green, #198754) !important;
+.character-status-card.card.border-success {
+    border: 2px solid var(--color-accent-green, #198754) !important;
 }
 
-.character-status-card.border-warning {
-    border-color: var(--color-accent-gold, #ffc107) !important;
+.character-status-card.card.border-warning {
+    border: 2px solid var(--color-accent-gold, #ffc107) !important;
 }
 
-.character-status-card.border-danger {
-    border-color: var(--color-accent-red, #dc3545) !important;
+.character-status-card.card.border-danger {
+    border: 2px solid var(--color-accent-red, #dc3545) !important;
 }
 
-.character-status-card.border-dark {
-    border-color: var(--color-text-muted, #6c757d) !important;
+.character-status-card.card.border-dark {
+    border: 2px solid var(--color-text-muted, #6c757d) !important;
     opacity: 0.7;
 }
 
