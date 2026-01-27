@@ -12,9 +12,9 @@ public class CharacterStatusCardBase : ComponentBase
     protected string CardBorderClass => GetHealthStateClass();
 
     /// <summary>
-    /// Determines card border color based on health state per CONTEXT.md:
-    /// - Green: Healthy (no critical conditions)
-    /// - Yellow: Wounded (FAT <= 25% OR VIT <= 50% OR has wounds)
+    /// Determines card border color based on health state:
+    /// - Green: Healthy (FAT > 50%, VIT > 50%, no wounds)
+    /// - Yellow: Wounded (FAT <= 50% OR VIT <= 50% OR has wounds)
     /// - Red: Critical (VIT <= 25%)
     /// - Dark: Unconscious (FAT <= 0)
     /// </summary>
@@ -26,7 +26,7 @@ public class CharacterStatusCardBase : ComponentBase
         var fatPercent = Character.FatMax > 0 ? Character.FatValue * 100 / Character.FatMax : 0;
 
         if (vitPercent <= 25) return "border-danger";
-        if (fatPercent <= 25 || vitPercent <= 50 || Character.WoundCount > 0) return "border-warning";
+        if (fatPercent <= 50 || vitPercent <= 50 || Character.WoundCount > 0) return "border-warning";
         return "border-success";
     }
 
