@@ -29,7 +29,8 @@ public class JoinRequestList : ReadOnlyListBase<JoinRequestList, JoinRequestInfo
         {
             foreach (var request in requests)
             {
-                var character = await characterDal.GetCharacterAsync(request.CharacterId);
+                Threa.Dal.Dto.Character? character = null;
+                try { character = await characterDal.GetCharacterAsync(request.CharacterId); } catch { }
                 Threa.Dal.Dto.GameTable? table = null;
                 try { table = await tableDal.GetTableAsync(request.TableId); } catch { }
                 Add(portal.FetchChild(request, character, table));
@@ -55,7 +56,8 @@ public class JoinRequestList : ReadOnlyListBase<JoinRequestList, JoinRequestInfo
         {
             foreach (var request in requests)
             {
-                var character = await characterDal.GetCharacterAsync(request.CharacterId);
+                Threa.Dal.Dto.Character? character = null;
+                try { character = await characterDal.GetCharacterAsync(request.CharacterId); } catch { }
                 Add(portal.FetchChild(request, character, table));
             }
         }
