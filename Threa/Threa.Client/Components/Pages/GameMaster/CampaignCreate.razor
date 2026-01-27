@@ -1,0 +1,213 @@
+@page "/campaigns/create"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Threa.Services
+@using GameMechanics.Time
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+@inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
+@inject IJSRuntime JS
+
+<PageTitle>Create Campaign</PageTitle>
+
+<div class="container" style="max-width: 600px;">
+    <h3 class="mb-4">Create New Campaign</h3>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Campaign Name -->
+            <div class="mb-3">
+                <label class="form-label">Campaign Name</label>
+                <input type="text" class="form-control @(showNameError ? "is-invalid" : "")"
+                       @bind="campaignName" @bind:event="oninput"
+                       placeholder="e.g., Rise of the Dragon Lords" />
+                @if (showNameError)
+                {
+                    <div class="invalid-feedback">Campaign name is required.</div>
+                }
+            </div>
+
+            <!-- Theme Selection -->
+            <div class="mb-3">
+                <label class="form-label">Theme</label>
+                <select class="form-select" @bind="selectedTheme" @bind:after="OnThemeChanged">
+                    <option value="fantasy">Fantasy (Arcanum)</option>
+                    <option value="scifi">Sci-Fi (Neon Circuit)</option>
+                </select>
+            </div>
+
+            <!-- Theme Preview Card -->
+            <div class="mb-4 p-3 rounded theme-preview"
+                 style="background: var(--color-card-bg); border: 1px solid var(--color-border); color: var(--color-text);">
+                <h6 style="color: var(--color-primary); font-family: var(--font-display);">
+                    @(selectedTheme == "scifi" ? "NEON CIRCUIT" : "ARCANUM")
+                </h6>
+                <p class="mb-0 small" style="color: var(--color-text-muted);">
+                    @(selectedTheme == "scifi"
+                        ? "Neon circuits pulse through chrome corridors. Cybernetic implants hum with power. The future awaits."
+                        : "Ancient tomes whisper secrets of forgotten magic. Dragons soar above mist-covered mountains. Adventure calls.")
+                </p>
+            </div>
+
+            <!-- Starting Epoch Time -->
+            <div class="mb-3">
+                <label class="form-label">Starting Epoch Time</label>
+                <input type="number" class="form-control"
+                       @bind="startTimeSeconds"
+                       placeholder="@(selectedTheme == "scifi" ? "13569465600" : "0")" />
+                <small class="text-muted">
+                    @if (selectedTheme == "scifi")
+                    {
+                        <text>Default: 13569465600 (Year 2400 equivalent). Negative values allowed for pre-epoch times.</text>
+                    }
+                    else
+                    {
+                        <text>Default: 0 (Beginning of time). Negative values allowed for pre-epoch times.</text>
+                    }
+                </small>
+                <div class="mt-1">
+                    <small class="text-info">
+                        Preview: @GameTimeFormatter.FormatCompact(startTimeSeconds)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+        <button class="btn btn-primary" @onclick="CreateCampaign"
+                disabled="@(string.IsNullOrWhiteSpace(campaignName) || isCreating)">
+            @if (isCreating)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            }
+            Create Campaign
+        </button>
+    </div>
+</div>
+
+@code {
+    private string campaignName = "";
+    private string selectedTheme = "fantasy";
+    private long startTimeSeconds = 0;
+    private string? originalTheme;
+    private string? errorMessage;
+    private bool isCreating;
+    private bool hasInteracted;
+
+    private bool showNameError => hasInteracted && string.IsNullOrWhiteSpace(campaignName);
+
+    // Sci-Fi default: Year 2400 = (2400 - 1970) * 365.25 * 24 * 60 * 60 = ~13,569,465,600 seconds
+    private const long SciFiDefaultEpoch = 13569465600;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            // Store the original theme to restore on cancel
+            try
+            {
+                originalTheme = await JS.InvokeAsync<string>("threaTheme.get");
+            }
+            catch
+            {
+                originalTheme = "fantasy";
+            }
+
+            // Apply the default theme for preview
+            await JS.InvokeVoidAsync("threaTheme.apply", selectedTheme);
+        }
+    }
+
+    private async Task OnThemeChanged()
+    {
+        hasInteracted = true;
+
+        // Update epoch time default when theme changes
+        if (selectedTheme == "scifi")
+        {
+            startTimeSeconds = SciFiDefaultEpoch;
+        }
+        else
+        {
+            startTimeSeconds = 0;
+        }
+
+        // Apply theme for preview
+        try
+        {
+            await JS.InvokeVoidAsync("threaTheme.apply", selectedTheme);
+        }
+        catch
+        {
+            // Ignore JS interop errors during prerender
+        }
+    }
+
+    private async Task CreateCampaign()
+    {
+        hasInteracted = true;
+
+        if (string.IsNullOrWhiteSpace(campaignName))
+        {
+            return;
+        }
+
+        isCreating = true;
+        errorMessage = null;
+
+        try
+        {
+            var newTable = await tablePortal.CreateAsync();
+            newTable.Name = campaignName.Trim();
+            newTable.Theme = selectedTheme;
+            newTable.StartTimeSeconds = startTimeSeconds;
+
+            await tablePortal.UpdateAsync(newTable);
+
+            // Navigate to the new campaign's dashboard
+            NavigationManager.NavigateTo($"/gamemaster/table/{newTable.Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create campaign: {ex.Message}";
+            isCreating = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        // Restore original theme before navigating away
+        if (!string.IsNullOrEmpty(originalTheme))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("threaTheme.apply", originalTheme);
+            }
+            catch
+            {
+                // Ignore JS interop errors
+            }
+        }
+
+        NavigationManager.NavigateTo("/gamemaster/tables");
+    }
+}
