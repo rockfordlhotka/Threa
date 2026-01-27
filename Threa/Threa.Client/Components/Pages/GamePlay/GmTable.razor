@@ -186,30 +186,8 @@ else
                 </div>
             </div>
 
-            <!-- NPCs Panel -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>NPCs</strong>
-                    <button class="btn btn-sm btn-outline-primary" @onclick="AddNpc">+ Add NPC</button>
-                </div>
-                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
-                    @if (npcs == null || !npcs.Any())
-                    {
-                        <p class="text-muted small">No NPCs at this table.</p>
-                    }
-                    else
-                    {
-                        @foreach (var npc in npcs)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>@npc.Name</span>
-                                <button class="btn btn-sm btn-outline-danger"
-                                        @onclick="() => RemoveNpc(npc.Id)">Remove</button>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
+            <!-- NPC Placeholder -->
+            <NpcPlaceholder />
 
             <!-- Item Distribution Panel -->
             <div class="card mt-3">
@@ -533,7 +511,6 @@ else
     private GameMechanics.GamePlay.TableEdit? table;
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo>? tableCharacters;
     private GameMechanics.GamePlay.TableCharacterInfo? selectedCharacter;
-    private List<NpcInfo>? npcs;
     private string? errorMessage;
     private List<ActivityLogEntry> activityLog = new();
     private IDisposable? activityLogSubscription;
@@ -575,7 +552,6 @@ else
 
     private static readonly ItemType[] itemTypes = Enum.GetValues<ItemType>();
 
-    private record NpcInfo(Guid Id, string Name);
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
@@ -712,7 +688,6 @@ else
             table = await tablePortal.FetchAsync(TableId);
             var charList = await characterListPortal.FetchAsync(TableId);
             tableCharacters = charList.AsEnumerable();
-            npcs = new List<NpcInfo>();
 
             // Apply the table's theme
             if (table != null)
@@ -1109,17 +1084,6 @@ else
         {
             errorMessage = $"Failed to apply effect: {ex.Message}";
         }
-    }
-
-    private void AddNpc()
-    {
-        AddLogEntry("NPC creation not yet implemented", ActivityCategory.General);
-    }
-
-    private void RemoveNpc(Guid npcId)
-    {
-        npcs?.RemoveAll(n => n.Id == npcId);
-        AddLogEntry("NPC removed", ActivityCategory.General);
     }
 
     private string GetPlayerJoinLink() =>
