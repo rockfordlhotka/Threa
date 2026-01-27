@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Milestone v1.1 COMPLETE
+**Current focus:** Milestone v1.2 - GM Table & Campaign Management
 
 ## Current Position
 
-Milestone: v1.1 - COMPLETE
-Phase: 11 of 11 (User Profiles)
-Plan: 2 of 2 in current phase
-Status: Milestone complete
-Last activity: 2026-01-26 - Completed 11-02-PLAN.md
+Milestone: v1.2
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-26 - Milestone v1.2 started
 
-Progress: v1.1 [████████████████] 100% (8/8 plans)
+Progress: v1.2 [—] 0%
 
 ## Performance Metrics
 

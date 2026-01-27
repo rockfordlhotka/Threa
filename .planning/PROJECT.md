@@ -8,14 +8,20 @@ A web-based TTRPG assistant for the Threa game system that helps players manage 
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: Ready for Next Milestone
+## Current Milestone: v1.2 GM Table & Campaign Management
 
-**v1.1 User Management & Authentication** shipped on 2026-01-26. See `.planning/MILESTONES.md` for full details.
+**Goal:** Enable Game Masters to create and manage campaign tables with player character joining, real-time status monitoring, and comprehensive time control.
 
-**Status:** No active milestone. Run `/gsd:new-milestone` to start the next phase of development.
+**Target features:**
+- Table/campaign creation with theme selection and start epoch time
+- Player request-to-join workflow with GM review and approval
+- Information-dense GM dashboard showing all character status (health, AP, effects)
+- Enhanced time control (rounds, minutes, turns, hours, days, weeks) with "in rounds" state
+- Real-time GM dashboard updates reflecting character state changes
+- Foundation for future NPC integration
 
 **Recent Achievement (v1.1):**
-- Complete user management and authentication system
+- Complete user management and authentication system (shipped 2026-01-26)
 - Self-service registration, password recovery, admin controls, user profiles
 - 19/19 requirements satisfied, 100% integration verified
 
@@ -68,12 +74,30 @@ These capabilities exist in the codebase:
 
 ### Active
 
-No active requirements. Next milestone will define new requirements via `/gsd:new-milestone`.
+Current milestone v1.2 requirements:
+- [ ] GM can create campaign tables with name, theme (fantasy/sci-fi), and start epoch time
+- [ ] Players can request to join tables with a character
+- [ ] GM can review character details and approve/deny join requests
+- [ ] GM can remove characters from active table
+- [ ] GM dashboard displays compact character status (FAT/VIT/wounds with pending, AP, effects)
+- [ ] GM can advance time by multiple increments (rounds, minutes, turns, hours, days, weeks)
+- [ ] System tracks "in rounds" vs normal state
+- [ ] GM dashboard updates in real-time when character state changes
+- [ ] GM can view detailed character information (sheet, inventory, appearance)
+- [ ] Characters are campaign-specific (not shared across tables)
 
 ### Out of Scope
 
 Explicitly excluded (may be considered for future milestones):
 
+**Deferred from v1.2 to v1.3+:**
+- GM directly applying damage/healing to characters — Build table foundation first
+- GM adding effects to characters — Build table foundation first
+- GM manipulating character inventory — Build table foundation first
+- GM editing character stats/properties — Build table foundation first
+- Full NPC management (creation, editing) — Placeholder in dashboard for v1.2
+
+**Previously deferred:**
 - Item crafting system — Complex, separate feature set
 - Durability degradation mechanics — Field exists but auto-decay not needed yet
 - Marketplace/economy/vendor system — Trading focus is player-to-player initially
@@ -116,6 +140,12 @@ The codebase already has a working TTRPG combat system with:
 - Damage resolution with hit locations and armor
 - Character stats with attributes (STR, DEX, END, INT, ITT, WIL, PHY) and skills
 - Ability Score calculation: `AS = Attribute + Skill Level - 5 + Modifiers`
+
+**Time Management Infrastructure (v1.2 builds on this):**
+- GM table page exists with "advance round" button
+- RabbitMQ messaging infrastructure sends time changes to all players at table
+- Character-side processing handles round advancement (damage/healing from pending pools, effect expiration, AP recovery)
+- Missing: other time increments (minute, turn, hour, day, week), GM dashboard real-time updates, "in rounds" state tracking
 
 **Integration Point:**
 Items provide the `+ Modifiers` portion of the Ability Score formula via ItemBonusCalculator:
@@ -176,4 +206,4 @@ Users are already familiar with:
 | Defer player-to-player trading to v2 | Scope management, GM distribution sufficient for v1 | ✓ Good (v1.0) |
 
 ---
-*Last updated: 2026-01-26 after v1.1 milestone completion*
+*Last updated: 2026-01-26 after v1.2 milestone start*
