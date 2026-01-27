@@ -71,10 +71,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. GM can set a starting epoch time for the campaign world
   4. GM can see all campaigns they have created in a list
   5. GM can open a campaign to access its management dashboard
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
+- [ ] 12-01-PLAN.md - TableInfo extension and CampaignCreate page
+- [ ] 12-02-PLAN.md - Campaign list view and theme infrastructure
 
 ### Phase 13: Join Workflow
 **Goal**: Players can request to join campaigns with characters, GMs can review and approve/deny
@@ -156,7 +157,7 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 9. Password Recovery | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
-| 12. Table Foundation | v1.2 | 0/? | Not started | - |
+| 12. Table Foundation | v1.2 | 0/2 | Planned | - |
 | 13. Join Workflow | v1.2 | 0/? | Not started | - |
 | 14. Dashboard Core | v1.2 | 0/? | Not started | - |
 | 15. Dashboard Details | v1.2 | 0/? | Not started | - |
@@ -164,4 +165,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-26 - v1.2 phases added*
+*Last updated: 2026-01-26 - Phase 12 plans created*
