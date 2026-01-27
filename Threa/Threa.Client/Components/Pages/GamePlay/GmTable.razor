@@ -65,18 +65,6 @@ else
             {
                 <span class="badge bg-danger">COMBAT</span>
             }
-            @if (table.Status == Threa.Dal.Dto.TableStatus.Active)
-            {
-                <button class="btn btn-warning btn-sm" @onclick="PauseSession">Pause</button>
-            }
-            else if (table.Status == Threa.Dal.Dto.TableStatus.Paused)
-            {
-                <button class="btn btn-success btn-sm" @onclick="ResumeSession">Resume</button>
-            }
-            <button class="btn btn-danger btn-sm" @onclick="EndSession"
-                    disabled="@(table.Status == Threa.Dal.Dto.TableStatus.Ended)">
-                End Session
-            </button>
         </div>
     </div>
 
@@ -392,33 +380,55 @@ else
                     }
                     else if (table.Status == Threa.Dal.Dto.TableStatus.Active)
                     {
-                        <!-- Quick Advance Buttons -->
-                        <div class="d-flex gap-2 mb-3">
-                            <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound"
-                                    disabled="@(!table.IsInCombat)"
-                                    title="@(table.IsInCombat ? "Advance to next round" : "Enter combat mode to advance rounds")">
-                                +1 Round
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)"
-                                    disabled="@(!table.IsInCombat)">
-                                +5
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)"
-                                    disabled="@(!table.IsInCombat)">
-                                +10
-                            </button>
-                        </div>
+                        @if (table.IsInCombat)
+                        {
+                            <!-- Round Advancement (Combat Mode) -->
+                            <div class="mb-3">
+                                <div class="d-flex gap-2 mb-2">
+                                    <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound">
+                                        +1 Round
+                                    </button>
+                                    <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)">
+                                        +5
+                                    </button>
+                                    <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)">
+                                        +10
+                                    </button>
+                                </div>
 
-                        <!-- Custom Advance -->
-                        <div class="input-group mb-3">
-                            <input type="number" class="form-control" @bind="roundsToAdvance"
-                                   min="1" max="100" placeholder="Custom"
-                                   disabled="@(!table.IsInCombat)" />
-                            <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds"
-                                    disabled="@(!table.IsInCombat)">
-                                Advance
-                            </button>
-                        </div>
+                                <!-- Custom Advance -->
+                                <div class="input-group">
+                                    <input type="number" class="form-control" @bind="roundsToAdvance"
+                                           min="1" max="100" placeholder="Custom rounds" />
+                                    <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
+                                        Advance
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Time Advancement (Non-Combat) -->
+                            <div class="mb-3">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(60)">
+                                        +1 Minute
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(600)">
+                                        +1 Turn (10 min)
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(3600)">
+                                        +1 Hour
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(86400)">
+                                        +1 Day
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(604800)">
+                                        +1 Week
+                                    </button>
+                                </div>
+                            </div>
+                        }
 
                         <hr />
 
@@ -878,6 +888,37 @@ else
             EnteringCombat = false,
             CampaignId = table.Id.ToString(),
             SourceId = "GM"
+        });
+    }
+
+    private async Task AdvanceTime(int seconds)
+    {
+        if (table == null) return;
+
+        table.AdvanceTime(seconds);
+        await SaveTable();
+
+        // Format the time increment for logging
+        string timeDescription = seconds switch
+        {
+            60 => "1 minute",
+            600 => "1 turn (10 minutes)",
+            3600 => "1 hour",
+            86400 => "1 day",
+            604800 => "1 week",
+            _ => $"{seconds} seconds"
+        };
+
+        AddLogEntry($"Advanced time by {timeDescription}", ActivityCategory.Time);
+
+        // Publish time skip event so players can process time-based effects
+        await TimeEventPublisher.PublishTimeSkipAsync(new TimeSkipMessage
+        {
+            SkipUnit = GameMechanics.Time.TimeSkipUnit.Custom,
+            Count = seconds,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            Reason = $"GM advanced time by {timeDescription}"
         });
     }
 

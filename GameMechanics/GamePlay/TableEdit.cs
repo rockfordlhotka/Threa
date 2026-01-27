@@ -232,6 +232,18 @@ public class TableEdit : BusinessBase<TableEdit>
         }
     }
 
+    /// <summary>
+    /// Advances time by the specified number of seconds (used when not in combat).
+    /// </summary>
+    public void AdvanceTime(int seconds)
+    {
+        if (Status == TableStatus.Active && seconds > 0)
+        {
+            StartTimeSeconds += seconds;
+            LastTimeAdvance = DateTime.UtcNow;
+        }
+    }
+
     [Create]
     [RunLocal]
     private void Create([Inject] ApplicationContext applicationContext)
