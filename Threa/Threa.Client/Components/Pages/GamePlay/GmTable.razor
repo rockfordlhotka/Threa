@@ -9,6 +9,7 @@
 @using GameMechanics.Messaging
 @using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
+@using Radzen
 @using Threa.Services
 @using Threa.Client.Components.Shared
 @using Threa.Dal
@@ -32,6 +33,7 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ApplicationContext applicationContext
 @inject ITimeEventSubscriber TimeEventSubscriber
+@inject DialogService DialogService
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -176,7 +178,7 @@ else
                                 <div class="col">
                                     <CharacterStatusCard Character="@character"
                                                         IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
-                                                        OnClick="SelectCharacter" />
+                                                        OnClick="OpenCharacterDetails" />
                                 </div>
                             }
                         </div>
@@ -945,6 +947,28 @@ else
     private void SelectCharacter(GameMechanics.GamePlay.TableCharacterInfo character)
     {
         selectedCharacter = character;
+    }
+
+    private async Task OpenCharacterDetails(GameMechanics.GamePlay.TableCharacterInfo character)
+    {
+        // Also select the character for the center panel
+        selectedCharacter = character;
+
+        await DialogService.OpenAsync<CharacterDetailModal>(
+            character.CharacterName,
+            new Dictionary<string, object>
+            {
+                { "CharacterId", character.CharacterId },
+                { "TableId", TableId },
+                { "AllCharacters", tableCharacters ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>() }
+            },
+            new DialogOptions
+            {
+                Width = "90%",
+                Height = "90%",
+                CloseDialogOnOverlayClick = false,
+                ShowClose = false  // We have our own close button
+            });
     }
 
     private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
