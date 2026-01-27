@@ -89,11 +89,13 @@ Plans:
   5. GM can remove a character from an active table
   6. Character cannot be active in more than one campaign simultaneously
   7. Player receives notification when their join request is approved or denied
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md - Data layer foundation (JoinRequest DTO, DAL, Description field, messaging)
+- [ ] 13-02-PLAN.md - Business logic (JoinRequestSubmitter, JoinRequestProcessor, JoinRequestList)
+- [ ] 13-03-PLAN.md - Player UI (BrowseCampaigns, MyJoinRequests pages)
+- [ ] 13-04-PLAN.md - GM UI (pending badges, review section, character removal)
 
 ### Phase 14: Dashboard Core
 **Goal**: GM dashboard displays compact status cards for all active characters
@@ -158,11 +160,11 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
-| 13. Join Workflow | v1.2 | 0/? | Not started | - |
+| 13. Join Workflow | v1.2 | 0/4 | Planned | - |
 | 14. Dashboard Core | v1.2 | 0/? | Not started | - |
 | 15. Dashboard Details | v1.2 | 0/? | Not started | - |
 | 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-26 - Phase 12 complete*
+*Last updated: 2026-01-27 - Phase 13 planned (4 plans)*
