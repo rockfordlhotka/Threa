@@ -107,10 +107,12 @@ Plans:
   3. Each card displays current wounds and pending damage/healing pools
   4. Each card displays current Action Points
   5. Each card displays count of active effects on the character
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 14-01: TBD
+- [ ] 14-01-PLAN.md - Extend TableCharacterInfo with pending pools and status counts
+- [ ] 14-02-PLAN.md - Create CharacterStatusCard component
+- [ ] 14-03-PLAN.md - Integrate CharacterStatusCard into GmTable dashboard
 
 ### Phase 15: Dashboard Details
 **Goal**: GM can view detailed character information and dashboard updates in real-time
@@ -161,10 +163,10 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 11. User Profiles | v1.1 | 2/2 | Complete | 2026-01-26 |
 | 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
 | 13. Join Workflow | v1.2 | 4/4 | Complete | 2026-01-27 |
-| 14. Dashboard Core | v1.2 | 0/? | Not started | - |
+| 14. Dashboard Core | v1.2 | 0/3 | Not started | - |
 | 15. Dashboard Details | v1.2 | 0/? | Not started | - |
 | 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-27 - Phase 13 complete*
+*Last updated: 2026-01-27 - Phase 14 planned*
