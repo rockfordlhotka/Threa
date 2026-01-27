@@ -1,0 +1,129 @@
+@* Character Detail Sheet - Read-only view of character stats for GM modal *@
+
+@using GameMechanics
+@using Threa.Client.Components.Shared
+
+<div class="row">
+    <!-- Left Column: Portrait and Basic Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                @if (!string.IsNullOrEmpty(Character?.ImageUrl))
+                {
+                    <img src="@Character.ImageUrl" alt="@Character.Name" class="img-fluid rounded mb-3" style="max-height: 200px;" />
+                }
+                else
+                {
+                    <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center mb-3" style="height: 150px; font-size: 3rem;">
+                        @(Character?.Name?.FirstOrDefault())
+                    </div>
+                }
+                <h5>@Character?.Name</h5>
+                <p class="text-muted mb-1">@Character?.Species</p>
+                @if (!string.IsNullOrEmpty(Character?.TrueName))
+                {
+                    <p class="text-muted small mb-0">True Name: @Character.TrueName</p>
+                }
+            </div>
+        </div>
+
+        <!-- Health Pools -->
+        <div class="card mt-3">
+            <div class="card-header"><strong>Health</strong></div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="small text-muted">Fatigue</label>
+                    <PendingPoolBar CurrentValue="@(Character?.Fatigue.Value ?? 0)"
+                                    MaxValue="@(Character?.Fatigue.BaseValue ?? 1)"
+                                    PendingDamage="@(Character?.Fatigue.PendingDamage ?? 0)"
+                                    PendingHealing="@(Character?.Fatigue.PendingHealing ?? 0)" />
+                    <small>@Character?.Fatigue.Value / @Character?.Fatigue.BaseValue</small>
+                </div>
+                <div class="mb-2">
+                    <label class="small text-muted">Vitality</label>
+                    <PendingPoolBar CurrentValue="@(Character?.Vitality.Value ?? 0)"
+                                    MaxValue="@(Character?.Vitality.BaseValue ?? 1)"
+                                    PendingDamage="@(Character?.Vitality.PendingDamage ?? 0)"
+                                    PendingHealing="@(Character?.Vitality.PendingHealing ?? 0)" />
+                    <small>@Character?.Vitality.Value / @Character?.Vitality.BaseValue</small>
+                </div>
+                <div>
+                    <label class="small text-muted">Action Points</label>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" style="width: @GetApPercent()%"></div>
+                    </div>
+                    <small>@Character?.ActionPoints.Available / @Character?.ActionPoints.Max</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Center Column: Attributes -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><strong>Attributes</strong></div>
+            <div class="card-body">
+                @foreach (var attr in Character?.AttributeList ?? Enumerable.Empty<AttributeEdit>())
+                {
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>@attr.Name</span>
+                        <span class="fw-bold">@attr.Value</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- XP and Damage Class -->
+        <div class="card mt-3">
+            <div class="card-header"><strong>Stats</strong></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>XP Banked</span>
+                    <span>@Character?.XPBanked</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>XP Total</span>
+                    <span>@Character?.XPTotal</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Damage Class</span>
+                    <span>@Character?.DamageClass</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Skills -->
+    <div class="col-md-4">
+        <div class="card" style="max-height: 500px; overflow-y: auto;">
+            <div class="card-header"><strong>Skills</strong></div>
+            <div class="card-body">
+                @foreach (var skillGroup in (Character?.Skills ?? Enumerable.Empty<SkillEdit>()).GroupBy(s => s.PrimaryAttribute).OrderBy(g => g.Key))
+                {
+                    <h6 class="text-muted small mt-2">@skillGroup.Key</h6>
+                    @foreach (var skill in skillGroup.OrderBy(s => s.Name))
+                    {
+                        @if (skill.Level > 0)
+                        {
+                            <div class="d-flex justify-content-between small">
+                                <span>@skill.Name</span>
+                                <span>@skill.Level</span>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CharacterEdit? Character { get; set; }
+
+    private int GetApPercent()
+    {
+        if (Character?.ActionPoints.Max <= 0) return 0;
+        return Character.ActionPoints.Available * 100 / Character.ActionPoints.Max;
+    }
+}
