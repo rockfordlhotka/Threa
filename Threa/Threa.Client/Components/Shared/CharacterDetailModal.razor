@@ -1,12 +1,16 @@
 @using GameMechanics
 @using GameMechanics.GamePlay
+@using GameMechanics.Messaging
 @using Radzen
 @using Threa.Dal
 @using Threa.Client.Components.Shared
 
+@implements IAsyncDisposable
+
 @inject IDataPortal<CharacterEdit> characterPortal
 @inject DialogService DialogService
 @inject ITableDal tableDal
+@inject ITimeEventSubscriber TimeEventSubscriber
 
 <div class="character-detail-modal">
     <!-- Header with character switcher and close -->
@@ -87,11 +91,46 @@
     private bool isLoading = true;
     private CharacterEdit? character;
     private string? currentGmNotes;
+    private bool subscribed;
 
     protected override async Task OnInitializedAsync()
     {
         selectedCharacterId = CharacterId;
         await LoadCharacterAsync();
+        await SubscribeToUpdatesAsync();
+    }
+
+    private async Task SubscribeToUpdatesAsync()
+    {
+        if (subscribed) return;
+
+        await TimeEventSubscriber.ConnectAsync();
+        await TimeEventSubscriber.SubscribeAsync();
+        TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        subscribed = true;
+    }
+
+    private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
+    {
+        // Only refresh if the updated character is the one we're viewing
+        if (e.CharacterId != selectedCharacterId) return;
+
+        InvokeAsync(async () =>
+        {
+            // Refresh character data silently (no visual indicator per CONTEXT.md)
+            isLoading = true;
+            StateHasChanged();
+
+            try
+            {
+                character = await characterPortal.FetchAsync(selectedCharacterId);
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        });
     }
 
     private async Task OnCharacterChanged()
@@ -127,5 +166,15 @@
     private void Close()
     {
         DialogService.Close();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (subscribed)
+        {
+            TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+            await TimeEventSubscriber.UnsubscribeAsync();
+            subscribed = false;
+        }
     }
 }
