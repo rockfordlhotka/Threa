@@ -10,43 +10,48 @@
 @inject ITimeEventPublisher TimeEventPublisher
 
 <div class="row g-3">
-    <!-- Health Management -->
+    <!-- Apply Damage -->
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-danger text-white">
                 <strong><i class="bi bi-heart-pulse me-1"></i>Apply Damage</strong>
             </div>
             <div class="card-body">
-                <div class="input-group mb-2">
-                    <input type="number" class="form-control" placeholder="Amount" @bind="damageAmount" min="1" />
-                    <select class="form-select" @bind="damageType" style="max-width: 120px;">
-                        <option value="FAT">FAT</option>
-                        <option value="VIT">VIT</option>
-                    </select>
+                <div class="mb-3">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-control" @bind="damageAmount" min="1" />
                 </div>
-                <button class="btn btn-danger w-100" @onclick="ApplyDamage" disabled="@isProcessing">
-                    <i class="bi bi-dash-circle me-1"></i>Apply Damage
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-danger flex-grow-1" @onclick="ApplyDamageToFat" disabled="@isProcessing">
+                        <i class="bi bi-dash-circle me-1"></i>FAT
+                    </button>
+                    <button class="btn btn-danger flex-grow-1" @onclick="ApplyDamageToVit" disabled="@isProcessing">
+                        <i class="bi bi-dash-circle me-1"></i>VIT
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Apply Healing -->
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-success text-white">
                 <strong><i class="bi bi-bandaid me-1"></i>Apply Healing</strong>
             </div>
             <div class="card-body">
-                <div class="input-group mb-2">
-                    <input type="number" class="form-control" placeholder="Amount" @bind="healAmount" min="1" />
-                    <select class="form-select" @bind="healType" style="max-width: 120px;">
-                        <option value="FAT">FAT</option>
-                        <option value="VIT">VIT</option>
-                    </select>
+                <div class="mb-3">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-control" @bind="healAmount" min="1" />
                 </div>
-                <button class="btn btn-success w-100" @onclick="ApplyHealing" disabled="@isProcessing">
-                    <i class="bi bi-plus-circle me-1"></i>Apply Healing
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success flex-grow-1" @onclick="ApplyHealingToFat" disabled="@isProcessing">
+                        <i class="bi bi-plus-circle me-1"></i>FAT
+                    </button>
+                    <button class="btn btn-success flex-grow-1" @onclick="ApplyHealingToVit" disabled="@isProcessing">
+                        <i class="bi bi-plus-circle me-1"></i>VIT
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -144,9 +149,7 @@
 
     // Form state
     private int damageAmount = 1;
-    private string damageType = "FAT";
     private int healAmount = 1;
-    private string healType = "FAT";
     private string selectedEffect = "";
     private bool isProcessing;
     private bool showRemoveConfirm;
@@ -155,7 +158,13 @@
     private string? feedbackMessage;
     private string feedbackClass = "alert-info";
 
-    private async Task ApplyDamage()
+    // Wrapper methods for button clicks
+    private Task ApplyDamageToFat() => ApplyDamageToPool("FAT");
+    private Task ApplyDamageToVit() => ApplyDamageToPool("VIT");
+    private Task ApplyHealingToFat() => ApplyHealingToPool("FAT");
+    private Task ApplyHealingToVit() => ApplyHealingToPool("VIT");
+
+    private async Task ApplyDamageToPool(string pool)
     {
         if (Character == null) return;
         isProcessing = true;
@@ -164,7 +173,7 @@
         {
             var character = await characterPortal.FetchAsync(CharacterId);
 
-            if (damageType == "FAT")
+            if (pool == "FAT")
             {
                 character.Fatigue.PendingDamage += damageAmount;
             }
@@ -181,10 +190,10 @@
                 UpdateType = CharacterUpdateType.Damage,
                 CampaignId = TableId.ToString(),
                 SourceId = "GM",
-                Description = $"{damageAmount} {damageType} damage"
+                Description = $"{damageAmount} {pool} damage"
             });
 
-            ShowFeedback($"Applied {damageAmount} {damageType} damage", "alert-danger");
+            ShowFeedback($"Applied {damageAmount} {pool} damage", "alert-danger");
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)
@@ -197,7 +206,7 @@
         }
     }
 
-    private async Task ApplyHealing()
+    private async Task ApplyHealingToPool(string pool)
     {
         if (Character == null) return;
         isProcessing = true;
@@ -206,7 +215,7 @@
         {
             var character = await characterPortal.FetchAsync(CharacterId);
 
-            if (healType == "FAT")
+            if (pool == "FAT")
             {
                 character.Fatigue.PendingHealing += healAmount;
             }
@@ -223,10 +232,10 @@
                 UpdateType = CharacterUpdateType.Healing,
                 CampaignId = TableId.ToString(),
                 SourceId = "GM",
-                Description = $"{healAmount} {healType} healing"
+                Description = $"{healAmount} {pool} healing"
             });
 
-            ShowFeedback($"Applied {healAmount} {healType} healing", "alert-success");
+            ShowFeedback($"Applied {healAmount} {pool} healing", "alert-success");
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)

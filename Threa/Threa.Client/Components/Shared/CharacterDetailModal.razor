@@ -13,15 +13,70 @@
 @inject ITimeEventSubscriber TimeEventSubscriber
 
 <div class="character-detail-modal">
-    <!-- Header with character switcher and close -->
-    <div class="modal-header d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
-        <select class="form-select" style="max-width: 250px;" @bind="selectedCharacterId" @bind:after="OnCharacterChanged">
+    <!-- Header with character switcher, summary, and close -->
+    <div class="modal-header d-flex align-items-center border-bottom pb-3 mb-3 gap-3">
+        <!-- Character Selector -->
+        <select class="form-select" style="max-width: 200px; flex-shrink: 0;" @bind="selectedCharacterId" @bind:after="OnCharacterChanged">
             @foreach (var charInfo in AllCharacters)
             {
                 <option value="@charInfo.CharacterId">@charInfo.CharacterName</option>
             }
         </select>
-        <button type="button" class="btn-close" aria-label="Close" @onclick="Close"></button>
+
+        <!-- Character Summary (when loaded) -->
+        @if (character != null && !isLoading)
+        {
+            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                <!-- Species -->
+                <span class="text-muted small">@character.Species</span>
+
+                <!-- Health Bars -->
+                <div class="d-flex align-items-center gap-2" style="min-width: 200px;">
+                    <div class="d-flex align-items-center gap-1">
+                        <small class="text-muted" style="width: 28px; font-size: 0.7rem;">FAT</small>
+                        <div style="width: 80px;">
+                            <PendingPoolBar CurrentValue="@character.Fatigue.Value"
+                                           MaxValue="@character.Fatigue.BaseValue"
+                                           PendingDamage="@character.Fatigue.PendingDamage"
+                                           PendingHealing="@character.Fatigue.PendingHealing"
+                                           Height="8px" />
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <small class="text-muted" style="width: 28px; font-size: 0.7rem;">VIT</small>
+                        <div style="width: 80px;">
+                            <PendingPoolBar CurrentValue="@character.Vitality.Value"
+                                           MaxValue="@character.Vitality.BaseValue"
+                                           PendingDamage="@character.Vitality.PendingDamage"
+                                           PendingHealing="@character.Vitality.PendingHealing"
+                                           Height="8px" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Badges -->
+                <div class="d-flex gap-1">
+                    <span class="badge bg-primary" title="Action Points">
+                        <i class="bi bi-lightning-charge"></i> @character.ActionPoints.Available/@character.ActionPoints.Max
+                    </span>
+                    @if (character.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound) > 0)
+                    {
+                        <span class="badge bg-warning text-dark" title="Wounds">
+                            <i class="bi bi-bandaid"></i> @character.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound)
+                        </span>
+                    }
+                    @if (character.Effects.Count(e => e.EffectType != Threa.Dal.Dto.EffectType.Wound) > 0)
+                    {
+                        <span class="badge bg-info" title="Active Effects">
+                            <i class="bi bi-stars"></i> @character.Effects.Count(e => e.EffectType != Threa.Dal.Dto.EffectType.Wound)
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Close Button -->
+        <button type="button" class="btn-close ms-auto" aria-label="Close" @onclick="Close"></button>
     </div>
 
     <!-- Tab navigation -->
