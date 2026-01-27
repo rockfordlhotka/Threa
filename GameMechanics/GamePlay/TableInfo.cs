@@ -86,6 +86,16 @@ public class TableInfo : ReadOnlyBase<TableInfo>
         private set => LoadProperty(StartTimeSecondsProperty, value);
     }
 
+    public static readonly PropertyInfo<string> DescriptionProperty = RegisterProperty<string>(nameof(Description));
+    /// <summary>
+    /// Description of the campaign for players browsing.
+    /// </summary>
+    public string Description
+    {
+        get => GetProperty(DescriptionProperty);
+        private set => LoadProperty(DescriptionProperty, value);
+    }
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -108,5 +118,6 @@ public class TableInfo : ReadOnlyBase<TableInfo>
         LastActivityAt = table.LastActivityAt;
         Theme = table.Theme ?? "fantasy";
         StartTimeSeconds = table.StartTimeSeconds;
+        Description = table.Description ?? string.Empty;
     }
 }
