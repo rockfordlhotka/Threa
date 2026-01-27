@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 12 - Table Foundation
+**Current focus:** Phase 13 - Join Workflow
 
 ## Current Position
 
 Milestone: v1.2
-Phase: 12 of 16 (Table Foundation)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 - Completed 12-02-PLAN.md
+Phase: 13 of 16 (Join Workflow)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-27 - Completed 13-01-PLAN.md
 
-Progress: v1.2 [####................] 20% (5 phases, 43 requirements)
+Progress: v1.2 [#####...............] 25% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: 13 min
-- Total execution time: 5.8 hours
+- Total execution time: 5.9 hours
 
 **By Phase (v1.0):**
 
@@ -50,9 +50,10 @@ Progress: v1.2 [####................] 20% (5 phases, 43 requirements)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
+| 13-join-workflow | 1/3 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 12-02 (2 min), 12-01 (3 min), 11-02 (5 min), 11-01 (24 min), 10-02 (2 min)
+- Last 5 plans: 13-01 (6 min), 12-02 (2 min), 12-01 (3 min), 11-02 (5 min), 11-01 (24 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -62,6 +63,9 @@ Progress: v1.2 [####................] 20% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: JoinRequest DTO with status enum (Pending, Approved, Denied)
+- [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
+- [v1.2]: Campaign description required during creation
 - [v1.2]: Bootstrap table for campaign list (simpler than RadzenDataGrid)
 - [v1.2]: ThemeIndicator component for reusable theme badges
 - [v1.2]: Theme.js readyState check for Blazor script timing
@@ -69,7 +73,6 @@ Recent decisions affecting current work:
 - [v1.2]: Sci-Fi default epoch = 13569465600 (Year 2400)
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
 - [v1.1]: RabbitMQ messaging infrastructure exists for time propagation
-- [v1.0]: GM table page exists with round advancement (foundation for v1.2 time management)
 
 ### Pending Todos
 
@@ -89,8 +92,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 12-02-PLAN.md
+Stopped at: Completed 13-01-PLAN.md
 Resume file: None
 
 ---
-*Phase 12 complete - next: /gsd:plan-phase 13*
+*Phase 13 in progress - next: 13-02-PLAN.md*
