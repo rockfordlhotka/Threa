@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 Milestone: v1.2
 Phase: 15 of 16 (Dashboard Details)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-27 - Completed 15-01-PLAN.md
+Last activity: 2026-01-27 - Completed 15-02-PLAN.md
 
-Progress: v1.2 [#############.......] 64% (5 phases, 43 requirements)
+Progress: v1.2 [##############......] 70% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
+- Total plans completed: 35
 - Average duration: 11 min
-- Total execution time: 6.9 hours
+- Total execution time: 7.0 hours
 
 **By Phase (v1.0):**
 
@@ -52,10 +52,10 @@ Progress: v1.2 [#############.......] 64% (5 phases, 43 requirements)
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
 | 13-join-workflow | 4/4 | 17 min | 4 min |
 | 14-dashboard-core | 3/3 | 38 min | 13 min |
-| 15-dashboard-details | 1/3 | 6 min | 6 min |
+| 15-dashboard-details | 2/3 | 11 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 15-01 (6 min), 14-03 (21 min), 14-02 (4 min), 14-01 (13 min), 13-03 (5 min)
+- Last 5 plans: 15-02 (5 min), 15-01 (6 min), 14-03 (21 min), 14-02 (4 min), 14-01 (13 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -65,6 +65,9 @@ Progress: v1.2 [#############.......] 64% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: Skills grouped by PrimaryAttribute in CharacterDetailSheet
+- [v1.2]: GM notes auto-save on blur with loading indicator
+- [v1.2]: Read-only view components for GM character inspection
 - [v1.2]: CharacterDetailModal opens at 90% screen size
 - [v1.2]: GmNotes stored per table-character pair (table-context specific)
 - [v1.2]: Character switcher dropdown in modal header
@@ -100,8 +103,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 15-01-PLAN.md
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
 
 ---
-*Phase 15 in progress - 1/3 plans complete*
+*Phase 15 in progress - 2/3 plans complete*
