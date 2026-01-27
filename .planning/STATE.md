@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 Milestone: v1.2
 Phase: 12 of 16 (Table Foundation)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-01-26 - Roadmap created for v1.2 milestone
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-27 - Completed 12-01-PLAN.md
 
-Progress: v1.2 [....................] 0% (5 phases, 43 requirements)
+Progress: v1.2 [##..................] 10% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 14 min
-- Total execution time: 5.7 hours
+- Total execution time: 5.75 hours
 
 **By Phase (v1.0):**
 
@@ -45,8 +45,14 @@ Progress: v1.2 [....................] 0% (5 phases, 43 requirements)
 | 10-admin-user-management | 2/2 | 11 min | 5.5 min |
 | 11-user-profiles | 2/2 | 29 min | 14.5 min |
 
+**By Phase (v1.2):**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 12-table-foundation | 1/2 | 3 min | 3 min |
+
 **Recent Trend:**
-- Last 5 plans: 11-02 (5 min), 11-01 (24 min), 10-02 (2 min), 10-01 (9 min), 09-02 (3 min)
+- Last 5 plans: 12-01 (3 min), 11-02 (5 min), 11-01 (24 min), 10-02 (2 min), 10-01 (9 min)
 - Trend: steady execution velocity
 
 ## Accumulated Context
@@ -56,6 +62,8 @@ Progress: v1.2 [....................] 0% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: Theme preview via JS interop during campaign creation
+- [v1.2]: Sci-Fi default epoch = 13569465600 (Year 2400)
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
 - [v1.1]: RabbitMQ messaging infrastructure exists for time propagation
 - [v1.0]: GM table page exists with round advancement (foundation for v1.2 time management)
@@ -77,9 +85,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-26
-Stopped at: Roadmap created for v1.2 milestone
+Last session: 2026-01-27
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None
 
 ---
-*v1.2 roadmap ready - next: /gsd:plan-phase 12*
+*Phase 12 in progress - next: 12-02-PLAN.md*
