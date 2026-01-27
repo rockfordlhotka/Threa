@@ -55,7 +55,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Table Foundation** - GM creates and manages campaign tables
 - [x] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
-- [ ] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
+- [x] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
 - [ ] **Phase 15: Dashboard Details** - Detailed views, real-time updates, NPC placeholder
 - [ ] **Phase 16: Time Management** - Round-based and calendar time control
 
@@ -125,11 +125,12 @@ Plans:
   4. Detailed view shows narrative information (appearance, backstory)
   5. Dashboard automatically updates when any character's state changes (no manual refresh needed)
   6. Dashboard includes labeled placeholder area for future NPC functionality
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01-PLAN.md - Modal foundation, data layer GmNotes, CharacterStatusCard onclick
+- [ ] 15-02-PLAN.md - Tab content components (CharacterDetailSheet, Inventory, Narrative)
+- [ ] 15-03-PLAN.md - Real-time updates and NPC placeholder
 
 ### Phase 16: Time Management
 **Goal**: GM can control time flow with multiple increments and round-based mode
@@ -164,9 +165,9 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
 | 13. Join Workflow | v1.2 | 4/4 | Complete | 2026-01-27 |
 | 14. Dashboard Core | v1.2 | 3/3 | Complete | 2026-01-27 |
-| 15. Dashboard Details | v1.2 | 0/? | Not started | - |
+| 15. Dashboard Details | v1.2 | 0/3 | Planned | - |
 | 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-27 - Phase 14 complete*
+*Last updated: 2026-01-27 - Phase 15 planned (3 plans)*
