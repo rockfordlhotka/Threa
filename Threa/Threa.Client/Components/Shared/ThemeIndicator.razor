@@ -1,0 +1,19 @@
+@namespace Threa.Client.Components.Shared
+
+@if (Theme == "scifi")
+{
+    <span class="badge" style="background: transparent; border: 1px solid var(--color-accent-primary); color: var(--color-accent-primary);">
+        <i class="bi bi-cpu"></i> Sci-Fi
+    </span>
+}
+else
+{
+    <span class="badge" style="background: var(--color-accent-primary); color: white;">
+        <i class="bi bi-book"></i> Fantasy
+    </span>
+}
+
+@code {
+    [Parameter]
+    public string Theme { get; set; } = "fantasy";
+}
