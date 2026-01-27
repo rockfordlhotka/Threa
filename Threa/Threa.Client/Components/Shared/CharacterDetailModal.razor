@@ -1,0 +1,131 @@
+@using GameMechanics.GamePlay
+@using Radzen
+@using Threa.Dal
+
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject DialogService DialogService
+@inject ITableDal tableDal
+
+<div class="character-detail-modal">
+    <!-- Header with character switcher and close -->
+    <div class="modal-header d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <select class="form-select" style="max-width: 250px;" @bind="selectedCharacterId" @bind:after="OnCharacterChanged">
+            @foreach (var charInfo in AllCharacters)
+            {
+                <option value="@charInfo.CharacterId">@charInfo.CharacterName</option>
+            }
+        </select>
+        <button type="button" class="btn-close" aria-label="Close" @onclick="Close"></button>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="tab-buttons mb-3">
+        @foreach (var tabName in tabNames)
+        {
+            <button class="tab-link @(activeTab == tabName ? "active" : "")"
+                    @onclick="() => activeTab = tabName">
+                @tabName
+            </button>
+        }
+    </div>
+
+    <!-- Tab content -->
+    <div class="tab-content p-3" style="min-height: 400px; max-height: 70vh; overflow-y: auto;">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading character data...</p>
+            </div>
+        }
+        else if (character != null)
+        {
+            @if (activeTab == "Character Sheet")
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-person-badge fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">Character Sheet content coming in Plan 02</p>
+                    <small class="text-muted">Full character stats, attributes, and skills will be displayed here.</small>
+                </div>
+            }
+            else if (activeTab == "Inventory")
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-backpack2 fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">Inventory content coming in Plan 02</p>
+                    <small class="text-muted">Equipment slots and carried items will be displayed here.</small>
+                </div>
+            }
+            else if (activeTab == "Narrative")
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-text fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">Narrative content coming in Plan 02</p>
+                    <small class="text-muted">Appearance, backstory, notes, and GM notes will be displayed here.</small>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Unable to load character data.
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int CharacterId { get; set; }
+
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    [Parameter]
+    public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
+
+    private static readonly string[] tabNames = ["Character Sheet", "Inventory", "Narrative"];
+    private string activeTab = tabNames[0];
+    private int selectedCharacterId;
+    private bool isLoading = true;
+    private GameMechanics.CharacterEdit? character;
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedCharacterId = CharacterId;
+        await LoadCharacterAsync();
+    }
+
+    private async Task OnCharacterChanged()
+    {
+        await LoadCharacterAsync();
+    }
+
+    private async Task LoadCharacterAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            character = await characterPortal.FetchAsync(selectedCharacterId);
+        }
+        catch
+        {
+            character = null;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Close()
+    {
+        DialogService.Close();
+    }
+}
