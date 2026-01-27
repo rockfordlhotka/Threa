@@ -898,15 +898,15 @@ else
         table.AdvanceTime(seconds);
         await SaveTable();
 
-        // Format the time increment for logging
-        string timeDescription = seconds switch
+        // Determine the appropriate event type and format for logging
+        var (timeEventType, timeDescription, count) = seconds switch
         {
-            60 => "1 minute",
-            600 => "1 turn (10 minutes)",
-            3600 => "1 hour",
-            86400 => "1 day",
-            604800 => "1 week",
-            _ => $"{seconds} seconds"
+            60 => (GameMechanics.Time.TimeEventType.EndOfMinute, "1 minute", 1),
+            600 => (GameMechanics.Time.TimeEventType.EndOfTurn, "1 turn (10 minutes)", 1),
+            3600 => (GameMechanics.Time.TimeEventType.EndOfHour, "1 hour", 1),
+            86400 => (GameMechanics.Time.TimeEventType.EndOfDay, "1 day", 1),
+            604800 => (GameMechanics.Time.TimeEventType.EndOfWeek, "1 week", 1),
+            _ => (GameMechanics.Time.TimeEventType.EndOfMinute, $"{seconds} seconds", seconds / 60)
         };
 
         AddLogEntry($"Advanced time by {timeDescription}", ActivityCategory.Time);
@@ -914,11 +914,11 @@ else
         // Publish time skip event so players can process time-based effects
         await TimeEventPublisher.PublishTimeSkipAsync(new TimeSkipMessage
         {
-            SkipUnit = GameMechanics.Time.TimeSkipUnit.Custom,
-            Count = seconds,
+            SkipUnit = timeEventType,
+            Count = count,
             CampaignId = table.Id.ToString(),
             SourceId = "GM",
-            Reason = $"GM advanced time by {timeDescription}"
+            NarrativeDescription = $"GM advanced time by {timeDescription}"
         });
     }
 
