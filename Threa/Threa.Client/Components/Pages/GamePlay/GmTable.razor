@@ -31,6 +31,7 @@
 @inject IDataPortal<GameMechanics.GamePlay.JoinRequestProcessor> processorPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ApplicationContext applicationContext
+@inject ITimeEventSubscriber TimeEventSubscriber
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -385,13 +386,17 @@ else
                     {
                         <!-- Quick Advance Buttons -->
                         <div class="d-flex gap-2 mb-3">
-                            <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound">
+                            <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound"
+                                    disabled="@(!table.IsInCombat)"
+                                    title="@(table.IsInCombat ? "Advance to next round" : "Enter combat mode to advance rounds")">
                                 +1 Round
                             </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)">
+                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)"
+                                    disabled="@(!table.IsInCombat)">
                                 +5
                             </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)">
+                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)"
+                                    disabled="@(!table.IsInCombat)">
                                 +10
                             </button>
                         </div>
@@ -399,8 +404,10 @@ else
                         <!-- Custom Advance -->
                         <div class="input-group mb-3">
                             <input type="number" class="form-control" @bind="roundsToAdvance"
-                                   min="1" max="100" placeholder="Custom" />
-                            <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
+                                   min="1" max="100" placeholder="Custom"
+                                   disabled="@(!table.IsInCombat)" />
+                            <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds"
+                                    disabled="@(!table.IsInCombat)">
                                 Advance
                             </button>
                         </div>
@@ -534,6 +541,7 @@ else
     private bool showRemoveConfirm;
     private GameMechanics.GamePlay.TableCharacterInfo? characterToRemove;
     private bool isProcessingRequest;
+    private bool timeEventSubscribed;
 
     private IEnumerable<ItemTemplate> filteredTemplates =>
         allTemplates?
@@ -559,7 +567,75 @@ else
             await LoadTable();
             SubscribeToActivityLog();
             await TimeEventPublisher.ConnectAsync();
+            await SubscribeToTimeEventsAsync();
         }
+    }
+
+    private async Task SubscribeToTimeEventsAsync()
+    {
+        if (timeEventSubscribed) return;
+
+        await TimeEventSubscriber.ConnectAsync();
+        await TimeEventSubscriber.SubscribeAsync();
+
+        TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        timeEventSubscribed = true;
+    }
+
+    private void OnTimeEventReceived(object? sender, TimeEventMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        // When time advances, schedule a refresh of character data after a short delay
+        // to allow player clients to process their end-of-round effects first
+        InvokeAsync(async () =>
+        {
+            // Wait briefly for players to process and save their character updates
+            await Task.Delay(500);
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
+    {
+        // Refresh character list when any character at this table is updated
+        InvokeAsync(async () =>
+        {
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task RefreshCharacterListAsync()
+    {
+        try
+        {
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
+
+            // Update selected character reference if it still exists
+            if (selectedCharacter != null)
+            {
+                selectedCharacter = tableCharacters.FirstOrDefault(c => c.CharacterId == selectedCharacter.CharacterId);
+            }
+        }
+        catch
+        {
+            // Ignore refresh errors
+        }
+    }
+
+    private async Task UnsubscribeFromTimeEventsAsync()
+    {
+        if (!timeEventSubscribed) return;
+
+        TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        await TimeEventSubscriber.UnsubscribeAsync();
+        timeEventSubscribed = false;
     }
 
     private void SubscribeToActivityLog()
@@ -575,9 +651,10 @@ else
         });
     }
 
-    public void Dispose()
+    public async void Dispose()
     {
         activityLogSubscription?.Dispose();
+        await UnsubscribeFromTimeEventsAsync();
         // Note: TimeEventPublisher is a singleton service, do not dispose
     }
 
@@ -918,7 +995,7 @@ else
             );
             effect.Source = "GM";
 
-            character.Effects.Add(effect);
+            character.Effects.AddEffect(effect);
             await characterPortal.UpdateAsync(character);
 
             AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
@@ -932,6 +1009,10 @@ else
                 SourceId = "GM",
                 Description = selectedEffect
             });
+
+            // Refresh the table character list to show updated values
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
 
             selectedEffect = "";
         }
