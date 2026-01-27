@@ -167,70 +167,30 @@ else
                     <strong>Characters at Table</strong>
                     <span class="badge bg-primary">@(tableCharacters?.Count() ?? 0)</span>
                 </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @if (tableCharacters == null || !tableCharacters.Any())
                     {
-                        <p class="text-muted">No characters have joined yet.</p>
-                        <p class="small">Share this link with players:</p>
-                        <code>@GetPlayerJoinLink()</code>
+                        <div class="text-center py-4">
+                            <i class="bi bi-people fs-1 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">Waiting for players to join</p>
+                            <small class="text-muted">Share this link:</small>
+                            <div class="mt-1">
+                                <code class="small">@GetPlayerJoinLink()</code>
+                            </div>
+                        </div>
                     }
                     else
                     {
-                        @foreach (var character in tableCharacters)
-                        {
-                            <div class="card gm-character-card mb-2 @(selectedCharacter?.CharacterId == character.CharacterId ? "border-primary" : "")"
-                                 @onclick="() => SelectCharacter(character)"
-                                 style="cursor: pointer;">
-                                <div class="card-body py-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="status-indicator @GetConnectionIndicatorClass(character.ConnectionStatus)"></span>
-                                            <strong>@character.CharacterName</strong>
-                                        </div>
-                                        <span class="badge @GetConnectionBadgeClass(character.ConnectionStatus)">
-                                            @character.ConnectionStatusDisplay
-                                        </span>
-                                    </div>
-                                    <div class="mt-2">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <small style="width: 35px;">FAT</small>
-                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
-                                                <div class="progress-bar" style="width: @GetPercent(character.FatValue, character.FatMax)%; background-color: var(--progress-fat-color);"></div>
-                                            </div>
-                                            <small class="text-end" style="width: 45px;">@character.FatValue/@character.FatMax</small>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small style="width: 35px;">VIT</small>
-                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
-                                                <div class="progress-bar" style="width: @GetPercent(character.VitValue, character.VitMax)%; background-color: var(--progress-vit-color);"></div>
-                                            </div>
-                                            <small class="text-end" style="width: 45px;">@character.VitValue/@character.VitMax</small>
-                                        </div>
-                                    </div>
-                                    @if (GetHealthStatus(character) != null)
-                                    {
-                                        <div class="mt-1">
-                                            <span class="badge @GetHealthStatusBadgeClass(character)">@GetHealthStatus(character)</span>
-                                        </div>
-                                    }
-                                    <div class="mt-2 d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickHeal(character)">
-                                            <i class="bi bi-plus-circle"></i> Heal
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger flex-grow-1" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickDamage(character)">
-                                            <i class="bi bi-dash-circle"></i> Damage
-                                        </button>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger w-100 mt-1"
-                                            @onclick:stopPropagation="true"
-                                            @onclick="() => ConfirmRemoveCharacter(character)">
-                                        <i class="bi bi-x-circle"></i> Remove from Table
-                                    </button>
+                        <div class="row row-cols-1 row-cols-lg-2 g-2">
+                            @foreach (var character in tableCharacters)
+                            {
+                                <div class="col">
+                                    <CharacterStatusCard Character="@character"
+                                                        IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
+                                                        OnClick="SelectCharacter" />
                                 </div>
-                            </div>
-                        }
+                            }
+                        </div>
                     }
                 </div>
             </div>
@@ -619,6 +579,17 @@ else
     {
         activityLogSubscription?.Dispose();
         // Note: TimeEventPublisher is a singleton service, do not dispose
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        // Initialize tooltips after each render since cards may have changed
+        if (tableCharacters?.Any() == true)
+        {
+            await JS.InvokeVoidAsync("reinitializeTooltipsAfterDelay", 50);
+        }
     }
 
     private async Task LoadTable()
