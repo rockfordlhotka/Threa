@@ -11,6 +11,9 @@
 @using Threa.Services
 @using Threa.Client.Components.Shared
 
+@* Suppress warnings for using legacy round-based properties for UI display *@
+#pragma warning disable CS0618
+
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
@@ -418,6 +421,8 @@ else if (character == null)
 }
 
 @code {
+#pragma warning disable CS0618 // Using legacy round-based properties for UI display
+
 [Parameter]
 public Guid TableId { get; set; }
 
@@ -961,7 +966,7 @@ private async Task SelectCharacterAsync(int characterId)
                 AddLogEntry($"Joined table {result.TableName}", ActivityCategory.Player);
 
                 // If joining an in-progress table, announce the current game time
-                if (table.Status == Threa.Dal.Dto.TableStatus.Active)
+                if (table?.Status == Threa.Dal.Dto.TableStatus.Active)
                 {
                     var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
                     AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);

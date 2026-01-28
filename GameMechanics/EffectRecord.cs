@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Threa.Dal.Dto;
 
+#pragma warning disable CS0618 // Type or member is obsolete - this class maintains legacy round-based properties for backward compatibility
+
 namespace GameMechanics;
 
 /// <summary>

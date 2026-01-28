@@ -1,6 +1,9 @@
 @* Status Tab - Shows character portrait, health pools, effects, and wounds *@
 
 @using GameMechanics.Effects.Behaviors
+
+@* Suppress warnings for using legacy round-based properties for UI display *@
+#pragma warning disable CS0618
 @using GameMechanics.Items
 @using Threa.Dal.Dto
 @using Threa.Client.Components.Shared
@@ -464,6 +467,8 @@
 </div>
 
 @code {
+#pragma warning disable CS0618 // Using legacy round-based properties for UI display
+
     [Parameter]
     public GameMechanics.CharacterEdit? Character { get; set; }
 

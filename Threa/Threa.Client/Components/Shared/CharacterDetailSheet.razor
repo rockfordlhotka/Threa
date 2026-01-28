@@ -124,6 +124,6 @@
     private int GetApPercent()
     {
         if (Character?.ActionPoints.Max <= 0) return 0;
-        return Character.ActionPoints.Available * 100 / Character.ActionPoints.Max;
+        return Character!.ActionPoints.Available * 100 / Character.ActionPoints.Max;
     }
 }

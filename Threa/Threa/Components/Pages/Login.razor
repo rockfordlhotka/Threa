@@ -67,7 +67,7 @@
         Message = "";
         try
         {
-            var userValidation = await portal.ExecuteAsync(UserInfoModel.Username, UserInfoModel.Password);
+            var userValidation = await portal.ExecuteAsync(UserInfoModel!.Username, UserInfoModel.Password);
             if (userValidation != null &&
                 userValidation.Principal != null &&
                 userValidation.Principal.Identity != null &&
