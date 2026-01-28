@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Planning next milestone (v1.3)
+**Current focus:** Milestone v1.3 - GM Character Manipulation
 
 ## Current Position
 
-Milestone: v1.3 (planning needed)
-Phase: Not started
-Plan: Not started
-Status: Ready to plan next milestone
-Last activity: 2026-01-28 - v1.2 milestone complete
+Milestone: v1.3 GM Character Manipulation
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-28 - Milestone v1.3 started
 
 Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements shipped)
 
