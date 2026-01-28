@@ -445,6 +445,89 @@ namespace GameMechanics
       ActionPoints.EndOfRound();
     }
 
+    /// <summary>
+    /// Processes a time skip (calendar time advancement like minutes, hours, days, weeks).
+    /// Applies hourly VIT recovery, VIT-level-dependent FAT recovery, and pending pool flow.
+    /// </summary>
+    public void ProcessTimeSkip(GameMechanics.Time.TimeEventType skipUnit, int count, IChildDataPortal<EffectRecord>? effectPortal = null)
+    {
+      // Calculate total hours passed
+      double hoursPassedDecimal = skipUnit switch
+      {
+        GameMechanics.Time.TimeEventType.EndOfMinute => count / 60.0,     // 60 minutes = 1 hour
+        GameMechanics.Time.TimeEventType.EndOfTurn => count / 6.0,        // 6 turns (10 min each) = 1 hour
+        GameMechanics.Time.TimeEventType.EndOfHour => count,               // 1 hour = 1 hour
+        GameMechanics.Time.TimeEventType.EndOfDay => count * 24,           // 1 day = 24 hours
+        GameMechanics.Time.TimeEventType.EndOfWeek => count * 24 * 7,      // 1 week = 168 hours
+        _ => 0
+      };
+
+      int hoursPassed = (int)Math.Floor(hoursPassedDecimal);
+
+      // VIT Recovery: 1 VIT per hour when alive (VIT > 0)
+      // Per GAME_RULES_SPECIFICATION.md line 162
+      if (Vitality.Value > 0 && hoursPassed > 0)
+      {
+        Vitality.PendingHealing += hoursPassed;
+      }
+
+      // FAT Recovery: Rate depends on current VIT level
+      // Per design/GAME_RULES_SPECIFICATION.md and Fatigue.cs comments:
+      // VIT >= 5: 1 per round (handled in combat via EndOfRound)
+      // VIT = 4: 1 per minute
+      // VIT = 3: 1 per 30 minutes
+      // VIT = 2: 1 per hour
+      // VIT <= 1: No recovery
+      if (Fatigue.Value < Fatigue.BaseValue)
+      {
+        int fatRecovery = Vitality.Value switch
+        {
+          4 => (int)Math.Floor(count * GetMinutesForTimeSkip(skipUnit)),        // 1 per minute
+          3 => (int)Math.Floor(count * GetMinutesForTimeSkip(skipUnit) / 30.0),  // 1 per 30 minutes
+          2 => hoursPassed,                                                       // 1 per hour
+          _ => 0  // VIT <= 1 or VIT >= 5 (VIT >= 5 handles in combat only)
+        };
+
+        if (fatRecovery > 0)
+        {
+          Fatigue.PendingHealing += fatRecovery;
+        }
+      }
+
+      // Process pending pools and effects multiple times to simulate time passage
+      // Cap at 100 iterations to avoid performance issues, then do final pass
+      int iterations = Math.Min((int)(hoursPassedDecimal * 600), 100);  // ~600 rounds per hour, cap at 100
+      for (int i = 0; i < iterations; i++)
+      {
+        Fatigue.EndOfRound();
+        Vitality.EndOfRound(effectPortal);
+        Effects.EndOfRound();
+        ActionPoints.EndOfRound();
+      }
+
+      // Final pass to ensure all pending pools are resolved
+      if (hoursPassedDecimal > 0)
+      {
+        Fatigue.EndOfRound();
+        Vitality.EndOfRound(effectPortal);
+        Effects.EndOfRound();
+        ActionPoints.EndOfRound();
+      }
+    }
+
+    private double GetMinutesForTimeSkip(GameMechanics.Time.TimeEventType skipUnit)
+    {
+      return skipUnit switch
+      {
+        GameMechanics.Time.TimeEventType.EndOfMinute => 1,
+        GameMechanics.Time.TimeEventType.EndOfTurn => 10,
+        GameMechanics.Time.TimeEventType.EndOfHour => 60,
+        GameMechanics.Time.TimeEventType.EndOfDay => 60 * 24,
+        GameMechanics.Time.TimeEventType.EndOfWeek => 60 * 24 * 7,
+        _ => 0
+      };
+    }
+
     public void TakeDamage(DamageValue damageValue, IChildDataPortal<EffectRecord> effectPortal)
     {
       Fatigue.TakeDamage(damageValue);
