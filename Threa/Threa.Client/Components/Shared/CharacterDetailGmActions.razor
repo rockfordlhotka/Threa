@@ -101,6 +101,7 @@
 @if (!string.IsNullOrEmpty(feedbackMessage))
 {
     <div class="alert @feedbackClass mt-3 alert-dismissible fade show" role="alert">
+        <i class="bi @feedbackIcon me-1"></i>
         @feedbackMessage
         <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
     </div>
@@ -157,6 +158,7 @@
     // Feedback
     private string? feedbackMessage;
     private string feedbackClass = "alert-info";
+    private string feedbackIcon = "bi-info-circle";
 
     // Wrapper methods for button clicks
     private Task ApplyDamageToFat() => ApplyDamageToPool("FAT");
@@ -193,12 +195,12 @@
                 Description = $"{damageAmount} {pool} damage"
             });
 
-            ShowFeedback($"Applied {damageAmount} {pool} damage", "alert-danger");
+            ShowFeedback($"Saved: {damageAmount} {pool} damage applied", "alert-success", "bi-check-circle");
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)
         {
-            ShowFeedback($"Error: {ex.Message}", "alert-danger");
+            ShowFeedback($"Error saving: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
         }
         finally
         {
@@ -235,12 +237,12 @@
                 Description = $"{healAmount} {pool} healing"
             });
 
-            ShowFeedback($"Applied {healAmount} {pool} healing", "alert-success");
+            ShowFeedback($"Saved: {healAmount} {pool} healing applied", "alert-success", "bi-check-circle");
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)
         {
-            ShowFeedback($"Error: {ex.Message}", "alert-danger");
+            ShowFeedback($"Error saving: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
         }
         finally
         {
@@ -278,13 +280,13 @@
                 Description = selectedEffect
             });
 
-            ShowFeedback($"Applied {selectedEffect} effect", "alert-warning");
+            ShowFeedback($"Saved: {selectedEffect} effect applied", "alert-success", "bi-check-circle");
             selectedEffect = "";
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)
         {
-            ShowFeedback($"Error: {ex.Message}", "alert-danger");
+            ShowFeedback($"Error saving: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
         }
         finally
         {
@@ -316,12 +318,12 @@
             }
             else
             {
-                ShowFeedback($"Error: {result.ErrorMessage}", "alert-danger");
+                ShowFeedback($"Error: {result.ErrorMessage}", "alert-danger", "bi-exclamation-triangle");
             }
         }
         catch (Exception ex)
         {
-            ShowFeedback($"Error: {ex.Message}", "alert-danger");
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
         }
         finally
         {
@@ -330,9 +332,10 @@
         }
     }
 
-    private void ShowFeedback(string message, string alertClass)
+    private void ShowFeedback(string message, string alertClass, string icon = "bi-check-circle")
     {
         feedbackMessage = message;
         feedbackClass = alertClass;
+        feedbackIcon = icon;
     }
 }
