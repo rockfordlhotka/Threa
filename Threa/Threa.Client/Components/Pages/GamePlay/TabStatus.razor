@@ -420,7 +420,7 @@
                             <span><i class="bi bi-arrow-down-circle"></i> Total AS Penalty</span>
                             <strong class="text-danger">@TotalWoundPenalty</strong>
                         </div>
-                        <small class="text-muted">-2 per wound to all ability scores</small>
+                        <small class="text-muted">Applied to all ability scores</small>
                     </div>
 
                     <!-- Body Location Diagram -->
@@ -539,7 +539,23 @@
     // Wound helpers
     private int TotalWoundCount => Character?.Effects.TotalWoundCount ?? 0;
 
-    private int TotalWoundPenalty => TotalWoundCount * WoundBehavior.PenaltyPerWound;
+    private int TotalWoundPenalty
+    {
+        get
+        {
+            if (Character?.Effects == null) return 0;
+
+            // Sum actual AS penalties from all wounds (supports custom penalties from Plan 01)
+            var woundEffects = Character.Effects.GetEffectsByType(EffectType.Wound).ToList();
+            if (!woundEffects.Any()) return 0;
+
+            return woundEffects.Sum(wound =>
+            {
+                var modifiers = wound.GetAbilityScoreModifiers("AnySkill", "AnyAttr", 0);
+                return modifiers.Sum(m => m.Value);
+            });
+        }
+    }
 
     private bool HasCrippledLimbs => Character?.Effects.GetAllWoundStates()
         .Any(w => w.State.IsCrippled) ?? false;
