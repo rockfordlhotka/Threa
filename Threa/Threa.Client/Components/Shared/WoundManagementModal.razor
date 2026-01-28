@@ -1,0 +1,298 @@
+@* Modal for managing all wounds on a character *@
+
+@using GameMechanics
+@using GameMechanics.Effects.Behaviors
+@using GameMechanics.Messaging
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject DialogService DialogService
+@inject ITimeEventPublisher TimeEventPublisher
+
+<div class="p-3">
+    @* Add Wound Button *@
+    <button class="btn btn-primary mb-3" @onclick="OpenAddWound" disabled="@isProcessing">
+        <i class="bi bi-plus-lg me-1"></i>Add Wound
+    </button>
+
+    @* Wounds Table *@
+    @if (GetWounds().Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 100px;">Severity</th>
+                        <th style="width: 100px;">Location</th>
+                        <th>Description</th>
+                        <th style="width: 180px;">Effects</th>
+                        <th style="width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var wound in GetWounds())
+                    {
+                        var state = WoundState.Deserialize(wound.BehaviorState);
+                        <tr>
+                            <td>
+                                <span class="badge @GetSeverityBadgeClass(state.Severity)">
+                                    @(state.Severity ?? "Unknown")
+                                </span>
+                            </td>
+                            <td>@FormatLocation(wound.Location)</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="@state.Description">
+                                @(state.Description ?? wound.Description ?? "-")
+                            </td>
+                            <td class="small text-muted">
+                                @{
+                                    var asPenalty = state.CustomASPenalty ?? WoundState.GetSeverityDefaults(state.Severity).asPenalty;
+                                    var fatDmg = state.FatDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).fatPerTick;
+                                    var vitDmg = state.VitDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).vitPerTick;
+                                }
+                                AS @asPenalty, FAT @fatDmg, VIT @vitDmg/tick
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" @onclick="() => OpenEditWound(wound)"
+                                            disabled="@isProcessing" title="Edit wound">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" @onclick="() => ConfirmRemoveWound(wound)"
+                                            disabled="@isProcessing" title="Remove wound">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary text-center">
+            <i class="bi bi-bandaid me-1"></i>
+            No wounds. Click "Add Wound" to add one.
+        </div>
+    }
+
+    @* Summary Stats *@
+    @if (GetWounds().Any())
+    {
+        <div class="mt-3 small text-muted">
+            <strong>Total wounds:</strong> @GetWounds().Count()
+            @{
+                var totalASPenalty = GetWounds().Sum(w =>
+                {
+                    var st = WoundState.Deserialize(w.BehaviorState);
+                    return st.CustomASPenalty ?? WoundState.GetSeverityDefaults(st.Severity).asPenalty;
+                });
+            }
+            <span class="ms-3"><strong>Total AS penalty:</strong> @totalASPenalty</span>
+        </div>
+    }
+
+    @* Feedback Messages *@
+    @if (!string.IsNullOrEmpty(feedbackMessage))
+    {
+        <div class="alert @feedbackClass mt-3 alert-dismissible fade show" role="alert">
+            <i class="bi @feedbackIcon me-1"></i>
+            @feedbackMessage
+            <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
+        </div>
+    }
+</div>
+
+@* Remove Confirmation Dialog *@
+@if (showRemoveConfirm && woundToRemove != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5); z-index: 1060;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Remove Wound</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
+                </div>
+                <div class="modal-body">
+                    @{
+                        var removeState = WoundState.Deserialize(woundToRemove.BehaviorState);
+                    }
+                    <p>Are you sure you want to remove this wound?</p>
+                    <p class="text-muted small">
+                        <strong>@(removeState.Severity ?? "Unknown")</strong> wound at
+                        <strong>@FormatLocation(woundToRemove.Location)</strong>:
+                        @(removeState.Description ?? woundToRemove.Description ?? "-")
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ExecuteRemove" disabled="@isProcessing">
+                        <i class="bi bi-trash me-1"></i>Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public CharacterEdit? Character { get; set; }
+    [Parameter] public int CharacterId { get; set; }
+    [Parameter] public Guid TableId { get; set; }
+
+    private bool isProcessing;
+    private bool showRemoveConfirm;
+    private EffectRecord? woundToRemove;
+
+    private string? feedbackMessage;
+    private string feedbackClass = "alert-info";
+    private string feedbackIcon = "bi-info-circle";
+
+    private IEnumerable<EffectRecord> GetWounds() =>
+        Character?.Effects
+            .Where(e => e.EffectType == EffectType.Wound)
+            .OrderByDescending(e => GetSeverityOrder(WoundState.Deserialize(e.BehaviorState).Severity))
+        ?? Enumerable.Empty<EffectRecord>();
+
+    private static int GetSeverityOrder(string? severity) => severity switch
+    {
+        "Critical" => 4,
+        "Severe" => 3,
+        "Moderate" => 2,
+        "Minor" => 1,
+        _ => 0
+    };
+
+    private static string GetSeverityBadgeClass(string? severity) => severity switch
+    {
+        "Critical" => "bg-danger",
+        "Severe" => "text-bg-warning", // Orange-ish warning
+        "Moderate" => "bg-warning text-dark",
+        "Minor" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    private static string FormatLocation(string? location) => location switch
+    {
+        "LeftArm" => "Left Arm",
+        "RightArm" => "Right Arm",
+        "LeftLeg" => "Left Leg",
+        "RightLeg" => "Right Leg",
+        null => "-",
+        _ => location
+    };
+
+    private async Task OpenAddWound()
+    {
+        var result = await DialogService.OpenAsync<WoundFormModal>(
+            "Add Wound",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId }
+            },
+            new DialogOptions { Width = "500px", CloseDialogOnOverlayClick = true });
+
+        if (result is true)
+        {
+            await RefreshCharacter();
+            ShowFeedback("Wound added successfully", "alert-success", "bi-check-circle");
+        }
+    }
+
+    private async Task OpenEditWound(EffectRecord wound)
+    {
+        var result = await DialogService.OpenAsync<WoundFormModal>(
+            "Edit Wound",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId },
+                { "ExistingWound", wound }
+            },
+            new DialogOptions { Width = "500px", CloseDialogOnOverlayClick = true });
+
+        if (result is true)
+        {
+            await RefreshCharacter();
+            ShowFeedback("Wound updated successfully", "alert-success", "bi-check-circle");
+        }
+    }
+
+    private void ConfirmRemoveWound(EffectRecord wound)
+    {
+        woundToRemove = wound;
+        showRemoveConfirm = true;
+    }
+
+    private void CancelRemove()
+    {
+        woundToRemove = null;
+        showRemoveConfirm = false;
+    }
+
+    private async Task ExecuteRemove()
+    {
+        if (woundToRemove == null) return;
+
+        isProcessing = true;
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+            var toRemove = character.Effects.FirstOrDefault(e => e.Id == woundToRemove.Id);
+            if (toRemove != null)
+            {
+                var state = WoundState.Deserialize(toRemove.BehaviorState);
+                character.Effects.Remove(toRemove);
+                await characterPortal.UpdateAsync(character);
+
+                await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.EffectRemoved,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Wound removed: {state.Description ?? toRemove.Location}"
+                });
+
+                await RefreshCharacter();
+                ShowFeedback("Wound removed successfully", "alert-success", "bi-check-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error removing wound: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+        finally
+        {
+            isProcessing = false;
+            woundToRemove = null;
+            showRemoveConfirm = false;
+        }
+    }
+
+    private async Task RefreshCharacter()
+    {
+        try
+        {
+            Character = await characterPortal.FetchAsync(CharacterId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error refreshing: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+    }
+
+    private void ShowFeedback(string message, string alertClass, string icon)
+    {
+        feedbackMessage = message;
+        feedbackClass = alertClass;
+        feedbackIcon = icon;
+    }
+}

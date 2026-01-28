@@ -3,11 +3,13 @@
 @using GameMechanics
 @using GameMechanics.Messaging
 @using Threa.Dal.Dto
+@using Radzen
 
 @inject IDataPortal<CharacterEdit> characterPortal
 @inject IChildDataPortal<EffectRecord> effectPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ITimeEventPublisher TimeEventPublisher
+@inject DialogService DialogService
 
 <div class="row g-3">
     <!-- Health Management (unified damage/healing) -->
@@ -83,6 +85,31 @@
                 <button class="btn btn-warning w-100" @onclick="ApplyEffect"
                         disabled="@(string.IsNullOrEmpty(selectedEffect) || isProcessing)">
                     <i class="bi bi-plus-lg me-1"></i>Apply Effect
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wounds -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <strong><i class="bi bi-bandaid me-1"></i>Manage Wounds</strong>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p class="text-muted small flex-grow-1">
+                    Add, edit, and remove wounds. Wounds apply AS penalties and periodic damage.
+                </p>
+                <button class="btn btn-outline-danger w-100" @onclick="OpenWoundManagement" disabled="@isProcessing">
+                    <i class="bi bi-bandaid me-1"></i>Manage Wounds
+                    @if (Character != null)
+                    {
+                        var woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
+                        if (woundCount > 0)
+                        {
+                            <span class="badge bg-light text-danger ms-1">@woundCount</span>
+                        }
+                    }
                 </button>
             </div>
         </div>
@@ -389,5 +416,26 @@
         feedbackMessage = message;
         feedbackClass = alertClass;
         feedbackIcon = icon;
+    }
+
+    private async Task OpenWoundManagement()
+    {
+        var result = await DialogService.OpenAsync<WoundManagementModal>(
+            "Manage Wounds",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId }
+            },
+            new DialogOptions
+            {
+                Width = "700px",
+                Height = "500px",
+                CloseDialogOnOverlayClick = true
+            });
+
+        // Refresh character data when modal closes
+        await OnCharacterUpdated.InvokeAsync();
     }
 }
