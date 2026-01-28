@@ -1,0 +1,329 @@
+@* Modal for browsing and selecting effect templates *@
+
+@using GameMechanics
+@using GameMechanics.Effects
+@using Threa.Dal.Dto
+@using Radzen
+@using System.Timers
+
+@implements IDisposable
+
+@inject IDataPortal<EffectTemplateList> templateListPortal
+@inject DialogService DialogService
+
+<div class="p-3">
+    @* Search and Filter Bar *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search templates..."
+                       @bind="searchTerm" @bind:event="oninput" @bind:after="OnSearchInput" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" @bind="filterType">
+                <option value="">All Types</option>
+                @foreach (var type in FilterableTypes)
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @* Loading State *@
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading templates...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading templates...</p>
+        </div>
+    }
+    else
+    {
+        @* Template Grid *@
+        var filtered = GetFilteredTemplates();
+        @if (filtered.Any())
+        {
+            <div class="row g-3" style="max-height: 400px; overflow-y: auto;">
+                @foreach (var template in filtered)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 template-card" @onclick="() => SelectTemplate(template)" style="cursor: pointer;">
+                            <div class="card-header @GetEffectHeaderClass(template.EffectType) text-white d-flex align-items-center py-2">
+                                <i class="bi @GetTemplateIcon(template) me-2"></i>
+                                <span class="flex-grow-1 text-truncate small" title="@template.Name">@template.Name</span>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge @GetEffectBadgeClass(template.EffectType)">@template.EffectType</span>
+                                    <span class="small text-muted">
+                                        <i class="bi bi-clock me-1"></i>@FormatDuration(template)
+                                    </span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(template.Description))
+                                {
+                                    <p class="card-text text-muted small text-truncate mb-1"
+                                       style="max-height: 2.4em; overflow: hidden;"
+                                       title="@template.Description">
+                                        @template.Description
+                                    </p>
+                                }
+                                @{
+                                    var modSummary = GetModifierSummary(template.State);
+                                }
+                                @if (!string.IsNullOrEmpty(modSummary))
+                                {
+                                    <div class="small text-muted">
+                                        <i class="bi bi-sliders me-1"></i>@modSummary
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0 pt-0">
+                                <button class="btn btn-sm btn-outline-primary w-100" @onclick:stopPropagation="true"
+                                        @onclick="() => SelectTemplate(template)">
+                                    <i class="bi bi-check2 me-1"></i>Select
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-secondary text-center">
+                <i class="bi bi-search me-1"></i>
+                @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(filterType))
+                {
+                    <span>No effect templates available.</span>
+                }
+                else
+                {
+                    <span>No templates found matching your search.</span>
+                }
+            </div>
+        }
+    }
+
+    @* Footer with Cancel *@
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-secondary" @onclick="Cancel">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<style>
+    .template-card:hover {
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        transition: all 0.15s ease-in-out;
+    }
+</style>
+
+@code {
+    private EffectTemplateList? templates;
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string filterType = "";
+    private Timer? debounceTimer;
+
+    private static readonly EffectType[] FilterableTypes =
+    [
+        EffectType.Buff,
+        EffectType.Debuff,
+        EffectType.Condition,
+        EffectType.Poison,
+        EffectType.Disease,
+        EffectType.SpellEffect,
+        EffectType.ItemEffect,
+        EffectType.Environmental
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplatesAsync();
+    }
+
+    private async Task LoadTemplatesAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            templates = await templateListPortal.FetchAsync();
+        }
+        catch
+        {
+            templates = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchInput()
+    {
+        // Debounce search - wait 300ms after last input
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new Timer(300);
+        debounceTimer.Elapsed += (_, _) => InvokeAsync(StateHasChanged);
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = "";
+    }
+
+    private IEnumerable<EffectTemplate> GetFilteredTemplates()
+    {
+        if (templates == null)
+            return Enumerable.Empty<EffectTemplate>();
+
+        var result = templates.AsEnumerable();
+
+        // Filter by type
+        if (!string.IsNullOrEmpty(filterType) && Enum.TryParse<EffectType>(filterType, out var type))
+        {
+            result = result.Where(t => t.EffectType == type);
+        }
+
+        // Filter by search term
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            var term = searchTerm.ToLowerInvariant();
+            result = result.Where(t =>
+                t.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (t.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (t.Tags?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        return result.OrderBy(t => t.EffectType).ThenBy(t => t.Name);
+    }
+
+    private void SelectTemplate(EffectTemplate template)
+    {
+        DialogService.Close(template);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    private static string GetEffectHeaderClass(EffectType effectType) => effectType switch
+    {
+        EffectType.Buff => "bg-success",
+        EffectType.Debuff => "bg-danger",
+        EffectType.Condition => "bg-warning",
+        EffectType.Poison => "bg-purple",
+        EffectType.Disease => "bg-secondary",
+        EffectType.SpellEffect => "bg-info",
+        EffectType.ItemEffect => "bg-primary",
+        EffectType.Environmental => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    private static string GetEffectBadgeClass(EffectType effectType) => effectType switch
+    {
+        EffectType.Buff => "bg-success-subtle text-success",
+        EffectType.Debuff => "bg-danger-subtle text-danger",
+        EffectType.Condition => "bg-warning-subtle text-warning",
+        EffectType.Poison => "bg-dark",
+        EffectType.Disease => "bg-secondary-subtle text-secondary",
+        EffectType.SpellEffect => "bg-info-subtle text-info",
+        EffectType.ItemEffect => "bg-primary-subtle text-primary",
+        EffectType.Environmental => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    private static string GetTemplateIcon(EffectTemplate template)
+    {
+        if (!string.IsNullOrEmpty(template.IconName))
+            return template.IconName;
+
+        return template.EffectType switch
+        {
+            EffectType.Buff => "bi-arrow-up-circle-fill",
+            EffectType.Debuff => "bi-arrow-down-circle-fill",
+            EffectType.Condition => "bi-exclamation-triangle-fill",
+            EffectType.Poison => "bi-droplet-fill",
+            EffectType.Disease => "bi-virus",
+            EffectType.SpellEffect => "bi-magic",
+            EffectType.ItemEffect => "bi-gem",
+            EffectType.Environmental => "bi-cloud-fill",
+            _ => "bi-stars"
+        };
+    }
+
+    private static string FormatDuration(EffectTemplate template)
+    {
+        if (template.DurationType == DurationType.Permanent || template.DurationType == DurationType.UntilRemoved)
+            return "Permanent";
+
+        var value = template.DefaultDurationValue ?? 0;
+        return template.DurationType switch
+        {
+            DurationType.Rounds => $"{value} rnd{(value != 1 ? "s" : "")}",
+            DurationType.Minutes => $"{value} min",
+            DurationType.Hours => $"{value} hr{(value != 1 ? "s" : "")}",
+            DurationType.Days => $"{value} day{(value != 1 ? "s" : "")}",
+            DurationType.Weeks => $"{value} wk{(value != 1 ? "s" : "")}",
+            _ => "Unknown"
+        };
+    }
+
+    private static string GetModifierSummary(EffectState state)
+    {
+        var parts = new List<string>();
+
+        if (state.ASModifier.HasValue && state.ASModifier.Value != 0)
+        {
+            var sign = state.ASModifier.Value > 0 ? "+" : "";
+            parts.Add($"AS {sign}{state.ASModifier.Value}");
+        }
+
+        if (state.AttributeModifiers != null)
+        {
+            foreach (var kvp in state.AttributeModifiers.Where(m => m.Value != 0).Take(2))
+            {
+                var sign = kvp.Value > 0 ? "+" : "";
+                parts.Add($"{kvp.Key} {sign}{kvp.Value}");
+            }
+            if (state.AttributeModifiers.Count > 2)
+                parts.Add("...");
+        }
+
+        if (state.FatDamagePerTick.HasValue || state.VitDamagePerTick.HasValue)
+        {
+            parts.Add("dmg/tick");
+        }
+
+        if (state.FatHealingPerTick.HasValue || state.VitHealingPerTick.HasValue)
+        {
+            parts.Add("heal/tick");
+        }
+
+        return string.Join(", ", parts.Take(3));
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+    }
+}
