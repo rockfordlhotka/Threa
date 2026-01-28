@@ -97,13 +97,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HLTH-01 | Phase 17 | Pending |
-| HLTH-02 | Phase 17 | Pending |
-| HLTH-03 | Phase 17 | Pending |
-| HLTH-04 | Phase 17 | Pending |
-| HLTH-05 | Phase 17 | Pending |
-| HLTH-06 | Phase 17 | Pending |
-| HLTH-07 | Phase 17 | Pending |
+| HLTH-01 | Phase 17 | Complete |
+| HLTH-02 | Phase 17 | Complete |
+| HLTH-03 | Phase 17 | Complete |
+| HLTH-04 | Phase 17 | Complete |
+| HLTH-05 | Phase 17 | Complete |
+| HLTH-06 | Phase 17 | Complete |
+| HLTH-07 | Phase 17 | Complete |
 | WOND-01 | Phase 18 | Pending |
 | WOND-02 | Phase 18 | Pending |
 | WOND-03 | Phase 18 | Pending |
