@@ -619,7 +619,15 @@ private async Task SelectCharacterAsync(int characterId)
 
     private async Task SubscribeToTimeEvents(Guid tableId)
     {
-        if (timeEventSubscribed) return;
+        await JS.InvokeVoidAsync("console.log", $"[Play] SubscribeToTimeEvents called - timeEventSubscribed={timeEventSubscribed}");
+
+        if (timeEventSubscribed)
+        {
+            await JS.InvokeVoidAsync("console.log", "[Play] Already subscribed, skipping");
+            return;
+        }
+
+        await JS.InvokeVoidAsync("console.log", "[Play] Connecting and subscribing to time events...");
 
         // Connect and subscribe to time events
         await TimeEventSubscriber.ConnectAsync();
@@ -631,6 +639,8 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived += OnTableUpdateReceived;
         timeEventSubscribed = true;
+
+        await JS.InvokeVoidAsync("console.log", "[Play] Successfully subscribed to all time events");
     }
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
@@ -836,8 +846,15 @@ private async Task SelectCharacterAsync(int characterId)
 
     private async Task UnsubscribeFromTimeEvents()
     {
-        if (!timeEventSubscribed) return;
+        await JS.InvokeVoidAsync("console.warn", $"[Play] UnsubscribeFromTimeEvents called - timeEventSubscribed={timeEventSubscribed}");
 
+        if (!timeEventSubscribed)
+        {
+            await JS.InvokeVoidAsync("console.warn", "[Play] Not subscribed, skipping unsubscribe");
+            return;
+        }
+
+        await JS.InvokeVoidAsync("console.warn", "[Play] Removing event handlers...");
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
         TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
         TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
@@ -845,15 +862,24 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.TableUpdateReceived -= OnTableUpdateReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
+        await JS.InvokeVoidAsync("console.warn", "[Play] Event handlers removed, timeEventSubscribed=false");
     }
 
     public async void Dispose()
     {
-        if (_disposed) return;
+        await JS.InvokeVoidAsync("console.warn", "[Play] Dispose() called - unsubscribing from all events");
+
+        if (_disposed)
+        {
+            await JS.InvokeVoidAsync("console.warn", "[Play] Already disposed, skipping");
+            return;
+        }
         _disposed = true;
 
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEvents();
+
+        await JS.InvokeVoidAsync("console.warn", "[Play] Dispose() complete");
     }
 
     private string GetActivityClass(ActivityCategory category) =>
