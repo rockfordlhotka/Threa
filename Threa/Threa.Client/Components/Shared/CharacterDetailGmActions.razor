@@ -6,7 +6,6 @@
 @using Radzen
 
 @inject IDataPortal<CharacterEdit> characterPortal
-@inject IChildDataPortal<EffectRecord> effectPortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ITimeEventPublisher TimeEventPublisher
 @inject DialogService DialogService
@@ -77,21 +76,23 @@
     <!-- Effects -->
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header bg-warning text-dark">
-                <strong><i class="bi bi-stars me-1"></i>Apply Effect</strong>
+            <div class="card-header bg-info text-white">
+                <strong><i class="bi bi-stars me-1"></i>Manage Effects</strong>
             </div>
-            <div class="card-body">
-                <select class="form-select mb-2" @bind="selectedEffect">
-                    <option value="">Select effect...</option>
-                    <option value="Stunned">Stunned</option>
-                    <option value="Blinded">Blinded</option>
-                    <option value="Prone">Prone</option>
-                    <option value="Frightened">Frightened</option>
-                    <option value="Slowed">Slowed</option>
-                </select>
-                <button class="btn btn-warning w-100" @onclick="ApplyEffect"
-                        disabled="@(string.IsNullOrEmpty(selectedEffect) || isProcessing)">
-                    <i class="bi bi-plus-lg me-1"></i>Apply Effect
+            <div class="card-body d-flex flex-column">
+                <p class="text-muted small flex-grow-1">
+                    Add, edit, and remove effects. Effects modify stats, apply damage over time, or provide conditions.
+                </p>
+                <button class="btn btn-outline-info w-100" @onclick="OpenEffectManagement" disabled="@isProcessing">
+                    <i class="bi bi-stars me-1"></i>Manage Effects
+                    @if (Character != null)
+                    {
+                        var effectCount = Character.Effects.Count(e => e.EffectType != EffectType.Wound);
+                        if (effectCount > 0)
+                        {
+                            <span class="badge bg-light text-info ms-1">@effectCount</span>
+                        }
+                    }
                 </button>
             </div>
         </div>
@@ -199,9 +200,6 @@
     private string overflowWarningMessage = "";
     private string pendingPool = "";
     private int woundDamageExcess;
-
-    // Effect state
-    private string selectedEffect = "";
 
     // General state
     private bool isProcessing;
@@ -367,47 +365,26 @@
         woundDamageExcess = 0;
     }
 
-    private async Task ApplyEffect()
+    private async Task OpenEffectManagement()
     {
-        if (Character == null || string.IsNullOrEmpty(selectedEffect)) return;
-        isProcessing = true;
-
-        try
-        {
-            var character = await characterPortal.FetchAsync(CharacterId);
-
-            var effect = await effectPortal.CreateChildAsync(
-                EffectType.Condition,
-                selectedEffect,
-                (string?)null,
-                (int?)null,
-                (string?)null
-            );
-            effect.Source = "GM";
-
-            character.Effects.AddEffect(effect);
-            await characterPortal.UpdateAsync(character);
-
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+        var result = await DialogService.OpenAsync<EffectManagementModal>(
+            "Manage Effects",
+            new Dictionary<string, object>
             {
-                CharacterId = CharacterId,
-                UpdateType = CharacterUpdateType.EffectAdded,
-                CampaignId = TableId.ToString(),
-                SourceId = "GM",
-                Description = selectedEffect
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId }
+            },
+            new DialogOptions
+            {
+                Width = "800px",
+                Height = "600px",
+                CloseDialogOnOverlayClick = true
             });
 
-            ShowFeedback($"Saved: {selectedEffect} effect applied", "alert-success", "bi-check-circle");
-            selectedEffect = "";
+        if (result is true)
+        {
             await OnCharacterUpdated.InvokeAsync();
-        }
-        catch (Exception ex)
-        {
-            ShowFeedback($"Error saving: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
-        }
-        finally
-        {
-            isProcessing = false;
         }
     }
 
