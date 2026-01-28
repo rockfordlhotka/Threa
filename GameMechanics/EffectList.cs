@@ -300,6 +300,35 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
     }
   }
 
+  /// <summary>
+  /// Processes a time skip (calendar time advancement) for all active effects.
+  /// Advances elapsed rounds by the specified amount and expires effects that have reached their duration.
+  /// </summary>
+  /// <param name="roundsPassed">Number of rounds that passed during the time skip.</param>
+  public void ProcessTimeSkip(int roundsPassed)
+  {
+    var toExpire = new List<EffectRecord>();
+
+    foreach (var effect in this.Where(e => e.IsActive))
+    {
+      // Advance elapsed rounds by the full time skip amount
+      effect.ElapsedRounds += roundsPassed;
+
+      // Check for natural expiration
+      if (effect.IsExpired)
+      {
+        toExpire.Add(effect);
+      }
+    }
+
+    // Handle natural expirations
+    foreach (var effect in toExpire)
+    {
+      effect.Behavior.OnExpire(effect, Character);
+      Remove(effect);
+    }
+  }
+
   #endregion
 
   #region Modifier Aggregation

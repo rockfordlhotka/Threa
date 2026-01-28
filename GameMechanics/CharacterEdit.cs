@@ -447,21 +447,23 @@ namespace GameMechanics
 
     /// <summary>
     /// Processes a time skip (calendar time advancement like minutes, hours, days, weeks).
-    /// Applies hourly VIT recovery, VIT-level-dependent FAT recovery, and pending pool flow.
+    /// Applies hourly VIT recovery, VIT-level-dependent FAT recovery, effect expiration, and pending pool flow.
     /// </summary>
     public void ProcessTimeSkip(GameMechanics.Time.TimeEventType skipUnit, int count, IChildDataPortal<EffectRecord>? effectPortal = null)
     {
-      // Calculate total hours passed
-      double hoursPassedDecimal = skipUnit switch
+      // Calculate total rounds passed (each round = 6 seconds)
+      int totalRoundsPassed = skipUnit switch
       {
-        GameMechanics.Time.TimeEventType.EndOfMinute => count / 60.0,     // 60 minutes = 1 hour
-        GameMechanics.Time.TimeEventType.EndOfTurn => count / 6.0,        // 6 turns (10 min each) = 1 hour
-        GameMechanics.Time.TimeEventType.EndOfHour => count,               // 1 hour = 1 hour
-        GameMechanics.Time.TimeEventType.EndOfDay => count * 24,           // 1 day = 24 hours
-        GameMechanics.Time.TimeEventType.EndOfWeek => count * 24 * 7,      // 1 week = 168 hours
+        GameMechanics.Time.TimeEventType.EndOfMinute => count * 10,       // 1 min = 10 rounds
+        GameMechanics.Time.TimeEventType.EndOfTurn => count * 100,        // 10 min = 100 rounds
+        GameMechanics.Time.TimeEventType.EndOfHour => count * 600,        // 1 hour = 600 rounds
+        GameMechanics.Time.TimeEventType.EndOfDay => count * 14400,       // 1 day = 14400 rounds
+        GameMechanics.Time.TimeEventType.EndOfWeek => count * 100800,     // 1 week = 100800 rounds
         _ => 0
       };
 
+      // Calculate total hours passed
+      double hoursPassedDecimal = totalRoundsPassed / 600.0;  // 600 rounds per hour
       int hoursPassed = (int)Math.Floor(hoursPassedDecimal);
 
       // VIT Recovery: 1 VIT per hour when alive (VIT > 0)
@@ -494,23 +496,25 @@ namespace GameMechanics
         }
       }
 
-      // Process pending pools and effects multiple times to simulate time passage
-      // Cap at 100 iterations to avoid performance issues, then do final pass
-      int iterations = Math.Min((int)(hoursPassedDecimal * 600), 100);  // ~600 rounds per hour, cap at 100
+      // Process effect expiration for the full time skip
+      // This ensures wounds and other long-duration effects properly expire
+      Effects.ProcessTimeSkip(totalRoundsPassed);
+
+      // Process pending pools and AP recovery multiple times to simulate gradual healing
+      // Cap at 100 iterations to avoid performance issues
+      int iterations = Math.Min(totalRoundsPassed, 100);
       for (int i = 0; i < iterations; i++)
       {
         Fatigue.EndOfRound();
         Vitality.EndOfRound(effectPortal);
-        Effects.EndOfRound();
         ActionPoints.EndOfRound();
       }
 
-      // Final pass to ensure all pending pools are resolved
-      if (hoursPassedDecimal > 0)
+      // Final pass to ensure all pending pools are fully resolved
+      if (totalRoundsPassed > 0)
       {
         Fatigue.EndOfRound();
         Vitality.EndOfRound(effectPortal);
-        Effects.EndOfRound();
         ActionPoints.EndOfRound();
       }
     }
