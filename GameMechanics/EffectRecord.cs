@@ -80,7 +80,9 @@ public class EffectRecord : BusinessBase<EffectRecord>
   public static readonly PropertyInfo<int?> DurationRoundsProperty = RegisterProperty<int?>(nameof(DurationRounds));
   /// <summary>
   /// Total duration in rounds. Null for permanent/until-removed effects.
+  /// OBSOLETE: Use epoch-based expiration for performance with large time skips.
   /// </summary>
+  [Obsolete("Use CreatedAtEpochSeconds and ExpiresAtEpochSeconds for better performance")]
   public int? DurationRounds
   {
     get => GetProperty(DurationRoundsProperty);
@@ -90,11 +92,36 @@ public class EffectRecord : BusinessBase<EffectRecord>
   public static readonly PropertyInfo<int> ElapsedRoundsProperty = RegisterProperty<int>(nameof(ElapsedRounds));
   /// <summary>
   /// Number of rounds this effect has been active.
+  /// OBSOLETE: Use epoch-based expiration for performance with large time skips.
   /// </summary>
+  [Obsolete("Use CreatedAtEpochSeconds and ExpiresAtEpochSeconds for better performance")]
   public int ElapsedRounds
   {
     get => GetProperty(ElapsedRoundsProperty);
     set => SetProperty(ElapsedRoundsProperty, value);
+  }
+
+  public static readonly PropertyInfo<long?> CreatedAtEpochSecondsProperty = RegisterProperty<long?>(nameof(CreatedAtEpochSeconds));
+  /// <summary>
+  /// Game time (in seconds from epoch 0) when this effect was created.
+  /// Used for epoch-based expiration calculation.
+  /// </summary>
+  public long? CreatedAtEpochSeconds
+  {
+    get => GetProperty(CreatedAtEpochSecondsProperty);
+    set => SetProperty(CreatedAtEpochSecondsProperty, value);
+  }
+
+  public static readonly PropertyInfo<long?> ExpiresAtEpochSecondsProperty = RegisterProperty<long?>(nameof(ExpiresAtEpochSeconds));
+  /// <summary>
+  /// Game time (in seconds from epoch 0) when this effect expires.
+  /// Null for permanent/until-removed effects.
+  /// Pre-calculated at creation time for O(1) expiration checks.
+  /// </summary>
+  public long? ExpiresAtEpochSeconds
+  {
+    get => GetProperty(ExpiresAtEpochSecondsProperty);
+    set => SetProperty(ExpiresAtEpochSecondsProperty, value);
   }
 
   public static readonly PropertyInfo<int> CurrentStacksProperty = RegisterProperty<int>(nameof(CurrentStacks));
@@ -201,13 +228,43 @@ public class EffectRecord : BusinessBase<EffectRecord>
 
   /// <summary>
   /// Remaining duration in rounds, or null if permanent.
+  /// OBSOLETE: Use epoch-based expiration.
   /// </summary>
+  [Obsolete("Use epoch-based expiration for better performance")]
   public int? RemainingRounds => DurationRounds.HasValue ? DurationRounds.Value - ElapsedRounds : null;
 
   /// <summary>
-  /// Whether this effect has expired based on duration.
+  /// Whether this effect has expired based on duration (legacy round-based check).
+  /// OBSOLETE: Use IsExpired(long currentGameTimeSeconds) method for epoch-based performance.
   /// </summary>
-  public bool IsExpired => DurationRounds.HasValue && ElapsedRounds >= DurationRounds.Value;
+  [Obsolete("Use IsExpired(long currentGameTimeSeconds) method for performance")]
+  public bool IsExpiredLegacy => DurationRounds.HasValue && ElapsedRounds >= DurationRounds.Value;
+
+  /// <summary>
+  /// Whether this effect has expired at the given game time.
+  /// Uses epoch-based expiration for O(1) performance.
+  /// </summary>
+  /// <param name="currentGameTimeSeconds">Current game time in seconds from epoch 0</param>
+  /// <returns>True if effect has expired</returns>
+  public bool IsExpired(long currentGameTimeSeconds)
+  {
+    // Prefer epoch-based expiration (O(1) performance)
+    if (ExpiresAtEpochSeconds.HasValue)
+    {
+      return currentGameTimeSeconds >= ExpiresAtEpochSeconds.Value;
+    }
+
+    // Fall back to round-based for legacy effects
+    // Convert current game time to rounds (each round = 6 seconds)
+    if (DurationRounds.HasValue && CreatedAtEpochSeconds.HasValue)
+    {
+      long roundsPassed = (currentGameTimeSeconds - CreatedAtEpochSeconds.Value) / 6;
+      return roundsPassed >= DurationRounds.Value;
+    }
+
+    // If neither system is set up, not expired
+    return false;
+  }
 
   /// <summary>
   /// Progress through the effect's duration (0.0 to 1.0), or null if permanent.
@@ -273,6 +330,45 @@ public class EffectRecord : BusinessBase<EffectRecord>
       ElapsedRounds = 0;
       CurrentStacks = 1;
       IsActive = true;
+
+      // Auto-convert round-based duration to epoch-based if character has game time
+      var character = Parent?.Parent as CharacterEdit;
+      if (character != null && character.CurrentGameTimeSeconds > 0)
+      {
+        CreatedAtEpochSeconds = character.CurrentGameTimeSeconds;
+        if (durationRounds.HasValue)
+        {
+          // Each round = 6 seconds
+          long durationSeconds = durationRounds.Value * 6L;
+          ExpiresAtEpochSeconds = CreatedAtEpochSeconds.Value + durationSeconds;
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Creates an effect with epoch-based expiration (preferred for performance).
+  /// </summary>
+  [CreateChild]
+  private void CreateWithEpochTime(EffectType effectType, string name, string? location, long? durationSeconds, string? behaviorState, long currentGameTimeSeconds)
+  {
+    using (BypassPropertyChecks)
+    {
+      Id = Guid.NewGuid();
+      EffectType = effectType;
+      Name = name;
+      Location = location;
+      BehaviorState = behaviorState;
+      CurrentStacks = 1;
+      IsActive = true;
+
+      // Use epoch-based expiration
+      CreatedAtEpochSeconds = currentGameTimeSeconds;
+      if (durationSeconds.HasValue)
+      {
+        ExpiresAtEpochSeconds = currentGameTimeSeconds + durationSeconds.Value;
+      }
+      // else: permanent effect (ExpiresAtEpochSeconds = null)
     }
   }
 
@@ -317,12 +413,19 @@ public class EffectRecord : BusinessBase<EffectRecord>
       Description = dto.Description ?? dto.Definition?.Description;
       Location = dto.WoundLocation;
       IconName = dto.Definition?.IconName;
+
+      // Prefer epoch-based expiration (new system)
+      CreatedAtEpochSeconds = dto.CreatedAtEpochSeconds;
+      ExpiresAtEpochSeconds = dto.ExpiresAtEpochSeconds;
+
+      // Load round-based data for backwards compatibility
       DurationRounds = dto.RoundsRemaining.HasValue
         ? (dto.RoundsRemaining.Value + (int)(dto.StartTime - DateTime.UtcNow).TotalSeconds / 3)
         : null;
       ElapsedRounds = dto.RoundsRemaining.HasValue
         ? (DurationRounds ?? 0) - dto.RoundsRemaining.Value
         : 0;
+
       CurrentStacks = dto.CurrentStacks;
       IsActive = dto.IsActive;
       BehaviorState = dto.CustomProperties;
@@ -370,6 +473,10 @@ public class EffectRecord : BusinessBase<EffectRecord>
       dto.IsActive = IsActive;
       dto.CustomProperties = BehaviorState;
       dto.EffectDefinitionId = GetEffectDefinitionId(EffectType);
+
+      // Epoch-based expiration (preferred for performance)
+      dto.CreatedAtEpochSeconds = CreatedAtEpochSeconds;
+      dto.ExpiresAtEpochSeconds = ExpiresAtEpochSeconds;
 
       // Item effect properties
       dto.SourceItemId = SourceItemId;

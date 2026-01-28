@@ -208,6 +208,18 @@ namespace GameMechanics
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<long> CurrentGameTimeSecondsProperty = RegisterProperty<long>(nameof(CurrentGameTimeSeconds));
+    /// <summary>
+    /// Current game time in seconds from epoch 0.
+    /// Updated when character processes time events (rounds or time skips).
+    /// Used for epoch-based effect expiration.
+    /// </summary>
+    public long CurrentGameTimeSeconds
+    {
+      get => GetProperty(CurrentGameTimeSecondsProperty);
+      set => SetProperty(CurrentGameTimeSecondsProperty, value);
+    }
+
     /// <summary>
     /// Activates the character, making it playable. This is a one-way operation.
     /// Once activated, certain properties like attributes become read-only.
@@ -437,33 +449,43 @@ namespace GameMechanics
       BusinessRules.CheckRules(VitalityProperty);
     }
 
+    /// <summary>
+    /// Processes end-of-round effects. Advances game time by 6 seconds (1 round).
+    /// </summary>
     public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
+      // Advance game time by 1 round (6 seconds)
+      CurrentGameTimeSeconds += 6;
+
       Fatigue.EndOfRound();
       Vitality.EndOfRound(effectPortal);
-      Effects.EndOfRound();
+      Effects.EndOfRound(CurrentGameTimeSeconds);
       ActionPoints.EndOfRound();
     }
 
     /// <summary>
     /// Processes a time skip (calendar time advancement like minutes, hours, days, weeks).
     /// Applies hourly VIT recovery, VIT-level-dependent FAT recovery, effect expiration, and pending pool flow.
+    /// Uses epoch-based time tracking for O(1) effect expiration performance.
     /// </summary>
     public void ProcessTimeSkip(GameMechanics.Time.TimeEventType skipUnit, int count, IChildDataPortal<EffectRecord>? effectPortal = null)
     {
-      // Calculate total rounds passed (each round = 6 seconds)
-      int totalRoundsPassed = skipUnit switch
+      // Calculate total seconds passed
+      long totalSecondsPassed = skipUnit switch
       {
-        GameMechanics.Time.TimeEventType.EndOfMinute => count * 10,       // 1 min = 10 rounds
-        GameMechanics.Time.TimeEventType.EndOfTurn => count * 100,        // 10 min = 100 rounds
-        GameMechanics.Time.TimeEventType.EndOfHour => count * 600,        // 1 hour = 600 rounds
-        GameMechanics.Time.TimeEventType.EndOfDay => count * 14400,       // 1 day = 14400 rounds
-        GameMechanics.Time.TimeEventType.EndOfWeek => count * 100800,     // 1 week = 100800 rounds
+        GameMechanics.Time.TimeEventType.EndOfMinute => count * 60L,           // 1 min = 60 seconds
+        GameMechanics.Time.TimeEventType.EndOfTurn => count * 600L,            // 10 min = 600 seconds
+        GameMechanics.Time.TimeEventType.EndOfHour => count * 3600L,           // 1 hour = 3600 seconds
+        GameMechanics.Time.TimeEventType.EndOfDay => count * 86400L,           // 1 day = 86400 seconds
+        GameMechanics.Time.TimeEventType.EndOfWeek => count * 604800L,         // 1 week = 604800 seconds
         _ => 0
       };
 
+      // Advance game time by the full time skip
+      CurrentGameTimeSeconds += totalSecondsPassed;
+
       // Calculate total hours passed
-      double hoursPassedDecimal = totalRoundsPassed / 600.0;  // 600 rounds per hour
+      double hoursPassedDecimal = totalSecondsPassed / 3600.0;
       int hoursPassed = (int)Math.Floor(hoursPassedDecimal);
 
       // VIT Recovery: 1 VIT per hour when alive (VIT > 0)
@@ -496,12 +518,13 @@ namespace GameMechanics
         }
       }
 
-      // Process effect expiration for the full time skip
-      // This ensures wounds and other long-duration effects properly expire
-      Effects.ProcessTimeSkip(totalRoundsPassed);
+      // Process effect expiration using epoch time (O(1) per effect - no loops!)
+      // With 236 wounds and 1 week skip, this is now instant instead of 23M+ operations
+      Effects.ProcessTimeSkip(CurrentGameTimeSeconds);
 
       // Process pending pools and AP recovery multiple times to simulate gradual healing
       // Cap at 100 iterations to avoid performance issues
+      int totalRoundsPassed = (int)(totalSecondsPassed / 6);  // Each round = 6 seconds
       int iterations = Math.Min(totalRoundsPassed, 100);
       for (int i = 0; i < iterations; i++)
       {

@@ -260,14 +260,18 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
   /// Processes all effects for end of round.
   /// Increments elapsed time, calls OnTick, and handles expiration.
   /// </summary>
-  public void EndOfRound()
+  /// <summary>
+  /// Processes end-of-round effects. Uses epoch-based expiration for performance.
+  /// </summary>
+  /// <param name="currentGameTimeSeconds">Current game time in seconds from epoch 0</param>
+  public void EndOfRound(long currentGameTimeSeconds)
   {
     var toExpire = new List<EffectRecord>();
     var toRemoveEarly = new List<EffectRecord>();
 
     foreach (var effect in this.Where(e => e.IsActive))
     {
-      // Increment elapsed rounds
+      // Increment elapsed rounds (for legacy/display purposes)
       effect.ElapsedRounds++;
 
       // Call OnTick
@@ -278,8 +282,8 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
         continue;
       }
 
-      // Check for natural expiration
-      if (effect.IsExpired)
+      // Check for natural expiration using epoch time
+      if (effect.IsExpired(currentGameTimeSeconds))
       {
         toExpire.Add(effect);
       }
@@ -302,20 +306,17 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
   /// <summary>
   /// Processes a time skip (calendar time advancement) for all active effects.
-  /// Advances elapsed rounds by the specified amount and expires effects that have reached their duration.
+  /// Uses epoch-based expiration for O(1) performance instead of looping.
   /// </summary>
-  /// <param name="roundsPassed">Number of rounds that passed during the time skip.</param>
-  public void ProcessTimeSkip(int roundsPassed)
+  /// <param name="currentGameTimeSeconds">Current game time in seconds from epoch 0</param>
+  public void ProcessTimeSkip(long currentGameTimeSeconds)
   {
     var toExpire = new List<EffectRecord>();
 
     foreach (var effect in this.Where(e => e.IsActive))
     {
-      // Advance elapsed rounds by the full time skip amount
-      effect.ElapsedRounds += roundsPassed;
-
-      // Check for natural expiration
-      if (effect.IsExpired)
+      // Use epoch-based expiration check (O(1) instead of O(n×rounds))
+      if (effect.IsExpired(currentGameTimeSeconds))
       {
         toExpire.Add(effect);
       }

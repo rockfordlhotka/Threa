@@ -635,6 +635,12 @@ private async Task SelectCharacterAsync(int characterId)
                 // Process end-of-round effects on the character
                 if (character != null && e.EventType == GameMechanics.Time.TimeEventType.EndOfRound)
                 {
+                    // Sync character's game time with table before processing
+                    if (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds)
+                    {
+                        character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
+                    }
+
                     for (int i = 0; i < e.Count; i++)
                     {
                         character.EndOfRound(effectPortal);
@@ -672,10 +678,17 @@ private async Task SelectCharacterAsync(int characterId)
                 // Process time skip effects on the character
                 if (character != null)
                 {
+                    // Sync character's game time with table before processing
+                    if (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds)
+                    {
+                        character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
+                    }
+
                     // Use the new ProcessTimeSkip method which handles:
                     // - Hourly VIT recovery (1 per hour if VIT > 0)
                     // - VIT-level-dependent FAT recovery
-                    // - Pending pool flow and effect expiration
+                    // - Epoch-based effect expiration (O(1) performance!)
+                    // - Pending pool flow
                     character.ProcessTimeSkip(e.SkipUnit, e.Count, effectPortal);
 
                     // Save the updated character
