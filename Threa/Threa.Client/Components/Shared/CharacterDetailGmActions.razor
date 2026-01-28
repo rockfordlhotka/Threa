@@ -52,11 +52,18 @@
                     <div class="alert @(healthMode == HealthMode.Damage ? "alert-warning" : "alert-info") mt-3 mb-0">
                         <i class="bi bi-exclamation-triangle me-1"></i>
                         @overflowWarningMessage
-                        <div class="mt-2 d-flex gap-2">
+                        <div class="mt-2 d-flex gap-2 flex-wrap">
                             <button class="btn @(healthMode == HealthMode.Damage ? "btn-warning" : "btn-info") btn-sm"
                                     @onclick="ConfirmApply" disabled="@isProcessing">
                                 Apply Anyway
                             </button>
+                            @if (healthMode == HealthMode.Damage && pendingPool == "VIT" && woundDamageExcess > 0)
+                            {
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="ApplyAndAddWound" disabled="@isProcessing">
+                                    <i class="bi bi-bandaid me-1"></i>Apply + Add Wound
+                                </button>
+                            }
                             <button class="btn btn-secondary btn-sm" @onclick="CancelApply">
                                 Cancel
                             </button>
@@ -191,6 +198,7 @@
     private bool showOverflowWarning;
     private string overflowWarningMessage = "";
     private string pendingPool = "";
+    private int woundDamageExcess;
 
     // Effect state
     private string selectedEffect = "";
@@ -208,6 +216,7 @@
     {
         healthMode = mode;
         showOverflowWarning = false; // Clear any pending warning on mode change
+        woundDamageExcess = 0;
     }
 
     private async Task ApplyToPool(string pool)
@@ -236,7 +245,8 @@
                 if (projectedVit < 0)
                 {
                     var excess = Math.Abs(projectedVit);
-                    overflowWarningMessage = $"This will exceed VIT capacity. {excess} points of damage beyond VIT will result in wounds.";
+                    woundDamageExcess = excess;
+                    overflowWarningMessage = $"This will exceed VIT capacity. {excess} points of damage beyond VIT may result in wounds.";
                     showOverflowWarning = true;
                     return;
                 }
@@ -273,6 +283,7 @@
     {
         showOverflowWarning = false;
         pendingPool = "";
+        woundDamageExcess = 0;
     }
 
     private async Task ExecuteApply()
@@ -326,7 +337,34 @@
         {
             isProcessing = false;
             pendingPool = "";
+            woundDamageExcess = 0;
         }
+    }
+
+    private async Task ApplyAndAddWound()
+    {
+        showOverflowWarning = false;
+
+        // First apply the damage
+        await ExecuteApply();
+
+        // Then open wound form modal
+        var result = await DialogService.OpenAsync<WoundFormModal>(
+            "Add Wound (VIT Exceeded)",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId }
+            },
+            new DialogOptions { Width = "500px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            await OnCharacterUpdated.InvokeAsync();
+        }
+
+        woundDamageExcess = 0;
     }
 
     private async Task ApplyEffect()
