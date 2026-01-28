@@ -343,6 +343,7 @@ else
         await TimeEventSubscriber.SubscribeAsync();
 
         TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived += OnTimeSkipReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.JoinRequestReceived += OnJoinRequestReceived;
         timeEventSubscribed = true;
@@ -355,6 +356,22 @@ else
 
         // When time advances, schedule a refresh of character data after a short delay
         // to allow player clients to process their end-of-round effects first
+        InvokeAsync(async () =>
+        {
+            // Wait briefly for players to process and save their character updates
+            await Task.Delay(500);
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        // When calendar time advances, schedule a refresh of character data after a short delay
+        // to allow player clients to process their time skip effects first
         InvokeAsync(async () =>
         {
             // Wait briefly for players to process and save their character updates
@@ -412,6 +429,7 @@ else
         if (!timeEventSubscribed) return;
 
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
         TimeEventSubscriber.JoinRequestReceived -= OnJoinRequestReceived;
         await TimeEventSubscriber.UnsubscribeAsync();

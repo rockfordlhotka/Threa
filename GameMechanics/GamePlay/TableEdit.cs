@@ -192,6 +192,7 @@ public class TableEdit : BusinessBase<TableEdit>
         if (Status == TableStatus.Active && !IsInCombat)
         {
             IsInCombat = true;
+            CurrentRound = 1;
             CombatStartedAt = DateTime.UtcNow;
         }
     }
