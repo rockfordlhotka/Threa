@@ -38,12 +38,12 @@ Requirements for milestone v1.2: GM Table & Campaign Management
 - [ ] **DASH-05**: Character card shows pending healing pool
 - [ ] **DASH-06**: Character card shows current Action Points
 - [ ] **DASH-07**: Character card shows count of active effects
-- [ ] **DASH-08**: GM can click character card to view detailed character information
-- [ ] **DASH-09**: Detailed view displays character sheet (attributes, skills, levels)
-- [ ] **DASH-10**: Detailed view displays character inventory and equipped items
-- [ ] **DASH-11**: Detailed view displays character narrative (appearance, backstory)
-- [ ] **DASH-12**: Dashboard automatically updates when character state changes
-- [ ] **DASH-13**: Dashboard includes placeholder for NPCs (labeled for future implementation)
+- [x] **DASH-08**: GM can click character card to view detailed character information
+- [x] **DASH-09**: Detailed view displays character sheet (attributes, skills, levels)
+- [x] **DASH-10**: Detailed view displays character inventory and equipped items
+- [x] **DASH-11**: Detailed view displays character narrative (appearance, backstory)
+- [x] **DASH-12**: Dashboard automatically updates when character state changes
+- [x] **DASH-13**: Dashboard includes placeholder for NPCs (labeled for future implementation)
 
 ### Time Management
 
@@ -135,12 +135,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-05 | Phase 14 | Complete |
 | DASH-06 | Phase 14 | Complete |
 | DASH-07 | Phase 14 | Complete |
-| DASH-08 | Phase 15 | Pending |
-| DASH-09 | Phase 15 | Pending |
-| DASH-10 | Phase 15 | Pending |
-| DASH-11 | Phase 15 | Pending |
-| DASH-12 | Phase 15 | Pending |
-| DASH-13 | Phase 15 | Pending |
+| DASH-08 | Phase 15 | Complete |
+| DASH-09 | Phase 15 | Complete |
+| DASH-10 | Phase 15 | Complete |
+| DASH-11 | Phase 15 | Complete |
+| DASH-12 | Phase 15 | Complete |
+| DASH-13 | Phase 15 | Complete |
 | TIME-01 | Phase 16 | Pending |
 | TIME-02 | Phase 16 | Pending |
 | TIME-03 | Phase 16 | Pending |

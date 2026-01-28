@@ -128,9 +128,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 15-01-PLAN.md - Modal foundation, data layer GmNotes, CharacterStatusCard onclick
-- [ ] 15-02-PLAN.md - Tab content components (CharacterDetailSheet, Inventory, Narrative)
-- [ ] 15-03-PLAN.md - Real-time updates and NPC placeholder
+- [x] 15-01-PLAN.md - Modal foundation, data layer GmNotes, CharacterStatusCard onclick
+- [x] 15-02-PLAN.md - Tab content components (CharacterDetailSheet, Inventory, Narrative)
+- [x] 15-03-PLAN.md - Real-time updates and NPC placeholder
 
 ### Phase 16: Time Management
 **Goal**: GM can control time flow with multiple increments and round-based mode
@@ -165,9 +165,9 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 12. Table Foundation | v1.2 | 2/2 | Complete | 2026-01-26 |
 | 13. Join Workflow | v1.2 | 4/4 | Complete | 2026-01-27 |
 | 14. Dashboard Core | v1.2 | 3/3 | Complete | 2026-01-27 |
-| 15. Dashboard Details | v1.2 | 0/3 | Planned | - |
+| 15. Dashboard Details | v1.2 | 3/3 | Complete | 2026-01-27 |
 | 16. Time Management | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-27 - Phase 15 planned (3 plans)*
+*Last updated: 2026-01-27 - Phase 15 complete (3/3 plans)*
