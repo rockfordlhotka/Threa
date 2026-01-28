@@ -218,77 +218,36 @@ else
                     }
                     else if (table.Status == Threa.Dal.Dto.TableStatus.Active)
                     {
+                        <!-- Combat Mode Toggle Button -->
                         @if (table.IsInCombat)
                         {
-                            <!-- Round Advancement (Combat Mode) -->
-                            <div class="mb-3">
-                                <div class="d-flex gap-2 mb-2">
-                                    <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound">
-                                        +1 Round
-                                    </button>
-                                    <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)">
-                                        +5
-                                    </button>
-                                    <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)">
-                                        +10
-                                    </button>
-                                </div>
-
-                                <!-- Custom Advance -->
-                                <div class="input-group">
-                                    <input type="number" class="form-control" @bind="roundsToAdvance"
-                                           min="1" max="100" placeholder="Custom rounds" />
-                                    <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
-                                        Advance
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <!-- Time Advancement (Non-Combat) -->
-                            <div class="mb-3">
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(60)">
-                                        +1 Minute
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(600)">
-                                        +1 Turn (10 min)
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(3600)">
-                                        +1 Hour
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(86400)">
-                                        +1 Day
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => AdvanceTime(604800)">
-                                        +1 Week
-                                    </button>
-                                </div>
-                            </div>
-                        }
-
-                        <hr />
-
-                        <!-- Combat Mode Toggle -->
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span style="font-family: var(--font-display);">COMBAT MODE</span>
-                            @if (table.IsInCombat)
-                            {
-                                <span class="badge bg-danger me-2">ACTIVE</span>
-                            }
-                        </div>
-                        @if (table.IsInCombat)
-                        {
-                            <button class="btn btn-outline-success w-100 mt-2" @onclick="ExitCombat">
+                            <button class="btn btn-outline-success w-100 mb-3" @onclick="ExitCombat">
                                 <i class="bi bi-peace"></i> End Combat
                             </button>
                         }
                         else
                         {
-                            <button class="btn btn-danger w-100 mt-2" @onclick="EnterCombat">
-                                <i class="bi bi-shield-exclamation"></i> Enter Combat
+                            <button class="btn btn-danger w-100 mb-3" @onclick="EnterCombat">
+                                <i class="bi bi-shield-exclamation"></i> Start Combat
                             </button>
+                        }
+
+                        <!-- Context-Aware Time Buttons -->
+                        @if (table.IsInCombat)
+                        {
+                            <button class="btn btn-primary w-100" @onclick="AdvanceRound">
+                                +1 Round
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(60)">+1 Min</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(600)">+10 Min</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(3600)">+1 Hour</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(86400)">+1 Day</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(604800)">+1 Week</button>
+                            </div>
                         }
                     }
                 </div>
@@ -353,7 +312,6 @@ else
     private IDisposable? activityLogSubscription;
 
     // Form fields
-    private int roundsToAdvance = 5;
     private string announcementText = "";
 
     // Join request state
@@ -605,41 +563,6 @@ else
             CampaignId = table.Id.ToString(),
             SourceId = "GM",
             Reason = $"Advanced to round {table.CurrentRound}"
-        });
-    }
-
-    private async Task AdvanceMultipleRounds()
-    {
-        if (table == null) return;
-        table.AdvanceRounds(roundsToAdvance);
-        await SaveTable();
-        AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}", ActivityCategory.Time);
-
-        // Publish time event so players can process end-of-round effects
-        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
-        {
-            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
-            Count = roundsToAdvance,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            Reason = $"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}"
-        });
-    }
-
-    private async Task AdvanceRoundsQuick(int count)
-    {
-        if (table == null) return;
-        table.AdvanceRounds(count);
-        await SaveTable();
-        AddLogEntry($"Advanced {count} rounds to round {table.CurrentRound}", ActivityCategory.Time);
-
-        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
-        {
-            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
-            Count = count,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            Reason = $"Advanced {count} rounds to round {table.CurrentRound}"
         });
     }
 
