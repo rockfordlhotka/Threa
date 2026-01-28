@@ -21,6 +21,7 @@ public static class SqliteConfigurationExtensions
         services.AddTransient<ISkillDal, SkillDal>();
         services.AddTransient<IMagicSchoolDal, MagicSchoolDal>();
         services.AddTransient<ITableDal, TableDal>();
+        services.AddTransient<IEffectTemplateDal, EffectTemplateDal>();
         services.AddScoped<SqliteConnection>(provider =>
         {
             var config = provider.GetService<IConfiguration>();
