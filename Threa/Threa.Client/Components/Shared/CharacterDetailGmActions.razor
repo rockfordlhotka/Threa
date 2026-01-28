@@ -10,48 +10,57 @@
 @inject ITimeEventPublisher TimeEventPublisher
 
 <div class="row g-3">
-    <!-- Apply Damage -->
+    <!-- Health Management (unified damage/healing) -->
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header bg-danger text-white">
-                <strong><i class="bi bi-heart-pulse me-1"></i>Apply Damage</strong>
+            <div class="card-header text-white" style="transition: background-color 0.2s ease; background-color: @(healthMode == HealthMode.Damage ? "var(--bs-danger)" : "var(--bs-success)");">
+                <strong>
+                    <i class="bi @(healthMode == HealthMode.Damage ? "bi-heart-pulse" : "bi-bandaid") me-1"></i>
+                    @(healthMode == HealthMode.Damage ? "Apply Damage" : "Apply Healing")
+                </strong>
             </div>
             <div class="card-body">
+                <div class="btn-group w-100 mb-3" role="group">
+                    <button class="btn @(healthMode == HealthMode.Damage ? "btn-danger" : "btn-outline-danger")"
+                            @onclick="() => SetMode(HealthMode.Damage)">
+                        <i class="bi bi-dash-circle me-1"></i>Damage
+                    </button>
+                    <button class="btn @(healthMode == HealthMode.Healing ? "btn-success" : "btn-outline-success")"
+                            @onclick="() => SetMode(HealthMode.Healing)">
+                        <i class="bi bi-plus-circle me-1"></i>Healing
+                    </button>
+                </div>
                 <div class="mb-3">
                     <label class="form-label">Amount</label>
-                    <input type="number" class="form-control" @bind="damageAmount" min="1" />
+                    <input type="number" class="form-control" @bind="healthAmount" min="1" />
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-danger flex-grow-1" @onclick="ApplyDamageToFat" disabled="@isProcessing">
-                        <i class="bi bi-dash-circle me-1"></i>FAT
+                    <button class="btn @(healthMode == HealthMode.Damage ? "btn-danger" : "btn-success") flex-grow-1"
+                            @onclick='() => ApplyToPool("FAT")' disabled="@isProcessing">
+                        <i class="bi @(healthMode == HealthMode.Damage ? "bi-dash-circle" : "bi-plus-circle") me-1"></i>FAT
                     </button>
-                    <button class="btn btn-danger flex-grow-1" @onclick="ApplyDamageToVit" disabled="@isProcessing">
-                        <i class="bi bi-dash-circle me-1"></i>VIT
+                    <button class="btn @(healthMode == HealthMode.Damage ? "btn-danger" : "btn-success") flex-grow-1"
+                            @onclick='() => ApplyToPool("VIT")' disabled="@isProcessing">
+                        <i class="bi @(healthMode == HealthMode.Damage ? "bi-dash-circle" : "bi-plus-circle") me-1"></i>VIT
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Apply Healing -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-success text-white">
-                <strong><i class="bi bi-bandaid me-1"></i>Apply Healing</strong>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Amount</label>
-                    <input type="number" class="form-control" @bind="healAmount" min="1" />
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success flex-grow-1" @onclick="ApplyHealingToFat" disabled="@isProcessing">
-                        <i class="bi bi-plus-circle me-1"></i>FAT
-                    </button>
-                    <button class="btn btn-success flex-grow-1" @onclick="ApplyHealingToVit" disabled="@isProcessing">
-                        <i class="bi bi-plus-circle me-1"></i>VIT
-                    </button>
-                </div>
+                @if (showOverflowWarning)
+                {
+                    <div class="alert @(healthMode == HealthMode.Damage ? "alert-warning" : "alert-info") mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        @overflowWarningMessage
+                        <div class="mt-2 d-flex gap-2">
+                            <button class="btn @(healthMode == HealthMode.Damage ? "btn-warning" : "btn-info") btn-sm"
+                                    @onclick="ConfirmApply" disabled="@isProcessing">
+                                Apply Anyway
+                            </button>
+                            <button class="btn btn-secondary btn-sm" @onclick="CancelApply">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -80,7 +89,7 @@
     </div>
 
     <!-- Character Management -->
-    <div class="col-md-6">
+    <div class="col-12">
         <div class="card h-100">
             <div class="card-header bg-secondary text-white">
                 <strong><i class="bi bi-gear me-1"></i>Character Management</strong>
@@ -148,10 +157,18 @@
     [Parameter]
     public EventCallback OnCharacterUpdated { get; set; }
 
-    // Form state
-    private int damageAmount = 1;
-    private int healAmount = 1;
+    // Health mode enum and state
+    private enum HealthMode { Damage, Healing }
+    private HealthMode healthMode = HealthMode.Damage;
+    private int healthAmount = 1;
+    private bool showOverflowWarning;
+    private string overflowWarningMessage = "";
+    private string pendingPool = "";
+
+    // Effect state
     private string selectedEffect = "";
+
+    // General state
     private bool isProcessing;
     private bool showRemoveConfirm;
 
@@ -160,84 +177,118 @@
     private string feedbackClass = "alert-info";
     private string feedbackIcon = "bi-info-circle";
 
-    // Wrapper methods for button clicks
-    private Task ApplyDamageToFat() => ApplyDamageToPool("FAT");
-    private Task ApplyDamageToVit() => ApplyDamageToPool("VIT");
-    private Task ApplyHealingToFat() => ApplyHealingToPool("FAT");
-    private Task ApplyHealingToVit() => ApplyHealingToPool("VIT");
-
-    private async Task ApplyDamageToPool(string pool)
+    private void SetMode(HealthMode mode)
     {
-        if (Character == null) return;
-        isProcessing = true;
-
-        try
-        {
-            var character = await characterPortal.FetchAsync(CharacterId);
-
-            if (pool == "FAT")
-            {
-                character.Fatigue.PendingDamage += damageAmount;
-            }
-            else
-            {
-                character.Vitality.PendingDamage += damageAmount;
-            }
-
-            await characterPortal.UpdateAsync(character);
-
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = CharacterId,
-                UpdateType = CharacterUpdateType.Damage,
-                CampaignId = TableId.ToString(),
-                SourceId = "GM",
-                Description = $"{damageAmount} {pool} damage"
-            });
-
-            ShowFeedback($"Saved: {damageAmount} {pool} damage applied", "alert-success", "bi-check-circle");
-            await OnCharacterUpdated.InvokeAsync();
-        }
-        catch (Exception ex)
-        {
-            ShowFeedback($"Error saving: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
-        }
-        finally
-        {
-            isProcessing = false;
-        }
+        healthMode = mode;
+        showOverflowWarning = false; // Clear any pending warning on mode change
     }
 
-    private async Task ApplyHealingToPool(string pool)
+    private async Task ApplyToPool(string pool)
     {
         if (Character == null) return;
+        pendingPool = pool;
+
+        if (healthMode == HealthMode.Damage)
+        {
+            if (pool == "FAT")
+            {
+                // Check FAT overflow to VIT
+                var projectedFat = Character.Fatigue.Value - Character.Fatigue.PendingDamage - healthAmount;
+                if (projectedFat < 0)
+                {
+                    var overflow = Math.Abs(projectedFat);
+                    overflowWarningMessage = $"This will exceed FAT capacity. {overflow} points will cascade to VIT pending damage.";
+                    showOverflowWarning = true;
+                    return;
+                }
+            }
+            else if (pool == "VIT")
+            {
+                // Check VIT bounds - warn if damage would exceed current VIT
+                var projectedVit = Character.Vitality.Value - Character.Vitality.PendingDamage - healthAmount;
+                if (projectedVit < 0)
+                {
+                    var excess = Math.Abs(projectedVit);
+                    overflowWarningMessage = $"This will exceed VIT capacity. {excess} points of damage beyond VIT will result in wounds.";
+                    showOverflowWarning = true;
+                    return;
+                }
+            }
+        }
+
+        if (healthMode == HealthMode.Healing)
+        {
+            // Check overheal for both FAT and VIT
+            var currentValue = pool == "FAT" ? Character.Fatigue.Value : Character.Vitality.Value;
+            var pendingHealing = pool == "FAT" ? Character.Fatigue.PendingHealing : Character.Vitality.PendingHealing;
+            var maxValue = pool == "FAT" ? Character.Fatigue.BaseValue : Character.Vitality.BaseValue;
+            var projectedValue = currentValue + pendingHealing + healthAmount;
+
+            if (projectedValue > maxValue)
+            {
+                var overheal = projectedValue - maxValue;
+                overflowWarningMessage = $"This will exceed max {pool}. {overheal} points of temporary overheal will be applied.";
+                showOverflowWarning = true;
+                return;
+            }
+        }
+
+        await ExecuteApply();
+    }
+
+    private async Task ConfirmApply()
+    {
+        showOverflowWarning = false;
+        await ExecuteApply();
+    }
+
+    private void CancelApply()
+    {
+        showOverflowWarning = false;
+        pendingPool = "";
+    }
+
+    private async Task ExecuteApply()
+    {
+        if (Character == null || string.IsNullOrEmpty(pendingPool)) return;
         isProcessing = true;
 
         try
         {
             var character = await characterPortal.FetchAsync(CharacterId);
 
-            if (pool == "FAT")
+            if (healthMode == HealthMode.Damage)
             {
-                character.Fatigue.PendingHealing += healAmount;
+                if (pendingPool == "FAT")
+                    character.Fatigue.PendingDamage += healthAmount;
+                else
+                    character.Vitality.PendingDamage += healthAmount;
             }
             else
             {
-                character.Vitality.PendingHealing += healAmount;
+                if (pendingPool == "FAT")
+                    character.Fatigue.PendingHealing += healthAmount;
+                else
+                    character.Vitality.PendingHealing += healthAmount;
             }
 
             await characterPortal.UpdateAsync(character);
 
+            var updateType = healthMode == HealthMode.Damage
+                ? CharacterUpdateType.Damage
+                : CharacterUpdateType.Healing;
+            var action = healthMode == HealthMode.Damage ? "damage" : "healing";
+
             await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
             {
                 CharacterId = CharacterId,
-                UpdateType = CharacterUpdateType.Healing,
+                UpdateType = updateType,
                 CampaignId = TableId.ToString(),
                 SourceId = "GM",
-                Description = $"{healAmount} {pool} healing"
+                Description = $"{healthAmount} {pendingPool} {action}"
             });
 
-            ShowFeedback($"Saved: {healAmount} {pool} healing applied", "alert-success", "bi-check-circle");
+            ShowFeedback($"Saved: {healthAmount} {pendingPool} {action} applied", "alert-success", "bi-check-circle");
             await OnCharacterUpdated.InvokeAsync();
         }
         catch (Exception ex)
@@ -247,6 +298,7 @@
         finally
         {
             isProcessing = false;
+            pendingPool = "";
         }
     }
 
