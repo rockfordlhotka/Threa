@@ -3,6 +3,7 @@
 @using GameMechanics
 @using GameMechanics.Effects
 @using GameMechanics.Messaging
+@using Threa.Dal
 @using Threa.Dal.Dto
 @using Radzen
 
@@ -10,10 +11,41 @@
 @inject IChildDataPortal<EffectRecord> effectPortal
 @inject DialogService DialogService
 @inject ITimeEventPublisher TimeEventPublisher
+@inject IEffectTemplateDal EffectTemplateDal
 
 <div class="p-3">
     <EditForm Model="@this" OnValidSubmit="SaveEffect">
         <DataAnnotationsValidator />
+
+        @* Template Selection (only for new effects) *@
+        @if (ExistingEffect == null)
+        {
+            <div class="mb-3">
+                <label class="form-label">Quick Template (Optional)</label>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary flex-grow-1" @onclick="OpenTemplatePicker" disabled="@isProcessing">
+                        <i class="bi bi-collection me-1"></i>Choose from Templates...
+                    </button>
+                    @if (!string.IsNullOrEmpty(effectName) && effectName.Length >= 2)
+                    {
+                        <button type="button" class="btn btn-outline-secondary" @onclick="SaveAsTemplate"
+                                disabled="@(!IsFormValid || isSavingTemplate)" title="Save current values as reusable template">
+                            @if (isSavingTemplate)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-bookmark-plus"></i>
+                            }
+                        </button>
+                    }
+                </div>
+                <small class="text-muted">Pre-fill form with a saved template, or save current values as new template</small>
+            </div>
+
+            <hr class="my-3" />
+        }
 
         @* Basic Info Section *@
         <div class="row g-3 mb-3">
@@ -197,6 +229,15 @@
             <strong>@selectedEffectType:</strong> @GetEffectTypeDescription(selectedEffectType)
         </div>
 
+        @* Feedback Messages *@
+        @if (!string.IsNullOrEmpty(feedbackMessage))
+        {
+            <div class="alert @feedbackClass mb-3 alert-dismissible fade show" role="alert">
+                <i class="bi @feedbackIcon me-1"></i>@feedbackMessage
+                <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
+            </div>
+        }
+
         @* Validation Messages *@
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -250,7 +291,11 @@
     private bool showAdvanced = false;
 
     private bool isProcessing;
+    private bool isSavingTemplate;
     private string? errorMessage;
+    private string? feedbackMessage;
+    private string feedbackClass = "alert-info";
+    private string feedbackIcon = "bi-info-circle";
 
     // Available effect types (exclude Wound, CombatStance, Concentration - special handling)
     private static readonly EffectType[] AvailableEffectTypes =
@@ -508,6 +553,137 @@
     private void Cancel()
     {
         DialogService.Close(false);
+    }
+
+    private async Task OpenTemplatePicker()
+    {
+        var result = await DialogService.OpenAsync<EffectTemplatePickerModal>(
+            "Select Effect Template",
+            null,
+            new DialogOptions { Width = "900px", Height = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result is EffectTemplate selectedTemplate)
+        {
+            ApplyTemplate(selectedTemplate);
+        }
+    }
+
+    private void ApplyTemplate(EffectTemplate template)
+    {
+        effectName = template.Name;
+        selectedEffectType = template.EffectType;
+        description = template.Description ?? "";
+
+        // Map DurationType enum to string
+        durationType = template.DurationType switch
+        {
+            DurationType.Rounds => "Rounds",
+            DurationType.Minutes => "Minutes",
+            DurationType.Hours => "Hours",
+            DurationType.Days => "Days",
+            DurationType.Weeks => "Days", // Map weeks to days (convert value)
+            DurationType.Permanent => "Permanent",
+            DurationType.UntilRemoved => "Permanent",
+            _ => "Rounds"
+        };
+
+        durationValue = template.DefaultDurationValue ?? 0;
+        if (template.DurationType == DurationType.Weeks)
+        {
+            durationValue *= 7; // Convert weeks to days
+        }
+
+        var state = template.State;
+        asModifier = state.ASModifier ?? 0;
+        fatDamagePerTick = state.FatDamagePerTick ?? 0;
+        vitDamagePerTick = state.VitDamagePerTick ?? 0;
+        fatHealingPerTick = state.FatHealingPerTick ?? 0;
+        vitHealingPerTick = state.VitHealingPerTick ?? 0;
+
+        // Clear and repopulate modifier dictionaries
+        attributeModifiers.Clear();
+        if (state.AttributeModifiers != null)
+        {
+            foreach (var mod in state.AttributeModifiers)
+                attributeModifiers[mod.Key] = mod.Value;
+        }
+
+        skillModifiers.Clear();
+        if (state.SkillModifiers != null)
+        {
+            foreach (var mod in state.SkillModifiers)
+                skillModifiers[mod.Key] = mod.Value;
+        }
+
+        // Show advanced section if any modifiers are set
+        showAdvanced = asModifier != 0 ||
+                       attributeModifiers.Any() ||
+                       skillModifiers.Any() ||
+                       fatDamagePerTick > 0 ||
+                       vitDamagePerTick > 0 ||
+                       fatHealingPerTick > 0 ||
+                       vitHealingPerTick > 0;
+
+        ShowFeedback($"Template '{template.Name}' applied", "alert-success", "bi-check-circle");
+        StateHasChanged();
+    }
+
+    private async Task SaveAsTemplate()
+    {
+        if (!IsFormValid) return;
+        isSavingTemplate = true;
+        feedbackMessage = null;
+
+        try
+        {
+            var state = BuildEffectState();
+
+            // Map string durationType back to enum
+            var durationTypeEnum = durationType switch
+            {
+                "Rounds" => DurationType.Rounds,
+                "Turns" => DurationType.Rounds, // Turns are just 60 rounds
+                "Minutes" => DurationType.Minutes,
+                "Hours" => DurationType.Hours,
+                "Days" => DurationType.Days,
+                "Permanent" => DurationType.Permanent,
+                _ => DurationType.Rounds
+            };
+
+            var durationVal = durationType == "Turns" ? durationValue * 60 : durationValue;
+
+            var templateDto = new EffectTemplateDto
+            {
+                Name = effectName,
+                EffectType = selectedEffectType,
+                Description = description,
+                DefaultDurationValue = durationVal,
+                DurationType = durationTypeEnum,
+                StateJson = state.Serialize(),
+                Tags = "",
+                IsSystem = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await EffectTemplateDal.SaveTemplateAsync(templateDto);
+            ShowFeedback("Template saved!", "alert-success", "bi-check-circle");
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error saving template: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+        finally
+        {
+            isSavingTemplate = false;
+        }
+    }
+
+    private void ShowFeedback(string message, string alertClass, string icon)
+    {
+        feedbackMessage = message;
+        feedbackClass = alertClass;
+        feedbackIcon = icon;
     }
 
     private static string GetEffectTypeAlertClass(EffectType type) => type switch
