@@ -1,6 +1,7 @@
 @using GameMechanics
 @using GameMechanics.GamePlay
 @using GameMechanics.Messaging
+@using GameMechanics.Effects.Behaviors
 @using Radzen
 @using Threa.Dal
 @using Threa.Client.Components.Shared
@@ -59,10 +60,24 @@
                     <span class="badge bg-primary" title="Action Points">
                         <i class="bi bi-lightning-charge"></i> @character.ActionPoints.Available/@character.ActionPoints.Max
                     </span>
-                    @if (character.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound) > 0)
+                    @foreach (var wound in character.Effects.Where(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound))
                     {
-                        <span class="badge bg-warning text-dark" title="Wounds">
-                            <i class="bi bi-bandaid"></i> @character.Effects.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound)
+                        var woundState = WoundState.Deserialize(wound.BehaviorState);
+                        var severity = woundState?.Severity ?? "Unknown";
+                        var description = woundState?.Description ?? wound.Location ?? "Wound";
+                        var badgeClass = severity switch
+                        {
+                            "Critical" => "bg-danger",
+                            "Severe" => "bg-danger-subtle text-danger",
+                            "Moderate" => "bg-warning text-dark",
+                            "Minor" => "bg-secondary",
+                            _ => "bg-warning text-dark"
+                        };
+
+                        <span class="badge @badgeClass"
+                              style="cursor: help;"
+                              title="@($"{severity} wound at {wound.Location}: {description}")">
+                            <i class="bi bi-bandaid"></i> @(wound.Location?.Replace("Left", "L").Replace("Right", "R") ?? "?")
                         </span>
                     }
                     @if (character.Effects.Count(e => e.EffectType != Threa.Dal.Dto.EffectType.Wound) > 0)
