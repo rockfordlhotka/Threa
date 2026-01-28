@@ -615,6 +615,7 @@ private async Task SelectCharacterAsync(int characterId)
         await TimeEventSubscriber.SubscribeAsync();
 
         TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived += OnTimeSkipReceived;
         TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived += OnTableUpdateReceived;
@@ -653,6 +654,63 @@ private async Task SelectCharacterAsync(int characterId)
             catch (Exception ex)
             {
                 errorMessage = $"Error processing time event: {ex.Message}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
+    {
+        // Only process if this event is for our table
+        if (table == null || e.CampaignId != table.Id.ToString()) return;
+
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Process time skip effects on the character
+                if (character != null)
+                {
+                    // Time skips trigger end-of-round processing for each time unit
+                    // Each round = 6 seconds, calculate how many "rounds" the skip represents
+                    int roundsEquivalent = e.SkipUnit switch
+                    {
+                        GameMechanics.Time.TimeEventType.EndOfMinute => 10 * e.Count,      // 1 min = 10 rounds
+                        GameMechanics.Time.TimeEventType.EndOfTurn => 100 * e.Count,      // 10 min = 100 rounds
+                        GameMechanics.Time.TimeEventType.EndOfHour => 600 * e.Count,      // 1 hour = 600 rounds
+                        GameMechanics.Time.TimeEventType.EndOfDay => 14400 * e.Count,     // 1 day = 14400 rounds
+                        GameMechanics.Time.TimeEventType.EndOfWeek => 100800 * e.Count,   // 1 week = 100800 rounds
+                        _ => e.Count // Default to count if unknown
+                    };
+
+                    // Apply end-of-round effects for the time period
+                    // Note: For large time skips, we batch process rather than loop
+                    // EndOfRound handles pending pools and effect expiration
+                    for (int i = 0; i < Math.Min(roundsEquivalent, 100); i++)
+                    {
+                        character.EndOfRound(effectPortal);
+                    }
+                    // For large skips (100+ rounds), just process once more to catch any remaining effects
+                    if (roundsEquivalent > 100)
+                    {
+                        character.EndOfRound(effectPortal);
+                    }
+
+                    // Save the updated character
+                    await characterPortal.UpdateAsync(character);
+
+                    // Refresh table state to get updated time
+                    if (table != null)
+                    {
+                        table = await tablePortal.FetchAsync(table.Id);
+                    }
+                }
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error processing time skip: {ex.Message}";
                 StateHasChanged();
             }
         });
@@ -732,6 +790,7 @@ private async Task SelectCharacterAsync(int characterId)
         if (!timeEventSubscribed) return;
 
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
         TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived -= OnTableUpdateReceived;
