@@ -47,20 +47,20 @@ Requirements for milestone v1.2: GM Table & Campaign Management
 
 ### Time Management
 
-- [ ] **TIME-01**: GM can advance time by 1 round (6 seconds)
-- [ ] **TIME-02**: GM can advance time by 1 minute
-- [ ] **TIME-03**: GM can advance time by 1 turn (10 minutes)
-- [ ] **TIME-04**: GM can advance time by 1 hour
-- [ ] **TIME-05**: GM can advance time by 1 day
-- [ ] **TIME-06**: GM can advance time by 1 week
-- [ ] **TIME-07**: GM can enter "in rounds" mode for combat/detailed tracking
-- [ ] **TIME-08**: GM can exit "in rounds" mode to return to normal time flow
-- [ ] **TIME-09**: Round-by-round button is only enabled when in "in rounds" mode
-- [ ] **TIME-10**: Time advancement triggers message to all characters at table via RabbitMQ
-- [ ] **TIME-11**: Characters process time advancement (apply pending damage/healing, expire effects, recover AP)
-- [ ] **TIME-12**: GM dashboard reflects character updates after time processing completes
-- [ ] **TIME-13**: Player Play page displays "in rounds" indicator when table is in round mode
-- [ ] **TIME-14**: Player Play page hides "in rounds" indicator when table is in normal mode
+- [x] **TIME-01**: GM can advance time by 1 round (6 seconds)
+- [x] **TIME-02**: GM can advance time by 1 minute
+- [x] **TIME-03**: GM can advance time by 1 turn (10 minutes)
+- [x] **TIME-04**: GM can advance time by 1 hour
+- [x] **TIME-05**: GM can advance time by 1 day
+- [x] **TIME-06**: GM can advance time by 1 week
+- [x] **TIME-07**: GM can enter "in rounds" mode for combat/detailed tracking
+- [x] **TIME-08**: GM can exit "in rounds" mode to return to normal time flow
+- [x] **TIME-09**: Round-by-round button is only enabled when in "in rounds" mode
+- [x] **TIME-10**: Time advancement triggers message to all characters at table via RabbitMQ
+- [x] **TIME-11**: Characters process time advancement (apply pending damage/healing, expire effects, recover AP)
+- [x] **TIME-12**: GM dashboard reflects character updates after time processing completes
+- [x] **TIME-13**: Player Play page displays "in rounds" indicator when table is in round mode
+- [x] **TIME-14**: Player Play page hides "in rounds" indicator when table is in normal mode
 
 ## v1.3+ Future Requirements
 
@@ -141,20 +141,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-11 | Phase 15 | Complete |
 | DASH-12 | Phase 15 | Complete |
 | DASH-13 | Phase 15 | Complete |
-| TIME-01 | Phase 16 | Pending |
-| TIME-02 | Phase 16 | Pending |
-| TIME-03 | Phase 16 | Pending |
-| TIME-04 | Phase 16 | Pending |
-| TIME-05 | Phase 16 | Pending |
-| TIME-06 | Phase 16 | Pending |
-| TIME-07 | Phase 16 | Pending |
-| TIME-08 | Phase 16 | Pending |
-| TIME-09 | Phase 16 | Pending |
-| TIME-10 | Phase 16 | Pending |
-| TIME-11 | Phase 16 | Pending |
-| TIME-12 | Phase 16 | Pending |
-| TIME-13 | Phase 16 | Pending |
-| TIME-14 | Phase 16 | Pending |
+| TIME-01 | Phase 16 | Complete |
+| TIME-02 | Phase 16 | Complete |
+| TIME-03 | Phase 16 | Complete |
+| TIME-04 | Phase 16 | Complete |
+| TIME-05 | Phase 16 | Complete |
+| TIME-06 | Phase 16 | Complete |
+| TIME-07 | Phase 16 | Complete |
+| TIME-08 | Phase 16 | Complete |
+| TIME-09 | Phase 16 | Complete |
+| TIME-10 | Phase 16 | Complete |
+| TIME-11 | Phase 16 | Complete |
+| TIME-12 | Phase 16 | Complete |
+| TIME-13 | Phase 16 | Complete |
+| TIME-14 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 43 total

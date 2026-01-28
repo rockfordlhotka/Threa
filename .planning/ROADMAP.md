@@ -57,7 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Join Workflow** - Players request to join, GM reviews and approves
 - [x] **Phase 14: Dashboard Core** - Character status cards with health, AP, effects
 - [x] **Phase 15: Dashboard Details** - Detailed views, real-time updates, NPC placeholder
-- [ ] **Phase 16: Time Management** - Round-based and calendar time control
+- [x] **Phase 16: Time Management** - Round-based and calendar time control
 
 ## Phase Details
 
@@ -147,8 +147,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 16-01-PLAN.md - GM time control UI reorganization (context-aware buttons, combat toggle, In Rounds badge)
-- [ ] 16-02-PLAN.md - Player TimeSkip handling and In Rounds indicator
+- [x] 16-01-PLAN.md - GM time control UI reorganization (context-aware buttons, combat toggle, In Rounds badge)
+- [x] 16-02-PLAN.md - Player TimeSkip handling and In Rounds indicator
 
 ## Progress
 
@@ -166,8 +166,8 @@ Phases execute in numeric order: 12 -> 12.1 -> 12.2 -> 13 -> etc.
 | 13. Join Workflow | v1.2 | 4/4 | Complete | 2026-01-27 |
 | 14. Dashboard Core | v1.2 | 3/3 | Complete | 2026-01-27 |
 | 15. Dashboard Details | v1.2 | 3/3 | Complete | 2026-01-27 |
-| 16. Time Management | v1.2 | 0/2 | Planned | - |
+| 16. Time Management | v1.2 | 2/2 | Complete | 2026-01-27 |
 
 ---
 *Roadmap created: 2026-01-26*
-*Last updated: 2026-01-27 - Phase 16 planned (2 plans)*
+*Last updated: 2026-01-27 - Phase 16 complete (v1.2 milestone complete)*
