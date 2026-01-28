@@ -2,28 +2,25 @@
 
 ## What This Is
 
-A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, and user authentication with role-based access control.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, and real-time GM dashboard with comprehensive time control.
 
 ## Core Value
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: v1.2 GM Table & Campaign Management
+## Recent Achievement (v1.2)
 
-**Goal:** Enable Game Masters to create and manage campaign tables with player character joining, real-time status monitoring, and comprehensive time control.
-
-**Target features:**
-- Table/campaign creation with theme selection and start epoch time
+**v1.2 GM Table & Campaign Management** (shipped 2026-01-28)
+- Complete campaign table and character management system
 - Player request-to-join workflow with GM review and approval
-- Information-dense GM dashboard showing all character status (health, AP, effects)
-- Enhanced time control (rounds, minutes, turns, hours, days, weeks) with "in rounds" state
-- Real-time GM dashboard updates reflecting character state changes
-- Foundation for future NPC integration
+- Real-time GM dashboard with character status cards (health, AP, wounds, effects)
+- Detailed character modal with five tabbed views (GM Actions, Sheet, Inventory, Grant Items, Narrative)
+- Context-aware time management with combat rounds and calendar time
+- 43/43 requirements satisfied, all phases complete
 
-**Recent Achievement (v1.1):**
-- Complete user management and authentication system (shipped 2026-01-26)
-- Self-service registration, password recovery, admin controls, user profiles
-- 19/19 requirements satisfied, 100% integration verified
+**Previous Achievements:**
+- v1.1 User Management & Authentication (shipped 2026-01-26)
+- v1.0 Inventory & Equipment System (shipped 2026-01-26)
 
 ## Requirements
 
@@ -54,6 +51,18 @@ These capabilities exist in the codebase:
 - ✓ Users can optionally provide email address — v1.1
 - ✓ User avatars display via Gravatar (based on email if provided) — v1.1
 
+**Delivered in v1.2 (2026-01-28):**
+- ✓ GM can create campaign tables with name, theme (fantasy/sci-fi), and start epoch time — v1.2
+- ✓ Players can request to join tables with a character — v1.2
+- ✓ GM can review character details and approve/deny join requests — v1.2
+- ✓ GM can remove characters from active table — v1.2
+- ✓ GM dashboard displays compact character status (FAT/VIT/wounds with pending, AP, effects) — v1.2
+- ✓ GM can advance time by multiple increments (rounds, minutes, turns, hours, days, weeks) — v1.2
+- ✓ System tracks "in rounds" vs normal state — v1.2
+- ✓ GM dashboard updates in real-time when character state changes — v1.2
+- ✓ GM can view detailed character information (sheet, inventory, appearance) — v1.2
+- ✓ Characters are campaign-specific (not shared across tables) — v1.2
+
 **Delivered in v1.0 (2026-01-26):**
 - ✓ GM can create new item templates via web UI — v1.0
 - ✓ GM can edit existing item templates (all properties: basic, combat stats, bonuses) — v1.0
@@ -74,28 +83,24 @@ These capabilities exist in the codebase:
 
 ### Active
 
-Current milestone v1.2 requirements:
-- [ ] GM can create campaign tables with name, theme (fantasy/sci-fi), and start epoch time
-- [ ] Players can request to join tables with a character
-- [ ] GM can review character details and approve/deny join requests
-- [ ] GM can remove characters from active table
-- [ ] GM dashboard displays compact character status (FAT/VIT/wounds with pending, AP, effects)
-- [ ] GM can advance time by multiple increments (rounds, minutes, turns, hours, days, weeks)
-- [ ] System tracks "in rounds" vs normal state
-- [ ] GM dashboard updates in real-time when character state changes
-- [ ] GM can view detailed character information (sheet, inventory, appearance)
-- [ ] Characters are campaign-specific (not shared across tables)
+Future requirements (for next milestone):
+- [ ] GM can apply damage/healing to characters (add to pending pools)
+- [ ] GM can add/remove effects to/from characters
+- [ ] GM can edit effect properties (duration, modifiers, expiration)
+- [ ] GM can manipulate character inventory (add/remove items)
+- [ ] GM can edit character stats/properties outside normal restrictions
+- [ ] GM can create and manage NPCs with stats and abilities
+- [ ] NPC status appears in dashboard alongside player characters
 
 ### Out of Scope
 
 Explicitly excluded (may be considered for future milestones):
 
-**Deferred from v1.2 to v1.3+:**
-- GM directly applying damage/healing to characters — Build table foundation first
-- GM adding effects to characters — Build table foundation first
-- GM manipulating character inventory — Build table foundation first
-- GM editing character stats/properties — Build table foundation first
-- Full NPC management (creation, editing) — Placeholder in dashboard for v1.2
+**Deferred to v1.3+:**
+- Initiative tracking automation — Round advancement exists; initiative order is future enhancement
+- Automated encounter balancing — Complex feature requiring game balance data
+- Session logs/history within campaign — Focus on real-time management first
+- Campaign sharing between GMs — Single GM per campaign simplifies permissions
 
 **Previously deferred:**
 - Item crafting system — Complex, separate feature set
@@ -108,8 +113,19 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.1 Shipped):**
-The Threa TTRPG Assistant now has complete user management, authentication, and inventory systems. Key components:
+**Current State (v1.2 Shipped):**
+The Threa TTRPG Assistant now has complete user management, authentication, inventory systems, and campaign table management. Key components:
+
+**v1.2 GM Table & Campaign Management (2026-01-28):**
+- Campaign table creation with theme (Fantasy/Sci-Fi) and epoch-based world time
+- Player request-to-join workflow with character selection and GM approval/denial
+- Real-time GM dashboard with character status cards showing health, AP, wounds, effects
+- Detailed character modal with five tabbed views (GM Actions, Sheet, Inventory, Grant Items, Narrative)
+- Context-aware time management: combat rounds and calendar time (minutes, hours, days, weeks)
+- "In Rounds" combat mode with toggle for detailed tracking
+- Rx.NET messaging for real-time dashboard updates
+- NPC placeholder section for future expansion
+- Codebase: +12,093 lines across 83 files modified
 
 **v1.1 User Management & Authentication (2026-01-26):**
 - Self-service user registration with first-user-as-admin
@@ -141,11 +157,14 @@ The codebase already has a working TTRPG combat system with:
 - Character stats with attributes (STR, DEX, END, INT, ITT, WIL, PHY) and skills
 - Ability Score calculation: `AS = Attribute + Skill Level - 5 + Modifiers`
 
-**Time Management Infrastructure (v1.2 builds on this):**
-- GM table page exists with "advance round" button
-- RabbitMQ messaging infrastructure sends time changes to all players at table
-- Character-side processing handles round advancement (damage/healing from pending pools, effect expiration, AP recovery)
-- Missing: other time increments (minute, turn, hour, day, week), GM dashboard real-time updates, "in rounds" state tracking
+**Time Management Infrastructure (v1.2 complete):**
+- Context-aware time controls: +1 Round in combat, calendar buttons outside combat
+- "In Rounds" combat mode with toggle button (Start/End Combat)
+- Multiple time increments: round (6s), minute, turn (10m), hour, day, week
+- Epoch-based world time tracking
+- RabbitMQ messaging sends TimeSkipReceived events to all players at table
+- Character-side processing handles time advancement (pending pools, effect expiration, AP recovery)
+- Time skip processing capped at 100 iterations to prevent UI freeze on large skips
 
 **Integration Point:**
 Items provide the `+ Modifiers` portion of the Ability Score formula via ItemBonusCalculator:
@@ -204,6 +223,19 @@ Users are already familiar with:
 | ItemBonusCalculator service | Clean separation, easily testable (17 unit tests) | ✓ Good (v1.0) |
 | CharacterUpdateMessage for inventory changes | Reuse existing infrastructure, no new message types | ✓ Good (v1.0) |
 | Defer player-to-player trading to v2 | Scope management, GM distribution sufficient for v1 | ✓ Good (v1.0) |
+| Epoch-based world time tracking | Flexible time management, supports long-running campaigns | ✓ Good (v1.2) |
+| Context-aware time buttons | Show only relevant buttons for current mode (combat vs exploration) | ✓ Good (v1.2) |
+| "In Rounds: Round X" combined badge | Single badge clearer than separate Round/Combat indicators | ✓ Good (v1.2) |
+| Time skip cap at 100 iterations | Prevents UI freeze on large calendar time skips (e.g., 1 week = 100,800 rounds) | ✓ Good (v1.2) |
+| Five-tab modal for character details | Prioritizes GM workflow: Actions, Sheet, Inventory, Grant Items, Narrative | ✓ Good (v1.2) |
+| Two-button FAT/VIT layout | Eliminates dropdown step for faster damage/healing application | ✓ Good (v1.2) |
+| RadzenDialog in interactive context | Required for modal rendering with DialogService | ✓ Good (v1.2) |
+| Character-specific GM notes | Notes stored per table-character pair for campaign context | ✓ Good (v1.2) |
+| Real-time updates via CharacterUpdateMessage | Reuse existing infrastructure, no new message types | ✓ Good (v1.2) |
+| ITimeEventSubscriber pattern | Consistent subscription pattern for time-based updates | ✓ Good (v1.2) |
+| 500ms delay before character list refresh | Debounce rapid time events to reduce UI thrashing | ✓ Good (v1.2) |
+| JoinRequest with status enum | Clean state management for Pending/Approved/Denied workflow | ✓ Good (v1.2) |
+| NPC placeholder in v1.2 | Foundation laid, full NPC management deferred to v1.3+ | ✓ Good (v1.2) |
 
 ---
-*Last updated: 2026-01-26 after v1.2 milestone start*
+*Last updated: 2026-01-28 after v1.2 milestone completion*

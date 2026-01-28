@@ -2,20 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-26)
+See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 16 - Time Management (IN PROGRESS)
+**Current focus:** Planning next milestone (v1.3)
 
 ## Current Position
 
-Milestone: v1.2
-Phase: 16 of 16 (Time Management)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-27 - Completed 16-02-PLAN.md
+Milestone: v1.3 (planning needed)
+Phase: Not started
+Plan: Not started
+Status: Ready to plan next milestone
+Last activity: 2026-01-28 - v1.2 milestone complete
 
-Progress: v1.2 [####################] 100% (5 phases, 43 requirements)
+Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements shipped)
 
 ## Performance Metrics
 
@@ -63,39 +63,9 @@ Progress: v1.2 [####################] 100% (5 phases, 43 requirements)
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+All decisions are logged in PROJECT.md Key Decisions table.
 
-- [v1.2]: Tab order: GM Actions, Character Sheet, Inventory, Grant Items, Narrative
-- [v1.2]: Modal header shows character summary with health bars and status badges
-- [v1.2]: Two-button layout (FAT/VIT) for damage and healing actions
-- [v1.2]: 2-column dashboard layout after center panel removal
-- [v1.2]: RadzenDialog must be in interactive context for DialogService
-- [v1.2]: Click-outside-to-close enabled for touch accessibility
-- [v1.2]: Skills grouped by PrimaryAttribute in CharacterDetailSheet
-- [v1.2]: GM notes auto-save on blur with loading indicator
-- [v1.2]: Read-only view components for GM character inspection
-- [v1.2]: CharacterDetailModal opens at 90% screen size
-- [v1.2]: GmNotes stored per table-character pair (table-context specific)
-- [v1.2]: Character switcher dropdown in modal header
-- [v1.2]: Round advance buttons disabled when not in combat mode
-- [v1.2]: ITimeEventSubscriber subscription pattern for GM dashboard real-time updates
-- [v1.2]: 500ms delay before refreshing character list after time events
-- [v1.2]: Use AddEffect() instead of Add() for proper effect stacking
-- [v1.2]: CSS specificity: .component.card.border-state for themed borders
-- [v1.2]: CharacterStatusCard health state borders: green/yellow/red/dark
-- [v1.2]: PendingPoolBar reused for consistent health visualization
-- [v1.2]: WoundSummary groups by name with count suffix (Light x2, Serious)
-- [v1.2]: EffectSummary includes duration suffix when RoundsRemaining has value
-- [v1.2]: Effects loaded via ICharacterEffectDal in TableCharacterList.Fetch
-- [v1.2]: JoinRequest DTO with status enum (Pending, Approved, Denied)
-- [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
-- [v1.2]: Time skip processing capped at 100 iterations to avoid UI freeze
-- [v1.2]: "In Rounds" badge shown only when in combat, hidden otherwise
-- [v1.2]: Context-aware time buttons: +1 Round in combat, calendar buttons outside combat
-- [v1.2]: Start/End Combat toggle button placed before time buttons
-- [v1.2]: Short time labels: +1 Min, +10 Min, +1 Hour, +1 Day, +1 Week
-- [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
+**v1.2 milestone complete** - See milestones/v1.2-ROADMAP.md for full v1.2 decision log.
 
 ### Pending Todos
 
@@ -117,9 +87,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-27
-Stopped at: Completed 16-01-PLAN.md (all Phase 16 plans complete, v1.2 milestone complete)
+Last session: 2026-01-28
+Stopped at: v1.2 milestone complete, ready to plan v1.3
 Resume file: None
 
 ---
-*Phase 16 complete - v1.2 milestone complete*
+*v1.2 milestone complete - archived to milestones/v1.2-ROADMAP.md*
