@@ -330,9 +330,10 @@ else if (character == null)
                         <div style="font-family: var(--font-display); font-size: 0.85rem;">@table.Name</div>
                         <small style="color: var(--color-text-muted);">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
                         <div class="mt-1">
-                            <span class="badge @(table.IsInCombat ? "bg-danger" : "bg-success")">
-                                @(table.IsInCombat ? "COMBAT" : "EXPLORATION")
-                            </span>
+                            @if (table.IsInCombat)
+                            {
+                                <span class="badge bg-danger">In Rounds</span>
+                            }
                             <span class="badge bg-info ms-1">Round @table.CurrentRound</span>
                         </div>
                     </div>
