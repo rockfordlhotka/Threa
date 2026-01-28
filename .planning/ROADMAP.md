@@ -52,10 +52,11 @@ Plans:
   2. GM can remove a wound from a character
   3. GM can edit an existing wound's description and severity
   4. GM can view all active wounds on a character with their severities
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: TBD
+- [ ] 18-01-PLAN.md — Extend WoundState and create wound CRUD modals
+- [ ] 18-02-PLAN.md — Header wound badges and VIT damage wound prompt
 
 ### Phase 19: Effect Management
 **Goal**: GM can create, apply, edit, and template effects on characters
@@ -110,7 +111,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
-| 18. Wound Management | 0/TBD | Not started | - |
+| 18. Wound Management | 0/2 | Planned | - |
 | 19. Effect Management | 0/TBD | Not started | - |
 | 20. Inventory Manipulation | 0/TBD | Not started | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
