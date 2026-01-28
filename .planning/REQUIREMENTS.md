@@ -97,47 +97,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HLTH-01 | TBD | Pending |
-| HLTH-02 | TBD | Pending |
-| HLTH-03 | TBD | Pending |
-| HLTH-04 | TBD | Pending |
-| HLTH-05 | TBD | Pending |
-| HLTH-06 | TBD | Pending |
-| HLTH-07 | TBD | Pending |
-| WOND-01 | TBD | Pending |
-| WOND-02 | TBD | Pending |
-| WOND-03 | TBD | Pending |
-| WOND-04 | TBD | Pending |
-| EFCT-01 | TBD | Pending |
-| EFCT-02 | TBD | Pending |
-| EFCT-03 | TBD | Pending |
-| EFCT-04 | TBD | Pending |
-| EFCT-05 | TBD | Pending |
-| EFCT-06 | TBD | Pending |
-| EFCT-07 | TBD | Pending |
-| EFCT-08 | TBD | Pending |
-| EFCT-09 | TBD | Pending |
-| EFCT-10 | TBD | Pending |
-| INVT-01 | TBD | Pending |
-| INVT-02 | TBD | Pending |
-| INVT-03 | TBD | Pending |
-| INVT-04 | TBD | Pending |
-| INVT-05 | TBD | Pending |
-| INVT-06 | TBD | Pending |
-| INVT-07 | TBD | Pending |
-| INVT-08 | TBD | Pending |
-| STAT-01 | TBD | Pending |
-| STAT-02 | TBD | Pending |
-| STAT-03 | TBD | Pending |
-| STAT-04 | TBD | Pending |
-| STAT-05 | TBD | Pending |
-| STAT-06 | TBD | Pending |
+| HLTH-01 | Phase 17 | Pending |
+| HLTH-02 | Phase 17 | Pending |
+| HLTH-03 | Phase 17 | Pending |
+| HLTH-04 | Phase 17 | Pending |
+| HLTH-05 | Phase 17 | Pending |
+| HLTH-06 | Phase 17 | Pending |
+| HLTH-07 | Phase 17 | Pending |
+| WOND-01 | Phase 18 | Pending |
+| WOND-02 | Phase 18 | Pending |
+| WOND-03 | Phase 18 | Pending |
+| WOND-04 | Phase 18 | Pending |
+| EFCT-01 | Phase 19 | Pending |
+| EFCT-02 | Phase 19 | Pending |
+| EFCT-03 | Phase 19 | Pending |
+| EFCT-04 | Phase 19 | Pending |
+| EFCT-05 | Phase 19 | Pending |
+| EFCT-06 | Phase 19 | Pending |
+| EFCT-07 | Phase 19 | Pending |
+| EFCT-08 | Phase 19 | Pending |
+| EFCT-09 | Phase 19 | Pending |
+| EFCT-10 | Phase 19 | Pending |
+| INVT-01 | Phase 20 | Pending |
+| INVT-02 | Phase 20 | Pending |
+| INVT-03 | Phase 20 | Pending |
+| INVT-04 | Phase 20 | Pending |
+| INVT-05 | Phase 20 | Pending |
+| INVT-06 | Phase 20 | Pending |
+| INVT-07 | Phase 20 | Pending |
+| INVT-08 | Phase 20 | Pending |
+| STAT-01 | Phase 21 | Pending |
+| STAT-02 | Phase 21 | Pending |
+| STAT-03 | Phase 21 | Pending |
+| STAT-04 | Phase 21 | Pending |
+| STAT-05 | Phase 21 | Pending |
+| STAT-06 | Phase 21 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 37 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 37 ⚠️
+- Mapped to phases: 37
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-28*
-*Last updated: 2026-01-28 after initial definition*
+*Last updated: 2026-01-28 after roadmap creation*

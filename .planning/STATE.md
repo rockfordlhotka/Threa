@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Milestone v1.3 - GM Character Manipulation
+**Current focus:** Phase 17 - Health Management
 
 ## Current Position
 
 Milestone: v1.3 GM Character Manipulation
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-01-28 - Milestone v1.3 started
+Phase: 17 of 21 (Health Management)
+Plan: Ready to plan
+Status: Ready to plan
+Last activity: 2026-01-28 - Roadmap created for v1.3
 
-Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements shipped)
+Progress: v1.3 [░░░░░░░░░░░░░░░░░░░░] 0% (0/5 phases)
 
 ## Performance Metrics
 
@@ -24,40 +24,18 @@ Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements 
 - Average duration: 12 min
 - Total execution time: 7.9 hours
 
-**By Phase (v1.0):**
+**By Milestone:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-foundation | 3 | 24 min | 8 min |
-| 02-gm-item-management | 3 | 44 min | 15 min |
-| 03-character-creation-inventory | 2 | 13 min | 6.5 min |
-| 04-gameplay-inventory-core | 2 | 18 min | 9 min |
-| 05-container-system | 2 | 27 min | 13.5 min |
-| 06-item-bonuses-and-combat | 3 | 108 min | 36 min |
-| 07-item-distribution | 1 | 4 min | 4 min |
-
-**By Phase (v1.1):**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 08-registration-foundation | 2/2 | 33 min | 16.5 min |
-| 09-password-recovery | 2/2 | 19 min | 9.5 min |
-| 10-admin-user-management | 2/2 | 11 min | 5.5 min |
-| 11-user-profiles | 2/2 | 29 min | 14.5 min |
-
-**By Phase (v1.2):**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 12-table-foundation | 2/2 | 5 min | 2.5 min |
-| 13-join-workflow | 4/4 | 17 min | 4 min |
-| 14-dashboard-core | 3/3 | 38 min | 13 min |
-| 15-dashboard-details | 3/3 | 56 min | 19 min |
-| 16-time-management | 2/2 | 5 min | 2.5 min |
+| Milestone | Phases | Plans | Total Time | Avg/Plan |
+|-----------|--------|-------|------------|----------|
+| v1.0 | 7 | 16 | 238 min | 15 min |
+| v1.1 | 4 | 8 | 92 min | 11.5 min |
+| v1.2 | 5 | 14 | 121 min | 8.6 min |
+| v1.3 | 5 | TBD | - | - |
 
 **Recent Trend:**
 - Last 5 plans: 16-02 (5 min), 15-03 (45 min), 15-02 (5 min), 15-01 (6 min), 14-03 (21 min)
-- Trend: 16-02 quick execution with minimal code changes
+- Trend: Stable, improving toward end of milestone
 
 ## Accumulated Context
 
@@ -65,31 +43,32 @@ Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements 
 
 All decisions are logged in PROJECT.md Key Decisions table.
 
-**v1.2 milestone complete** - See milestones/v1.2-ROADMAP.md for full v1.2 decision log.
+Recent decisions affecting current work:
+- v1.2: Two-button FAT/VIT layout for faster damage/healing application
+- v1.2: Real-time updates via CharacterUpdateMessage infrastructure
 
 ### Pending Todos
 
-**Future Phase - Character Management:**
-- Add FAT recovery warning in TabStatus.razor when VIT is low (VIT 1-4 affects FAT recovery rate per design/GAME_RULES_SPECIFICATION.md)
-- Fix AP Max calculation bug: ActionPoints.Max should recalculate when skills change, not just use cached DB value (currently only calculates on character creation)
-- Implement effect management: edit/remove effects (requirements GMCHAR-05, GMCHAR-06, GMCHAR-07 exist but not assigned to a phase)
+**From previous milestones:**
+- Add FAT recovery warning in TabStatus.razor when VIT is low
+- Fix AP Max calculation bug (recalculate when skills change)
+- Effect management now in scope via Phase 19
 
 ### Blockers/Concerns
 
 None.
 
 **Known Technical Debt (non-blocking, from v1.0):**
-- ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
-- Weapon filtering logic in UI layer (should move to GameMechanics)
-- Case sensitivity inconsistencies in skill/template comparisons
+- ArmorInfoFactory.cs orphaned
+- Weapon filtering logic in UI layer
+- Case sensitivity inconsistencies
 - OnCharacterChanged callback not wired in Play.razor
-- Pre-existing failing test: UnequipItemAsync_RemovesEquipEffects
 
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: v1.2 milestone complete, ready to plan v1.3
+Stopped at: Roadmap created for v1.3, ready to plan Phase 17
 Resume file: None
 
 ---
-*v1.2 milestone complete - archived to milestones/v1.2-ROADMAP.md*
+*v1.3 milestone started - 37 requirements across 5 phases*
