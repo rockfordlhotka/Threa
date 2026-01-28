@@ -58,10 +58,9 @@ else
                 <small class="d-block text-muted">Game Time</small>
                 <span class="fw-bold">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</span>
             </div>
-            <span class="badge bg-info fs-5">Round @table.CurrentRound</span>
             @if (table.IsInCombat)
             {
-                <span class="badge bg-danger">COMBAT</span>
+                <span class="badge bg-danger fs-6">In Rounds: Round @table.CurrentRound</span>
             }
         </div>
     </div>
