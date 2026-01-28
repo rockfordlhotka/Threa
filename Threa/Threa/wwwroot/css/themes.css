@@ -889,3 +889,48 @@ h1, h2, h3, h4, h5, h6 {
 .top-row a {
   color: var(--color-accent-primary);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHARACTER STATUS CARD - GM Dashboard
+   ═══════════════════════════════════════════════════════════════════ */
+
+.character-status-card {
+    transition: all 0.2s ease;
+    border-width: 2px;
+}
+
+.character-status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.character-status-card.selected {
+    box-shadow: 0 0 0 3px var(--color-accent-gold);
+}
+
+/* Health state borders using theme colors */
+.character-status-card.card.border-success {
+    border: 2px solid var(--color-accent-green, #198754) !important;
+}
+
+.character-status-card.card.border-warning {
+    border: 2px solid var(--color-accent-gold, #ffc107) !important;
+}
+
+.character-status-card.card.border-danger {
+    border: 2px solid var(--color-accent-red, #dc3545) !important;
+}
+
+.character-status-card.card.border-dark {
+    border: 2px solid var(--color-text-muted, #6c757d) !important;
+    opacity: 0.7;
+}
+
+/* Sci-Fi theme enhancements */
+[data-theme="scifi"] .character-status-card:hover {
+    box-shadow: var(--glow-primary, 0 0 15px rgba(0, 255, 255, 0.3));
+}
+
+[data-theme="scifi"] .character-status-card.selected {
+    box-shadow: var(--glow-secondary, 0 0 20px rgba(255, 0, 255, 0.4));
+}

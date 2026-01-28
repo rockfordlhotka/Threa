@@ -417,4 +417,72 @@ public class TableDal : ITableDal
             throw new OperationFailedException("Error getting table for character", ex);
         }
     }
+
+    public async Task UpdateGmNotesAsync(Guid tableId, int characterId, string? notes)
+    {
+        try
+        {
+            // First fetch the existing table character
+            var fetchSql = "SELECT Json FROM TableCharacters WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var fetchCommand = Connection.CreateCommand();
+            fetchCommand.CommandText = fetchSql;
+            fetchCommand.Parameters.AddWithValue("@TableId", tableId.ToString());
+            fetchCommand.Parameters.AddWithValue("@CharacterId", characterId);
+            using var reader = await fetchCommand.ExecuteReaderAsync();
+
+            if (!reader.Read())
+                throw new NotFoundException($"TableCharacter {tableId}/{characterId}");
+
+            string json = reader.GetString(0);
+            var tableChar = JsonSerializer.Deserialize<TableCharacter>(json);
+            if (tableChar == null)
+                throw new OperationFailedException($"TableCharacter {tableId}/{characterId} not found");
+
+            reader.Close();
+
+            // Update the GmNotes
+            tableChar.GmNotes = notes;
+
+            // Save back
+            var updateSql = "UPDATE TableCharacters SET Json = @Json WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var updateCommand = Connection.CreateCommand();
+            updateCommand.CommandText = updateSql;
+            updateCommand.Parameters.AddWithValue("@TableId", tableId.ToString());
+            updateCommand.Parameters.AddWithValue("@CharacterId", characterId);
+            updateCommand.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(tableChar));
+            await updateCommand.ExecuteNonQueryAsync();
+        }
+        catch (NotFoundException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error updating GM notes", ex);
+        }
+    }
+
+    public async Task<string?> GetGmNotesAsync(Guid tableId, int characterId)
+    {
+        try
+        {
+            var sql = "SELECT Json FROM TableCharacters WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@TableId", tableId.ToString());
+            command.Parameters.AddWithValue("@CharacterId", characterId);
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (!reader.Read())
+                return null;
+
+            string json = reader.GetString(0);
+            var tableChar = JsonSerializer.Deserialize<TableCharacter>(json);
+            return tableChar?.GmNotes;
+        }
+        catch (Exception ex)
+        {
+            throw new OperationFailedException("Error getting GM notes", ex);
+        }
+    }
 }

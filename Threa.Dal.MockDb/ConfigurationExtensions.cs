@@ -22,5 +22,6 @@ public static class ConfigurationExtensions
         services.AddTransient<ISkillDal, SkillDal>();
         services.AddTransient<IMagicSchoolDal, MagicSchoolDal>();
         services.AddTransient<ITableDal, TableDal>();
+        services.AddTransient<IJoinRequestDal, JoinRequestDal>();
     }
 }

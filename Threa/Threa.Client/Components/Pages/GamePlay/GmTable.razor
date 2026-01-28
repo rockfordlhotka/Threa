@@ -9,10 +9,12 @@
 @using GameMechanics.Messaging
 @using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
+@using Radzen
 @using Threa.Services
 @using Threa.Client.Components.Shared
 @using Threa.Dal
 @using Threa.Dal.Dto
+@using System.Security.Claims
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
@@ -20,12 +22,14 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
-@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IActivityLogService ActivityLog
 @inject ITimeEventPublisher TimeEventPublisher
 @inject IJSRuntime JS
-@inject IItemTemplateDal itemTemplateDal
-@inject GameMechanics.Items.ItemManagementService itemManagementService
+@inject IDataPortal<GameMechanics.GamePlay.JoinRequestList> joinRequestListPortal
+@inject IDataPortal<GameMechanics.GamePlay.JoinRequestProcessor> processorPortal
+@inject ApplicationContext applicationContext
+@inject ITimeEventSubscriber TimeEventSubscriber
+@inject DialogService DialogService
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -54,259 +58,139 @@ else
                 <small class="d-block text-muted">Game Time</small>
                 <span class="fw-bold">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</span>
             </div>
-            <span class="badge bg-info fs-5">Round @table.CurrentRound</span>
             @if (table.IsInCombat)
             {
-                <span class="badge bg-danger">COMBAT</span>
+                <span class="badge bg-danger fs-6">In Rounds: Round @table.CurrentRound</span>
             }
-            @if (table.Status == Threa.Dal.Dto.TableStatus.Active)
-            {
-                <button class="btn btn-warning btn-sm" @onclick="PauseSession">Pause</button>
-            }
-            else if (table.Status == Threa.Dal.Dto.TableStatus.Paused)
-            {
-                <button class="btn btn-success btn-sm" @onclick="ResumeSession">Resume</button>
-            }
-            <button class="btn btn-danger btn-sm" @onclick="EndSession"
-                    disabled="@(table.Status == Threa.Dal.Dto.TableStatus.Ended)">
-                End Session
-            </button>
         </div>
     </div>
 
     <div class="row">
         <!-- Left Panel: Characters/NPCs -->
-        <div class="col-md-4">
+        <div class="col-md-6">
+            @* Pending Join Requests Section - only shown when requests exist *@
+            @if (pendingRequests != null && pendingRequests.Any())
+            {
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-warning text-dark">
+                        <strong><i class="bi bi-person-plus me-1"></i>Pending Join Requests</strong>
+                        <span class="badge bg-dark">@pendingRequests.Count()</span>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        @foreach (var request in pendingRequests)
+                        {
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong>@request.CharacterName</strong>
+                                            <small class="text-muted d-block">@request.Species</small>
+                                        </div>
+                                        <small class="text-muted">@request.RequestedAt.ToString("MMM d")</small>
+                                    </div>
+
+                                    @* Expandable character details *@
+                                    <div class="mb-2">
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ToggleCharacterDetails(request.CharacterId)">
+                                            <i class="bi @(expandedCharacterId == request.CharacterId ? "bi-chevron-up" : "bi-eye")"></i>
+                                            @(expandedCharacterId == request.CharacterId ? "Hide Details" : "View Character")
+                                        </button>
+                                    </div>
+
+                                    @if (expandedCharacterId == request.CharacterId && expandedCharacter != null)
+                                    {
+                                        <div class="border rounded p-2 mb-2 bg-light" style="font-size: 0.85rem;">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <strong>Attributes:</strong>
+                                                    <ul class="list-unstyled mb-0 small">
+                                                        @foreach (var attr in expandedCharacter.AttributeList)
+                                                        {
+                                                            <li>@attr.Name: @attr.Value</li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                                <div class="col-6">
+                                                    <strong>Health:</strong>
+                                                    <ul class="list-unstyled mb-0 small">
+                                                        <li>FAT: @expandedCharacter.Fatigue.Value / @expandedCharacter.Fatigue.BaseValue</li>
+                                                        <li>VIT: @expandedCharacter.Vitality.Value / @expandedCharacter.Vitality.BaseValue</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(expandedCharacter.Description))
+                                            {
+                                                <div class="mt-2">
+                                                    <strong>Description:</strong>
+                                                    <p class="mb-0 small">@expandedCharacter.Description</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-success btn-sm flex-grow-1"
+                                                disabled="@isProcessingRequest"
+                                                @onclick="() => ApproveRequest(request.Id)">
+                                            <i class="bi bi-check-lg"></i> Approve
+                                        </button>
+                                        <button class="btn btn-danger btn-sm flex-grow-1"
+                                                disabled="@isProcessingRequest"
+                                                @onclick="() => DenyRequest(request.Id)">
+                                            <i class="bi bi-x-lg"></i> Deny
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Characters at Table</strong>
                     <span class="badge bg-primary">@(tableCharacters?.Count() ?? 0)</span>
                 </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @if (tableCharacters == null || !tableCharacters.Any())
                     {
-                        <p class="text-muted">No characters have joined yet.</p>
-                        <p class="small">Share this link with players:</p>
-                        <code>@GetPlayerJoinLink()</code>
-                    }
-                    else
-                    {
-                        @foreach (var character in tableCharacters)
-                        {
-                            <div class="card gm-character-card mb-2 @(selectedCharacter?.CharacterId == character.CharacterId ? "border-primary" : "")"
-                                 @onclick="() => SelectCharacter(character)"
-                                 style="cursor: pointer;">
-                                <div class="card-body py-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="status-indicator @GetConnectionIndicatorClass(character.ConnectionStatus)"></span>
-                                            <strong>@character.CharacterName</strong>
-                                        </div>
-                                        <span class="badge @GetConnectionBadgeClass(character.ConnectionStatus)">
-                                            @character.ConnectionStatusDisplay
-                                        </span>
-                                    </div>
-                                    <div class="mt-2">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <small style="width: 35px;">FAT</small>
-                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
-                                                <div class="progress-bar" style="width: @GetPercent(character.FatValue, character.FatMax)%; background-color: var(--progress-fat-color);"></div>
-                                            </div>
-                                            <small class="text-end" style="width: 45px;">@character.FatValue/@character.FatMax</small>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small style="width: 35px;">VIT</small>
-                                            <div class="progress flex-grow-1 mx-2" style="height: 8px;">
-                                                <div class="progress-bar" style="width: @GetPercent(character.VitValue, character.VitMax)%; background-color: var(--progress-vit-color);"></div>
-                                            </div>
-                                            <small class="text-end" style="width: 45px;">@character.VitValue/@character.VitMax</small>
-                                        </div>
-                                    </div>
-                                    @if (GetHealthStatus(character) != null)
-                                    {
-                                        <div class="mt-1">
-                                            <span class="badge @GetHealthStatusBadgeClass(character)">@GetHealthStatus(character)</span>
-                                        </div>
-                                    }
-                                    <div class="mt-2 d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickHeal(character)">
-                                            <i class="bi bi-plus-circle"></i> Heal
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger flex-grow-1" @onclick:stopPropagation="true"
-                                                @onclick="() => QuickDamage(character)">
-                                            <i class="bi bi-dash-circle"></i> Damage
-                                        </button>
-                                    </div>
-                                </div>
+                        <div class="text-center py-4">
+                            <i class="bi bi-people fs-1 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">Waiting for players to join</p>
+                            <small class="text-muted">Share this link:</small>
+                            <div class="mt-1">
+                                <code class="small">@GetPlayerJoinLink()</code>
                             </div>
-                        }
-                    }
-                </div>
-            </div>
-
-            <!-- NPCs Panel -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>NPCs</strong>
-                    <button class="btn btn-sm btn-outline-primary" @onclick="AddNpc">+ Add NPC</button>
-                </div>
-                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
-                    @if (npcs == null || !npcs.Any())
-                    {
-                        <p class="text-muted small">No NPCs at this table.</p>
-                    }
-                    else
-                    {
-                        @foreach (var npc in npcs)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>@npc.Name</span>
-                                <button class="btn btn-sm btn-outline-danger"
-                                        @onclick="() => RemoveNpc(npc.Id)">Remove</button>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
-
-            <!-- Item Distribution Panel -->
-            <div class="card mt-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>Item Distribution</strong>
-                </div>
-                <div class="card-body">
-                    <!-- Search and Filter -->
-                    <div class="mb-2">
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" placeholder="Search items..."
-                                   @bind="itemSearchText" @bind:event="oninput" />
-                            <select class="form-select" @bind="selectedItemType" style="max-width: 100px;">
-                                <option value="">All</option>
-                                @foreach (var type in itemTypes)
-                                {
-                                    <option value="@type">@type</option>
-                                }
-                            </select>
                         </div>
-                    </div>
-
-                    <!-- Item List -->
-                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
-                        @if (!filteredTemplates.Any())
-                        {
-                            <p class="text-muted small p-2 mb-0">No items found.</p>
-                        }
-                        else
-                        {
-                            @foreach (var template in filteredTemplates)
+                    }
+                    else
+                    {
+                        <div class="row row-cols-1 row-cols-lg-2 g-2">
+                            @foreach (var character in tableCharacters)
                             {
-                                <div class="p-2 border-bottom item-row @(selectedTemplate?.Id == template.Id ? "bg-primary text-white" : "")"
-                                     style="cursor: pointer;"
-                                     @onclick="() => SelectTemplate(template)">
-                                    <strong>@template.Name</strong>
-                                    <small class="ms-1 @(selectedTemplate?.Id == template.Id ? "" : "text-muted")">(@template.ItemType)</small>
+                                <div class="col">
+                                    <CharacterStatusCard Character="@character"
+                                                        IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
+                                                        OnClick="OpenCharacterDetails" />
                                 </div>
                             }
-                        }
-                    </div>
-
-                    <!-- Grant Controls -->
-                    @if (selectedTemplate != null && selectedCharacter != null)
-                    {
-                        <div class="mt-2 p-2 bg-light rounded">
-                            <div class="small mb-1">
-                                Grant <strong>@selectedTemplate.Name</strong> to <strong>@selectedCharacter.CharacterName</strong>
-                            </div>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">Qty</span>
-                                <input type="number" class="form-control" @bind="grantQuantity"
-                                       min="1" max="@(selectedTemplate.IsStackable ? 999 : 1)" style="max-width: 80px;" />
-                                <button class="btn btn-success" @onclick="GrantItemToCharacter">
-                                    <i class="bi bi-gift"></i> Grant
-                                </button>
-                            </div>
-                            @if (!selectedTemplate.IsStackable && grantQuantity > 1)
-                            {
-                                <small class="text-warning">This item is not stackable. Quantity will be 1.</small>
-                            }
                         </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted small mt-2 mb-0">Select an item and a character to grant.</p>
                     }
                 </div>
             </div>
-        </div>
 
-        <!-- Center Panel: Selected Entity Details -->
-        <div class="col-md-4">
-            @if (selectedCharacter != null)
-            {
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <strong>@selectedCharacter.CharacterName</strong>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Species:</strong> @selectedCharacter.Species</p>
-                        <p><strong>FAT:</strong> @selectedCharacter.FatValue / @selectedCharacter.FatMax</p>
-                        <p><strong>VIT:</strong> @selectedCharacter.VitValue / @selectedCharacter.VitMax</p>
-                        <p><strong>AP:</strong> @selectedCharacter.ActionPoints / @selectedCharacter.ActionPointMax</p>
-
-                        <hr />
-
-                        <h6>Apply Damage</h6>
-                        <div class="input-group mb-2">
-                            <input type="number" class="form-control" placeholder="Amount" @bind="damageAmount" min="1" />
-                            <select class="form-select" @bind="damageType" style="max-width: 120px;">
-                                <option value="FAT">FAT</option>
-                                <option value="VIT">VIT</option>
-                            </select>
-                            <button class="btn btn-danger" @onclick="ApplyDamage">Apply</button>
-                        </div>
-
-                        <h6>Apply Healing</h6>
-                        <div class="input-group mb-2">
-                            <input type="number" class="form-control" placeholder="Amount" @bind="healAmount" min="1" />
-                            <select class="form-select" @bind="healType" style="max-width: 120px;">
-                                <option value="FAT">FAT</option>
-                                <option value="VIT">VIT</option>
-                            </select>
-                            <button class="btn btn-success" @onclick="ApplyHealing">Apply</button>
-                        </div>
-
-                        <h6>Apply Effect</h6>
-                        <div class="input-group mb-2">
-                            <select class="form-select" @bind="selectedEffect">
-                                <option value="">Select effect...</option>
-                                <option value="Stunned">Stunned</option>
-                                <option value="Blinded">Blinded</option>
-                                <option value="Prone">Prone</option>
-                            </select>
-                            <button class="btn btn-warning" @onclick="ApplyEffect"
-                                    disabled="@(string.IsNullOrEmpty(selectedEffect))">Apply</button>
-                        </div>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="card">
-                    <div class="card-body text-center text-muted">
-                        <p>Select a character to view details and apply actions.</p>
-                    </div>
-                </div>
-            }
+            <!-- NPC Placeholder -->
+            <NpcPlaceholder />
         </div>
 
         <!-- Right Panel: Time Controls & Activity -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <!-- Time Controls -->
             <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-clock-history"></i> TIME CONTROLS</strong>
-                    <span class="badge bg-info">Round @table.CurrentRound</span>
+                <div class="card-header">
+                    <strong><i class="bi bi-clock-history me-1"></i>TIME CONTROLS</strong>
                 </div>
                 <div class="card-body">
                     <!-- Current Time Display -->
@@ -333,49 +217,36 @@ else
                     }
                     else if (table.Status == Threa.Dal.Dto.TableStatus.Active)
                     {
-                        <!-- Quick Advance Buttons -->
-                        <div class="d-flex gap-2 mb-3">
-                            <button class="btn btn-primary flex-grow-1" @onclick="AdvanceRound">
-                                +1 Round
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(5)">
-                                +5
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="() => AdvanceRoundsQuick(10)">
-                                +10
-                            </button>
-                        </div>
-
-                        <!-- Custom Advance -->
-                        <div class="input-group mb-3">
-                            <input type="number" class="form-control" @bind="roundsToAdvance"
-                                   min="1" max="100" placeholder="Custom" />
-                            <button class="btn btn-outline-primary" @onclick="AdvanceMultipleRounds">
-                                Advance
-                            </button>
-                        </div>
-
-                        <hr />
-
-                        <!-- Combat Mode Toggle -->
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span style="font-family: var(--font-display);">COMBAT MODE</span>
-                            @if (table.IsInCombat)
-                            {
-                                <span class="badge bg-danger me-2">ACTIVE</span>
-                            }
-                        </div>
+                        <!-- Combat Mode Toggle Button -->
                         @if (table.IsInCombat)
                         {
-                            <button class="btn btn-outline-success w-100 mt-2" @onclick="ExitCombat">
+                            <button class="btn btn-outline-success w-100 mb-3" @onclick="ExitCombat">
                                 <i class="bi bi-peace"></i> End Combat
                             </button>
                         }
                         else
                         {
-                            <button class="btn btn-danger w-100 mt-2" @onclick="EnterCombat">
-                                <i class="bi bi-shield-exclamation"></i> Enter Combat
+                            <button class="btn btn-danger w-100 mb-3" @onclick="EnterCombat">
+                                <i class="bi bi-shield-exclamation"></i> Start Combat
                             </button>
+                        }
+
+                        <!-- Context-Aware Time Buttons -->
+                        @if (table.IsInCombat)
+                        {
+                            <button class="btn btn-primary w-100" @onclick="AdvanceRound">
+                                +1 Round
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(60)">+1 Min</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(600)">+10 Min</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(3600)">+1 Hour</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(86400)">+1 Day</button>
+                                <button class="btn btn-outline-primary w-100" @onclick="() => AdvanceTime(604800)">+1 Week</button>
+                            </div>
                         }
                     }
                 </div>
@@ -422,7 +293,11 @@ else
             </div>
         </div>
     </div>
+
 }
+
+@* RadzenDialog must be in the interactive context for DialogService to work *@
+<RadzenDialog />
 
 @code {
     [Parameter]
@@ -431,40 +306,21 @@ else
     private GameMechanics.GamePlay.TableEdit? table;
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo>? tableCharacters;
     private GameMechanics.GamePlay.TableCharacterInfo? selectedCharacter;
-    private List<NpcInfo>? npcs;
     private string? errorMessage;
     private List<ActivityLogEntry> activityLog = new();
     private IDisposable? activityLogSubscription;
 
     // Form fields
-    private int damageAmount = 1;
-    private string damageType = "FAT";
-    private int healAmount = 1;
-    private string healType = "FAT";
-    private string selectedEffect = "";
-    private int roundsToAdvance = 5;
     private string announcementText = "";
 
-    // Item distribution state
-    private List<ItemTemplate>? allTemplates;
-    private ItemType? selectedItemType;
-    private string itemSearchText = "";
-    private ItemTemplate? selectedTemplate;
-    private int grantQuantity = 1;
+    // Join request state
+    private IEnumerable<GameMechanics.GamePlay.JoinRequestInfo>? pendingRequests;
+    private int? expandedCharacterId;
+    private GameMechanics.CharacterEdit? expandedCharacter;
+    private bool isProcessingRequest;
+    private bool timeEventSubscribed;
+    private bool _disposed;
 
-    private IEnumerable<ItemTemplate> filteredTemplates =>
-        allTemplates?
-            .Where(t => t.IsActive)
-            .Where(t => selectedItemType == null || t.ItemType == selectedItemType)
-            .Where(t => string.IsNullOrEmpty(itemSearchText) ||
-                        t.Name.Contains(itemSearchText, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(t => t.Name)
-            .Take(15)
-        ?? Enumerable.Empty<ItemTemplate>();
-
-    private static readonly ItemType[] itemTypes = Enum.GetValues<ItemType>();
-
-    private record NpcInfo(Guid Id, string Name);
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
@@ -476,7 +332,112 @@ else
             await LoadTable();
             SubscribeToActivityLog();
             await TimeEventPublisher.ConnectAsync();
+            await SubscribeToTimeEventsAsync();
         }
+    }
+
+    private async Task SubscribeToTimeEventsAsync()
+    {
+        if (timeEventSubscribed) return;
+
+        await TimeEventSubscriber.ConnectAsync();
+        await TimeEventSubscriber.SubscribeAsync();
+
+        TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived += OnTimeSkipReceived;
+        TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+        TimeEventSubscriber.JoinRequestReceived += OnJoinRequestReceived;
+        timeEventSubscribed = true;
+    }
+
+    private void OnTimeEventReceived(object? sender, TimeEventMessage e)
+    {
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
+
+        // When time advances, schedule a refresh of character data after a short delay
+        // to allow player clients to process their end-of-round effects first
+        _ = InvokeAsync(async () =>
+        {
+            // Wait briefly for players to process and save their character updates
+            await Task.Delay(500);
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
+    {
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
+
+        // When calendar time advances, schedule a refresh of character data after a short delay
+        // to allow player clients to process their time skip effects first
+        _ = InvokeAsync(async () =>
+        {
+            // Wait briefly for players to process and save their character updates
+            await Task.Delay(500);
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
+    {
+        // Ignore events if component is disposed
+        if (_disposed) return;
+
+        // Refresh character list when any character at this table is updated
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnJoinRequestReceived(object? sender, JoinRequestMessage e)
+    {
+        // Ignore events if component is disposed or not relevant to our table
+        if (_disposed || table == null || e.TableId != table.Id || e.Status != JoinRequestStatus.Pending)
+            return;
+
+        // Refresh the pending requests list to show the new request
+        _ = InvokeAsync(async () =>
+        {
+            await LoadPendingRequests();
+            StateHasChanged();
+        });
+    }
+
+    private async Task RefreshCharacterListAsync()
+    {
+        try
+        {
+            var charList = await characterListPortal.FetchAsync(TableId);
+            tableCharacters = charList.AsEnumerable();
+
+            // Update selected character reference if it still exists
+            if (selectedCharacter != null)
+            {
+                selectedCharacter = tableCharacters.FirstOrDefault(c => c.CharacterId == selectedCharacter.CharacterId);
+            }
+        }
+        catch
+        {
+            // Ignore refresh errors
+        }
+    }
+
+    private async Task UnsubscribeFromTimeEventsAsync()
+    {
+        if (!timeEventSubscribed) return;
+
+        TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
+        TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
+        TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+        TimeEventSubscriber.JoinRequestReceived -= OnJoinRequestReceived;
+        await TimeEventSubscriber.UnsubscribeAsync();
+        timeEventSubscribed = false;
     }
 
     private void SubscribeToActivityLog()
@@ -492,10 +453,25 @@ else
         });
     }
 
-    public void Dispose()
+    public async void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         activityLogSubscription?.Dispose();
+        await UnsubscribeFromTimeEventsAsync();
         // Note: TimeEventPublisher is a singleton service, do not dispose
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        // Initialize tooltips after each render since cards may have changed
+        if (tableCharacters?.Any() == true)
+        {
+            await JS.InvokeVoidAsync("reinitializeTooltipsAfterDelay", 50);
+        }
     }
 
     private async Task LoadTable()
@@ -505,7 +481,6 @@ else
             table = await tablePortal.FetchAsync(TableId);
             var charList = await characterListPortal.FetchAsync(TableId);
             tableCharacters = charList.AsEnumerable();
-            npcs = new List<NpcInfo>();
 
             // Apply the table's theme
             if (table != null)
@@ -513,12 +488,25 @@ else
                 await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
             }
 
-            // Load item templates for item distribution
-            allTemplates = await itemTemplateDal.GetAllTemplatesAsync();
+            // Load pending join requests
+            await LoadPendingRequests();
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to load table: {ex.Message}";
+        }
+    }
+
+    private async Task LoadPendingRequests()
+    {
+        try
+        {
+            var list = await joinRequestListPortal.FetchAsync(TableId);
+            pendingRequests = list.AsEnumerable();
+        }
+        catch
+        {
+            pendingRequests = Enumerable.Empty<GameMechanics.GamePlay.JoinRequestInfo>();
         }
     }
 
@@ -602,41 +590,6 @@ else
         });
     }
 
-    private async Task AdvanceMultipleRounds()
-    {
-        if (table == null) return;
-        table.AdvanceRounds(roundsToAdvance);
-        await SaveTable();
-        AddLogEntry($"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}", ActivityCategory.Time);
-
-        // Publish time event so players can process end-of-round effects
-        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
-        {
-            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
-            Count = roundsToAdvance,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            Reason = $"Advanced {roundsToAdvance} rounds to round {table.CurrentRound}"
-        });
-    }
-
-    private async Task AdvanceRoundsQuick(int count)
-    {
-        if (table == null) return;
-        table.AdvanceRounds(count);
-        await SaveTable();
-        AddLogEntry($"Advanced {count} rounds to round {table.CurrentRound}", ActivityCategory.Time);
-
-        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
-        {
-            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
-            Count = count,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            Reason = $"Advanced {count} rounds to round {table.CurrentRound}"
-        });
-    }
-
     private async Task EnterCombat()
     {
         if (table == null) return;
@@ -670,6 +623,37 @@ else
         });
     }
 
+    private async Task AdvanceTime(int seconds)
+    {
+        if (table == null) return;
+
+        table.AdvanceTime(seconds);
+        await SaveTable();
+
+        // Determine the appropriate event type and format for logging
+        var (timeEventType, timeDescription, count) = seconds switch
+        {
+            60 => (GameMechanics.Time.TimeEventType.EndOfMinute, "1 minute", 1),
+            600 => (GameMechanics.Time.TimeEventType.EndOfTurn, "1 turn (10 minutes)", 1),
+            3600 => (GameMechanics.Time.TimeEventType.EndOfHour, "1 hour", 1),
+            86400 => (GameMechanics.Time.TimeEventType.EndOfDay, "1 day", 1),
+            604800 => (GameMechanics.Time.TimeEventType.EndOfWeek, "1 week", 1),
+            _ => (GameMechanics.Time.TimeEventType.EndOfMinute, $"{seconds} seconds", seconds / 60)
+        };
+
+        AddLogEntry($"Advanced time by {timeDescription}", ActivityCategory.Time);
+
+        // Publish time skip event so players can process time-based effects
+        await TimeEventPublisher.PublishTimeSkipAsync(new TimeSkipMessage
+        {
+            SkipUnit = timeEventType,
+            Count = count,
+            CampaignId = table.Id.ToString(),
+            SourceId = "GM",
+            NarrativeDescription = $"GM advanced time by {timeDescription}"
+        });
+    }
+
     private void SendAnnouncement()
     {
         if (string.IsNullOrWhiteSpace(announcementText)) return;
@@ -695,151 +679,42 @@ else
         selectedCharacter = character;
     }
 
-    private void QuickHeal(GameMechanics.GamePlay.TableCharacterInfo character)
+    private async Task OpenCharacterDetails(GameMechanics.GamePlay.TableCharacterInfo character)
     {
-        AddLogEntry($"Quick healed {character.CharacterName}", ActivityCategory.Health);
-    }
-
-    private void QuickDamage(GameMechanics.GamePlay.TableCharacterInfo character)
-    {
-        AddLogEntry($"Quick damaged {character.CharacterName}", ActivityCategory.Health);
-    }
-
-    private async Task ApplyDamage()
-    {
-        if (selectedCharacter == null || table == null) return;
+        // Select the character for item distribution
+        selectedCharacter = character;
 
         try
         {
-            // Fetch the character, apply damage, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+            var result = await DialogService.OpenAsync<CharacterDetailModal>(
+                character.CharacterName,
+                new Dictionary<string, object>
+                {
+                    { "CharacterId", character.CharacterId },
+                    { "TableId", TableId },
+                    { "AllCharacters", tableCharacters ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>() }
+                },
+                new DialogOptions
+                {
+                    Width = "90%",
+                    Height = "90%",
+                    CloseDialogOnOverlayClick = true,
+                    ShowClose = false  // We have our own close button
+                });
 
-            if (damageType == "FAT")
+            // If character was removed via modal, refresh the list
+            if (result as string == "removed")
             {
-                character.Fatigue.PendingDamage += damageAmount;
+                AddLogEntry($"Removed {character.CharacterName} from table", ActivityCategory.Player);
+                await RefreshCharacterListAsync();
+                selectedCharacter = null;
             }
-            else // VIT
-            {
-                character.Vitality.PendingDamage += damageAmount;
-            }
-
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {damageAmount} {damageType} damage to {selectedCharacter.CharacterName}", ActivityCategory.Health);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.Damage,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = $"{damageAmount} {damageType} damage"
-            });
-
-            // Refresh the table character list to show updated values
-            var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to apply damage: {ex.Message}";
+            errorMessage = $"Failed to open character details: {ex.Message}";
+            AddLogEntry($"Error opening modal: {ex.Message}", ActivityCategory.General);
         }
-    }
-
-    private async Task ApplyHealing()
-    {
-        if (selectedCharacter == null || table == null) return;
-
-        try
-        {
-            // Fetch the character, apply healing, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
-
-            if (healType == "FAT")
-            {
-                character.Fatigue.PendingHealing += healAmount;
-            }
-            else // VIT
-            {
-                character.Vitality.PendingHealing += healAmount;
-            }
-
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {healAmount} {healType} healing to {selectedCharacter.CharacterName}", ActivityCategory.Health);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.Healing,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = $"{healAmount} {healType} healing"
-            });
-
-            // Refresh the table character list to show updated values
-            var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to apply healing: {ex.Message}";
-        }
-    }
-
-    private async Task ApplyEffect()
-    {
-        if (selectedCharacter == null || string.IsNullOrEmpty(selectedEffect) || table == null) return;
-
-        try
-        {
-            // Fetch the character, add effect, and save
-            var character = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
-
-            // Create the effect with appropriate type and duration
-            var effect = await effectPortal.CreateChildAsync(
-                Threa.Dal.Dto.EffectType.Condition,  // Stunned, Blinded, Prone are all conditions
-                selectedEffect,  // Name
-                (string?)null,   // Location (null for global effects)
-                (int?)null,      // DurationRounds (null = permanent until removed)
-                (string?)null    // BehaviorState
-            );
-            effect.Source = "GM";
-
-            character.Effects.Add(effect);
-            await characterPortal.UpdateAsync(character);
-
-            AddLogEntry($"Applied {selectedEffect} to {selectedCharacter.CharacterName}", ActivityCategory.Effect);
-
-            // Notify the player to refresh their character
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.EffectAdded,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = selectedEffect
-            });
-
-            selectedEffect = "";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to apply effect: {ex.Message}";
-        }
-    }
-
-    private void AddNpc()
-    {
-        AddLogEntry("NPC creation not yet implemented", ActivityCategory.General);
-    }
-
-    private void RemoveNpc(Guid npcId)
-    {
-        npcs?.RemoveAll(n => n.Id == npcId);
-        AddLogEntry("NPC removed", ActivityCategory.General);
     }
 
     private string GetPlayerJoinLink() =>
@@ -915,63 +790,95 @@ else
             _ => ""
         };
 
-    private void SelectTemplate(ItemTemplate template)
+    // Join Request Methods
+    private async Task ToggleCharacterDetails(int characterId)
     {
-        selectedTemplate = selectedTemplate?.Id == template.Id ? null : template;
-        grantQuantity = 1;
+        if (expandedCharacterId == characterId)
+        {
+            expandedCharacterId = null;
+            expandedCharacter = null;
+        }
+        else
+        {
+            expandedCharacterId = characterId;
+            try
+            {
+                expandedCharacter = await characterPortal.FetchAsync(characterId);
+            }
+            catch
+            {
+                expandedCharacter = null;
+            }
+        }
     }
 
-    private async Task GrantItemToCharacter()
+    private async Task ApproveRequest(Guid requestId)
     {
-        if (selectedCharacter == null || selectedTemplate == null || table == null)
-            return;
+        if (table == null) return;
+        isProcessingRequest = true;
 
         try
         {
-            // Fetch full CharacterEdit for ItemManagementService
-            var targetCharacter = await characterPortal.FetchAsync(selectedCharacter.CharacterId);
+            var gameMasterId = GetCurrentUserId();
+            var result = await processorPortal.ExecuteAsync(requestId, true, gameMasterId);
 
-            // Create the item instance
-            var newItem = new CharacterItem
+            if (result.Success)
             {
-                Id = Guid.NewGuid(),
-                ItemTemplateId = selectedTemplate.Id,
-                OwnerCharacterId = selectedCharacter.CharacterId,
-                StackSize = selectedTemplate.IsStackable ? grantQuantity : 1,
-                CurrentDurability = selectedTemplate.HasDurability ? selectedTemplate.MaxDurability : null,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Add via service (handles effects)
-            var result = await itemManagementService.AddItemToInventoryAsync(targetCharacter, newItem);
-
-            if (!result.Success)
+                AddLogEntry($"Approved join request for {result.CharacterName}", ActivityCategory.Player);
+                await LoadPendingRequests();
+                var charList = await characterListPortal.FetchAsync(TableId);
+                tableCharacters = charList.AsEnumerable();
+            }
+            else
             {
                 errorMessage = result.ErrorMessage;
-                return;
             }
-
-            // Notify player to refresh inventory
-            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-            {
-                CharacterId = selectedCharacter.CharacterId,
-                UpdateType = CharacterUpdateType.InventoryChanged,
-                CampaignId = table.Id.ToString(),
-                SourceId = "GM",
-                Description = $"Granted {(selectedTemplate.IsStackable ? grantQuantity : 1)}x {selectedTemplate.Name}"
-            });
-
-            // Log the action
-            var qty = selectedTemplate.IsStackable ? grantQuantity : 1;
-            AddLogEntry($"Granted {qty}x {selectedTemplate.Name} to {selectedCharacter.CharacterName}", ActivityCategory.General);
-
-            // Reset for next grant
-            grantQuantity = 1;
-            selectedTemplate = null;
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to grant item: {ex.Message}";
+            errorMessage = $"Failed to approve: {ex.Message}";
         }
+        finally
+        {
+            isProcessingRequest = false;
+            expandedCharacterId = null;
+            expandedCharacter = null;
+        }
+    }
+
+    private async Task DenyRequest(Guid requestId)
+    {
+        if (table == null) return;
+        isProcessingRequest = true;
+
+        try
+        {
+            var gameMasterId = GetCurrentUserId();
+            var result = await processorPortal.ExecuteAsync(requestId, false, gameMasterId);
+
+            if (result.Success)
+            {
+                AddLogEntry($"Denied join request for {result.CharacterName}", ActivityCategory.Player);
+                await LoadPendingRequests();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to deny: {ex.Message}";
+        }
+        finally
+        {
+            isProcessingRequest = false;
+        }
+    }
+
+    private int GetCurrentUserId()
+    {
+        return int.Parse(applicationContext.Principal.Claims
+            .First(c => c.Type == ClaimTypes.NameIdentifier).Value);
     }
 }

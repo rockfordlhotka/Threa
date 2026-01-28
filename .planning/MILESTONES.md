@@ -1,5 +1,35 @@
 # Project Milestones: Threa TTRPG Assistant
 
+## v1.2 GM Table & Campaign Management (Shipped: 2026-01-28)
+
+**Delivered:** Complete campaign table and character management system with real-time GM dashboard and comprehensive time control
+
+**Phases completed:** 12-16 (14 plans total)
+
+**Key accomplishments:**
+
+- GM campaign table creation with theme selection (Fantasy/Sci-Fi) and epoch-based world time
+- Player request-to-join workflow with character selection, GM review, and approval/denial system
+- Information-dense GM dashboard with compact character status cards showing health pools, wounds, AP, and effects
+- Detailed character modal with five tabbed views (GM Actions, Character Sheet, Inventory, Grant Items, Narrative)
+- Real-time dashboard updates via Rx.NET messaging when character state changes
+- Context-aware time management system with combat rounds and calendar time (minutes, hours, days, weeks)
+- "In Rounds" combat mode with toggle for detailed tracking
+- NPC placeholder foundation for future expansion
+
+**Stats:**
+
+- 83 files modified
+- +12,093 lines of C#/Razor (12,624 insertions, 531 deletions)
+- 5 phases, 14 plans, ~30 tasks
+- 2 days from start to ship (2026-01-26 to 2026-01-27)
+
+**Git range:** `feat(12-01)` (afeee2f) → `feat(16-02)` (290cbef)
+
+**What's next:** Continue building GM capabilities with character manipulation, effect management, and NPC system
+
+---
+
 ## v1.1 User Management & Authentication (Shipped: 2026-01-26)
 
 **Delivered:** Complete user management and authentication system with self-service registration, password recovery, admin controls, and user profiles.

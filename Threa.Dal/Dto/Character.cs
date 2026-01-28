@@ -63,4 +63,10 @@ public class Character
     /// 1 sp = 20 cp, 1 gp = 400 cp, 1 pp = 8000 cp
     /// </summary>
     public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
+
+    /// <summary>
+    /// Current game time in seconds from epoch 0.
+    /// Used for epoch-based effect expiration.
+    /// </summary>
+    public long CurrentGameTimeSeconds { get; set; }
 }

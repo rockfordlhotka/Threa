@@ -75,6 +75,11 @@ public static class MockDb
     public static readonly List<TableNpc> TableNpcs = [];
 
     /// <summary>
+    /// Join requests from players wanting to join tables.
+    /// </summary>
+    public static readonly List<JoinRequest> JoinRequests = [];
+
+    /// <summary>
     /// Skill definitions - all available skills in the game.
     /// </summary>
     public static readonly List<Skill> Skills = CreateSkills();

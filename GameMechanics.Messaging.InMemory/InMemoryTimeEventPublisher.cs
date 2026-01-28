@@ -84,6 +84,17 @@ public class InMemoryTimeEventPublisher : ITimeEventPublisher
         return Task.CompletedTask;
     }
 
+    public Task PublishJoinRequestAsync(JoinRequestMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishJoinRequest(message);
+        _logger.LogDebug("Published JoinRequestMessage: RequestId={RequestId}, Status={Status}",
+            message.RequestId, message.Status);
+
+        return Task.CompletedTask;
+    }
+
     private void EnsureConnected()
     {
         if (_disposed)

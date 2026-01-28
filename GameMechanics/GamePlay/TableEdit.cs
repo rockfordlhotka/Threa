@@ -122,6 +122,16 @@ public class TableEdit : BusinessBase<TableEdit>
         set => SetProperty(ThemeProperty, value);
     }
 
+    public static readonly PropertyInfo<string> DescriptionProperty = RegisterProperty<string>(nameof(Description));
+    /// <summary>
+    /// Description of the campaign for players browsing.
+    /// </summary>
+    public string Description
+    {
+        get => GetProperty(DescriptionProperty);
+        set => SetProperty(DescriptionProperty, value);
+    }
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -182,6 +192,7 @@ public class TableEdit : BusinessBase<TableEdit>
         if (Status == TableStatus.Active && !IsInCombat)
         {
             IsInCombat = true;
+            CurrentRound = 1;
             CombatStartedAt = DateTime.UtcNow;
         }
     }
@@ -222,6 +233,18 @@ public class TableEdit : BusinessBase<TableEdit>
         }
     }
 
+    /// <summary>
+    /// Advances time by the specified number of seconds (used when not in combat).
+    /// </summary>
+    public void AdvanceTime(int seconds)
+    {
+        if (Status == TableStatus.Active && seconds > 0)
+        {
+            StartTimeSeconds += seconds;
+            LastTimeAdvance = DateTime.UtcNow;
+        }
+    }
+
     [Create]
     [RunLocal]
     private void Create([Inject] ApplicationContext applicationContext)
@@ -239,6 +262,7 @@ public class TableEdit : BusinessBase<TableEdit>
             CurrentRound = 0;
             IsInCombat = false;
             Theme = "fantasy";
+            Description = string.Empty;
         }
         BusinessRules.CheckRules();
     }
@@ -298,6 +322,7 @@ public class TableEdit : BusinessBase<TableEdit>
         LastTimeAdvance = dto.LastTimeAdvance;
         StartTimeSeconds = dto.StartTimeSeconds;
         Theme = dto.Theme ?? "fantasy";
+        Description = dto.Description ?? string.Empty;
     }
 
     private void MapToDto(GameTable dto)
@@ -315,5 +340,6 @@ public class TableEdit : BusinessBase<TableEdit>
         dto.LastTimeAdvance = LastTimeAdvance;
         dto.StartTimeSeconds = StartTimeSeconds;
         dto.Theme = Theme;
+        dto.Description = Description;
     }
 }

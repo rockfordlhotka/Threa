@@ -32,14 +32,14 @@ namespace GameMechanics
     public int Max
     {
       get => GetProperty(MaxProperty);
-      set => SetProperty(MaxProperty, value);
+      private set => LoadProperty(MaxProperty, value);
     }
 
     public static readonly PropertyInfo<int> RecoveryProperty = RegisterProperty<int>(nameof(Recovery));
     public int Recovery
     {
       get => GetProperty(RecoveryProperty);
-      set => SetProperty(RecoveryProperty, value);
+      private set => LoadProperty(RecoveryProperty, value);
     }
 
     public static readonly PropertyInfo<int> ActionsTakenThisRoundProperty = RegisterProperty<int>(nameof(ActionsTakenThisRound));
@@ -136,6 +136,28 @@ namespace GameMechanics
       if (result < 1)
         result = 1;
       return result;
+    }
+
+    /// <summary>
+    /// Recalculates Max based on character's current total skill levels.
+    /// Called by business rules when skills change.
+    /// </summary>
+    internal void RecalculateMax(CharacterEdit character)
+    {
+      var newMax = CalculateMax(character.Skills.TotalSkillLevels);
+      Max = newMax;
+      // Ensure Available doesn't exceed new Max
+      if (Available > Max)
+        Available = Max;
+    }
+
+    /// <summary>
+    /// Recalculates Recovery based on character's current fatigue base.
+    /// Called by business rules when fatigue base changes.
+    /// </summary>
+    internal void RecalculateRecovery(CharacterEdit character)
+    {
+      Recovery = CalculateRecovery(character.Fatigue.BaseValue);
     }
 
     [CreateChild]

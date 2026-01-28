@@ -34,6 +34,11 @@ public class GameTable
     /// </summary>
     public string Theme { get; set; } = "fantasy";
 
+    /// <summary>
+    /// Description of the campaign for players browsing.
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
     // Connected characters (managed separately for efficiency)
     public List<TableCharacter> Characters { get; set; } = [];
 
@@ -64,6 +69,11 @@ public class TableCharacter
     public DateTime? LeftAt { get; set; }
     public ConnectionStatus ConnectionStatus { get; set; }
     public DateTime? LastActivity { get; set; }
+
+    /// <summary>
+    /// GM-only notes for this character at this table. Not visible to players.
+    /// </summary>
+    public string? GmNotes { get; set; }
 }
 
 /// <summary>

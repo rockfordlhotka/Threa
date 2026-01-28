@@ -1,0 +1,151 @@
+@page "/campaigns"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Threa.Services
+@using Threa.Client.Components.Shared
+
+@inject Csla.Blazor.State.StateManager StateManager
+@inject RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+@inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
+@inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
+@inject IDataPortal<GameMechanics.GamePlay.PendingRequestCountFetcher> pendingCountPortal
+
+<PageTitle>My Campaigns</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">My Campaigns</h3>
+        <button class="btn btn-primary" @onclick="CreateNewCampaign">
+            <i class="bi bi-plus-lg me-1"></i> Create New Campaign
+        </button>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (tables == null)
+    {
+        <div class="d-flex justify-content-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading campaigns...</span>
+            </div>
+        </div>
+    }
+    else if (!tables.Any())
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-journal-bookmark display-1 text-muted mb-3"></i>
+                <h5>No campaigns yet</h5>
+                <p class="text-muted mb-4">Create your first campaign to start your adventure.</p>
+                <button class="btn btn-primary" @onclick="CreateNewCampaign">
+                    <i class="bi bi-plus-lg me-1"></i> Create Your First Campaign
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Theme</th>
+                            <th>Epoch Time</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var table in tables)
+                        {
+                            <tr style="cursor: pointer;" @onclick="() => OpenCampaign(table.Id)">
+                                <td class="fw-medium">
+                                    @table.Name
+                                    @if (GetPendingCount(table.Id) > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark ms-2">
+                                            <i class="bi bi-person-plus me-1"></i>@GetPendingCount(table.Id) pending
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <ThemeIndicator Theme="@table.Theme" />
+                                </td>
+                                <td class="text-muted">@table.StartTimeSeconds</td>
+                                <td class="text-muted">@table.CreatedAt.ToString("g")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<GameMechanics.GamePlay.TableInfo>? tables;
+    private string? errorMessage;
+    private Dictionary<Guid, int> pendingCounts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        if (RenderModeProvider.GetRenderMode(this).IsInteractive())
+        {
+            await LoadTables();
+        }
+    }
+
+    private async Task LoadTables()
+    {
+        try
+        {
+            var tableList = await tableListPortal.FetchAsync();
+            // Sort by CreatedAt descending (newest first)
+            tables = tableList.OrderByDescending(t => t.CreatedAt).AsEnumerable();
+
+            // Load pending counts for each table
+            foreach (var table in tables)
+            {
+                try
+                {
+                    var countFetcher = await pendingCountPortal.ExecuteAsync(table.Id);
+                    pendingCounts[table.Id] = countFetcher.Count;
+                }
+                catch
+                {
+                    pendingCounts[table.Id] = 0;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load campaigns: {ex.Message}";
+        }
+    }
+
+    private int GetPendingCount(Guid tableId)
+    {
+        return pendingCounts.TryGetValue(tableId, out var count) ? count : 0;
+    }
+
+    private void CreateNewCampaign()
+    {
+        NavigationManager.NavigateTo("/campaigns/create");
+    }
+
+    private void OpenCampaign(Guid tableId)
+    {
+        NavigationManager.NavigateTo($"/gamemaster/table/{tableId}");
+    }
+}

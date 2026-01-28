@@ -16,6 +16,7 @@ public class InMemoryMessageBus : IDisposable
     private readonly Subject<ActivityLogMessage> _activityLogs = new();
     private readonly Subject<CharacterUpdateMessage> _characterUpdates = new();
     private readonly Subject<TableUpdateMessage> _tableUpdates = new();
+    private readonly Subject<JoinRequestMessage> _joinRequests = new();
     private bool _disposed;
 
     /// <summary>
@@ -52,6 +53,11 @@ public class InMemoryMessageBus : IDisposable
     /// Observable stream of table update messages.
     /// </summary>
     public IObservable<TableUpdateMessage> TableUpdates => _tableUpdates.AsObservable();
+
+    /// <summary>
+    /// Observable stream of join request messages.
+    /// </summary>
+    public IObservable<JoinRequestMessage> JoinRequests => _joinRequests.AsObservable();
 
     /// <summary>
     /// Publishes a time event message to all subscribers.
@@ -109,6 +115,14 @@ public class InMemoryMessageBus : IDisposable
         _tableUpdates.OnNext(message);
     }
 
+    /// <summary>
+    /// Publishes a join request message to all subscribers.
+    /// </summary>
+    public void PublishJoinRequest(JoinRequestMessage message)
+    {
+        _joinRequests.OnNext(message);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -121,5 +135,6 @@ public class InMemoryMessageBus : IDisposable
         _activityLogs.Dispose();
         _characterUpdates.Dispose();
         _tableUpdates.Dispose();
+        _joinRequests.Dispose();
     }
 }

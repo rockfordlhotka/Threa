@@ -60,6 +60,7 @@ public class CharacterEffect
 
     /// <summary>
     /// For round-based effects in combat: remaining rounds.
+    /// OBSOLETE: Use epoch-based expiration for performance.
     /// </summary>
     public int? RoundsRemaining { get; set; }
 
@@ -67,6 +68,19 @@ public class CharacterEffect
     /// For damage-over-time: rounds until next damage application.
     /// </summary>
     public int? RoundsUntilTick { get; set; }
+
+    /// <summary>
+    /// Game time (in seconds from epoch 0) when this effect was created.
+    /// Used for epoch-based expiration (preferred for performance with large time skips).
+    /// </summary>
+    public long? CreatedAtEpochSeconds { get; set; }
+
+    /// <summary>
+    /// Game time (in seconds from epoch 0) when this effect expires.
+    /// Null for permanent/until-removed effects.
+    /// Pre-calculated at creation time for O(1) expiration checks.
+    /// </summary>
+    public long? ExpiresAtEpochSeconds { get; set; }
 
     /// <summary>
     /// Entity that caused this effect (character, NPC, item, or null for environmental).

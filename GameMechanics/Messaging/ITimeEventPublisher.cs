@@ -46,6 +46,13 @@ public interface ITimeEventPublisher : IAsyncDisposable
     Task PublishTableUpdateAsync(TableUpdateMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Publishes a join request notification (new request, approved, denied).
+    /// </summary>
+    /// <param name="message">The join request message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishJoinRequestAsync(JoinRequestMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

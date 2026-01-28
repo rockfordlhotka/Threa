@@ -208,6 +208,18 @@ namespace GameMechanics
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<long> CurrentGameTimeSecondsProperty = RegisterProperty<long>(nameof(CurrentGameTimeSeconds));
+    /// <summary>
+    /// Current game time in seconds from epoch 0.
+    /// Updated when character processes time events (rounds or time skips).
+    /// Used for epoch-based effect expiration.
+    /// </summary>
+    public long CurrentGameTimeSeconds
+    {
+      get => GetProperty(CurrentGameTimeSecondsProperty);
+      set => SetProperty(CurrentGameTimeSecondsProperty, value);
+    }
+
     /// <summary>
     /// Activates the character, making it playable. This is a one-way operation.
     /// Once activated, certain properties like attributes become read-only.
@@ -326,7 +338,7 @@ namespace GameMechanics
     /// <returns>The base attribute value.</returns>
     public int GetAttribute(string attributeName)
     {
-      var result = AttributeList.Where(r => r.Name == attributeName).FirstOrDefault();
+      var result = AttributeList.Where(r => r.Name.Equals(attributeName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
       if (result == null)
         return 0;
       else
@@ -437,12 +449,110 @@ namespace GameMechanics
       BusinessRules.CheckRules(VitalityProperty);
     }
 
+    /// <summary>
+    /// Processes end-of-round effects. Advances game time by 6 seconds (1 round).
+    /// </summary>
     public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
+      // Advance game time by 1 round (6 seconds)
+      CurrentGameTimeSeconds += 6;
+
       Fatigue.EndOfRound();
       Vitality.EndOfRound(effectPortal);
-      Effects.EndOfRound();
+      Effects.EndOfRound(CurrentGameTimeSeconds);
       ActionPoints.EndOfRound();
+    }
+
+    /// <summary>
+    /// Processes a time skip (calendar time advancement like minutes, hours, days, weeks).
+    /// Applies hourly VIT recovery, VIT-level-dependent FAT recovery, effect expiration, and pending pool flow.
+    /// Uses epoch-based time tracking for O(1) effect expiration performance.
+    /// </summary>
+    public void ProcessTimeSkip(GameMechanics.Time.TimeEventType skipUnit, int count, IChildDataPortal<EffectRecord>? effectPortal = null)
+    {
+      // Calculate total seconds passed
+      long totalSecondsPassed = skipUnit switch
+      {
+        GameMechanics.Time.TimeEventType.EndOfMinute => count * 60L,           // 1 min = 60 seconds
+        GameMechanics.Time.TimeEventType.EndOfTurn => count * 600L,            // 10 min = 600 seconds
+        GameMechanics.Time.TimeEventType.EndOfHour => count * 3600L,           // 1 hour = 3600 seconds
+        GameMechanics.Time.TimeEventType.EndOfDay => count * 86400L,           // 1 day = 86400 seconds
+        GameMechanics.Time.TimeEventType.EndOfWeek => count * 604800L,         // 1 week = 604800 seconds
+        _ => 0
+      };
+
+      // Advance game time by the full time skip
+      CurrentGameTimeSeconds += totalSecondsPassed;
+
+      // Calculate total hours passed
+      double hoursPassedDecimal = totalSecondsPassed / 3600.0;
+      int hoursPassed = (int)Math.Floor(hoursPassedDecimal);
+
+      // VIT Recovery: 1 VIT per hour when alive (VIT > 0)
+      // Per GAME_RULES_SPECIFICATION.md line 162
+      if (Vitality.Value > 0 && hoursPassed > 0)
+      {
+        Vitality.PendingHealing += hoursPassed;
+      }
+
+      // FAT Recovery: Rate depends on current VIT level
+      // Per design/GAME_RULES_SPECIFICATION.md and Fatigue.cs comments:
+      // VIT >= 5: 1 per round (handled in combat via EndOfRound)
+      // VIT = 4: 1 per minute
+      // VIT = 3: 1 per 30 minutes
+      // VIT = 2: 1 per hour
+      // VIT <= 1: No recovery
+      if (Fatigue.Value < Fatigue.BaseValue)
+      {
+        int fatRecovery = Vitality.Value switch
+        {
+          4 => (int)Math.Floor(count * GetMinutesForTimeSkip(skipUnit)),        // 1 per minute
+          3 => (int)Math.Floor(count * GetMinutesForTimeSkip(skipUnit) / 30.0),  // 1 per 30 minutes
+          2 => hoursPassed,                                                       // 1 per hour
+          _ => 0  // VIT <= 1 or VIT >= 5 (VIT >= 5 handles in combat only)
+        };
+
+        if (fatRecovery > 0)
+        {
+          Fatigue.PendingHealing += fatRecovery;
+        }
+      }
+
+      // Process effect expiration using epoch time (O(1) per effect - no loops!)
+      // With 236 wounds and 1 week skip, this is now instant instead of 23M+ operations
+      Effects.ProcessTimeSkip(CurrentGameTimeSeconds);
+
+      // Process pending pools and AP recovery multiple times to simulate gradual healing
+      // Cap at 100 iterations to avoid performance issues
+      int totalRoundsPassed = (int)(totalSecondsPassed / 6);  // Each round = 6 seconds
+      int iterations = Math.Min(totalRoundsPassed, 100);
+      for (int i = 0; i < iterations; i++)
+      {
+        Fatigue.EndOfRound();
+        Vitality.EndOfRound(effectPortal);
+        ActionPoints.EndOfRound();
+      }
+
+      // Final pass to ensure all pending pools are fully resolved
+      if (totalRoundsPassed > 0)
+      {
+        Fatigue.EndOfRound();
+        Vitality.EndOfRound(effectPortal);
+        ActionPoints.EndOfRound();
+      }
+    }
+
+    private double GetMinutesForTimeSkip(GameMechanics.Time.TimeEventType skipUnit)
+    {
+      return skipUnit switch
+      {
+        GameMechanics.Time.TimeEventType.EndOfMinute => 1,
+        GameMechanics.Time.TimeEventType.EndOfTurn => 10,
+        GameMechanics.Time.TimeEventType.EndOfHour => 60,
+        GameMechanics.Time.TimeEventType.EndOfDay => 60 * 24,
+        GameMechanics.Time.TimeEventType.EndOfWeek => 60 * 24 * 7,
+        _ => 0
+      };
     }
 
     public void TakeDamage(DamageValue damageValue, IChildDataPortal<EffectRecord> effectPortal)
@@ -457,6 +567,8 @@ namespace GameMechanics
       base.AddBusinessRules();
       BusinessRules.AddRule(new FatigueBase());
       BusinessRules.AddRule(new VitalityBase());
+      BusinessRules.AddRule(new ActionPointsMax());
+      BusinessRules.AddRule(new ActionPointsRecovery());
       BusinessRules.AddRule(new AttributeSumValidation());
     }
 
@@ -676,6 +788,40 @@ namespace GameMechanics
       {
         var target = (CharacterEdit)context.Target;
         target.Vitality.CalculateBase(target);
+      }
+    }
+
+    private class ActionPointsMax : PropertyRule
+    {
+      public ActionPointsMax() : base(SkillsProperty)
+      {
+        InputProperties.Add(SkillsProperty);
+        AffectedProperties.Add(ActionPointsProperty);
+      }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+        var target = (CharacterEdit)context.Target;
+        target.ActionPoints.RecalculateMax(target);
+      }
+    }
+
+    private class ActionPointsRecovery : PropertyRule
+    {
+      public ActionPointsRecovery() : base(FatigueProperty)
+      {
+        InputProperties.Add(FatigueProperty);
+        AffectedProperties.Add(ActionPointsProperty);
+      }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+        var target = (CharacterEdit)context.Target;
+        target.ActionPoints.RecalculateRecovery(target);
       }
     }
 

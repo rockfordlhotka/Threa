@@ -2,27 +2,27 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-26)
+See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Milestone v1.1 COMPLETE
+**Current focus:** Planning next milestone (v1.3)
 
 ## Current Position
 
-Milestone: v1.1 - COMPLETE
-Phase: 11 of 11 (User Profiles)
-Plan: 2 of 2 in current phase
-Status: Milestone complete
-Last activity: 2026-01-26 - Completed 11-02-PLAN.md
+Milestone: v1.3 (planning needed)
+Phase: Not started
+Plan: Not started
+Status: Ready to plan next milestone
+Last activity: 2026-01-28 - v1.2 milestone complete
 
-Progress: v1.1 [████████████████] 100% (8/8 plans)
+Progress: v1.2 [####################] 100% (5 phases, 14 plans, 43 requirements shipped)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
-- Average duration: 14 min
-- Total execution time: 5.7 hours
+- Total plans completed: 38
+- Average duration: 12 min
+- Total execution time: 7.9 hours
 
 **By Phase (v1.0):**
 
@@ -45,41 +45,34 @@ Progress: v1.1 [████████████████] 100% (8/8 plan
 | 10-admin-user-management | 2/2 | 11 min | 5.5 min |
 | 11-user-profiles | 2/2 | 29 min | 14.5 min |
 
+**By Phase (v1.2):**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 12-table-foundation | 2/2 | 5 min | 2.5 min |
+| 13-join-workflow | 4/4 | 17 min | 4 min |
+| 14-dashboard-core | 3/3 | 38 min | 13 min |
+| 15-dashboard-details | 3/3 | 56 min | 19 min |
+| 16-time-management | 2/2 | 5 min | 2.5 min |
+
 **Recent Trend:**
-- Last 5 plans: 11-02 (5 min), 11-01 (24 min), 10-02 (2 min), 10-01 (9 min), 09-02 (3 min)
-- Trend: steady execution velocity
+- Last 5 plans: 16-02 (5 min), 15-03 (45 min), 15-02 (5 min), 15-01 (6 min), 14-03 (21 min)
+- Trend: 16-02 quick execution with minimal code changes
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+All decisions are logged in PROJECT.md Key Decisions table.
 
-- [v1.1]: Secret Q&A for password recovery (no email sending capability)
-- [v1.1]: RadzenGravatar for avatars (already available in Radzen.Blazor 8.4.2)
-- [v1.1]: First registered user becomes Admin automatically
-- [v1.1]: Initials fallback when no email provided for Gravatar
-- [v1.1]: Case-insensitive, trimmed secret answer validation
-- [08-01]: BCrypt cost factor 12 (matches existing AdminUserEdit pattern)
-- [08-01]: MockDb updated to support pre-hashed passwords and new DTO fields
-- [08-02]: CSLA SaveAsync result must be assigned (CSLA0006 analyzer rule)
-- [09-01]: CSLA CommandBase with step-based execution for multi-step recovery workflow
-- [09-01]: Empty secret question for unknown user (prevents enumeration)
-- [09-02]: Query parameter routing (?passwordreset=true) for success message on login
-- [10-01]: Use GetRequiredService instead of CreateInstanceDI for interface resolution in async rules
-- [10-01]: Register LastAdminProtectionRule for both IsEnabled and IsAdministrator properties
-- [10-02]: Modal edit pattern with DialogService.OpenAsync and result callback for list refresh
-- [10-02]: Self-edit warning banner when admin edits their own account
-- [11-01]: Profanity.Detector library for content filtering (handles Scunthorpe problem)
-- [11-01]: ContactEmail separate from Email (which stores username) for Gravatar
-- [11-01]: UseGravatar defaults to true
-- [11-02]: UserAvatar component uses RadzenGravatar when email provided and UseGravatar enabled
-- [11-02]: Admin user list shows initials (Email field contains username, not actual email)
+**v1.2 milestone complete** - See milestones/v1.2-ROADMAP.md for full v1.2 decision log.
 
 ### Pending Todos
 
-None.
+**Future Phase - Character Management:**
+- Add FAT recovery warning in TabStatus.razor when VIT is low (VIT 1-4 affects FAT recovery rate per design/GAME_RULES_SPECIFICATION.md)
+- Fix AP Max calculation bug: ActionPoints.Max should recalculate when skills change, not just use cached DB value (currently only calculates on character creation)
+- Implement effect management: edit/remove effects (requirements GMCHAR-05, GMCHAR-06, GMCHAR-07 exist but not assigned to a phase)
 
 ### Blockers/Concerns
 
@@ -94,9 +87,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-26T23:05:00Z
-Stopped at: Completed 11-02-PLAN.md (Milestone v1.1 complete)
+Last session: 2026-01-28
+Stopped at: v1.2 milestone complete, ready to plan v1.3
 Resume file: None
 
 ---
-*Milestone v1.1 complete - all phases delivered*
+*v1.2 milestone complete - archived to milestones/v1.2-ROADMAP.md*

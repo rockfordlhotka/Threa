@@ -260,15 +260,21 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
   /// Processes all effects for end of round.
   /// Increments elapsed time, calls OnTick, and handles expiration.
   /// </summary>
-  public void EndOfRound()
+  /// <summary>
+  /// Processes end-of-round effects. Uses epoch-based expiration for performance.
+  /// </summary>
+  /// <param name="currentGameTimeSeconds">Current game time in seconds from epoch 0</param>
+  public void EndOfRound(long currentGameTimeSeconds)
   {
     var toExpire = new List<EffectRecord>();
     var toRemoveEarly = new List<EffectRecord>();
 
     foreach (var effect in this.Where(e => e.IsActive))
     {
-      // Increment elapsed rounds
+      // Increment elapsed rounds (for legacy/display purposes)
+#pragma warning disable CS0618 // Maintaining ElapsedRounds for backward compatibility and UI display
       effect.ElapsedRounds++;
+#pragma warning restore CS0618
 
       // Call OnTick
       var tickResult = effect.Behavior.OnTick(effect, Character);
@@ -278,8 +284,8 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
         continue;
       }
 
-      // Check for natural expiration
-      if (effect.IsExpired)
+      // Check for natural expiration using epoch time
+      if (effect.IsExpired(currentGameTimeSeconds))
       {
         toExpire.Add(effect);
       }
@@ -290,6 +296,32 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
     {
       effect.Behavior.OnRemove(effect, Character);
       Remove(effect);
+    }
+
+    // Handle natural expirations
+    foreach (var effect in toExpire)
+    {
+      effect.Behavior.OnExpire(effect, Character);
+      Remove(effect);
+    }
+  }
+
+  /// <summary>
+  /// Processes a time skip (calendar time advancement) for all active effects.
+  /// Uses epoch-based expiration for O(1) performance instead of looping.
+  /// </summary>
+  /// <param name="currentGameTimeSeconds">Current game time in seconds from epoch 0</param>
+  public void ProcessTimeSkip(long currentGameTimeSeconds)
+  {
+    var toExpire = new List<EffectRecord>();
+
+    foreach (var effect in this.Where(e => e.IsActive))
+    {
+      // Use epoch-based expiration check (O(1) instead of O(n×rounds))
+      if (effect.IsExpired(currentGameTimeSeconds))
+      {
+        toExpire.Add(effect);
+      }
     }
 
     // Handle natural expirations

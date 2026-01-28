@@ -1,0 +1,147 @@
+@* Character Detail Narrative - Appearance, backstory, and editable GM notes *@
+
+@using GameMechanics
+@using Threa.Dal
+
+@inject ITableDal tableDal
+
+<div class="row">
+    <!-- Left: Appearance -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Appearance</strong></div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Character?.ImageUrl))
+                {
+                    <img src="@Character.ImageUrl" alt="@Character.Name" class="img-fluid rounded mb-3" style="max-height: 150px;" />
+                }
+
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Height</td>
+                            <td>@(string.IsNullOrEmpty(Character?.Height) ? "-" : Character.Height)</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Weight</td>
+                            <td>@(string.IsNullOrEmpty(Character?.Weight) ? "-" : Character.Weight)</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Skin</td>
+                            <td>@(string.IsNullOrEmpty(Character?.SkinDescription) ? "-" : Character.SkinDescription)</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Hair</td>
+                            <td>@(string.IsNullOrEmpty(Character?.HairDescription) ? "-" : Character.HairDescription)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aliases -->
+        @if (!string.IsNullOrEmpty(Character?.Aliases))
+        {
+            <div class="card mt-3">
+                <div class="card-header"><strong>Aliases</strong></div>
+                <div class="card-body">
+                    <p class="mb-0">@Character.Aliases</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right: Backstory and Notes -->
+    <div class="col-md-6">
+        <!-- Player Description/Backstory -->
+        <div class="card">
+            <div class="card-header"><strong>Backstory</strong></div>
+            <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                @if (string.IsNullOrEmpty(Character?.Description))
+                {
+                    <p class="text-muted mb-0">No backstory provided.</p>
+                }
+                else
+                {
+                    <p class="mb-0" style="white-space: pre-wrap;">@Character.Description</p>
+                }
+            </div>
+        </div>
+
+        <!-- Player Notes (read-only) -->
+        @if (!string.IsNullOrEmpty(Character?.Notes))
+        {
+            <div class="card mt-3">
+                <div class="card-header"><strong>Player Notes</strong></div>
+                <div class="card-body" style="max-height: 150px; overflow-y: auto;">
+                    <p class="mb-0" style="white-space: pre-wrap;">@Character.Notes</p>
+                </div>
+            </div>
+        }
+
+        <!-- GM Notes (editable) -->
+        <div class="card mt-3 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <strong><i class="bi bi-eye-slash me-1"></i>GM Notes</strong>
+                <small class="ms-2">(Private - not visible to player)</small>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control" rows="4"
+                          placeholder="Add private notes about this character..."
+                          @bind="gmNotes"
+                          @onblur="SaveGmNotes"
+                          disabled="@isSaving"></textarea>
+                @if (isSaving)
+                {
+                    <small class="text-muted"><i class="bi bi-arrow-repeat"></i> Saving...</small>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    [Parameter]
+    public int CharacterId { get; set; }
+
+    [Parameter]
+    public string? InitialGmNotes { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> OnGmNotesChanged { get; set; }
+
+    private string? gmNotes;
+    private bool isSaving;
+
+    protected override void OnInitialized()
+    {
+        gmNotes = InitialGmNotes;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Update gmNotes when InitialGmNotes changes (e.g., when switching characters)
+        gmNotes = InitialGmNotes;
+    }
+
+    private async Task SaveGmNotes()
+    {
+        if (isSaving) return;
+        isSaving = true;
+        try
+        {
+            await tableDal.UpdateGmNotesAsync(TableId, CharacterId, gmNotes);
+            await OnGmNotesChanged.InvokeAsync(gmNotes);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,69 @@
+@namespace Threa.Client.Components.Shared
+@inherits CharacterStatusCardBase
+
+<div class="character-status-card card @CardBorderClass @(IsSelected ? "selected" : "") mb-2"
+     @onclick="() => OnClick.InvokeAsync(Character)"
+     style="cursor: pointer;">
+    <div class="card-body py-2 px-3">
+        @* Header: Name and connection status *@
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="text-truncate" style="max-width: 140px;" title="@Character.CharacterName">
+                @Character.CharacterName
+            </strong>
+            <span class="status-indicator @GetConnectionClass()" title="@Character.ConnectionStatusDisplay"></span>
+        </div>
+
+        @* Health Bars: FAT over VIT, stacked - using PendingPoolBar *@
+        <div class="mb-2">
+            <div class="d-flex align-items-center gap-1 mb-1">
+                <small class="text-muted" style="width: 28px; font-size: 0.7rem;">FAT</small>
+                <div class="flex-grow-1">
+                    <PendingPoolBar CurrentValue="@Character.FatValue"
+                                   MaxValue="@Character.FatMax"
+                                   PendingDamage="@Character.FatPendingDamage"
+                                   PendingHealing="@Character.FatPendingHealing"
+                                   Height="6px" />
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <small class="text-muted" style="width: 28px; font-size: 0.7rem;">VIT</small>
+                <div class="flex-grow-1">
+                    <PendingPoolBar CurrentValue="@Character.VitValue"
+                                   MaxValue="@Character.VitMax"
+                                   PendingDamage="@Character.VitPendingDamage"
+                                   PendingHealing="@Character.VitPendingHealing"
+                                   Height="6px" />
+                </div>
+            </div>
+        </div>
+
+        @* Status Badges: AP, Wounds, Effects *@
+        <div class="d-flex gap-1 flex-wrap">
+            <span class="badge bg-primary" style="font-size: 0.7rem;" title="Action Points">
+                <i class="bi bi-lightning-charge"></i> @Character.ActionPoints/@Character.ActionPointMax
+            </span>
+            @if (Character.WoundCount > 0)
+            {
+                <span class="badge bg-warning text-dark"
+                      style="font-size: 0.7rem;"
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-placement="top"
+                      title="@WoundTooltipHtml">
+                    <i class="bi bi-bandaid"></i> @Character.WoundCount
+                </span>
+            }
+            @if (Character.EffectCount > 0)
+            {
+                <span class="badge bg-info"
+                      style="font-size: 0.7rem;"
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-placement="top"
+                      title="@EffectTooltipHtml">
+                    <i class="bi bi-stars"></i> @Character.EffectCount
+                </span>
+            }
+        </div>
+    </div>
+</div>

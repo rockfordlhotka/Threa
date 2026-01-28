@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using GameMechanics.Time;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Messaging;
 
@@ -335,4 +336,45 @@ public class TableUpdateMessage
     /// Optional description of the update.
     /// </summary>
     public string? Description { get; init; }
+}
+
+/// <summary>
+/// Message sent when a join request status changes.
+/// </summary>
+public class JoinRequestMessage : TimeMessageBase
+{
+    /// <summary>
+    /// The ID of the join request.
+    /// </summary>
+    public Guid RequestId { get; init; }
+
+    /// <summary>
+    /// The ID of the character requesting to join.
+    /// </summary>
+    public int CharacterId { get; init; }
+
+    /// <summary>
+    /// The ID of the player who owns the character.
+    /// </summary>
+    public int PlayerId { get; init; }
+
+    /// <summary>
+    /// The ID of the table being joined.
+    /// </summary>
+    public Guid TableId { get; init; }
+
+    /// <summary>
+    /// The current status of the join request.
+    /// </summary>
+    public JoinRequestStatus Status { get; init; }
+
+    /// <summary>
+    /// Name of the character for display purposes.
+    /// </summary>
+    public string? CharacterName { get; init; }
+
+    /// <summary>
+    /// Name of the table for display purposes.
+    /// </summary>
+    public string? TableName { get; init; }
 }
