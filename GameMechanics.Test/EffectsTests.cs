@@ -142,10 +142,10 @@ public class EffectsTests
       5,
       null);
 
-    Assert.IsFalse(effect.IsExpired);
+    Assert.IsFalse(effect.IsExpiredLegacy);
 
     effect.ElapsedRounds = 5;
-    Assert.IsTrue(effect.IsExpired);
+    Assert.IsTrue(effect.IsExpiredLegacy);
   }
 
   [TestMethod]
@@ -162,7 +162,7 @@ public class EffectsTests
       null);
 
     effect.ElapsedRounds = 1000;
-    Assert.IsFalse(effect.IsExpired);
+    Assert.IsFalse(effect.IsExpiredLegacy);
     Assert.IsNull(effect.RemainingRounds);
   }
 
@@ -345,14 +345,14 @@ public class EffectsTests
     // Run 19 rounds - no damage yet
     for (int i = 0; i < 19; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     Assert.AreEqual(0, c.Vitality.PendingDamage);
     Assert.AreEqual(0, c.Fatigue.PendingDamage);
 
     // Round 20 should apply damage
-    c.Effects.EndOfRound();
+    c.Effects.EndOfRound(0);
 
     // 1 serious wound = 1 VIT damage, 2 FAT damage
     Assert.AreEqual(1, c.Vitality.PendingDamage);
@@ -764,12 +764,12 @@ public class EffectsTests
     // Run 4 rounds - no damage yet
     for (int i = 0; i < 4; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
     Assert.AreEqual(initialFat, c.Fatigue.PendingDamage, "No damage before tick");
 
     // 5th round triggers damage
-    c.Effects.EndOfRound();
+    c.Effects.EndOfRound(0);
     Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "Damage should be dealt on tick");
   }
 
@@ -798,7 +798,7 @@ public class EffectsTests
     // Run to tick
     for (int i = 0; i < 3; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     Assert.IsTrue(c.Vitality.PendingDamage > initialVit, "VIT damage should be dealt");
@@ -829,8 +829,8 @@ public class EffectsTests
     var initialVit = c.Vitality.PendingDamage;
 
     // Run to tick
-    c.Effects.EndOfRound();
-    c.Effects.EndOfRound();
+    c.Effects.EndOfRound(0);
+    c.Effects.EndOfRound(0);
 
     Assert.IsTrue(c.Fatigue.PendingDamage > initialFat, "FAT damage should be dealt");
     Assert.IsTrue(c.Vitality.PendingDamage > initialVit, "VIT damage should be dealt");
@@ -885,7 +885,7 @@ public class EffectsTests
     // Advance 50 rounds (50% through)
     for (int i = 0; i < 50; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     var halfwayPenalty = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
@@ -914,7 +914,7 @@ public class EffectsTests
     // Run through duration
     for (int i = 0; i < 10; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     Assert.IsFalse(c.Effects.IsPoisoned, "Poison should have expired");
@@ -1262,12 +1262,12 @@ public class EffectsTests
     // Run 4 rounds - no healing yet
     for (int i = 0; i < 4; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
     Assert.AreEqual(initialHeal, c.Fatigue.PendingHealing);
 
     // 5th round triggers healing
-    c.Effects.EndOfRound();
+    c.Effects.EndOfRound(0);
     Assert.AreEqual(initialHeal + 3, c.Fatigue.PendingHealing);
   }
 
@@ -1287,7 +1287,7 @@ public class EffectsTests
     // Run through duration
     for (int i = 0; i < 10; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     Assert.IsFalse(c.Effects.HasBuff("Short Buff"), "Buff should have expired");
@@ -1311,7 +1311,7 @@ public class EffectsTests
     // Advance 50 rounds
     for (int i = 0; i < 50; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     var halfwayModifier = c.Effects.GetAbilityScoreModifier("Any", "STR", 10);
@@ -1589,12 +1589,12 @@ public class EffectsTests
     // Run 4 rounds - no healing yet
     for (int i = 0; i < 4; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
     Assert.AreEqual(initialHeal, c.Fatigue.PendingHealing);
 
     // 5th round triggers healing
-    c.Effects.EndOfRound();
+    c.Effects.EndOfRound(0);
     Assert.IsTrue(c.Fatigue.PendingHealing > initialHeal);
   }
 
@@ -1614,7 +1614,7 @@ public class EffectsTests
     // Run through duration
     for (int i = 0; i < 5; i++)
     {
-      c.Effects.EndOfRound();
+      c.Effects.EndOfRound(0);
     }
 
     // Should have taken crash damage
