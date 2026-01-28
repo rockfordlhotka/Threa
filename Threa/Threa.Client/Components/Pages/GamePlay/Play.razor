@@ -638,11 +638,23 @@ private async Task SelectCharacterAsync(int characterId)
         {
             try
             {
+                // ALWAYS refresh table state first to show updated time/rounds
+                if (table != null)
+                {
+                    table = await tablePortal.FetchAsync(table.Id);
+                }
+
                 // Process end-of-round effects on the character
                 if (character != null && e.EventType == GameMechanics.Time.TimeEventType.EndOfRound)
                 {
-                    // Sync character's game time with table before processing
-                    if (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds)
+                    // Reload character from database to get clean state
+                    // This prevents CSLA dirty state conflicts when character has unsaved changes
+                    int characterId = character.Id;
+                    character = await characterPortal.FetchAsync(characterId);
+                    await LoadEquippedItemsAsync();
+
+                    // Sync character's game time with table
+                    if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
                     {
                         character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
                     }
@@ -654,12 +666,6 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
-
-                    // Refresh table state
-                    if (table != null)
-                    {
-                        table = await tablePortal.FetchAsync(table.Id);
-                    }
                 }
 
                 StateHasChanged();
@@ -681,11 +687,23 @@ private async Task SelectCharacterAsync(int characterId)
         {
             try
             {
+                // ALWAYS refresh table state first to show updated time
+                if (table != null)
+                {
+                    table = await tablePortal.FetchAsync(table.Id);
+                }
+
                 // Process time skip effects on the character
                 if (character != null)
                 {
-                    // Sync character's game time with table before processing
-                    if (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds)
+                    // Reload character from database to get clean state
+                    // This prevents CSLA dirty state conflicts when character has unsaved changes
+                    int characterId = character.Id;
+                    character = await characterPortal.FetchAsync(characterId);
+                    await LoadEquippedItemsAsync();
+
+                    // Sync character's game time with table
+                    if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
                     {
                         character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
                     }
@@ -699,12 +717,6 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
-
-                    // Refresh table state to get updated time
-                    if (table != null)
-                    {
-                        table = await tablePortal.FetchAsync(table.Id);
-                    }
                 }
 
                 StateHasChanged();
