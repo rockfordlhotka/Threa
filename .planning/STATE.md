@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 15 - Dashboard Details (In progress)
+**Current focus:** Phase 15 - Dashboard Details (COMPLETE)
 
 ## Current Position
 
 Milestone: v1.2
 Phase: 15 of 16 (Dashboard Details)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-27 - Completed 15-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-27 - Completed 15-03-PLAN.md
 
-Progress: v1.2 [##############......] 70% (5 phases, 43 requirements)
+Progress: v1.2 [################....] 80% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 35
-- Average duration: 11 min
-- Total execution time: 7.0 hours
+- Total plans completed: 36
+- Average duration: 12 min
+- Total execution time: 7.8 hours
 
 **By Phase (v1.0):**
 
@@ -52,11 +52,11 @@ Progress: v1.2 [##############......] 70% (5 phases, 43 requirements)
 | 12-table-foundation | 2/2 | 5 min | 2.5 min |
 | 13-join-workflow | 4/4 | 17 min | 4 min |
 | 14-dashboard-core | 3/3 | 38 min | 13 min |
-| 15-dashboard-details | 2/3 | 11 min | 5.5 min |
+| 15-dashboard-details | 3/3 | 56 min | 19 min |
 
 **Recent Trend:**
-- Last 5 plans: 15-02 (5 min), 15-01 (6 min), 14-03 (21 min), 14-02 (4 min), 14-01 (13 min)
-- Trend: steady execution velocity
+- Last 5 plans: 15-03 (45 min), 15-02 (5 min), 15-01 (6 min), 14-03 (21 min), 14-02 (4 min)
+- Trend: 15-03 longer due to extensive user feedback iterations
 
 ## Accumulated Context
 
@@ -65,6 +65,12 @@ Progress: v1.2 [##############......] 70% (5 phases, 43 requirements)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.2]: Tab order: GM Actions, Character Sheet, Inventory, Grant Items, Narrative
+- [v1.2]: Modal header shows character summary with health bars and status badges
+- [v1.2]: Two-button layout (FAT/VIT) for damage and healing actions
+- [v1.2]: 2-column dashboard layout after center panel removal
+- [v1.2]: RadzenDialog must be in interactive context for DialogService
+- [v1.2]: Click-outside-to-close enabled for touch accessibility
 - [v1.2]: Skills grouped by PrimaryAttribute in CharacterDetailSheet
 - [v1.2]: GM notes auto-save on blur with loading indicator
 - [v1.2]: Read-only view components for GM character inspection
@@ -87,7 +93,15 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None.
+**Phase 16 (Time Management):**
+- Fix Play.razor to subscribe to TimeSkipReceived events (currently only subscribes to TimeEventReceived)
+- Non-combat time advancement (minutes/hours/days) should trigger pending pool flow
+- Combat round advancement works correctly, need to add handler for time skips
+
+**Future Phase - Character Management:**
+- Add FAT recovery warning in TabStatus.razor when VIT is low (VIT 1-4 affects FAT recovery rate per design/GAME_RULES_SPECIFICATION.md)
+- Fix AP Max calculation bug: ActionPoints.Max should recalculate when skills change, not just use cached DB value (currently only calculates on character creation)
+- Implement effect management: edit/remove effects (requirements GMCHAR-05, GMCHAR-06, GMCHAR-07 exist but not assigned to a phase)
 
 ### Blockers/Concerns
 
@@ -103,8 +117,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 15-02-PLAN.md
+Stopped at: Completed 15-03-PLAN.md (Phase 15 complete)
 Resume file: None
 
 ---
-*Phase 15 in progress - 2/3 plans complete*
+*Phase 15 complete - ready for Phase 16*
