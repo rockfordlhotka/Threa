@@ -104,10 +104,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HLTH-05 | Phase 17 | Complete |
 | HLTH-06 | Phase 17 | Complete |
 | HLTH-07 | Phase 17 | Complete |
-| WOND-01 | Phase 18 | Pending |
-| WOND-02 | Phase 18 | Pending |
-| WOND-03 | Phase 18 | Pending |
-| WOND-04 | Phase 18 | Pending |
+| WOND-01 | Phase 18 | Complete |
+| WOND-02 | Phase 18 | Complete |
+| WOND-03 | Phase 18 | Complete |
+| WOND-04 | Phase 18 | Complete |
 | EFCT-01 | Phase 19 | Pending |
 | EFCT-02 | Phase 19 | Pending |
 | EFCT-03 | Phase 19 | Pending |

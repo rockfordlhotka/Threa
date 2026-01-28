@@ -111,7 +111,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
-| 18. Wound Management | 0/2 | Planned | - |
+| 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 0/TBD | Not started | - |
 | 20. Inventory Manipulation | 0/TBD | Not started | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
