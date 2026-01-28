@@ -130,6 +130,12 @@
             {
                 <CharacterDetailSheet Character="character" />
             }
+            else if (activeTab == "Effects")
+            {
+                <CharacterDetailEffects Character="character"
+                                         CharacterId="selectedCharacterId"
+                                         TableId="TableId" />
+            }
             else if (activeTab == "Inventory")
             {
                 <CharacterDetailInventory Character="character" />
@@ -170,7 +176,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Inventory", "Grant Items", "Narrative"];
+    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Effects", "Inventory", "Grant Items", "Narrative"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
