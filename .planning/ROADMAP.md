@@ -37,10 +37,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. GM can apply numeric healing to both FAT and VIT pending pools
   4. GM can view current pool values and pending values before applying changes
   5. Dashboard updates in real-time when damage/healing is applied
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01-PLAN.md — Enhance PendingPoolBar with color thresholds and overheal support
+- [ ] 17-02-PLAN.md — Refactor CharacterDetailGmActions to mode toggle with warnings
 
 ### Phase 18: Wound Management
 **Goal**: GM can add, remove, and edit wounds on characters with severity tracking
@@ -108,7 +109,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Health Management | 0/TBD | Not started | - |
+| 17. Health Management | 0/2 | Ready to execute | - |
 | 18. Wound Management | 0/TBD | Not started | - |
 | 19. Effect Management | 0/TBD | Not started | - |
 | 20. Inventory Manipulation | 0/TBD | Not started | - |
