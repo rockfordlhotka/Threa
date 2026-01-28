@@ -684,11 +684,17 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
-        // Ignore events if component is disposed or not our table
-        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
-
         _ = InvokeAsync(async () =>
         {
+            await JS.InvokeVoidAsync("console.log", $"[Play] OnTimeSkipReceived called - CampaignId:{e.CampaignId}, Disposed:{_disposed}, HasTable:{table != null}, TableMatch:{table?.Id.ToString() == e.CampaignId}");
+
+            // Ignore events if component is disposed or not our table
+            if (_disposed || table == null || e.CampaignId != table.Id.ToString())
+            {
+                await JS.InvokeVoidAsync("console.log", "[Play] Ignoring time skip event");
+                return;
+            }
+
             try
             {
                 await JS.InvokeVoidAsync("console.log", $"[Play] Processing time skip: {e.SkipUnit} x {e.Count}");
@@ -770,19 +776,32 @@ private async Task SelectCharacterAsync(int characterId)
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
         // Ignore events if component is disposed or not our character
-        if (_disposed || character == null || e.CharacterId != character.Id) return;
+        if (_disposed || character == null || e.CharacterId != character.Id)
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await JS.InvokeVoidAsync("console.log", $"[Play] Ignoring character update - disposed:{_disposed}, hasChar:{character != null}, charMatch:{character?.Id == e.CharacterId}");
+            });
+            return;
+        }
 
         _ = InvokeAsync(async () =>
         {
             try
             {
+                await JS.InvokeVoidAsync("console.log", $"[Play] Character update received: {e.UpdateType} - {e.Description}");
+
                 // Refresh the character to get the updated state
                 character = await characterPortal.FetchAsync(character.Id);
                 await LoadEquippedItemsAsync();
+
+                await JS.InvokeVoidAsync("console.log", $"[Play] Character reloaded after update - FAT: {character.Fatigue.Value}/{character.Fatigue.BaseValue} (pending: +{character.Fatigue.PendingHealing}/-{character.Fatigue.PendingDamage}), VIT: {character.Vitality.Value}/{character.Vitality.BaseValue} (pending: +{character.Vitality.PendingHealing}/-{character.Vitality.PendingDamage})");
+
                 StateHasChanged();
             }
             catch (Exception ex)
             {
+                await JS.InvokeVoidAsync("console.error", $"[Play] Error processing character update: {ex.Message}", ex.StackTrace);
                 errorMessage = $"Error processing character update: {ex.Message}";
                 StateHasChanged();
             }
