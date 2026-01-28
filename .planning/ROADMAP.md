@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 17: Health Management** - GM applies damage/healing to character health pools
 - [ ] **Phase 18: Wound Management** - GM tracks and manages character wounds
-- [ ] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
+- [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
 - [ ] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
 - [ ] **Phase 21: Stat Editing** - GM modifies character attributes and skills
 
@@ -71,10 +71,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 19-01-PLAN.md — EffectState model and DAL layer for effect templates
-- [ ] 19-02-PLAN.md — CSLA business objects (EffectTemplate, EffectTemplateList, GenericEffectBehavior)
-- [ ] 19-03-PLAN.md — Effect management UI (EffectManagementModal, EffectFormModal)
-- [ ] 19-04-PLAN.md — Template picker and Effects tab integration
+- [x] 19-01-PLAN.md — EffectState model and DAL layer for effect templates
+- [x] 19-02-PLAN.md — CSLA business objects (EffectTemplate, EffectTemplateList, GenericEffectBehavior)
+- [x] 19-03-PLAN.md — Effect management UI (EffectManagementModal, EffectFormModal)
+- [x] 19-04-PLAN.md — Template picker and Effects tab integration
 
 ### Phase 20: Inventory Manipulation
 **Goal**: GM can directly add, remove, and manage items in character inventory
@@ -115,7 +115,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 |-------|----------------|--------|-----------|
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
-| 19. Effect Management | 0/4 | Not started | - |
+| 19. Effect Management | 4/4 | Complete | 2026-01-28 |
 | 20. Inventory Manipulation | 0/TBD | Not started | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
 
