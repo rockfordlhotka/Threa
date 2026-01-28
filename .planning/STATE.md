@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 15 - Dashboard Details (COMPLETE)
+**Current focus:** Phase 16 - Time Management (IN PROGRESS)
 
 ## Current Position
 
 Milestone: v1.2
-Phase: 15 of 16 (Dashboard Details)
-Plan: 3 of 3 in current phase
+Phase: 16 of 16 (Time Management)
+Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-01-27 - Completed 15-03-PLAN.md
+Last activity: 2026-01-27 - Completed 16-02-PLAN.md
 
-Progress: v1.2 [################....] 80% (5 phases, 43 requirements)
+Progress: v1.2 [####################] 100% (5 phases, 43 requirements)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
+- Total plans completed: 38
 - Average duration: 12 min
-- Total execution time: 7.8 hours
+- Total execution time: 7.9 hours
 
 **By Phase (v1.0):**
 
@@ -53,10 +53,11 @@ Progress: v1.2 [################....] 80% (5 phases, 43 requirements)
 | 13-join-workflow | 4/4 | 17 min | 4 min |
 | 14-dashboard-core | 3/3 | 38 min | 13 min |
 | 15-dashboard-details | 3/3 | 56 min | 19 min |
+| 16-time-management | 2/2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 15-03 (45 min), 15-02 (5 min), 15-01 (6 min), 14-03 (21 min), 14-02 (4 min)
-- Trend: 15-03 longer due to extensive user feedback iterations
+- Last 5 plans: 16-02 (5 min), 15-03 (45 min), 15-02 (5 min), 15-01 (6 min), 14-03 (21 min)
+- Trend: 16-02 quick execution with minimal code changes
 
 ## Accumulated Context
 
@@ -89,14 +90,11 @@ Recent decisions affecting current work:
 - [v1.2]: Effects loaded via ICharacterEffectDal in TableCharacterList.Fetch
 - [v1.2]: JoinRequest DTO with status enum (Pending, Approved, Denied)
 - [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
+- [v1.2]: Time skip processing capped at 100 iterations to avoid UI freeze
+- [v1.2]: "In Rounds" badge shown only when in combat, hidden otherwise
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
 
 ### Pending Todos
-
-**Phase 16 (Time Management):**
-- Fix Play.razor to subscribe to TimeSkipReceived events (currently only subscribes to TimeEventReceived)
-- Non-combat time advancement (minutes/hours/days) should trigger pending pool flow
-- Combat round advancement works correctly, need to add handler for time skips
 
 **Future Phase - Character Management:**
 - Add FAT recovery warning in TabStatus.razor when VIT is low (VIT 1-4 affects FAT recovery rate per design/GAME_RULES_SPECIFICATION.md)
@@ -117,8 +115,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 15-03-PLAN.md (Phase 15 complete)
+Stopped at: Completed 16-02-PLAN.md (Phase 16 complete, v1.2 milestone complete)
 Resume file: None
 
 ---
-*Phase 15 complete - ready for Phase 16*
+*Phase 16 complete - v1.2 milestone complete*
