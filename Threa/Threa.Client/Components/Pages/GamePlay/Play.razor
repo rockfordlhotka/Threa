@@ -37,7 +37,11 @@
 
 @if (errorMessage != null)
 {
-    <div class="alert alert-danger">@errorMessage</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Error:</strong> @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+    </div>
 }
 
 @if (table == null && TableId != Guid.Empty)
@@ -687,20 +691,28 @@ private async Task SelectCharacterAsync(int characterId)
         {
             try
             {
+                await JS.InvokeVoidAsync("console.log", $"[Play] Processing time skip: {e.SkipUnit} x {e.Count}");
+
                 // ALWAYS refresh table state first to show updated time
                 if (table != null)
                 {
+                    var oldTime = table.CurrentTimeSeconds;
                     table = await tablePortal.FetchAsync(table.Id);
+                    await JS.InvokeVoidAsync("console.log", $"[Play] Table time: {oldTime} → {table.CurrentTimeSeconds}");
                 }
 
                 // Process time skip effects on the character
                 if (character != null)
                 {
+                    await JS.InvokeVoidAsync("console.log", $"[Play] Reloading character {character.Id} from DB");
+
                     // Reload character from database to get clean state
                     // This prevents CSLA dirty state conflicts when character has unsaved changes
                     int characterId = character.Id;
                     character = await characterPortal.FetchAsync(characterId);
                     await LoadEquippedItemsAsync();
+
+                    await JS.InvokeVoidAsync("console.log", $"[Play] Character reloaded - FAT pending: {character.Fatigue.PendingHealing}/{character.Fatigue.PendingDamage}, VIT pending: {character.Vitality.PendingHealing}/{character.Vitality.PendingDamage}");
 
                     // Sync character's game time with table
                     if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
@@ -715,14 +727,19 @@ private async Task SelectCharacterAsync(int characterId)
                     // - Pending pool flow
                     character.ProcessTimeSkip(e.SkipUnit, e.Count, effectPortal);
 
+                    await JS.InvokeVoidAsync("console.log", $"[Play] After ProcessTimeSkip - FAT: {character.Fatigue.Value}, VIT: {character.Vitality.Value}");
+
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
+                    await JS.InvokeVoidAsync("console.log", "[Play] Character saved successfully");
                 }
 
                 StateHasChanged();
+                await JS.InvokeVoidAsync("console.log", "[Play] Time skip processing complete");
             }
             catch (Exception ex)
             {
+                await JS.InvokeVoidAsync("console.error", $"[Play] Error processing time skip: {ex.Message}", ex.StackTrace);
                 errorMessage = $"Error processing time skip: {ex.Message}";
                 StateHasChanged();
             }
