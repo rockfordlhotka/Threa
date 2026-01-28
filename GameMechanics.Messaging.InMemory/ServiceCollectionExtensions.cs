@@ -20,9 +20,12 @@ public static class ServiceCollectionExtensions
         // Register the shared message bus as singleton
         services.AddSingleton<InMemoryMessageBus>();
 
-        // Register publisher and subscriber (they share the same bus)
+        // Register publisher as singleton (shared across all circuits)
         services.AddSingleton<ITimeEventPublisher, InMemoryTimeEventPublisher>();
-        services.AddSingleton<ITimeEventSubscriber, InMemoryTimeEventSubscriber>();
+
+        // Register subscriber as scoped (one per SignalR circuit) to prevent cross-circuit interference
+        // Each circuit needs its own subscriber instance to manage event handlers independently
+        services.AddScoped<ITimeEventSubscriber, InMemoryTimeEventSubscriber>();
 
         // Register the activity log service
         services.AddSingleton<IActivityLogService, InMemoryActivityLogService>();

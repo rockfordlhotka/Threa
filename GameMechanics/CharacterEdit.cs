@@ -338,7 +338,7 @@ namespace GameMechanics
     /// <returns>The base attribute value.</returns>
     public int GetAttribute(string attributeName)
     {
-      var result = AttributeList.Where(r => r.Name == attributeName).FirstOrDefault();
+      var result = AttributeList.Where(r => r.Name.Equals(attributeName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
       if (result == null)
         return 0;
       else
@@ -567,6 +567,8 @@ namespace GameMechanics
       base.AddBusinessRules();
       BusinessRules.AddRule(new FatigueBase());
       BusinessRules.AddRule(new VitalityBase());
+      BusinessRules.AddRule(new ActionPointsMax());
+      BusinessRules.AddRule(new ActionPointsRecovery());
       BusinessRules.AddRule(new AttributeSumValidation());
     }
 
@@ -786,6 +788,40 @@ namespace GameMechanics
       {
         var target = (CharacterEdit)context.Target;
         target.Vitality.CalculateBase(target);
+      }
+    }
+
+    private class ActionPointsMax : PropertyRule
+    {
+      public ActionPointsMax() : base(SkillsProperty)
+      {
+        InputProperties.Add(SkillsProperty);
+        AffectedProperties.Add(ActionPointsProperty);
+      }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+        var target = (CharacterEdit)context.Target;
+        target.ActionPoints.RecalculateMax(target);
+      }
+    }
+
+    private class ActionPointsRecovery : PropertyRule
+    {
+      public ActionPointsRecovery() : base(FatigueProperty)
+      {
+        InputProperties.Add(FatigueProperty);
+        AffectedProperties.Add(ActionPointsProperty);
+      }
+
+#pragma warning disable CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      protected override void Execute(IRuleContext context)
+#pragma warning restore CSLA0017 // Find Business Rules That Do Not Use Add() Methods on the Context
+      {
+        var target = (CharacterEdit)context.Target;
+        target.ActionPoints.RecalculateRecovery(target);
       }
     }
 

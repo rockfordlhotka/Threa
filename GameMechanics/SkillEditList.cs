@@ -19,7 +19,7 @@ namespace GameMechanics
 
     public Reference.ResultValue SkillCheck(string skillName, int targetValue)
     {
-      var skill = this.Where(r => r.Name == skillName).FirstOrDefault();
+      var skill = this.Where(r => r.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
       if (skill == null)
       {
         return ResultValues.GetResult(-10);

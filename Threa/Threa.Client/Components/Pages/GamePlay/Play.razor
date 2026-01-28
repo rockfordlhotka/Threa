@@ -400,7 +400,7 @@ else if (character == null)
         }
         else if (activeTab == "Inventory")
         {
-            <TabPlayInventory Character="character" Table="table" />
+            <TabPlayInventory Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
     </div>
 
@@ -443,6 +443,9 @@ private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
 private bool timeEventSubscribed;
 private bool _disposed;
+
+// Semaphore to prevent concurrent processing of time skip messages
+private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
 
 // Detach confirmation state
 private bool showDetachConfirmation;
@@ -619,15 +622,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private async Task SubscribeToTimeEvents(Guid tableId)
     {
-        await JS.InvokeVoidAsync("console.log", $"[Play] SubscribeToTimeEvents called - timeEventSubscribed={timeEventSubscribed}");
-
         if (timeEventSubscribed)
         {
-            await JS.InvokeVoidAsync("console.log", "[Play] Already subscribed, skipping");
             return;
         }
-
-        await JS.InvokeVoidAsync("console.log", "[Play] Connecting and subscribing to time events...");
 
         // Connect and subscribe to time events
         await TimeEventSubscriber.ConnectAsync();
@@ -639,8 +637,6 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived += OnTableUpdateReceived;
         timeEventSubscribed = true;
-
-        await JS.InvokeVoidAsync("console.log", "[Play] Successfully subscribed to all time events");
     }
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
@@ -696,39 +692,60 @@ private async Task SelectCharacterAsync(int characterId)
     {
         _ = InvokeAsync(async () =>
         {
-            await JS.InvokeVoidAsync("console.log", $"[Play] OnTimeSkipReceived called - CampaignId:{e.CampaignId}, Disposed:{_disposed}, HasTable:{table != null}, TableMatch:{table?.Id.ToString() == e.CampaignId}");
-
             // Ignore events if component is disposed or not our table
             if (_disposed || table == null || e.CampaignId != table.Id.ToString())
             {
-                await JS.InvokeVoidAsync("console.log", "[Play] Ignoring time skip event");
                 return;
             }
 
+            // Check if another time skip is currently being processed - skip to prevent race conditions
+            if (_timeSkipSemaphore.CurrentCount == 0)
+            {
+                return;
+            }
+
+            // Wait for semaphore to ensure only one time skip is processed at a time
+            await _timeSkipSemaphore.WaitAsync();
             try
             {
-                await JS.InvokeVoidAsync("console.log", $"[Play] Processing time skip: {e.SkipUnit} x {e.Count}");
-
                 // ALWAYS refresh table state first to show updated time
                 if (table != null)
                 {
-                    var oldTime = table.CurrentTimeSeconds;
                     table = await tablePortal.FetchAsync(table.Id);
-                    await JS.InvokeVoidAsync("console.log", $"[Play] Table time: {oldTime} → {table.CurrentTimeSeconds}");
                 }
 
                 // Process time skip effects on the character
                 if (character != null)
                 {
-                    await JS.InvokeVoidAsync("console.log", $"[Play] Reloading character {character.Id} from DB");
-
                     // Reload character from database to get clean state
                     // This prevents CSLA dirty state conflicts when character has unsaved changes
                     int characterId = character.Id;
                     character = await characterPortal.FetchAsync(characterId);
                     await LoadEquippedItemsAsync();
 
-                    await JS.InvokeVoidAsync("console.log", $"[Play] Character reloaded - FAT pending: {character.Fatigue.PendingHealing}/{character.Fatigue.PendingDamage}, VIT pending: {character.Vitality.PendingHealing}/{character.Vitality.PendingDamage}");
+                    // Safety check: If pending values are corrupted (> 10000), reset them to prevent further corruption
+                    // This can happen from race conditions when multiple time skips were processed concurrently
+                    bool corrupted = false;
+                    if (character.Fatigue.PendingDamage > 10000 || character.Fatigue.PendingHealing > 10000)
+                    {
+                        character.Fatigue.PendingDamage = 0;
+                        character.Fatigue.PendingHealing = 0;
+                        corrupted = true;
+                    }
+                    if (character.Vitality.PendingDamage > 10000 || character.Vitality.PendingHealing > 10000)
+                    {
+                        character.Vitality.PendingDamage = 0;
+                        character.Vitality.PendingHealing = 0;
+                        corrupted = true;
+                    }
+
+                    // If corruption was detected, save the reset state immediately and skip further processing
+                    if (corrupted)
+                    {
+                        await characterPortal.UpdateAsync(character);
+                        StateHasChanged();
+                        return;
+                    }
 
                     // Sync character's game time with table
                     if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
@@ -743,21 +760,20 @@ private async Task SelectCharacterAsync(int characterId)
                     // - Pending pool flow
                     character.ProcessTimeSkip(e.SkipUnit, e.Count, effectPortal);
 
-                    await JS.InvokeVoidAsync("console.log", $"[Play] After ProcessTimeSkip - FAT: {character.Fatigue.Value}, VIT: {character.Vitality.Value}");
-
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
-                    await JS.InvokeVoidAsync("console.log", "[Play] Character saved successfully");
                 }
 
                 StateHasChanged();
-                await JS.InvokeVoidAsync("console.log", "[Play] Time skip processing complete");
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("console.error", $"[Play] Error processing time skip: {ex.Message}", ex.StackTrace);
                 errorMessage = $"Error processing time skip: {ex.Message}";
                 StateHasChanged();
+            }
+            finally
+            {
+                _timeSkipSemaphore.Release();
             }
         });
     }
@@ -788,10 +804,6 @@ private async Task SelectCharacterAsync(int characterId)
         // Ignore events if component is disposed or not our character
         if (_disposed || character == null || e.CharacterId != character.Id)
         {
-            _ = InvokeAsync(async () =>
-            {
-                await JS.InvokeVoidAsync("console.log", $"[Play] Ignoring character update - disposed:{_disposed}, hasChar:{character != null}, charMatch:{character?.Id == e.CharacterId}");
-            });
             return;
         }
 
@@ -799,19 +811,14 @@ private async Task SelectCharacterAsync(int characterId)
         {
             try
             {
-                await JS.InvokeVoidAsync("console.log", $"[Play] Character update received: {e.UpdateType} - {e.Description}");
-
                 // Refresh the character to get the updated state
                 character = await characterPortal.FetchAsync(character.Id);
                 await LoadEquippedItemsAsync();
-
-                await JS.InvokeVoidAsync("console.log", $"[Play] Character reloaded after update - FAT: {character.Fatigue.Value}/{character.Fatigue.BaseValue} (pending: +{character.Fatigue.PendingHealing}/-{character.Fatigue.PendingDamage}), VIT: {character.Vitality.Value}/{character.Vitality.BaseValue} (pending: +{character.Vitality.PendingHealing}/-{character.Vitality.PendingDamage})");
 
                 StateHasChanged();
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("console.error", $"[Play] Error processing character update: {ex.Message}", ex.StackTrace);
                 errorMessage = $"Error processing character update: {ex.Message}";
                 StateHasChanged();
             }
@@ -846,15 +853,11 @@ private async Task SelectCharacterAsync(int characterId)
 
     private async Task UnsubscribeFromTimeEvents()
     {
-        await JS.InvokeVoidAsync("console.warn", $"[Play] UnsubscribeFromTimeEvents called - timeEventSubscribed={timeEventSubscribed}");
-
         if (!timeEventSubscribed)
         {
-            await JS.InvokeVoidAsync("console.warn", "[Play] Not subscribed, skipping unsubscribe");
             return;
         }
 
-        await JS.InvokeVoidAsync("console.warn", "[Play] Removing event handlers...");
         TimeEventSubscriber.TimeEventReceived -= OnTimeEventReceived;
         TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
         TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
@@ -862,24 +865,19 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.TableUpdateReceived -= OnTableUpdateReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
-        await JS.InvokeVoidAsync("console.warn", "[Play] Event handlers removed, timeEventSubscribed=false");
     }
 
     public async void Dispose()
     {
-        await JS.InvokeVoidAsync("console.warn", "[Play] Dispose() called - unsubscribing from all events");
-
         if (_disposed)
         {
-            await JS.InvokeVoidAsync("console.warn", "[Play] Already disposed, skipping");
             return;
         }
         _disposed = true;
 
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEvents();
-
-        await JS.InvokeVoidAsync("console.warn", "[Play] Dispose() complete");
+        _timeSkipSemaphore?.Dispose();
     }
 
     private string GetActivityClass(ActivityCategory category) =>

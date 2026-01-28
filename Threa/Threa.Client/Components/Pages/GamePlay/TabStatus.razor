@@ -245,6 +245,37 @@
                         <div class="text-muted text-center">No pending changes</div>
                     }
                 </div>
+
+                <!-- Low Vitality FAT Recovery Warning -->
+                @if (Character?.Vitality.Value > 0 && Character?.Vitality.Value <= 4)
+                {
+                    <div class="alert alert-warning mt-2 mb-0 py-2 px-2 small">
+                        <div class="fw-bold mb-1">
+                            <i class="bi bi-exclamation-triangle"></i> Low Vitality Effect
+                        </div>
+                        <div>
+                            @if (Character.Vitality.Value == 4)
+                            {
+                                <span>FAT recovery slowed to <strong>1 per minute</strong></span>
+                            }
+                            else if (Character.Vitality.Value == 3)
+                            {
+                                <span>FAT recovery slowed to <strong>1 per 30 minutes</strong></span>
+                                <br /><small class="text-muted">Actions require Focus check (TV 7)</small>
+                            }
+                            else if (Character.Vitality.Value == 2)
+                            {
+                                <span>FAT recovery slowed to <strong>1 per hour</strong></span>
+                                <br /><small class="text-muted">Actions require Focus check (TV 12)</small>
+                            }
+                            else if (Character.Vitality.Value == 1)
+                            {
+                                <span class="text-danger"><strong>FAT recovery halted</strong></span>
+                                <br /><small class="text-muted">Cannot perform actions</small>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         </div>
 
