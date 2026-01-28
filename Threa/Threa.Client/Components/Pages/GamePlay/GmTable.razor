@@ -319,6 +319,7 @@ else
     private GameMechanics.CharacterEdit? expandedCharacter;
     private bool isProcessingRequest;
     private bool timeEventSubscribed;
+    private bool _disposed;
 
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -351,12 +352,12 @@ else
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.CampaignId != table.Id.ToString()) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
         // When time advances, schedule a refresh of character data after a short delay
         // to allow player clients to process their end-of-round effects first
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             // Wait briefly for players to process and save their character updates
             await Task.Delay(500);
@@ -367,12 +368,12 @@ else
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.CampaignId != table.Id.ToString()) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
         // When calendar time advances, schedule a refresh of character data after a short delay
         // to allow player clients to process their time skip effects first
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             // Wait briefly for players to process and save their character updates
             await Task.Delay(500);
@@ -383,8 +384,11 @@ else
 
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
+        // Ignore events if component is disposed
+        if (_disposed) return;
+
         // Refresh character list when any character at this table is updated
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             await RefreshCharacterListAsync();
             StateHasChanged();
@@ -393,12 +397,12 @@ else
 
     private void OnJoinRequestReceived(object? sender, JoinRequestMessage e)
     {
-        // Only process if this request is for our table and it's a new pending request
-        if (table == null || e.TableId != table.Id || e.Status != JoinRequestStatus.Pending)
+        // Ignore events if component is disposed or not relevant to our table
+        if (_disposed || table == null || e.TableId != table.Id || e.Status != JoinRequestStatus.Pending)
             return;
 
         // Refresh the pending requests list to show the new request
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             await LoadPendingRequests();
             StateHasChanged();
@@ -451,6 +455,9 @@ else
 
     public async void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEventsAsync();
         // Note: TimeEventPublisher is a singleton service, do not dispose

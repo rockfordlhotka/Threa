@@ -438,6 +438,7 @@ private int currentPlayerId;
 private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
 private bool timeEventSubscribed;
+private bool _disposed;
 
 // Detach confirmation state
 private bool showDetachConfirmation;
@@ -630,10 +631,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.CampaignId != table.Id.ToString()) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             try
             {
@@ -673,10 +674,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.CampaignId != table.Id.ToString()) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             try
             {
@@ -718,10 +719,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnCombatStateReceived(object? sender, CombatStateMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.CampaignId != table.Id.ToString()) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             try
             {
@@ -739,10 +740,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
-        // Only process if this event is for our character
-        if (character == null || e.CharacterId != character.Id) return;
+        // Ignore events if component is disposed or not our character
+        if (_disposed || character == null || e.CharacterId != character.Id) return;
 
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             try
             {
@@ -761,10 +762,10 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnTableUpdateReceived(object? sender, TableUpdateMessage e)
     {
-        // Only process if this event is for our table
-        if (table == null || e.TableId != table.Id) return;
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.TableId != table.Id) return;
 
-        InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             try
             {
@@ -800,6 +801,9 @@ private async Task SelectCharacterAsync(int characterId)
 
     public async void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEvents();
     }
