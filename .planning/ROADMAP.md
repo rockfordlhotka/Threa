@@ -68,10 +68,13 @@ Plans:
   3. GM can remove an active effect from a character
   4. GM can edit an existing effect's duration and modifiers
   5. GM can save an effect as a template and apply saved templates to characters
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 19-01: TBD
+- [ ] 19-01-PLAN.md — EffectState model and DAL layer for effect templates
+- [ ] 19-02-PLAN.md — CSLA business objects (EffectTemplate, EffectTemplateList, GenericEffectBehavior)
+- [ ] 19-03-PLAN.md — Effect management UI (EffectManagementModal, EffectFormModal)
+- [ ] 19-04-PLAN.md — Template picker and Effects tab integration
 
 ### Phase 20: Inventory Manipulation
 **Goal**: GM can directly add, remove, and manage items in character inventory
@@ -112,7 +115,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 |-------|----------------|--------|-----------|
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
-| 19. Effect Management | 0/TBD | Not started | - |
+| 19. Effect Management | 0/4 | Not started | - |
 | 20. Inventory Manipulation | 0/TBD | Not started | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
 
