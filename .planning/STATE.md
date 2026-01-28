@@ -92,6 +92,9 @@ Recent decisions affecting current work:
 - [v1.2]: JoinRequestMessage for real-time notifications via Rx.NET
 - [v1.2]: Time skip processing capped at 100 iterations to avoid UI freeze
 - [v1.2]: "In Rounds" badge shown only when in combat, hidden otherwise
+- [v1.2]: Context-aware time buttons: +1 Round in combat, calendar buttons outside combat
+- [v1.2]: Start/End Combat toggle button placed before time buttons
+- [v1.2]: Short time labels: +1 Min, +10 Min, +1 Hour, +1 Day, +1 Week
 - [v1.1]: CharacterUpdateMessage reusable for real-time dashboard updates
 
 ### Pending Todos
@@ -115,7 +118,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 16-02-PLAN.md (Phase 16 complete, v1.2 milestone complete)
+Stopped at: Completed 16-01-PLAN.md (all Phase 16 plans complete, v1.2 milestone complete)
 Resume file: None
 
 ---
