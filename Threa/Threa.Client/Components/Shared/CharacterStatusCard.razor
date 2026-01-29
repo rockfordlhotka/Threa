@@ -64,6 +64,16 @@
                     <i class="bi bi-stars"></i> @Character.EffectCount
                 </span>
             }
+            @if (Character.IsConcentrating)
+            {
+                <span class="badge bg-warning text-dark"
+                      style="font-size: 0.7rem;"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      title="Concentrating on: @Character.ConcentrationName">
+                    <i class="bi bi-bullseye"></i> Conc
+                </span>
+            }
         </div>
     </div>
 </div>
