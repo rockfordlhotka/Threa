@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 20 - Inventory Manipulation complete, ready for Phase 21
+**Current focus:** Phase 21 - Stat Editing in progress
 
 ## Current Position
 
 Milestone: v1.3 GM Character Manipulation
-Phase: 20 of 21 (Inventory Manipulation) - Complete
-Plan: 03 of 03 complete (gap closure)
-Status: Phase complete
-Last activity: 2026-01-29 - Completed 20-03-PLAN.md (Inventory Integration Fix)
+Phase: 21 of 21 (Stat Editing)
+Plan: 01 of 02 complete
+Status: In progress
+Last activity: 2026-01-29 - Completed 21-01-PLAN.md (Attribute Editing)
 
-Progress: v1.3 [██████████████████░░] 90% (5/5 phases complete)
+Progress: v1.3 [███████████████████░] 95% (6/6 phases, 1/2 plans in final phase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 49
-- Average duration: 10.2 min
-- Total execution time: 9.0 hours
+- Total plans completed: 50
+- Average duration: 10.0 min
+- Total execution time: 9.1 hours
 
 **By Milestone:**
 
@@ -31,11 +31,11 @@ Progress: v1.3 [██████████████████░░] 90
 | v1.0 | 7 | 16 | 238 min | 15 min |
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
-| v1.3 | 5 | 11 | 60.6 min | 5.5 min |
+| v1.3 | 6 | 12 | 64.1 min | 5.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 20-03 (1 min), 20-02 (6 min), 20-01 (2.0 min), 19-04 (5.0 min), 19-03 (6.3 min)
-- Trend: Excellent - Gap closure completed in 1 min
+- Last 5 plans: 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min), 20-01 (2.0 min), 19-04 (5.0 min)
+- Trend: Excellent - Attribute editing completed in 3.5 min
 
 ## Accumulated Context
 
@@ -66,16 +66,19 @@ Recent decisions affecting current work:
 - v1.3 (20-02): Inline quantity prompt for stackable items
 - v1.3 (20-02): Dropdown context menus for item actions
 - v1.3 (20-02): Currency editing via edit mode toggle
+- v1.3 (21-01): Pencil button on Attributes card header for inline edit mode
+- v1.3 (21-01): IsEditMode two-way binding with EventCallback for parent coordination
+- v1.3 (21-01): Health pools capped at new max on save
 
 ### Pending Todos
 
 **From previous milestones:**
 - Fix AP Max calculation bug (recalculate when skills change)
 
-**Completed this phase (20):**
-- ItemTemplatePickerModal for browsing item templates
-- CharacterDetailInventory with full GM manipulation (add/remove/equip/unequip/quantity/currency)
-- Gap closure: CharacterDetailInventory parameter binding fix
+**Completed this phase (21):**
+- Attribute editing with base value inputs and effective value badges
+- Edit Stats card in GM Actions with OnEditStatsRequested EventCallback
+- Validation warnings for out-of-range values
 
 ### Blockers/Concerns
 
@@ -90,8 +93,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 20-03-PLAN.md (Inventory Integration Fix)
+Stopped at: Completed 21-01-PLAN.md (Attribute Editing)
 Resume file: None
 
 ---
-*v1.3 milestone in progress - Phase 20 complete, Phase 21 next*
+*v1.3 milestone in progress - Phase 21 plan 01 complete, skill editing (21-02) next*
