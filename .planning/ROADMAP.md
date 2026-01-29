@@ -20,7 +20,7 @@ This milestone completes GM character manipulation powers by enabling direct hea
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 17: Health Management** - GM applies damage/healing to character health pools
-- [ ] **Phase 18: Wound Management** - GM tracks and manages character wounds
+- [x] **Phase 18: Wound Management** - GM tracks and manages character wounds
 - [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
 - [ ] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
 - [ ] **Phase 21: Stat Editing** - GM modifies character attributes and skills
@@ -55,8 +55,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Extend WoundState and create wound CRUD modals
-- [ ] 18-02-PLAN.md — Header wound badges and VIT damage wound prompt
+- [x] 18-01-PLAN.md — Extend WoundState and create wound CRUD modals
+- [x] 18-02-PLAN.md — Header wound badges and VIT damage wound prompt
 
 ### Phase 19: Effect Management
 **Goal**: GM can create, apply, edit, and template effects on characters
@@ -86,10 +86,11 @@ Plans:
   3. GM can equip/unequip items to/from character equipment slots
   4. GM can view character inventory before making changes
   5. Inventory changes trigger real-time dashboard updates
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: TBD
+- [ ] 20-01-PLAN.md — ItemTemplatePickerModal for browsing/selecting item templates
+- [ ] 20-02-PLAN.md — CharacterDetailInventory GM actions and currency editing
 
 ### Phase 21: Stat Editing
 **Goal**: GM can directly modify character attributes and skills
@@ -116,7 +117,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
-| 20. Inventory Manipulation | 0/TBD | Not started | - |
+| 20. Inventory Manipulation | 0/2 | Planned | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
 
 ---
