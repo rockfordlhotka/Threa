@@ -1081,4 +1081,150 @@ private async Task SelectCharacterAsync(int characterId)
             selectedTableId = Guid.Empty;
         }
     }
+
+    // ================================
+    // Concentration Result Processing
+    // ================================
+
+    /// <summary>
+    /// Processes the LastConcentrationResult from a character after concentration ends.
+    /// Handles magazine reload completion and sustained effect cleanup.
+    /// </summary>
+    private async Task ProcessConcentrationResult(GameMechanics.CharacterEdit targetCharacter)
+    {
+        var result = targetCharacter.LastConcentrationResult;
+        if (result == null) return;
+
+        try
+        {
+            switch (result.ActionType)
+            {
+                case "MagazineReload":
+                    if (result.Success)
+                    {
+                        await ExecuteMagazineReload(targetCharacter, result.Payload);
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    else
+                    {
+                        // Reload was interrupted
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
+
+                case "SustainedBreak":
+                    await ProcessSustainedBreak(result.Payload);
+                    AddLogEntry(result.Message, ActivityCategory.Effect);
+                    break;
+
+                case "SpellCast":
+                    // TODO: Implement when spell system is ready
+                    if (result.Success)
+                    {
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
+            }
+        }
+        finally
+        {
+            // Always clear the result after processing
+            targetCharacter.ClearConcentrationResult();
+        }
+    }
+
+    /// <summary>
+    /// Executes the magazine reload by updating the weapon's LoadedAmmo via WeaponAmmoState.
+    /// </summary>
+    private async Task ExecuteMagazineReload(GameMechanics.CharacterEdit targetCharacter, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = GameMechanics.Effects.Behaviors.MagazineReloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        try
+        {
+            // Fetch the weapon item from DAL
+            var weapon = await CharacterItemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null)
+            {
+                // Update LoadedAmmo via WeaponAmmoState pattern
+                var ammoState = GameMechanics.Combat.WeaponAmmoState.FromJson(weapon.CustomProperties);
+                ammoState.LoadedAmmo = payload.RoundsToLoad;
+
+                // Merge ammo state back into CustomProperties
+                weapon.CustomProperties = GameMechanics.Combat.WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, ammoState);
+
+                await CharacterItemDal.UpdateItemAsync(weapon);
+
+                // Reload equipped items to reflect the change
+                await LoadEquippedItemsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to complete magazine reload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Processes sustained concentration break by removing all linked effects from table characters.
+    /// </summary>
+    private async Task ProcessSustainedBreak(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        // Parse the payload to get LinkedEffectIds
+        try
+        {
+            var payload = System.Text.Json.JsonSerializer.Deserialize<SustainedBreakPayload>(payloadJson);
+            if (payload?.LinkedEffectIds == null || payload.LinkedEffectIds.Count == 0) return;
+
+            var linkedIds = new HashSet<Guid>(payload.LinkedEffectIds);
+
+            // For the current character, remove matching effects
+            if (character != null)
+            {
+                var effectsToRemove = character.Effects
+                    .Where(e => linkedIds.Contains(e.Id))
+                    .ToList();
+
+                foreach (var effect in effectsToRemove)
+                {
+                    character.Effects.RemoveEffect(effect.Id);
+                }
+
+                // Also remove effects that have matching SourceEffectId
+                var linkedBySource = character.Effects
+                    .Where(e => e.SourceEffectId.HasValue && linkedIds.Contains(e.SourceEffectId.Value))
+                    .ToList();
+
+                foreach (var effect in linkedBySource)
+                {
+                    character.Effects.RemoveEffect(effect.Id);
+                }
+
+                // Save if any effects were removed
+                if (effectsToRemove.Count > 0 || linkedBySource.Count > 0)
+                {
+                    await characterPortal.UpdateAsync(character);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error processing sustained break: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Payload structure for sustained break result.
+    /// </summary>
+    private class SustainedBreakPayload
+    {
+        public List<Guid>? LinkedEffectIds { get; set; }
+        public string? SpellName { get; set; }
+    }
 }
