@@ -35,10 +35,28 @@ namespace GameMechanics.Combat
 
     /// <summary>
     /// Calculates passive defense TV.
+    /// For concentrating defenders, a concentration check is performed after damage calculation.
     /// </summary>
     private DefenseResult ResolvePassive(DefenseRequest request)
     {
-      return DefenseResult.Passive(request.DodgeAS);
+      var result = DefenseResult.Passive(request.DodgeAS);
+
+      // Passive defense triggers concentration check AFTER damage is determined
+      // The caller sets DamageDealt and AttackerAV when calling this
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        // Perform concentration check: Focus AS + 4dF+ vs attacker AV
+        // Damage penalty: -1 per 2 damage dealt
+        var checkResult = request.Defender.CheckConcentration(
+          request.AttackerAV,
+          request.DamageDealt,
+          _diceRoller);
+
+        result.ConcentrationCheck = checkResult;
+        result.ConcentrationBroken = !checkResult.Success;
+      }
+
+      return result;
     }
 
     /// <summary>
