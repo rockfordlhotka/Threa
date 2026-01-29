@@ -126,16 +126,16 @@ Plans:
   9. Passive defense triggers concentration check (Focus skill vs attacker AV, with damage penalty)
   10. Concentration automatically breaks on incapacitation or FAT/VIT reaching 0
   11. UI displays concentration type, progress (for casting), linked effects (for sustained), and drain cost
-**Plans**: TBD (research complete, planning needed)
+**Plans**: 7 plans
 
 Plans:
-- [ ] 22-01-PLAN.md — ConcentrationState schema, EffectRecord linking properties, database migration
-- [ ] 22-02-PLAN.md — ConcentrationBehavior: casting time (OnTick progress, OnExpire execution, OnRemove cleanup)
+- [x] 22-01-PLAN.md — ConcentrationState schema, EffectRecord linking properties, payload classes
+- [x] 22-02-PLAN.md — ConcentrationBehavior: casting time (OnTick progress, OnExpire execution, OnRemove cleanup)
 - [ ] 22-03-PLAN.md — ConcentrationBehavior: sustained effects (FAT/VIT drain, linked effect removal)
-- [ ] 22-04-PLAN.md — CharacterEdit concentration methods (IsConcentrating, CheckConcentration, BreakConcentration)
-- [ ] 22-05-PLAN.md — Action integration (concentration check before actions, confirmation dialog)
+- [ ] 22-04-PLAN.md — CharacterEdit concentration methods (GetConcentrationEffect, CheckConcentration)
+- [ ] 22-05-PLAN.md — ConcentrationBreakDialog component for action confirmation
 - [ ] 22-06-PLAN.md — Defense integration (concentration check on passive defense with damage penalty)
-- [ ] 22-07-PLAN.md — UI components (concentration indicator in status card, linked effects display)
+- [ ] 22-07-PLAN.md — ConcentrationIndicator UI component for status display
 
 ## Progress
 
