@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 
 Milestone: v1.4 Concentration System
 Phase: 22 (Concentration System) - In progress
-Plan: 03 of 07 complete
-Status: Phase incomplete - 4 gaps remain
-Last activity: 2026-01-29 - Completed 22-03 (Sustained Concentration)
+Plan: 04 of 07 complete
+Status: Phase incomplete - 3 gaps remain
+Last activity: 2026-01-29 - Completed 22-04 (Character Concentration API)
 
-Progress: Phase 22 [████████░░░░░░░░░░░░] 43% (3/7 plans complete)
+Progress: Phase 22 [███████████░░░░░░░░░] 57% (4/7 plans complete)
 
 ## Performance Metrics
 
@@ -32,10 +32,10 @@ Progress: Phase 22 [████████░░░░░░░░░░░░
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3 | 6 | 13 | 66.5 min | 5.1 min |
-| v1.4 | 1 | 3 | 18 min | 6 min |
+| v1.4 | 1 | 4 | 24 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 22-03 (8 min), 22-02 (8 min), 22-01 (2 min), 21-02 (2.4 min), 21-01 (3.5 min)
+- Last 5 plans: 22-04 (6 min), 22-03 (8 min), 22-02 (8 min), 22-01 (2 min), 21-02 (2.4 min)
 - Trend: Excellent - Phase 22 progressing well
 
 ## Accumulated Context
@@ -80,6 +80,8 @@ Recent decisions affecting current work:
 - v1.4 (22-03): Drain via PendingDamage pattern (matches health pool processing)
 - v1.4 (22-03): Effective pool check (Value - PendingDamage) for exhaustion detection
 - v1.4 (22-03): LinkedEffectIds in LastConcentrationResult for cross-character cleanup
+- v1.4 (22-04): Focus AS + damage penalty for concentration checks
+- v1.4 (22-04): No Focus skill = automatic concentration failure
 
 ### Pending Todos
 
@@ -97,6 +99,7 @@ Recent decisions affecting current work:
 - Phase 22 Plan 01: Data layer foundation with ConcentrationState schema, effect linking, payload classes
 - Phase 22 Plan 02: Casting-time concentration lifecycle with OnTick/OnExpire/OnRemove implementation
 - Phase 22 Plan 03: Sustained concentration with FAT/VIT drain and linked effect removal preparation
+- Phase 22 Plan 04: Character concentration API with Focus skill check and damage penalty
 
 ### Blockers/Concerns
 
@@ -111,8 +114,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 22-03-PLAN.md (Sustained Concentration)
+Stopped at: Completed 22-04-PLAN.md (Character Concentration API)
 Resume file: None
 
 ---
-*v1.4 Concentration System in progress - 3/7 plans complete*
+*v1.4 Concentration System in progress - 4/7 plans complete*
