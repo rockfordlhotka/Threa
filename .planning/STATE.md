@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.3 GM Character Manipulation - COMPLETE
+**Current focus:** v1.4 Concentration System - In progress
 
 ## Current Position
 
 Milestone: v1.4 Concentration System
 Phase: 22 (Concentration System) - In progress
-Plan: 01 of 02 complete
-Status: In progress
-Last activity: 2026-01-29 - Completed 22-01-PLAN.md (Data Layer Foundation)
+Plan: 02 of 02 complete
+Status: Phase complete
+Last activity: 2026-01-29 - Completed 22-02-PLAN.md (ConcentrationBehavior Casting Time)
 
-Progress: Phase 22 [██████████░░░░░░░░░░] 50% (1/2 plans complete)
+Progress: Phase 22 [████████████████████] 100% (2/2 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 51
-- Average duration: 9.9 min
-- Total execution time: 9.2 hours
+- Total plans completed: 53
+- Average duration: 9.8 min
+- Total execution time: 9.4 hours
 
 **By Milestone:**
 
@@ -32,10 +32,11 @@ Progress: Phase 22 [██████████░░░░░░░░░░
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3 | 6 | 13 | 66.5 min | 5.1 min |
+| v1.4 | 1 | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 22-01 (2 min), 21-02 (2.4 min), 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min)
-- Trend: Excellent - Phase 22 data layer in 2 min
+- Last 5 plans: 22-02 (8 min), 22-01 (2 min), 21-02 (2.4 min), 21-01 (3.5 min), 20-03 (1 min)
+- Trend: Excellent - Phase 22 complete in 10 min total
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - v1.4 (22-01): JSON blob storage continues (no schema migration for SQLite)
 - v1.4 (22-01): Effect linking via SourceEffectId/SourceCasterId
 - v1.4 (22-01): Nested payload JSON for deferred actions
+- v1.4 (22-02): CompleteEarly vs ExpireEarly distinction for OnExpire vs OnRemove
 
 ### Pending Todos
 
@@ -88,8 +90,9 @@ Recent decisions affecting current work:
 - Inventory manipulation with item grants (Phase 20)
 - Stat editing for attributes and skills (Phase 21)
 
-**In progress (v1.4 Concentration System):**
-- Phase 22 Plan 01 complete: Data layer foundation with ConcentrationState schema, effect linking, payload classes
+**Completed (v1.4 Concentration System):**
+- Phase 22 Plan 01: Data layer foundation with ConcentrationState schema, effect linking, payload classes
+- Phase 22 Plan 02: Casting-time concentration lifecycle with OnTick/OnExpire/OnRemove implementation
 
 ### Blockers/Concerns
 
@@ -104,8 +107,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 22-01-PLAN.md (Data Layer Foundation)
-Resume file: .planning/phases/22-concentration-system/22-02-PLAN.md
+Stopped at: Completed 22-02-PLAN.md (ConcentrationBehavior Casting Time)
+Resume file: None - Phase 22 complete
 
 ---
-*v1.4 Concentration System in progress - Phase 22 Plan 01 complete*
+*v1.4 Concentration System in progress - Phase 22 complete*
