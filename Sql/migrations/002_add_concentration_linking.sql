@@ -1,0 +1,22 @@
+-- Migration: Add concentration effect linking columns
+-- Date: 2026-01-29
+-- Purpose: Support sustained concentration effects that link to active spell effects on targets
+--
+-- NOTE: Current SQLite implementation stores CharacterEffect as JSON blob.
+-- This migration is a placeholder for future relational schema.
+-- The new properties (SourceEffectId, SourceCasterId) are automatically
+-- serialized/deserialized within the JSON column.
+--
+-- This migration file is provided for documentation and future SQL Server implementation.
+
+-- For future relational schema (not currently used):
+-- ALTER TABLE CharacterEffects ADD COLUMN SourceEffectId TEXT NULL;
+-- ALTER TABLE CharacterEffects ADD COLUMN SourceCasterId TEXT NULL;
+--
+-- CREATE INDEX IF NOT EXISTS IX_CharacterEffects_SourceEffectId
+-- ON CharacterEffects(SourceEffectId)
+-- WHERE SourceEffectId IS NOT NULL;
+--
+-- CREATE INDEX IF NOT EXISTS IX_CharacterEffects_SourceCasterId
+-- ON CharacterEffects(SourceCasterId)
+-- WHERE SourceCasterId IS NOT NULL;
