@@ -198,6 +198,28 @@ public class EffectRecord : BusinessBase<EffectRecord>
     set => SetProperty(IsCursedProperty, value);
   }
 
+  public static readonly PropertyInfo<Guid?> SourceEffectIdProperty = RegisterProperty<Guid?>(nameof(SourceEffectId));
+  /// <summary>
+  /// Links an active spell effect back to the concentration effect on the caster.
+  /// When concentration breaks, all effects with this SourceEffectId are removed.
+  /// </summary>
+  public Guid? SourceEffectId
+  {
+    get => GetProperty(SourceEffectIdProperty);
+    set => SetProperty(SourceEffectIdProperty, value);
+  }
+
+  public static readonly PropertyInfo<Guid?> SourceCasterIdProperty = RegisterProperty<Guid?>(nameof(SourceCasterId));
+  /// <summary>
+  /// The character ID of the caster who is concentrating on this effect.
+  /// Used to find the caster when displaying effect information.
+  /// </summary>
+  public Guid? SourceCasterId
+  {
+    get => GetProperty(SourceCasterIdProperty);
+    set => SetProperty(SourceCasterIdProperty, value);
+  }
+
   #endregion
 
   #region Computed Properties
@@ -257,10 +279,10 @@ public class EffectRecord : BusinessBase<EffectRecord>
     }
 
     // Fall back to round-based for legacy effects
-    // Convert current game time to rounds (each round = 6 seconds)
+    // Convert current game time to rounds (each round = 3 seconds)
     if (DurationRounds.HasValue && CreatedAtEpochSeconds.HasValue)
     {
-      long roundsPassed = (currentGameTimeSeconds - CreatedAtEpochSeconds.Value) / 6;
+      long roundsPassed = (currentGameTimeSeconds - CreatedAtEpochSeconds.Value) / 3;
       return roundsPassed >= DurationRounds.Value;
     }
 
@@ -340,8 +362,8 @@ public class EffectRecord : BusinessBase<EffectRecord>
         CreatedAtEpochSeconds = character.CurrentGameTimeSeconds;
         if (durationRounds.HasValue)
         {
-          // Each round = 6 seconds
-          long durationSeconds = durationRounds.Value * 6L;
+          // Each round = 3 seconds
+          long durationSeconds = durationRounds.Value * 3L;
           ExpiresAtEpochSeconds = CreatedAtEpochSeconds.Value + durationSeconds;
         }
       }
@@ -437,6 +459,10 @@ public class EffectRecord : BusinessBase<EffectRecord>
       SourceItemId = dto.SourceItemId;
       ItemEffectTrigger = dto.ItemEffectTrigger;
       IsCursed = dto.IsCursed;
+
+      // Concentration linking properties
+      SourceEffectId = dto.SourceEffectId;
+      SourceCasterId = dto.SourceCasterId;
     }
   }
 
@@ -484,6 +510,10 @@ public class EffectRecord : BusinessBase<EffectRecord>
       dto.SourceItemId = SourceItemId;
       dto.ItemEffectTrigger = ItemEffectTrigger;
       dto.IsCursed = IsCursed;
+
+      // Concentration linking properties
+      dto.SourceEffectId = SourceEffectId;
+      dto.SourceCasterId = SourceCasterId;
     }
   }
 
