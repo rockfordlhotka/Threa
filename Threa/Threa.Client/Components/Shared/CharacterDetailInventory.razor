@@ -47,6 +47,31 @@
     }
 </style>
 
+@if (!string.IsNullOrEmpty(feedbackMessage))
+{
+    <div class="alert @feedbackClass alert-dismissible fade show mb-3" role="alert">
+        <i class="bi @feedbackIcon me-1"></i>@feedbackMessage
+        <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+    </div>
+}
+
+@if (showAddQuantityPrompt && pendingAddTemplate != null)
+{
+    <div class="alert alert-info mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span>Add <strong>@pendingAddTemplate.Name</strong> - Quantity:</span>
+            <input type="number" class="form-control form-control-sm" style="width: 80px;"
+                   @bind="pendingAddQuantity" min="1" />
+            <button class="btn btn-sm btn-success" @onclick="ConfirmAddItem" disabled="@isProcessing">
+                <i class="bi bi-check me-1"></i>Add
+            </button>
+            <button class="btn btn-sm btn-secondary" @onclick="CancelAddItem">
+                Cancel
+            </button>
+        </div>
+    </div>
+}
+
 <div class="row">
     <!-- Left: Equipped Items by Slot -->
     <div class="col-md-5">
@@ -63,7 +88,15 @@
                             <span class="text-muted">@slot.GetDisplayName()</span>
                             @if (equipped != null)
                             {
-                                <span>@GetItemName(equipped)</span>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="flex-grow-1">@GetItemName(equipped)</span>
+                                    <button class="btn btn-sm btn-link text-danger p-0"
+                                            @onclick="() => UnequipItem(equipped)"
+                                            disabled="@isProcessing"
+                                            title="Unequip">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
                             }
                             else
                             {
@@ -79,7 +112,12 @@
     <!-- Right: Carried Items Grid -->
     <div class="col-md-7">
         <div class="card">
-            <div class="card-header bg-primary text-white"><strong>Inventory</strong></div>
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <strong>Inventory</strong>
+                <button class="btn btn-sm btn-light" @onclick="OpenAddItemModal" disabled="@(isProcessing || showAddQuantityPrompt)">
+                    <i class="bi bi-plus-lg me-1"></i>Add Item
+                </button>
+            </div>
             <div class="card-body">
                 @if (isLoading)
                 {
@@ -94,12 +132,54 @@
                     <div class="inventory-grid">
                         @foreach (var item in items.Where(i => !i.IsEquipped && i.ContainerItemId == null))
                         {
-                            <div class="inventory-tile">
-                                <div class="item-icon">@GetItemIcon(item)</div>
-                                <div class="item-name">@GetItemName(item)</div>
-                                @if (item.StackSize > 1)
+                            <div class="inventory-tile position-relative">
+                                <div class="dropdown position-absolute" style="top: 2px; right: 2px;">
+                                    <button class="btn btn-sm p-0 text-muted" data-bs-toggle="dropdown" style="line-height: 1;">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        @if (CanEquip(item))
+                                        {
+                                            <li><button class="dropdown-item" @onclick="() => EquipItem(item)" disabled="@isProcessing">
+                                                <i class="bi bi-box-arrow-in-up me-2"></i>Equip
+                                            </button></li>
+                                        }
+                                        @if (IsStackable(item))
+                                        {
+                                            <li><button class="dropdown-item" @onclick="() => StartEditQuantity(item)" disabled="@isProcessing">
+                                                <i class="bi bi-hash me-2"></i>Set Quantity
+                                            </button></li>
+                                        }
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" @onclick="() => RemoveItem(item)" disabled="@isProcessing">
+                                            <i class="bi bi-trash me-2"></i>Remove
+                                        </button></li>
+                                    </ul>
+                                </div>
+
+                                @if (editingQuantityItemId == item.Id)
                                 {
-                                    <div class="item-quantity">x@item.StackSize</div>
+                                    <div class="quantity-edit-overlay">
+                                        <input type="number" class="form-control form-control-sm" style="width: 60px;"
+                                               @bind="editingQuantityValue" min="1" max="@GetMaxStackSize(item)" />
+                                        <div class="btn-group btn-group-sm mt-1">
+                                            <button class="btn btn-success btn-sm" @onclick="() => SaveQuantity(item)">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button class="btn btn-secondary btn-sm" @onclick="CancelEditQuantity">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="item-icon">@GetItemIcon(item)</div>
+                                    <div class="item-name" title="@GetItemName(item)">@GetItemName(item)</div>
+                                    @if (item.StackSize > 1)
+                                    {
+                                        <div class="item-quantity">x@item.StackSize</div>
+                                    }
                                 }
                             </div>
                         }
@@ -257,6 +337,346 @@
             ItemType.Miscellaneous => "?",
             _ => "?"
         };
+    }
+
+    // Item operation methods
+
+    private async Task OpenAddItemModal()
+    {
+        var selectedTemplate = await DialogService.OpenAsync<ItemTemplatePickerModal>(
+            "Select Item to Add",
+            null,
+            new DialogOptions { Width = "900px", Height = "600px", CloseDialogOnOverlayClick = true });
+
+        if (selectedTemplate is ItemTemplateInfo template)
+        {
+            // Check if item is stackable to determine if we need quantity prompt
+            var fullTemplate = await templateDal.GetTemplateAsync(template.Id);
+
+            if (fullTemplate.IsStackable && fullTemplate.MaxStackSize > 1)
+            {
+                // Show inline quantity prompt
+                pendingAddTemplate = template;
+                pendingAddQuantity = 1;
+                showAddQuantityPrompt = true;
+            }
+            else
+            {
+                // Non-stackable: add immediately with quantity 1
+                await AddItemToInventory(template, 1);
+            }
+        }
+    }
+
+    private void CancelAddItem()
+    {
+        pendingAddTemplate = null;
+        pendingAddQuantity = 1;
+        showAddQuantityPrompt = false;
+    }
+
+    private async Task ConfirmAddItem()
+    {
+        if (pendingAddTemplate == null) return;
+
+        var template = pendingAddTemplate;
+        var quantity = Math.Max(1, pendingAddQuantity);
+
+        // Clear the prompt state before async operation
+        pendingAddTemplate = null;
+        showAddQuantityPrompt = false;
+
+        await AddItemToInventory(template, quantity);
+    }
+
+    private async Task AddItemToInventory(ItemTemplateInfo templateInfo, int quantity)
+    {
+        isProcessing = true;
+        ClearFeedback();
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+
+            // Fetch full template to access Effects and other detailed properties
+            var fullTemplate = await templateDal.GetTemplateAsync(templateInfo.Id);
+
+            var newItem = new CharacterItem
+            {
+                Id = Guid.NewGuid(),
+                ItemTemplateId = templateInfo.Id,
+                OwnerCharacterId = CharacterId,
+                ContainerItemId = null,
+                StackSize = quantity,
+                IsEquipped = false,
+                EquippedSlot = EquipmentSlot.None,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await itemManagementService.AddItemToInventoryAsync(character, newItem);
+
+            if (result.Success)
+            {
+                await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.InventoryChanged,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Added {quantity}x {templateInfo.Name}"
+                });
+
+                ShowFeedback($"Added {quantity}x {templateInfo.Name}", "alert-success", "bi-check-circle");
+                await LoadItemsAsync();
+            }
+            else
+            {
+                ShowFeedback(result.ErrorMessage!, "alert-danger", "bi-exclamation-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task RemoveItem(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        var needsConfirmation = item.IsEquipped || (template?.Rarity >= ItemRarity.Rare);
+
+        if (needsConfirmation)
+        {
+            var confirmed = await DialogService.Confirm(
+                $"Remove {GetItemName(item)}?",
+                "Confirm Removal",
+                new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+        }
+
+        isProcessing = true;
+        ClearFeedback();
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+
+            var blockReason = itemManagementService.GetDropBlockReason(character, item.Id);
+            if (blockReason != null)
+            {
+                ShowFeedback($"Cannot remove: {blockReason}", "alert-warning", "bi-exclamation-triangle");
+                return;
+            }
+
+            var result = await itemManagementService.RemoveItemFromInventoryAsync(character, item.Id);
+
+            if (result.Success)
+            {
+                await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.InventoryChanged,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Removed {GetItemName(item)}"
+                });
+
+                ShowFeedback($"Removed {GetItemName(item)}", "alert-success", "bi-check-circle");
+                await LoadItemsAsync();
+            }
+            else
+            {
+                ShowFeedback(result.ErrorMessage!, "alert-danger", "bi-exclamation-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task EquipItem(CharacterItem item)
+    {
+        isProcessing = true;
+        ClearFeedback();
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+            var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+
+            if (template == null)
+            {
+                ShowFeedback("Item template not found", "alert-danger", "bi-exclamation-circle");
+                return;
+            }
+
+            var targetSlot = template.EquipmentSlot;
+            if (targetSlot == EquipmentSlot.None)
+            {
+                ShowFeedback("This item cannot be equipped", "alert-warning", "bi-exclamation-triangle");
+                return;
+            }
+
+            var result = await itemManagementService.EquipItemAsync(character, item.Id, targetSlot);
+
+            if (result.Success)
+            {
+                await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.InventoryChanged,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Equipped {GetItemName(item)}"
+                });
+
+                ShowFeedback($"Equipped {GetItemName(item)}", "alert-success", "bi-check-circle");
+                await LoadItemsAsync();
+            }
+            else
+            {
+                ShowFeedback(result.ErrorMessage!, "alert-danger", "bi-exclamation-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task UnequipItem(CharacterItem item)
+    {
+        isProcessing = true;
+        ClearFeedback();
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+
+            var blockReason = itemManagementService.GetUnequipBlockReason(character, item.Id);
+            if (blockReason != null)
+            {
+                ShowFeedback($"Cannot unequip: {blockReason}", "alert-warning", "bi-exclamation-triangle");
+                return;
+            }
+
+            var result = await itemManagementService.UnequipItemAsync(character, item.Id);
+
+            if (result.Success)
+            {
+                await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.InventoryChanged,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Unequipped {GetItemName(item)}"
+                });
+
+                ShowFeedback($"Unequipped {GetItemName(item)}", "alert-success", "bi-check-circle");
+                await LoadItemsAsync();
+            }
+            else
+            {
+                ShowFeedback(result.ErrorMessage!, "alert-danger", "bi-exclamation-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private bool CanEquip(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        return template?.EquipmentSlot != EquipmentSlot.None && !item.IsEquipped;
+    }
+
+    private bool IsStackable(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        return template?.IsStackable ?? false;
+    }
+
+    private int GetMaxStackSize(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        return template?.MaxStackSize ?? 99;
+    }
+
+    private void StartEditQuantity(CharacterItem item)
+    {
+        editingQuantityItemId = item.Id;
+        editingQuantityValue = item.StackSize;
+    }
+
+    private void CancelEditQuantity()
+    {
+        editingQuantityItemId = null;
+    }
+
+    private async Task SaveQuantity(CharacterItem item)
+    {
+        if (editingQuantityValue < 1)
+        {
+            ShowFeedback("Quantity must be at least 1", "alert-warning", "bi-exclamation-triangle");
+            return;
+        }
+
+        if (editingQuantityValue > GetMaxStackSize(item))
+        {
+            editingQuantityValue = GetMaxStackSize(item);
+        }
+
+        isProcessing = true;
+        ClearFeedback();
+
+        try
+        {
+            // Update via DAL directly (quantity change doesn't need ItemManagementService)
+            item.StackSize = editingQuantityValue;
+            await itemDal.UpdateItemAsync(item);
+
+            await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = CharacterId,
+                UpdateType = CharacterUpdateType.InventoryChanged,
+                CampaignId = TableId.ToString(),
+                SourceId = "GM",
+                Description = $"Set {GetItemName(item)} quantity to {editingQuantityValue}"
+            });
+
+            editingQuantityItemId = null;
+            ShowFeedback($"Updated quantity to {editingQuantityValue}", "alert-success", "bi-check-circle");
+            await LoadItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
     }
 
     private void ShowFeedback(string message, string alertClass, string icon)
