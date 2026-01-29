@@ -228,6 +228,113 @@ namespace GameMechanics
       private set => LoadProperty(EffectsProperty, value);
     }
 
+    /// <summary>
+    /// Gets the active concentration effect on this character, if any.
+    /// </summary>
+    /// <returns>The concentration effect, or null if not concentrating</returns>
+    public EffectRecord? GetConcentrationEffect()
+    {
+      foreach (var effect in Effects)
+      {
+        if (effect.EffectType == EffectType.Concentration)
+          return effect;
+      }
+      return null;
+    }
+
+    /// <summary>
+    /// Gets the type of concentration the character is performing.
+    /// </summary>
+    /// <returns>The concentration type (e.g., "MagazineReload", "SustainedSpell"), or null if not concentrating</returns>
+    public string? GetConcentrationType()
+    {
+      var effect = GetConcentrationEffect();
+      if (effect == null)
+        return null;
+
+      var state = ConcentrationState.FromJson(effect.BehaviorState);
+      return state?.ConcentrationType;
+    }
+
+    /// <summary>
+    /// Performs a concentration check against an attacker's AV.
+    /// Called when the character uses passive defense while concentrating.
+    /// </summary>
+    /// <param name="attackerAV">The attacker's Attack Value (target value for the check)</param>
+    /// <param name="damageDealt">Damage dealt by the attack (applies -1 per 2 damage penalty)</param>
+    /// <param name="diceRoller">Dice roller for testability</param>
+    /// <returns>Result of the concentration check</returns>
+    public ConcentrationCheckResult CheckConcentration(int attackerAV, int damageDealt, IDiceRoller diceRoller)
+    {
+      // Check if actually concentrating
+      if (GetConcentrationEffect() == null)
+      {
+        return new ConcentrationCheckResult
+        {
+          Success = true,  // Not concentrating, no check needed
+          Reason = "Not concentrating"
+        };
+      }
+
+      // Find Focus skill
+      var focusSkill = Skills.FirstOrDefault(s =>
+          s.Name.Equals("Focus", StringComparison.OrdinalIgnoreCase));
+
+      if (focusSkill == null)
+      {
+        // No Focus skill - automatic failure
+        ConcentrationBehavior.BreakConcentration(this, "No Focus skill - concentration broken");
+        return new ConcentrationCheckResult
+        {
+          Success = false,
+          Reason = "No Focus skill",
+          TV = attackerAV
+        };
+      }
+
+      // Calculate damage penalty: -1 per 2 damage dealt (round down)
+      int damagePenalty = -(damageDealt / 2);
+
+      // Calculate Focus AS (uses skill's AbilityScore property which includes attribute + bonus)
+      int focusAS = focusSkill.AbilityScore + damagePenalty;
+
+      // Roll 4dF+
+      int roll = diceRoller.Roll4dFPlus();
+
+      // Calculate result
+      int result = focusAS + roll;
+      bool success = result >= attackerAV;
+
+      // Break concentration if failed
+      if (!success)
+      {
+        string reason = $"Failed concentration check ({result} vs {attackerAV})";
+        ConcentrationBehavior.BreakConcentration(this, reason);
+      }
+
+      return new ConcentrationCheckResult
+      {
+        Success = success,
+        AS = focusAS,
+        Roll = roll,
+        Result = result,
+        TV = attackerAV,
+        DamagePenalty = damagePenalty,
+        Reason = success ? null : "Check failed"
+      };
+    }
+
+    /// <summary>
+    /// Performs a concentration check against an attacker's AV using default dice roller.
+    /// </summary>
+    /// <param name="attackerAV">The attacker's Attack Value (target value for the check)</param>
+    /// <param name="damageDealt">Damage dealt by the attack (applies -1 per 2 damage penalty)</param>
+    /// <returns>Result of the concentration check</returns>
+    public ConcentrationCheckResult CheckConcentration(int attackerAV, int damageDealt)
+    {
+      return CheckConcentration(attackerAV, damageDealt, new RandomDiceRoller());
+    }
+
     public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
     [Display(Name = "Is passed out")]
     public bool IsPassedOut
@@ -873,7 +980,7 @@ namespace GameMechanics
       protected override void Execute(IRuleContext context)
       {
         var target = (CharacterEdit)context.Target;
-        
+
         // Only validate if character is not playable yet
         if (!target.IsPlayable)
         {
@@ -885,5 +992,46 @@ namespace GameMechanics
         }
       }
     }
+  }
+
+  /// <summary>
+  /// Result of a concentration check when defending passively while concentrating.
+  /// </summary>
+  public class ConcentrationCheckResult
+  {
+    /// <summary>
+    /// True if concentration was maintained, false if broken.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// The Ability Score used (Focus AS with damage penalty applied).
+    /// </summary>
+    public int AS { get; set; }
+
+    /// <summary>
+    /// The 4dF+ roll result.
+    /// </summary>
+    public int Roll { get; set; }
+
+    /// <summary>
+    /// The total result (AS + Roll).
+    /// </summary>
+    public int Result { get; set; }
+
+    /// <summary>
+    /// The Target Value (attacker's AV).
+    /// </summary>
+    public int TV { get; set; }
+
+    /// <summary>
+    /// The damage penalty applied (-1 per 2 damage).
+    /// </summary>
+    public int DamagePenalty { get; set; }
+
+    /// <summary>
+    /// Reason for failure (if Success is false).
+    /// </summary>
+    public string? Reason { get; set; }
   }
 }
