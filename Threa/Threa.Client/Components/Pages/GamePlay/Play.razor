@@ -692,6 +692,9 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
+
+                    // Process any concentration results after effects tick/expire
+                    await ProcessConcentrationResult(character);
                 }
 
                 StateHasChanged();
@@ -778,6 +781,9 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
+
+                    // Process any concentration results after effects expire
+                    await ProcessConcentrationResult(character);
                 }
 
                 StateHasChanged();
