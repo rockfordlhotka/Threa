@@ -124,11 +124,17 @@
                                           CharacterId="selectedCharacterId"
                                           TableId="TableId"
                                           OnCharacterRemoved="OnCharacterRemoved"
-                                          OnCharacterUpdated="OnCharacterUpdated" />
+                                          OnCharacterUpdated="OnCharacterUpdated"
+                                          OnEditStatsRequested="SwitchToSheetAndEdit" />
             }
             else if (activeTab == "Character Sheet")
             {
-                <CharacterDetailSheet Character="character" />
+                <CharacterDetailSheet Character="character"
+                                       CharacterId="selectedCharacterId"
+                                       TableId="TableId"
+                                       IsEditMode="@isEditMode"
+                                       IsEditModeChanged="@((bool val) => { isEditMode = val; StateHasChanged(); })"
+                                       OnCharacterUpdated="OnCharacterUpdated" />
             }
             else if (activeTab == "Effects")
             {
@@ -185,6 +191,7 @@
     private CharacterEdit? character;
     private string? currentGmNotes;
     private bool subscribed;
+    private bool isEditMode;
 
     protected override async Task OnInitializedAsync()
     {
@@ -264,6 +271,15 @@
     {
         // Reload the character to reflect changes
         await LoadCharacterAsync();
+    }
+
+    private void SwitchToSheetAndEdit()
+    {
+        activeTab = "Character Sheet";
+        isEditMode = true;
+        // CharacterDetailSheet's OnParametersSetAsync will detect IsEditMode=true
+        // and call LoadEditingCharacter() to fetch the character for editing
+        StateHasChanged();
     }
 
     private void OnCharacterRemoved()
