@@ -186,23 +186,55 @@ public class ConcentrationBehavior : IEffectBehavior
 /// </summary>
 public class ConcentrationState
 {
+    // ==== EXISTING FIELDS ====
     [JsonPropertyName("type")]
-    public string ConcentrationType { get; set; } = "";
+    public string ConcentrationType { get; set; } = "";  // "MagazineReload", "SpellCasting", "SustainedSpell"
 
     [JsonPropertyName("targetItemId")]
-    public Guid? TargetItemId { get; set; }
+    public Guid? TargetItemId { get; set; }             // Magazine being reloaded
 
     [JsonPropertyName("targetItemId2")]
-    public Guid? SourceItemId { get; set; }
+    public Guid? SourceItemId { get; set; }             // Weapon using the magazine
 
     [JsonPropertyName("totalRequired")]
-    public int TotalRequired { get; set; }
+    public int TotalRequired { get; set; }              // Total rounds needed
 
     [JsonPropertyName("currentProgress")]
-    public int CurrentProgress { get; set; }
+    public int CurrentProgress { get; set; }            // Rounds completed
 
     [JsonPropertyName("roundsPerTick")]
-    public int RoundsPerTick { get; set; } = 3;
+    public int RoundsPerTick { get; set; } = 3;         // Progress per round (usually 1)
+
+    // ==== NEW FIELDS: Casting-Time Concentration ====
+
+    [JsonPropertyName("deferredActionType")]
+    public string? DeferredActionType { get; set; }     // "MagazineReload", "SpellCast"
+
+    [JsonPropertyName("deferredActionPayload")]
+    public string? DeferredActionPayload { get; set; }  // JSON-serialized action parameters
+
+    [JsonPropertyName("completionMessage")]
+    public string? CompletionMessage { get; set; }      // "Magazine reloaded!"
+
+    [JsonPropertyName("interruptionMessage")]
+    public string? InterruptionMessage { get; set; }    // "Reload interrupted!"
+
+    // ==== NEW FIELDS: Sustained Concentration ====
+
+    [JsonPropertyName("spellName")]
+    public string? SpellName { get; set; }              // Name of sustained spell
+
+    [JsonPropertyName("linkedEffectIds")]
+    public List<Guid>? LinkedEffectIds { get; set; }    // Active effects on target(s)
+
+    [JsonPropertyName("fatDrainPerRound")]
+    public int FatDrainPerRound { get; set; }           // FAT cost per round (0 for casting-time)
+
+    [JsonPropertyName("vitDrainPerRound")]
+    public int VitDrainPerRound { get; set; }           // VIT cost per round (0 for casting-time)
+
+    [JsonPropertyName("sourceCasterId")]
+    public Guid? SourceCasterId { get; set; }           // Character ID of caster
 
     public string Serialize()
     {
