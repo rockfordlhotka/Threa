@@ -54,9 +54,36 @@ namespace GameMechanics.Combat
 
         result.ConcentrationCheck = checkResult;
         result.ConcentrationBroken = !checkResult.Success;
+
+        // Auto-break on incapacitation: if health pools would be depleted, break concentration
+        // This happens even if the concentration check succeeded
+        if (!result.ConcentrationBroken && ConcentrationBehavior.IsConcentrating(request.Defender))
+        {
+          CheckHealthDepletionBreak(request.Defender, result);
+        }
       }
 
       return result;
+    }
+
+    /// <summary>
+    /// Checks if the defender's health pools are depleted and breaks concentration if so.
+    /// Called after concentration check for passive defense.
+    /// </summary>
+    private static void CheckHealthDepletionBreak(CharacterEdit defender, DefenseResult result)
+    {
+      // Check current health pools
+      // Using current damage values - if FAT or VIT is already at/below 0 effective value
+      bool fatigueExhausted = defender.Fatigue.Value <= defender.Fatigue.PendingDamage;
+      bool vitalityExhausted = defender.Vitality.Value <= defender.Vitality.PendingDamage;
+
+      if (fatigueExhausted || vitalityExhausted)
+      {
+        ConcentrationBehavior.BreakConcentration(
+          defender,
+          "Incapacitated - concentration broken");
+        result.ConcentrationBroken = true;
+      }
     }
 
     /// <summary>
