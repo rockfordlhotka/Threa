@@ -103,10 +103,11 @@ Plans:
   3. Attribute changes automatically recalculate dependent stats (health pools, Ability Scores)
   4. Skill changes automatically recalculate Ability Scores
   5. Stat changes trigger real-time dashboard updates
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 21-01: TBD
+- [ ] 21-01-PLAN.md — Attribute editing with edit mode toggle in CharacterDetailSheet
+- [ ] 21-02-PLAN.md — Skill editing and CharacterDetailModal coordination
 
 ## Progress
 
@@ -119,7 +120,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
 | 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
-| 21. Stat Editing | 0/TBD | Not started | - |
+| 21. Stat Editing | 0/2 | Not started | - |
 
 ---
 *Created: 2026-01-28 for v1.3 milestone*
