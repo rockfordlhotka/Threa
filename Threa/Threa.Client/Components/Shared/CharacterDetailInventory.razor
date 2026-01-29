@@ -4,9 +4,15 @@
 @using Threa.Dal.Dto
 @using GameMechanics
 @using GameMechanics.Items
+@using GameMechanics.Messaging
+@using Radzen
 
 @inject ICharacterItemDal itemDal
 @inject IItemTemplateDal templateDal
+@inject ItemManagementService itemManagementService
+@inject ITimeEventPublisher timeEventPublisher
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject DialogService DialogService
 
 <style>
     .inventory-grid {
@@ -121,9 +127,32 @@
     [Parameter]
     public CharacterEdit? Character { get; set; }
 
+    [Parameter]
+    public int CharacterId { get; set; }
+
+    [Parameter]
+    public Guid TableId { get; set; }
+
     private List<CharacterItem>? items;
     private Dictionary<int, ItemTemplate>? templates;
     private bool isLoading = true;
+    private bool isProcessing = false;
+    private string? feedbackMessage;
+    private string feedbackClass = "";
+    private string feedbackIcon = "";
+
+    // Currency editing state
+    private bool isEditingCurrency = false;
+    private int editPlatinum, editGold, editSilver, editCopper;
+
+    // Quantity editing state (for existing items in inventory)
+    private Guid? editingQuantityItemId = null;
+    private int editingQuantityValue = 0;
+
+    // Add item flow state (for quantity prompt after template selection)
+    private ItemTemplateInfo? pendingAddTemplate = null;
+    private int pendingAddQuantity = 1;
+    private bool showAddQuantityPrompt = false;
 
     private static readonly SlotCategory[] slotCategories = new[]
     {
@@ -228,5 +257,18 @@
             ItemType.Miscellaneous => "?",
             _ => "?"
         };
+    }
+
+    private void ShowFeedback(string message, string alertClass, string icon)
+    {
+        feedbackMessage = message;
+        feedbackClass = alertClass;
+        feedbackIcon = icon;
+        StateHasChanged();
+    }
+
+    private void ClearFeedback()
+    {
+        feedbackMessage = null;
     }
 }
