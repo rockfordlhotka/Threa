@@ -380,7 +380,7 @@ else if (character == null)
     <div class="tab-content">
         @if (activeTab == "Status")
         {
-            <TabStatus Character="character" Table="table" />
+            <TabStatus Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
         else if (activeTab == "Combat")
         {
@@ -491,6 +491,22 @@ protected override async Task OnInitializedAsync()
             {
                 errorMessage = $"Failed to load table: {ex.Message}";
             }
+        }
+    }
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    // Ensure theme is applied after render, especially important when rejoining tables
+    if (firstRender && table != null)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+        }
+        catch
+        {
+            // JS might not be ready yet, ignore
         }
     }
 }
