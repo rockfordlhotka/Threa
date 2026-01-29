@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.4 Concentration System - Complete
+**Current focus:** v1.4 Concentration System - COMPLETE
 
 ## Current Position
 
-Milestone: v1.4 Concentration System
-Phase: 22 (Concentration System) - Complete
-Plan: 07 of 07 complete
-Status: Phase complete - Milestone v1.4 complete
-Last activity: 2026-01-29 - Completed 22-07 (ConcentrationIndicator UI)
+Milestone: v1.4 Concentration System - COMPLETE
+Phase: 22 (Concentration System) - COMPLETE
+Plan: 08 of 08 complete
+Status: Phase 22 complete - All concentration system features implemented
+Last activity: 2026-01-29 - Completed 22-08-PLAN.md (action integration with ConcentrationBreakDialog)
 
-Progress: Phase 22 [████████████████████] 100% (7/7 plans complete)
+Progress: Phase 22 [████████████████████] 100% (8/8 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 56
-- Average duration: 9.5 min
-- Total execution time: 9.7 hours
+- Total plans completed: 57
+- Average duration: 9.4 min
+- Total execution time: 9.8 hours
 
 **By Milestone:**
 
@@ -32,11 +32,11 @@ Progress: Phase 22 [████████████████████
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3 | 6 | 13 | 66.5 min | 5.1 min |
-| v1.4 | 1 | 7 | 42 min | 6 min |
+| v1.4 | 1 | 8 | 48 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 22-07 (11 min), 22-06 (5 min), 22-05 (2 min), 22-04 (6 min), 22-03 (8 min)
-- Trend: Excellent - Phase 22 complete, v1.4 milestone complete
+- Last 5 plans: 22-08 (6 min), 22-07 (11 min), 22-06 (5 min), 22-05 (2 min), 22-04 (6 min)
+- Trend: Phase 22 complete - v1.4 milestone achieved
 
 ## Accumulated Context
 
@@ -87,6 +87,7 @@ Recent decisions affecting current work:
 - v1.4 (22-07): Radzen enums need full qualification in Blazor components
 - v1.4 (22-07): IsConcentrating added to TableCharacterInfo for GM dashboard badge
 - v1.4 (22-07): WeaponAmmoState.LoadedAmmo for magazine reload completion
+- v1.4 (22-08): Same concentration check pattern for all active actions
 
 ### Pending Todos
 
@@ -108,6 +109,7 @@ Recent decisions affecting current work:
 - Phase 22 Plan 05: ConcentrationBreakDialog component with static ShowAsync helper
 - Phase 22 Plan 06: Defense integration with concentration checks and auto-break on health depletion
 - Phase 22 Plan 07: ConcentrationIndicator UI with result processing for magazine reload and sustained break
+- Phase 22 Plan 08: Action integration with ConcentrationBreakDialog for attack/reload actions
 
 ### Blockers/Concerns
 
@@ -121,8 +123,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 22-07-PLAN.md (ConcentrationIndicator UI)
+Stopped at: Completed 22-08-PLAN.md (v1.4 milestone complete)
 Resume file: None
 
 ---
-*v1.4 Concentration System complete - 7/7 plans complete*
+*v1.4 Concentration System COMPLETE - 8/8 plans complete*
+*Milestone achieved: Full concentration system with casting-time, sustained, and action integration*
