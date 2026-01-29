@@ -1,6 +1,7 @@
 ﻿using Csla;
 using Csla.Core;
 using Csla.Rules;
+using GameMechanics.Effects.Behaviors;
 using GameMechanics.Items;
 using GameMechanics.Reference;
 using System;
@@ -27,6 +28,14 @@ namespace GameMechanics
     private List<EquippedItemInfo>? _equippedItems;
 
     /// <summary>
+    /// Result from the last concentration effect that completed or was interrupted.
+    /// Used by UI/controller to handle deferred actions like magazine reload.
+    /// Cleared after processing.
+    /// </summary>
+    [NonSerialized]
+    private ConcentrationCompletionResult? _lastConcentrationResult;
+
+    /// <summary>
     /// Sets equipped items for bonus calculations. Call this after fetching character.
     /// </summary>
     /// <param name="items">Character items with templates populated.</param>
@@ -46,14 +55,41 @@ namespace GameMechanics
       _equippedItems = null;
     }
 
+    /// <summary>
+    /// Result from the last concentration effect that completed or was interrupted.
+    /// The UI/controller layer should read this after processing effect expiration/removal.
+    /// </summary>
+    public ConcentrationCompletionResult? LastConcentrationResult
+    {
+      get => _lastConcentrationResult;
+      set => _lastConcentrationResult = value;
+    }
+
+    /// <summary>
+    /// Clears the last concentration result after processing.
+    /// Call this after the UI/controller has handled the result.
+    /// </summary>
+    public void ClearConcentrationResult()
+    {
+      _lastConcentrationResult = null;
+    }
+
     protected override void OnChildChanged(ChildChangedEventArgs e)
     {
-      if (!IsBeingSaved && e.ChildObject is AttributeEdit)
+      if (!IsBeingSaved)
       {
-        BusinessRules.CheckRules(FatigueProperty);
-        BusinessRules.CheckRules(VitalityProperty);
-        OnPropertyChanged(FatigueProperty);
-        OnPropertyChanged(VitalityProperty);
+        if (e.ChildObject is AttributeEdit)
+        {
+          BusinessRules.CheckRules(FatigueProperty);
+          BusinessRules.CheckRules(VitalityProperty);
+          OnPropertyChanged(FatigueProperty);
+          OnPropertyChanged(VitalityProperty);
+        }
+        else if (e.ChildObject is SkillEdit)
+        {
+          BusinessRules.CheckRules(ActionPointsProperty);
+          OnPropertyChanged(ActionPointsProperty);
+        }
       }
     }
 
@@ -450,12 +486,12 @@ namespace GameMechanics
     }
 
     /// <summary>
-    /// Processes end-of-round effects. Advances game time by 6 seconds (1 round).
+    /// Processes end-of-round effects. Advances game time by 3 seconds (1 round).
     /// </summary>
     public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
-      // Advance game time by 1 round (6 seconds)
-      CurrentGameTimeSeconds += 6;
+      // Advance game time by 1 round (3 seconds)
+      CurrentGameTimeSeconds += 3;
 
       Fatigue.EndOfRound();
       Vitality.EndOfRound(effectPortal);
@@ -524,10 +560,12 @@ namespace GameMechanics
 
       // Process pending pools and AP recovery multiple times to simulate gradual healing
       // Cap at 100 iterations to avoid performance issues
-      int totalRoundsPassed = (int)(totalSecondsPassed / 6);  // Each round = 6 seconds
+      int totalRoundsPassed = (int)(totalSecondsPassed / 3);  // Each round = 3 seconds
       int iterations = Math.Min(totalRoundsPassed, 100);
       for (int i = 0; i < iterations; i++)
       {
+        // Tick effects first to apply wound damage and other periodic effects
+        Effects.EndOfRound(CurrentGameTimeSeconds);
         Fatigue.EndOfRound();
         Vitality.EndOfRound(effectPortal);
         ActionPoints.EndOfRound();
