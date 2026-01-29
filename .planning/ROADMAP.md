@@ -86,11 +86,12 @@ Plans:
   3. GM can equip/unequip items to/from character equipment slots
   4. GM can view character inventory before making changes
   5. Inventory changes trigger real-time dashboard updates
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — ItemTemplatePickerModal for browsing/selecting item templates
-- [ ] 20-02-PLAN.md — CharacterDetailInventory GM actions and currency editing
+- [x] 20-01-PLAN.md — ItemTemplatePickerModal for browsing/selecting item templates
+- [x] 20-02-PLAN.md — CharacterDetailInventory GM actions and currency editing
+- [ ] 20-03-PLAN.md — (Gap closure) Fix CharacterDetailModal integration
 
 ### Phase 21: Stat Editing
 **Goal**: GM can directly modify character attributes and skills
@@ -117,7 +118,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
-| 20. Inventory Manipulation | 0/2 | Planned | - |
+| 20. Inventory Manipulation | 2/3 | In Progress | - |
 | 21. Stat Editing | 0/TBD | Not started | - |
 
 ---
