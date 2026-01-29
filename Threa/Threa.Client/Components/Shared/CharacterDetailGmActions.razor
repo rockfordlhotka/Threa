@@ -123,8 +123,25 @@
         </div>
     </div>
 
+    <!-- Stat Editing -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <strong><i class="bi bi-sliders me-1"></i>Edit Stats</strong>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p class="text-muted small flex-grow-1">
+                    Modify character attributes and skill levels. Changes recalculate health pools and AP.
+                </p>
+                <button class="btn btn-outline-primary w-100" @onclick="TriggerEditStats" disabled="@isProcessing">
+                    <i class="bi bi-sliders me-1"></i>Edit Stats
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Character Management -->
-    <div class="col-12">
+    <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header bg-secondary text-white">
                 <strong><i class="bi bi-gear me-1"></i>Character Management</strong>
@@ -191,6 +208,9 @@
 
     [Parameter]
     public EventCallback OnCharacterUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback OnEditStatsRequested { get; set; }
 
     // Health mode enum and state
     private enum HealthMode { Damage, Healing }
@@ -452,5 +472,10 @@
 
         // Refresh character data when modal closes
         await OnCharacterUpdated.InvokeAsync();
+    }
+
+    private async Task TriggerEditStats()
+    {
+        await OnEditStatsRequested.InvokeAsync();
     }
 }
