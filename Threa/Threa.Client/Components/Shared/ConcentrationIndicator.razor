@@ -1,0 +1,64 @@
+@* Concentration Indicator - Shows concentration status (casting-time or sustained) *@
+
+@using GameMechanics.Effects.Behaviors
+@using Threa.Dal.Dto
+
+@if (IsConcentrating)
+{
+    <div class="concentration-indicator @(Compact ? "compact" : "")">
+        <div class="concentration-header d-flex align-items-center gap-2">
+            <RadzenBadge BadgeStyle="Radzen.BadgeStyle.Warning" IsPill="true">
+                <i class="rzi rzi-brain me-1"></i>
+                Concentrating
+            </RadzenBadge>
+            <span class="concentration-name">@GetConcentrationName()</span>
+        </div>
+
+        @if (!Compact)
+        {
+            <div class="concentration-details mt-2">
+                @if (IsCastingTime)
+                {
+                    <div class="progress-section">
+                        <small class="text-muted d-block mb-1">
+                            @CurrentProgress / @TotalRequired rounds
+                        </small>
+                        <RadzenProgressBar Value="@ProgressPercent"
+                                           Max="100"
+                                           ShowValue="false"
+                                           Style="height: 8px;" />
+                    </div>
+                }
+                else if (IsSustained)
+                {
+                    <div class="sustained-section">
+                        @if (LinkedEffectCount > 0)
+                        {
+                            <small class="text-muted d-block">
+                                <i class="rzi rzi-link"></i>
+                                @LinkedEffectCount linked effect(s)
+                            </small>
+                        }
+                        @if (!string.IsNullOrEmpty(DrainDisplay))
+                        {
+                            <small class="text-warning d-block">
+                                <i class="rzi rzi-flash"></i>
+                                @DrainDisplay/round
+                            </small>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (ShowDropButton)
+            {
+                <div class="concentration-actions mt-2">
+                    <RadzenButton Text="Drop Concentration"
+                                  Size="Radzen.ButtonSize.Small"
+                                  ButtonStyle="Radzen.ButtonStyle.Light"
+                                  Click="@OnDropConcentration" />
+                </div>
+            }
+        }
+    </div>
+}
