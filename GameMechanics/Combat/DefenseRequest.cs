@@ -41,6 +41,25 @@ namespace GameMechanics.Combat
     public bool IsRangedAttack { get; init; }
 
     /// <summary>
+    /// Optional: The defender character for concentration check integration.
+    /// When set, active defense will break concentration and passive defense
+    /// will trigger a concentration check if the defender is concentrating.
+    /// </summary>
+    public CharacterEdit? Defender { get; init; }
+
+    /// <summary>
+    /// The attacker's Attack Value (roll result). Used as TV for concentration checks.
+    /// Required when Defender is set and defender is concentrating with passive defense.
+    /// </summary>
+    public int AttackerAV { get; init; }
+
+    /// <summary>
+    /// Damage dealt by the attack. Used to calculate concentration check penalty (-1 per 2 damage).
+    /// Set to 0 if attack missed or damage unknown at defense time.
+    /// </summary>
+    public int DamageDealt { get; init; }
+
+    /// <summary>
     /// Creates a passive defense request.
     /// </summary>
     public static DefenseRequest Passive(int dodgeAS)

@@ -1,3 +1,5 @@
+using GameMechanics.Effects.Behaviors;
+
 namespace GameMechanics.Combat
 {
   /// <summary>
@@ -44,8 +46,20 @@ namespace GameMechanics.Combat
     /// </summary>
     private DefenseResult ResolveDodge(DefenseRequest request)
     {
+      // Active defense breaks concentration before the roll
+      bool concentrationBroken = false;
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        ConcentrationBehavior.BreakConcentration(
+          request.Defender,
+          "Chose active defense - concentration broken");
+        concentrationBroken = true;
+      }
+
       int roll = _diceRoller.Roll4dFPlus();
-      return DefenseResult.ActiveDodge(request.DodgeAS, roll);
+      var result = DefenseResult.ActiveDodge(request.DodgeAS, roll);
+      result.ConcentrationBroken = concentrationBroken;
+      return result;
     }
 
     /// <summary>
@@ -61,8 +75,20 @@ namespace GameMechanics.Combat
           "Cannot parry ranged attacks");
       }
 
+      // Active defense breaks concentration before the roll
+      bool concentrationBroken = false;
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        ConcentrationBehavior.BreakConcentration(
+          request.Defender,
+          "Chose active defense - concentration broken");
+        concentrationBroken = true;
+      }
+
       int roll = _diceRoller.Roll4dFPlus();
-      return DefenseResult.ActiveParry(request.ParryAS, roll, request.IsInParryMode);
+      var result = DefenseResult.ActiveParry(request.ParryAS, roll, request.IsInParryMode);
+      result.ConcentrationBroken = concentrationBroken;
+      return result;
     }
 
     /// <summary>
