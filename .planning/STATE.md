@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 21 - Stat Editing in progress
+**Current focus:** v1.3 GM Character Manipulation - COMPLETE
 
 ## Current Position
 
-Milestone: v1.3 GM Character Manipulation
-Phase: 21 of 21 (Stat Editing)
-Plan: 01 of 02 complete
-Status: In progress
-Last activity: 2026-01-29 - Completed 21-01-PLAN.md (Attribute Editing)
+Milestone: v1.3 GM Character Manipulation - COMPLETE
+Phase: 21 of 21 (Stat Editing) - Complete
+Plan: 02 of 02 complete
+Status: Milestone complete
+Last activity: 2026-01-29 - Completed 21-02-PLAN.md (Skill Editing)
 
-Progress: v1.3 [███████████████████░] 95% (6/6 phases, 1/2 plans in final phase)
+Progress: v1.3 [████████████████████] 100% (6/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 50
-- Average duration: 10.0 min
-- Total execution time: 9.1 hours
+- Total plans completed: 51
+- Average duration: 9.9 min
+- Total execution time: 9.2 hours
 
 **By Milestone:**
 
@@ -31,11 +31,11 @@ Progress: v1.3 [███████████████████░] 95
 | v1.0 | 7 | 16 | 238 min | 15 min |
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
-| v1.3 | 6 | 12 | 64.1 min | 5.3 min |
+| v1.3 | 6 | 13 | 66.5 min | 5.1 min |
 
 **Recent Trend:**
-- Last 5 plans: 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min), 20-01 (2.0 min), 19-04 (5.0 min)
-- Trend: Excellent - Attribute editing completed in 3.5 min
+- Last 5 plans: 21-02 (2.4 min), 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min), 20-01 (2.0 min)
+- Trend: Excellent - Phase 21 completed in 5.9 min total
 
 ## Accumulated Context
 
@@ -69,16 +69,21 @@ Recent decisions affecting current work:
 - v1.3 (21-01): Pencil button on Attributes card header for inline edit mode
 - v1.3 (21-01): IsEditMode two-way binding with EventCallback for parent coordination
 - v1.3 (21-01): Health pools capped at new max on save
+- v1.3 (21-02): All skills visible in edit mode for complete editing
+- v1.3 (21-02): Combined SaveAllChanges for attributes and skills together
+- v1.3 (21-02): AP capped at new max when skills reduced
 
 ### Pending Todos
 
 **From previous milestones:**
-- Fix AP Max calculation bug (recalculate when skills change)
+- (RESOLVED) Fix AP Max calculation bug - Now addressed via skill editing with AP capping
 
-**Completed this phase (21):**
-- Attribute editing with base value inputs and effective value badges
-- Edit Stats card in GM Actions with OnEditStatsRequested EventCallback
-- Validation warnings for out-of-range values
+**Completed this milestone (v1.3):**
+- Pending damage/healing with real-time updates (Phase 17)
+- Wound management with severity levels (Phase 18)
+- Effect management with template picker (Phase 19)
+- Inventory manipulation with item grants (Phase 20)
+- Stat editing for attributes and skills (Phase 21)
 
 ### Blockers/Concerns
 
@@ -93,8 +98,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 21-01-PLAN.md (Attribute Editing)
+Stopped at: Completed 21-02-PLAN.md (Skill Editing) - v1.3 COMPLETE
 Resume file: None
 
 ---
-*v1.3 milestone in progress - Phase 21 plan 01 complete, skill editing (21-02) next*
+*v1.3 GM Character Manipulation milestone COMPLETE - Ready for next milestone*
