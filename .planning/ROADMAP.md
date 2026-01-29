@@ -126,16 +126,17 @@ Plans:
   9. Passive defense triggers concentration check (Focus skill vs attacker AV, with damage penalty)
   10. Concentration automatically breaks on incapacitation or FAT/VIT reaching 0
   11. UI displays concentration type, progress (for casting), linked effects (for sustained), and drain cost
-**Plans**: 7 plans
+**Plans**: 8 plans
 
 Plans:
 - [x] 22-01-PLAN.md — ConcentrationState schema, EffectRecord linking properties, payload classes
 - [x] 22-02-PLAN.md — ConcentrationBehavior: casting time (OnTick progress, OnExpire execution, OnRemove cleanup)
-- [ ] 22-03-PLAN.md — ConcentrationBehavior: sustained effects (FAT/VIT drain, linked effect removal)
-- [ ] 22-04-PLAN.md — CharacterEdit concentration methods (GetConcentrationEffect, CheckConcentration)
-- [ ] 22-05-PLAN.md — ConcentrationBreakDialog component for action confirmation
-- [ ] 22-06-PLAN.md — Defense integration (concentration check on passive defense with damage penalty)
-- [ ] 22-07-PLAN.md — ConcentrationIndicator UI component for status display
+- [x] 22-03-PLAN.md — ConcentrationBehavior: sustained effects (FAT/VIT drain, linked effect removal)
+- [x] 22-04-PLAN.md — CharacterEdit concentration methods (GetConcentrationEffect, CheckConcentration)
+- [x] 22-05-PLAN.md — ConcentrationBreakDialog component for action confirmation
+- [x] 22-06-PLAN.md — Defense integration (concentration check on passive defense with damage penalty)
+- [x] 22-07-PLAN.md — ConcentrationIndicator UI component for status display
+- [ ] 22-08-PLAN.md — (Gap closure) Action integration with ConcentrationBreakDialog
 
 ## Progress
 
@@ -149,7 +150,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
 | 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
 | 21. Stat Editing | 2/2 | Complete | 2026-01-29 |
-| 22. Concentration System | 7/7 | Gaps Found | 2026-01-29 |
+| 22. Concentration System | 8/8 | Complete | 2026-01-29 |
 
 ---
 *Created: 2026-01-28 for v1.3 milestone*

@@ -57,6 +57,24 @@ Requirements for GM character manipulation milestone. Each maps to roadmap phase
 - [ ] **STAT-05**: Stat changes trigger real-time dashboard update
 - [ ] **STAT-06**: GM can view character sheet with current values before editing
 
+### Concentration System
+
+- [ ] **CONC-01**: Casting time concentration effects track progress and execute deferred actions on completion
+- [ ] **CONC-02**: Casting time concentration effects fail without executing action when interrupted
+- [ ] **CONC-03**: Magazine reload concentration completes and updates weapon when concentration expires naturally
+- [ ] **CONC-04**: Magazine reload concentration fails and loses progress when interrupted
+- [ ] **CONC-05**: Sustained concentration effects drain FAT/VIT per round while active
+- [ ] **CONC-06**: Sustained concentration effects link to spell effects on target(s)
+- [ ] **CONC-07**: Breaking sustained concentration removes all linked effects from targets immediately
+- [ ] **CONC-08**: Character can only concentrate on one effect at a time
+- [ ] **CONC-09**: Taking active actions automatically breaks concentration with confirmation
+- [ ] **CONC-10**: Character failing concentration check breaks concentration and removes effect
+- [ ] **CONC-11**: Passive defense triggers concentration check using Focus skill vs attacker's AV
+- [ ] **CONC-12**: Damage dealt applies penalty to concentration check (-1 per 2 damage)
+- [ ] **CONC-13**: Character becoming unconscious/incapacitated automatically breaks concentration
+- [ ] **CONC-14**: Concentration effects expire automatically when caster's FAT/VIT reaches 0
+- [ ] **CONC-15**: UI displays concentration status with type, progress, and linked effects
+
 ## Future Requirements
 
 Deferred to future milestones.
@@ -132,10 +150,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-04 | Phase 21 | Pending |
 | STAT-05 | Phase 21 | Pending |
 | STAT-06 | Phase 21 | Pending |
+| CONC-01 | Phase 22 | Complete |
+| CONC-02 | Phase 22 | Complete |
+| CONC-03 | Phase 22 | Complete |
+| CONC-04 | Phase 22 | Complete |
+| CONC-05 | Phase 22 | Complete |
+| CONC-06 | Phase 22 | Complete |
+| CONC-07 | Phase 22 | Complete |
+| CONC-08 | Phase 22 | Complete |
+| CONC-09 | Phase 22 | Complete |
+| CONC-10 | Phase 22 | Complete |
+| CONC-11 | Phase 22 | Complete |
+| CONC-12 | Phase 22 | Complete |
+| CONC-13 | Phase 22 | Complete |
+| CONC-14 | Phase 22 | Complete |
+| CONC-15 | Phase 22 | Complete |
 
 **Coverage:**
-- v1.3 requirements: 37 total
-- Mapped to phases: 37
+- v1.3 requirements: 52 total (37 original + 15 concentration)
+- Mapped to phases: 52
 - Unmapped: 0
 
 ---
