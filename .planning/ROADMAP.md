@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Health Management** - GM applies damage/healing to character health pools
 - [x] **Phase 18: Wound Management** - GM tracks and manages character wounds
 - [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
-- [ ] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
+- [x] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
 - [ ] **Phase 21: Stat Editing** - GM modifies character attributes and skills
 
 ## Phase Details
@@ -91,7 +91,7 @@ Plans:
 Plans:
 - [x] 20-01-PLAN.md — ItemTemplatePickerModal for browsing/selecting item templates
 - [x] 20-02-PLAN.md — CharacterDetailInventory GM actions and currency editing
-- [ ] 20-03-PLAN.md — (Gap closure) Fix CharacterDetailModal integration
+- [x] 20-03-PLAN.md — (Gap closure) Fix CharacterDetailModal integration
 
 ### Phase 21: Stat Editing
 **Goal**: GM can directly modify character attributes and skills
@@ -118,7 +118,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 17. Health Management | 2/2 | Complete | 2026-01-28 |
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
-| 20. Inventory Manipulation | 2/3 | In Progress | - |
+| 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
 | 21. Stat Editing | 0/TBD | Not started | - |
 
 ---
