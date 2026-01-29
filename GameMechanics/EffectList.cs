@@ -268,6 +268,7 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
   {
     var toExpire = new List<EffectRecord>();
     var toRemoveEarly = new List<EffectRecord>();
+    var toCompleteEarly = new List<EffectRecord>();
 
     foreach (var effect in this.Where(e => e.IsActive))
     {
@@ -280,7 +281,15 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
       var tickResult = effect.Behavior.OnTick(effect, Character);
       if (tickResult.ShouldExpireEarly)
       {
-        toRemoveEarly.Add(effect);
+        // Distinguish between early completion (success) and early removal (interruption)
+        if (tickResult.ExpireAsComplete)
+        {
+          toCompleteEarly.Add(effect);
+        }
+        else
+        {
+          toRemoveEarly.Add(effect);
+        }
         continue;
       }
 
@@ -291,10 +300,17 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
       }
     }
 
-    // Handle early expirations (treated as removes)
+    // Handle early removals (interrupted/broken - calls OnRemove)
     foreach (var effect in toRemoveEarly)
     {
       effect.Behavior.OnRemove(effect, Character);
+      Remove(effect);
+    }
+
+    // Handle early completions (successful completion - calls OnExpire)
+    foreach (var effect in toCompleteEarly)
+    {
+      effect.Behavior.OnExpire(effect, Character);
       Remove(effect);
     }
 
