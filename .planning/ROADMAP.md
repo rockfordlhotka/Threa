@@ -24,6 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
 - [x] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
 - [x] **Phase 21: Stat Editing** - GM modifies character attributes and skills
+- [ ] **Phase 22: Concentration System** - Implement casting time and sustained effect concentration mechanics
 
 ## Phase Details
 
@@ -109,6 +110,33 @@ Plans:
 - [x] 21-01-PLAN.md — Attribute editing with edit mode toggle in CharacterDetailSheet
 - [x] 21-02-PLAN.md — Skill editing and CharacterDetailModal coordination
 
+### Phase 22: Concentration System
+**Goal**: Implement both casting-time and sustained effect concentration mechanics
+**Depends on**: Phase 21
+**Requirements**: CONC-01, CONC-02, CONC-03, CONC-04, CONC-05, CONC-06, CONC-07, CONC-08, CONC-09, CONC-10, CONC-11, CONC-12, CONC-13, CONC-14, CONC-15
+**Success Criteria** (what must be TRUE):
+  1. Casting-time concentration effects (spell casting, magazine reload) track progress per round
+  2. Casting-time concentration executes deferred action on natural completion (OnExpire)
+  3. Casting-time concentration fails without executing when interrupted (OnRemove)
+  4. Sustained concentration effects (active spells) link to spell effects on target(s)
+  5. Sustained concentration drains FAT/VIT per round while active
+  6. Breaking sustained concentration removes all linked effects from targets immediately
+  7. Only one concentration effect active per character at a time
+  8. Taking active actions prompts to break concentration with confirmation
+  9. Passive defense triggers concentration check (Focus skill vs attacker AV, with damage penalty)
+  10. Concentration automatically breaks on incapacitation or FAT/VIT reaching 0
+  11. UI displays concentration type, progress (for casting), linked effects (for sustained), and drain cost
+**Plans**: TBD (research complete, planning needed)
+
+Plans:
+- [ ] 22-01-PLAN.md — ConcentrationState schema, EffectRecord linking properties, database migration
+- [ ] 22-02-PLAN.md — ConcentrationBehavior: casting time (OnTick progress, OnExpire execution, OnRemove cleanup)
+- [ ] 22-03-PLAN.md — ConcentrationBehavior: sustained effects (FAT/VIT drain, linked effect removal)
+- [ ] 22-04-PLAN.md — CharacterEdit concentration methods (IsConcentrating, CheckConcentration, BreakConcentration)
+- [ ] 22-05-PLAN.md — Action integration (concentration check before actions, confirmation dialog)
+- [ ] 22-06-PLAN.md — Defense integration (concentration check on passive defense with damage penalty)
+- [ ] 22-07-PLAN.md — UI components (concentration indicator in status card, linked effects display)
+
 ## Progress
 
 **Execution Order:**
@@ -121,6 +149,8 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
 | 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
 | 21. Stat Editing | 2/2 | Complete | 2026-01-29 |
+| 22. Concentration System | 2/7 | In Progress | - |
 
 ---
 *Created: 2026-01-28 for v1.3 milestone*
+*Updated: 2026-01-29 to add Phase 22 (Concentration System)*
