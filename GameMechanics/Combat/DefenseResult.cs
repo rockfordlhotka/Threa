@@ -1,3 +1,5 @@
+using GameMechanics.Effects.Behaviors;
+
 namespace GameMechanics.Combat
 {
   /// <summary>
@@ -5,6 +7,17 @@ namespace GameMechanics.Combat
   /// </summary>
   public class DefenseResult
   {
+    /// <summary>
+    /// Result of concentration check if defender was concentrating and used passive defense.
+    /// Null if not concentrating or used active defense.
+    /// </summary>
+    public ConcentrationCheckResult? ConcentrationCheck { get; set; }
+
+    /// <summary>
+    /// True if concentration was broken during this defense (either by active defense or failed check).
+    /// </summary>
+    public bool ConcentrationBroken { get; set; }
+
     /// <summary>
     /// The type of defense used.
     /// </summary>
