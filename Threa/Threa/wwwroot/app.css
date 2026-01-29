@@ -73,3 +73,18 @@ h1:focus {
     font-weight: 600;
     text-transform: uppercase;
 }
+
+/* Concentration Break Dialog */
+.concentration-break-dialog {
+    min-width: 350px;
+    padding: 1rem;
+}
+
+.concentration-break-dialog .concentration-details {
+    border-left: 4px solid var(--rz-warning);
+}
+
+.concentration-break-dialog .concentration-details h5 {
+    color: var(--rz-text-color);
+    font-weight: 600;
+}
