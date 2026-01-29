@@ -11,17 +11,17 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 
 Milestone: v1.4 Concentration System
 Phase: 22 (Concentration System) - In progress
-Plan: 05 of 07 complete
-Status: Phase incomplete - 2 gaps remain
-Last activity: 2026-01-29 - Completed 22-05 (ConcentrationBreakDialog)
+Plan: 06 of 07 complete
+Status: Phase incomplete - 1 gap remains (22-07)
+Last activity: 2026-01-29 - Completed 22-06 (Defense Integration)
 
-Progress: Phase 22 [██████████████░░░░░░] 71% (5/7 plans complete)
+Progress: Phase 22 [█████████████████░░░] 86% (6/7 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 54
-- Average duration: 9.6 min
+- Total plans completed: 55
+- Average duration: 9.5 min
 - Total execution time: 9.5 hours
 
 **By Milestone:**
@@ -32,11 +32,11 @@ Progress: Phase 22 [██████████████░░░░░░
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3 | 6 | 13 | 66.5 min | 5.1 min |
-| v1.4 | 1 | 5 | 26 min | 5.2 min |
+| v1.4 | 1 | 6 | 31 min | 5.2 min |
 
 **Recent Trend:**
-- Last 5 plans: 22-05 (2 min), 22-04 (6 min), 22-03 (8 min), 22-02 (8 min), 22-01 (2 min)
-- Trend: Excellent - Phase 22 progressing well
+- Last 5 plans: 22-06 (5 min), 22-05 (2 min), 22-04 (6 min), 22-03 (8 min), 22-02 (8 min)
+- Trend: Excellent - Phase 22 nearing completion
 
 ## Accumulated Context
 
@@ -82,6 +82,8 @@ Recent decisions affecting current work:
 - v1.4 (22-03): LinkedEffectIds in LastConcentrationResult for cross-character cleanup
 - v1.4 (22-04): Focus AS + damage penalty for concentration checks
 - v1.4 (22-04): No Focus skill = automatic concentration failure
+- v1.4 (22-06): Optional Defender in DefenseRequest for backward compatibility
+- v1.4 (22-06): Health depletion auto-break uses effective pool (Value - PendingDamage)
 
 ### Pending Todos
 
@@ -101,6 +103,7 @@ Recent decisions affecting current work:
 - Phase 22 Plan 03: Sustained concentration with FAT/VIT drain and linked effect removal preparation
 - Phase 22 Plan 04: Character concentration API with Focus skill check and damage penalty
 - Phase 22 Plan 05: ConcentrationBreakDialog component with static ShowAsync helper
+- Phase 22 Plan 06: Defense integration with concentration checks and auto-break on health depletion
 
 ### Blockers/Concerns
 
@@ -115,8 +118,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 22-05-PLAN.md (ConcentrationBreakDialog)
+Stopped at: Completed 22-06-PLAN.md (Defense Integration)
 Resume file: None
 
 ---
-*v1.4 Concentration System in progress - 5/7 plans complete*
+*v1.4 Concentration System in progress - 6/7 plans complete*
