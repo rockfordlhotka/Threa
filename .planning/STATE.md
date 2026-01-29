@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 20 - Inventory Manipulation in progress
+**Current focus:** Phase 20 - Inventory Manipulation complete, ready for Phase 21
 
 ## Current Position
 
 Milestone: v1.3 GM Character Manipulation
-Phase: 20 of 21 (Inventory Manipulation)
-Plan: 01 of 02 complete
-Status: In progress
-Last activity: 2026-01-29 - Completed 20-01-PLAN.md (Item Template Picker)
+Phase: 20 of 21 (Inventory Manipulation) - Complete
+Plan: 02 of 02 complete
+Status: Phase complete
+Last activity: 2026-01-29 - Completed 20-02-PLAN.md (Inventory Manipulation)
 
-Progress: v1.3 [█████████████████░░░] 85% (4.5/5 phases complete)
+Progress: v1.3 [██████████████████░░] 90% (5/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 47
-- Average duration: 10.5 min
-- Total execution time: 8.9 hours
+- Total plans completed: 48
+- Average duration: 10.4 min
+- Total execution time: 9.0 hours
 
 **By Milestone:**
 
@@ -31,11 +31,11 @@ Progress: v1.3 [█████████████████░░░] 85
 | v1.0 | 7 | 16 | 238 min | 15 min |
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
-| v1.3 | 5 | 9 | 53.6 min | 6.0 min |
+| v1.3 | 5 | 10 | 59.6 min | 6.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 20-01 (2.0 min), 19-04 (5.0 min), 19-03 (6.3 min), 19-02 (3.8 min), 19-01 (4.5 min)
-- Trend: Excellent - Phase 20 Plan 01 in 2 min
+- Last 5 plans: 20-02 (6 min), 20-01 (2.0 min), 19-04 (5.0 min), 19-03 (6.3 min), 19-02 (3.8 min)
+- Trend: Excellent - Phase 20 complete with 4 min average
 
 ## Accumulated Context
 
@@ -63,6 +63,9 @@ Recent decisions affecting current work:
 - v1.3 (19-04): Debounced template search (300ms)
 - v1.3 (19-04): Table layout for Effects tab (compact read-only view)
 - v1.3 (20-01): Rarity colors for items (secondary/success/primary/purple/warning)
+- v1.3 (20-02): Inline quantity prompt for stackable items
+- v1.3 (20-02): Dropdown context menus for item actions
+- v1.3 (20-02): Currency editing via edit mode toggle
 
 ### Pending Todos
 
@@ -71,6 +74,7 @@ Recent decisions affecting current work:
 
 **Completed this phase (20):**
 - ItemTemplatePickerModal for browsing item templates
+- CharacterDetailInventory with full GM manipulation (add/remove/equip/unequip/quantity/currency)
 
 ### Blockers/Concerns
 
@@ -85,8 +89,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 20-01-PLAN.md (Item Template Picker)
+Stopped at: Completed 20-02-PLAN.md (Inventory Manipulation)
 Resume file: None
 
 ---
-*v1.3 milestone in progress - Phase 20 Plan 01 complete, Plan 02 next*
+*v1.3 milestone in progress - Phase 20 complete, Phase 21 next*
