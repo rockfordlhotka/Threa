@@ -1,7 +1,11 @@
-@* Character Detail Sheet - Read-only view of character stats for GM modal *@
+@* Character Detail Sheet - View and edit character stats for GM modal *@
 
 @using GameMechanics
+@using GameMechanics.Messaging
 @using Threa.Client.Components.Shared
+
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject ITimeEventPublisher TimeEventPublisher
 
 <div class="row">
     <!-- Left Column: Portrait and Basic Info -->
@@ -61,14 +65,88 @@
     <!-- Center Column: Attributes -->
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header"><strong>Attributes</strong></div>
-            <div class="card-body">
-                @foreach (var attr in Character?.AttributeList ?? Enumerable.Empty<AttributeEdit>())
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Attributes</strong>
+                @if (!IsEditMode)
                 {
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>@attr.Name</span>
-                        <span class="fw-bold">@attr.Value</span>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="EnterEditMode">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (IsEditMode && editingCharacter != null)
+                {
+                    @foreach (var attr in editingCharacter.AttributeList)
+                    {
+                        <div class="row mb-2 align-items-center">
+                            <div class="col-3">
+                                <span class="fw-bold">@attr.Name</span>
+                            </div>
+                            <div class="col-5">
+                                <input type="number"
+                                       class="form-control form-control-sm @GetAttributeValidationClass(attr.BaseValue)"
+                                       @bind="attr.BaseValue"
+                                       @bind:event="onchange"
+                                       min="1" />
+                            </div>
+                            <div class="col-4 text-end">
+                                <span class="badge bg-info" title="Effective = Base @FormatModifier(attr.SpeciesModifier)">
+                                    = @attr.Value
+                                </span>
+                            </div>
+                        </div>
+                        @if (attr.BaseValue < 1)
+                        {
+                            <div class="text-danger small mb-1"><i class="bi bi-x-circle me-1"></i>Minimum value is 1</div>
+                        }
+                        else if (attr.BaseValue > 14)
+                        {
+                            <div class="text-warning small mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Above typical range (6-14)</div>
+                        }
+                    }
+
+                    <!-- Health pool preview -->
+                    <hr class="my-2" />
+                    <div class="small text-muted">
+                        <div>FAT Max: @editingCharacter.Fatigue.BaseValue</div>
+                        <div>VIT Max: @editingCharacter.Vitality.BaseValue</div>
+                        <div>AP Recovery: @editingCharacter.ActionPoints.Recovery</div>
                     </div>
+
+                    <!-- Error/Success messages -->
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger py-1 mt-2 small">@errorMessage</div>
+                    }
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success py-1 mt-2 small">@successMessage</div>
+                    }
+
+                    <!-- Save/Cancel buttons -->
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-primary btn-sm flex-grow-1"
+                                @onclick="SaveAttributeChanges"
+                                disabled="@(!CanSave() || isProcessing)">
+                            <i class="bi bi-check-lg me-1"></i>Save
+                        </button>
+                        <button class="btn btn-secondary btn-sm flex-grow-1"
+                                @onclick="CancelEdit"
+                                disabled="@isProcessing">
+                            Cancel
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var attr in Character?.AttributeList ?? Enumerable.Empty<AttributeEdit>())
+                    {
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>@attr.Name</span>
+                            <span class="fw-bold">@attr.Value</span>
+                        </div>
+                    }
                 }
             </div>
         </div>
@@ -120,6 +198,138 @@
 @code {
     [Parameter]
     public CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public int CharacterId { get; set; }
+
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsEditModeChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnCharacterUpdated { get; set; }
+
+    // Edit state
+    private CharacterEdit? editingCharacter;
+    private bool isProcessing;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // When IsEditMode is set true externally but we don't have editingCharacter loaded, fetch it
+        if (IsEditMode && editingCharacter == null && CharacterId > 0)
+        {
+            await LoadEditingCharacter();
+        }
+        // When IsEditMode is set false externally, clear editing state
+        else if (!IsEditMode && editingCharacter != null)
+        {
+            editingCharacter = null;
+            errorMessage = null;
+            successMessage = null;
+        }
+    }
+
+    private async Task LoadEditingCharacter()
+    {
+        try
+        {
+            editingCharacter = await characterPortal.FetchAsync(CharacterId);
+            errorMessage = null;
+            successMessage = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load character: {ex.Message}";
+        }
+    }
+
+    private async Task EnterEditMode()
+    {
+        await LoadEditingCharacter();
+        if (editingCharacter != null)
+        {
+            IsEditMode = true;
+            await IsEditModeChanged.InvokeAsync(true);
+        }
+    }
+
+    private async Task CancelEdit()
+    {
+        editingCharacter = null;
+        IsEditMode = false;
+        await IsEditModeChanged.InvokeAsync(false);
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private string GetAttributeValidationClass(int baseValue)
+    {
+        if (baseValue < 1) return "is-invalid";
+        if (baseValue > 14) return "border-warning";
+        return "";
+    }
+
+    private string FormatModifier(int modifier)
+    {
+        return modifier >= 0 ? $"+{modifier}" : modifier.ToString();
+    }
+
+    private bool CanSave()
+    {
+        if (editingCharacter == null) return false;
+        return editingCharacter.AttributeList.All(a => a.BaseValue >= 1);
+    }
+
+    private async Task SaveAttributeChanges()
+    {
+        if (editingCharacter == null || !CanSave()) return;
+        isProcessing = true;
+        errorMessage = null;
+
+        try
+        {
+            // Cap health pools at new max if needed
+            if (editingCharacter.Fatigue.Value > editingCharacter.Fatigue.BaseValue)
+                editingCharacter.Fatigue.Value = editingCharacter.Fatigue.BaseValue;
+            if (editingCharacter.Vitality.Value > editingCharacter.Vitality.BaseValue)
+                editingCharacter.Vitality.Value = editingCharacter.Vitality.BaseValue;
+
+            await characterPortal.UpdateAsync(editingCharacter);
+
+            // Publish update for real-time dashboard refresh
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = CharacterId,
+                UpdateType = CharacterUpdateType.StatsChanged,
+                CampaignId = TableId.ToString(),
+                SourceId = "GM",
+                Description = "Attributes modified"
+            });
+
+            successMessage = "Attributes saved successfully";
+            await OnCharacterUpdated.InvokeAsync();
+
+            // Exit edit mode after successful save
+            editingCharacter = null;
+            IsEditMode = false;
+            await IsEditModeChanged.InvokeAsync(false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
 
     private int GetApPercent()
     {
