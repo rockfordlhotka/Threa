@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 19 - Effect Management complete, ready for Phase 20
+**Current focus:** Phase 20 - Inventory Manipulation in progress
 
 ## Current Position
 
 Milestone: v1.3 GM Character Manipulation
-Phase: 19 of 21 (Effect Management) - Complete
-Plan: 04 of 04 complete
-Status: Phase complete
-Last activity: 2026-01-28 - Completed 19-04-PLAN.md (Template Picker and Effects Tab)
+Phase: 20 of 21 (Inventory Manipulation)
+Plan: 01 of 02 complete
+Status: In progress
+Last activity: 2026-01-29 - Completed 20-01-PLAN.md (Item Template Picker)
 
-Progress: v1.3 [████████████████░░░░] 80% (4/5 phases complete)
+Progress: v1.3 [█████████████████░░░] 85% (4.5/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46
-- Average duration: 10.7 min
+- Total plans completed: 47
+- Average duration: 10.5 min
 - Total execution time: 8.9 hours
 
 **By Milestone:**
@@ -31,11 +31,11 @@ Progress: v1.3 [████████████████░░░░] 80
 | v1.0 | 7 | 16 | 238 min | 15 min |
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
-| v1.3 | 5 | 8 | 51.6 min | 6.5 min |
+| v1.3 | 5 | 9 | 53.6 min | 6.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 19-04 (5.0 min), 19-03 (6.3 min), 19-02 (3.8 min), 19-01 (4.5 min), 18-02 (4 min)
-- Trend: Excellent - Phase 19 complete with 5.2 min average
+- Last 5 plans: 20-01 (2.0 min), 19-04 (5.0 min), 19-03 (6.3 min), 19-02 (3.8 min), 19-01 (4.5 min)
+- Trend: Excellent - Phase 20 Plan 01 in 2 min
 
 ## Accumulated Context
 
@@ -62,23 +62,15 @@ Recent decisions affecting current work:
 - v1.3 (19-03): Collapsible advanced modifiers section in effect form
 - v1.3 (19-04): Debounced template search (300ms)
 - v1.3 (19-04): Table layout for Effects tab (compact read-only view)
+- v1.3 (20-01): Rarity colors for items (secondary/success/primary/purple/warning)
 
 ### Pending Todos
 
 **From previous milestones:**
 - Fix AP Max calculation bug (recalculate when skills change)
 
-**Completed this phase (19):**
-- EffectState with dictionary-based modifiers
-- Seed effect templates via migration
-- EffectTemplate CSLA objects for data portal access
-- GenericEffectBehavior for template-based effects
-- EffectManagementModal for viewing/removing effects
-- EffectFormModal with full modifier support
-- EffectTemplatePickerModal for template browsing
-- Template-based effect creation and save-as-template
-- CharacterDetailEffects tab in character modal
-- CharacterDetailGmActions integration
+**Completed this phase (20):**
+- ItemTemplatePickerModal for browsing item templates
 
 ### Blockers/Concerns
 
@@ -92,9 +84,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-28
-Stopped at: Completed 19-04-PLAN.md (Template Picker and Effects Tab)
+Last session: 2026-01-29
+Stopped at: Completed 20-01-PLAN.md (Item Template Picker)
 Resume file: None
 
 ---
-*v1.3 milestone in progress - Phase 19 complete, Phase 20 next*
+*v1.3 milestone in progress - Phase 20 Plan 01 complete, Plan 02 next*
