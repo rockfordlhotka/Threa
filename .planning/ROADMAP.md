@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Wound Management** - GM tracks and manages character wounds
 - [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
 - [x] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
-- [ ] **Phase 21: Stat Editing** - GM modifies character attributes and skills
+- [x] **Phase 21: Stat Editing** - GM modifies character attributes and skills
 
 ## Phase Details
 
@@ -106,8 +106,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 21-01-PLAN.md — Attribute editing with edit mode toggle in CharacterDetailSheet
-- [ ] 21-02-PLAN.md — Skill editing and CharacterDetailModal coordination
+- [x] 21-01-PLAN.md — Attribute editing with edit mode toggle in CharacterDetailSheet
+- [x] 21-02-PLAN.md — Skill editing and CharacterDetailModal coordination
 
 ## Progress
 
@@ -120,7 +120,7 @@ Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
 | 18. Wound Management | 2/2 | Complete | 2026-01-28 |
 | 19. Effect Management | 4/4 | Complete | 2026-01-28 |
 | 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
-| 21. Stat Editing | 0/2 | Not started | - |
+| 21. Stat Editing | 2/2 | Complete | 2026-01-29 |
 
 ---
 *Created: 2026-01-28 for v1.3 milestone*
