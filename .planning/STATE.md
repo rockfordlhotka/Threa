@@ -9,13 +9,13 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 
 ## Current Position
 
-Milestone: v1.3 GM Character Manipulation - COMPLETE
-Phase: 21 of 21 (Stat Editing) - Complete
-Plan: 02 of 02 complete
-Status: Milestone complete
-Last activity: 2026-01-29 - Completed 21-02-PLAN.md (Skill Editing)
+Milestone: v1.4 Concentration System
+Phase: 22 (Concentration System) - In progress
+Plan: 01 of 02 complete
+Status: In progress
+Last activity: 2026-01-29 - Completed 22-01-PLAN.md (Data Layer Foundation)
 
-Progress: v1.3 [████████████████████] 100% (6/6 phases complete)
+Progress: Phase 22 [██████████░░░░░░░░░░] 50% (1/2 plans complete)
 
 ## Performance Metrics
 
@@ -34,8 +34,8 @@ Progress: v1.3 [████████████████████] 10
 | v1.3 | 6 | 13 | 66.5 min | 5.1 min |
 
 **Recent Trend:**
-- Last 5 plans: 21-02 (2.4 min), 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min), 20-01 (2.0 min)
-- Trend: Excellent - Phase 21 completed in 5.9 min total
+- Last 5 plans: 22-01 (2 min), 21-02 (2.4 min), 21-01 (3.5 min), 20-03 (1 min), 20-02 (6 min)
+- Trend: Excellent - Phase 22 data layer in 2 min
 
 ## Accumulated Context
 
@@ -72,6 +72,9 @@ Recent decisions affecting current work:
 - v1.3 (21-02): All skills visible in edit mode for complete editing
 - v1.3 (21-02): Combined SaveAllChanges for attributes and skills together
 - v1.3 (21-02): AP capped at new max when skills reduced
+- v1.4 (22-01): JSON blob storage continues (no schema migration for SQLite)
+- v1.4 (22-01): Effect linking via SourceEffectId/SourceCasterId
+- v1.4 (22-01): Nested payload JSON for deferred actions
 
 ### Pending Todos
 
@@ -84,6 +87,9 @@ Recent decisions affecting current work:
 - Effect management with template picker (Phase 19)
 - Inventory manipulation with item grants (Phase 20)
 - Stat editing for attributes and skills (Phase 21)
+
+**In progress (v1.4 Concentration System):**
+- Phase 22 Plan 01 complete: Data layer foundation with ConcentrationState schema, effect linking, payload classes
 
 ### Blockers/Concerns
 
@@ -98,8 +104,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 21-02-PLAN.md (Skill Editing) - v1.3 COMPLETE
-Resume file: None
+Stopped at: Completed 22-01-PLAN.md (Data Layer Foundation)
+Resume file: .planning/phases/22-concentration-system/22-02-PLAN.md
 
 ---
-*v1.3 GM Character Manipulation milestone COMPLETE - Ready for next milestone*
+*v1.4 Concentration System in progress - Phase 22 Plan 01 complete*
