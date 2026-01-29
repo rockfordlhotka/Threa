@@ -46,7 +46,13 @@ public class ConcentrationBehavior : IEffectBehavior
             return TickCastingTime(effect, character, state);
         }
 
-        // Sustained concentration handled in 22-03
+        // Handle sustained concentration types (SustainedSpell, SustainedAbility, MentalControl)
+        if (IsSustainedConcentration(state.ConcentrationType))
+        {
+            return TickSustainedConcentration(effect, character, state);
+        }
+
+        // Unknown concentration type, just continue
         return EffectTickResult.Continue();
     }
 
@@ -58,6 +64,101 @@ public class ConcentrationBehavior : IEffectBehavior
         return concentrationType == "MagazineReload"
             || concentrationType == "SpellCasting"
             || concentrationType == "RitualPreparation";
+    }
+
+    /// <summary>
+    /// Checks if the concentration type is a sustained type (maintains active effect indefinitely).
+    /// </summary>
+    private static bool IsSustainedConcentration(string? concentrationType)
+    {
+        return concentrationType == "SustainedSpell"
+            || concentrationType == "SustainedAbility"
+            || concentrationType == "MentalControl";
+    }
+
+    /// <summary>
+    /// Applies FAT/VIT drain to the character for sustained concentration.
+    /// </summary>
+    /// <param name="character">The character concentrating</param>
+    /// <param name="state">The concentration state with drain values</param>
+    /// <returns>True if character can continue, false if exhausted</returns>
+    private static bool ApplyDrain(CharacterEdit character, ConcentrationState state)
+    {
+        // Apply FAT drain
+        if (state.FatDrainPerRound > 0)
+        {
+            character.Fatigue.PendingDamage += state.FatDrainPerRound;
+        }
+
+        // Apply VIT drain
+        if (state.VitDrainPerRound > 0)
+        {
+            character.Vitality.PendingDamage += state.VitDrainPerRound;
+        }
+
+        // Check if character is exhausted
+        // Current Value minus pending damage equals effective pool
+        // Exhausted when effective pool <= 0
+        int effectiveFat = character.Fatigue.Value - character.Fatigue.PendingDamage;
+        int effectiveVit = character.Vitality.Value - character.Vitality.PendingDamage;
+
+        bool fatigueExhausted = effectiveFat <= 0;
+        bool vitalityExhausted = effectiveVit <= 0;
+
+        return !(fatigueExhausted || vitalityExhausted);
+    }
+
+    /// <summary>
+    /// Handles OnTick for sustained concentration types.
+    /// Applies FAT/VIT drain and expires early if character is exhausted.
+    /// </summary>
+    private EffectTickResult TickSustainedConcentration(EffectRecord effect, CharacterEdit character, ConcentrationState state)
+    {
+        // Apply drain
+        bool canContinue = ApplyDrain(character, state);
+
+        if (!canContinue)
+        {
+            // Character is exhausted, concentration breaks
+            string message = $"Too exhausted to maintain {state.SpellName ?? "concentration"}";
+            return EffectTickResult.ExpireEarly(message);
+        }
+
+        // Update description with drain info
+        var drainParts = new List<string>();
+        if (state.FatDrainPerRound > 0)
+            drainParts.Add($"{state.FatDrainPerRound} FAT");
+        if (state.VitDrainPerRound > 0)
+            drainParts.Add($"{state.VitDrainPerRound} VIT");
+
+        string drainDesc = drainParts.Count > 0 ? $" ({string.Join(" + ", drainParts)}/round)" : "";
+        effect.Description = $"Sustaining {state.SpellName ?? "effect"}{drainDesc}";
+
+        return EffectTickResult.Continue();
+    }
+
+    /// <summary>
+    /// Stores linked effect removal info in LastConcentrationResult for UI processing.
+    /// The actual removal must be done by the UI/controller layer which has access to all characters.
+    /// </summary>
+    private void PrepareLinkedEffectRemoval(CharacterEdit character, ConcentrationState state)
+    {
+        if (state.LinkedEffectIds == null || state.LinkedEffectIds.Count == 0)
+            return;
+
+        // Store result for UI/controller to process
+        // The UI layer will iterate through table characters and remove effects with matching IDs
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "SustainedBreak",
+            Payload = JsonSerializer.Serialize(new
+            {
+                LinkedEffectIds = state.LinkedEffectIds,
+                SpellName = state.SpellName
+            }),
+            Message = $"{state.SpellName ?? "Sustained effect"} ended",
+            Success = false  // Indicates concentration was broken, not completed
+        };
     }
 
     /// <summary>
@@ -184,7 +285,11 @@ public class ConcentrationBehavior : IEffectBehavior
             HandleCastingTimeInterruption(character, state);
         }
 
-        // Sustained concentration cleanup handled in 22-03
+        // Handle sustained concentration cleanup
+        if (IsSustainedConcentration(state.ConcentrationType))
+        {
+            PrepareLinkedEffectRemoval(character, state);
+        }
     }
 
     /// <summary>
@@ -357,6 +462,36 @@ public class ConcentrationBehavior : IEffectBehavior
             DeferredActionPayload = payload.Serialize(),
             CompletionMessage = $"{spellName} cast successfully!",
             InterruptionMessage = $"{spellName} interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for sustained spell concentration.
+    /// </summary>
+    /// <param name="spellName">Display name of the sustained spell</param>
+    /// <param name="linkedEffectIds">Effect IDs on target characters (can be empty, added later)</param>
+    /// <param name="fatDrainPerRound">FAT cost per round (default 1)</param>
+    /// <param name="vitDrainPerRound">VIT cost per round (default 0)</param>
+    /// <param name="casterId">The character ID of the caster</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateSustainedConcentrationState(
+        string spellName,
+        List<Guid>? linkedEffectIds = null,
+        int fatDrainPerRound = 1,
+        int vitDrainPerRound = 0,
+        Guid? casterId = null)
+    {
+        return new ConcentrationState
+        {
+            ConcentrationType = "SustainedSpell",
+            SpellName = spellName,
+            LinkedEffectIds = linkedEffectIds ?? new List<Guid>(),
+            FatDrainPerRound = fatDrainPerRound,
+            VitDrainPerRound = vitDrainPerRound,
+            SourceCasterId = casterId,
+            // No fixed duration - sustained until dropped or broken
+            TotalRequired = 0,
+            CurrentProgress = 0
         }.Serialize();
     }
 }
