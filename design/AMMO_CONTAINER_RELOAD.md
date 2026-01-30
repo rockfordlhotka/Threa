@@ -19,6 +19,78 @@ This differs from the combat `ReloadMode.razor` pattern because:
 
 ---
 
+## Architecture: GM-Centric Time Model
+
+**IMPORTANT**: All time advancement occurs in the GM page/instance, not in player pages.
+
+### Flow Diagram
+
+```
+PLAYER                          GM                              SERVER
+───────                         ──                              ──────
+1. Select magazine
+   in inventory
+       │
+2. Click "Reload"
+   → Modal opens
+       │
+3. Confirm reload
+   → Create concentration
+     effect on character
+   → Save character
+       │
+       └──────────────────────────────────────────────────────────────┐
+                                                                      │
+                                4. GM clicks "+1 Round"               │
+                                       │                              │
+                                       └─────────────────────────────>│
+                                                                      │
+                                              5. TimeAdvancementService
+                                                 loads character
+                                                       │
+                                              6. character.EndOfRound()
+                                                 → Effects.EndOfRound()
+                                                   → ConcentrationBehavior.OnTick()
+                                                     → progress++
+                                                       │
+                                              7. If complete:
+                                                 → OnExpire()
+                                                 → ExecuteAmmoContainerReload()
+                                                 → UPDATE ITEMS DIRECTLY
+                                                       │
+                                              8. Save character
+                                                       │
+                                              9. Publish CharactersUpdatedMessage
+                                                       │
+       ┌──────────────────────────────────────────────┘
+       │
+10. Receive message
+    → Reload character from DB
+    → Items already updated!
+    → UI refreshes
+```
+
+### Key Architectural Constraint
+
+`LastConcentrationResult` is a private field (not a CSLA registered property) in `CharacterEdit.cs` (line 35-36). CSLA's MobileFormatter only serializes registered properties and IMobileObject implementations, so this field does NOT survive:
+1. Database persistence (it's also in `mapIgnore`)
+2. Tier-to-tier serialization via MobileFormatter
+
+When the GM's `TimeAdvancementService` processes effects and saves the character, then the player reloads from DB, the result is lost.
+
+**Solution**: Item updates must happen **server-side** during `TimeAdvancementService` processing, not in `Play.razor`. The `TimeAdvancementService` needs DAL access to update items directly when concentration completes.
+
+### Player→GM Sync
+
+Note: Players CAN still modify character state directly (e.g., spending AP, taking actions) and those changes sync to the GM page immediately via `CharacterUpdateMessage`. This is separate from time advancement - it's about real-time collaboration.
+
+For ammo container reload, the flow is:
+1. **Player initiates**: Creates concentration effect, saves character → GM sees effect appear
+2. **GM advances time**: Server processes effect, updates items directly
+3. **Player refreshes**: Sees items already updated
+
+---
+
 ## Implementation Steps
 
 ### Step 1: Create AmmoContainerReloadPayload
@@ -173,32 +245,74 @@ private void ExecuteAmmoContainerReload(CharacterEdit character, ConcentrationSt
 }
 ```
 
-### Step 3: Update Play.razor to Handle Completion
+### Step 3: Update TimeAdvancementService for Server-Side Item Updates
 
-**File**: `Threa/Threa.Client/Components/Pages/GamePlay/Play.razor`
+**File**: `GameMechanics/Time/TimeAdvancementService.cs`
 
-**A. Add to `ProcessConcentrationResult()` switch (~line 1141):**
+Since `LastConcentrationResult` is `[NonSerialized]`, item updates must happen server-side before the character is saved. Add a method to process concentration results with DAL access.
+
+**A. Add ICharacterItemDal dependency:**
 ```csharp
-case "AmmoContainerReload":
-    if (result.Success)
-    {
-        await ExecuteAmmoContainerReload(targetCharacter, result.Payload);
-        AddLogEntry(result.Message, ActivityCategory.Effect);
-    }
-    else
-    {
-        AddLogEntry(result.Message, ActivityCategory.Effect);
-    }
-    break;
+private readonly ICharacterItemDal _characterItemDal;
+
+public TimeAdvancementService(
+    IChildDataPortal<CharacterEdit> characterPortal,
+    IChildDataPortal<EffectRecord> effectPortal,
+    ITableDal tableDal,
+    ICharacterItemDal characterItemDal,  // NEW
+    ITimeEventPublisher timeEventPublisher,
+    ILogger<TimeAdvancementService> logger)
+{
+    // ...
+    _characterItemDal = characterItemDal;
+}
 ```
 
-**B. Add new method (~line 1220):**
+**B. Add concentration result processing after EndOfRound (~line 130):**
+```csharp
+// Process end-of-round for each round
+for (int i = 0; i < roundCount; i++)
+{
+    character.EndOfRound(_effectPortal);
+}
+
+// NEW: Process any concentration completion results
+await ProcessConcentrationResultAsync(character);
+
+// Save the updated character
+await _characterPortal.UpdateAsync(character);
+```
+
+**C. Add processing method:**
 ```csharp
 /// <summary>
-/// Executes the ammo container reload by updating the container's LoadedAmmo
-/// and reducing the source loose ammo stack.
+/// Processes concentration completion results that require item updates.
+/// Called after EndOfRound before saving character.
 /// </summary>
-private async Task ExecuteAmmoContainerReload(CharacterEdit targetCharacter, string? payloadJson)
+private async Task ProcessConcentrationResultAsync(CharacterEdit character)
+{
+    var result = character.LastConcentrationResult;
+    if (result == null) return;
+
+    try
+    {
+        switch (result.ActionType)
+        {
+            case "MagazineReload":
+                await ExecuteMagazineReloadAsync(result.Payload);
+                break;
+            case "AmmoContainerReload":
+                await ExecuteAmmoContainerReloadAsync(result.Payload);
+                break;
+        }
+    }
+    finally
+    {
+        character.ClearConcentrationResult();
+    }
+}
+
+private async Task ExecuteAmmoContainerReloadAsync(string? payloadJson)
 {
     if (string.IsNullOrEmpty(payloadJson)) return;
 
@@ -206,7 +320,7 @@ private async Task ExecuteAmmoContainerReload(CharacterEdit targetCharacter, str
     if (payload == null) return;
 
     // Update container ammo state
-    var container = await CharacterItemDal.GetItemAsync(payload.ContainerId);
+    var container = await _characterItemDal.GetItemAsync(payload.ContainerId);
     if (container != null)
     {
         var containerState = AmmoContainerState.FromJson(container.CustomProperties);
@@ -215,21 +329,42 @@ private async Task ExecuteAmmoContainerReload(CharacterEdit targetCharacter, str
             containerState.AmmoType = payload.AmmoType;
         container.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
             container.CustomProperties, containerState);
-        await CharacterItemDal.UpdateItemAsync(container);
+        await _characterItemDal.UpdateItemAsync(container);
     }
 
     // Reduce source ammo stack
-    var source = await CharacterItemDal.GetItemAsync(payload.SourceItemId);
+    var source = await _characterItemDal.GetItemAsync(payload.SourceItemId);
     if (source != null)
     {
         source.StackSize -= payload.RoundsToLoad;
         if (source.StackSize <= 0)
-            await CharacterItemDal.DeleteItemAsync(payload.SourceItemId);
+            await _characterItemDal.DeleteItemAsync(payload.SourceItemId);
         else
-            await CharacterItemDal.UpdateItemAsync(source);
+            await _characterItemDal.UpdateItemAsync(source);
+    }
+}
+
+private async Task ExecuteMagazineReloadAsync(string? payloadJson)
+{
+    // Similar pattern for weapon magazine reload
+    if (string.IsNullOrEmpty(payloadJson)) return;
+
+    var payload = MagazineReloadPayload.FromJson(payloadJson);
+    if (payload == null) return;
+
+    var weapon = await _characterItemDal.GetItemAsync(payload.WeaponItemId);
+    if (weapon != null)
+    {
+        var ammoState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+        ammoState.LoadedAmmo = payload.RoundsToLoad;
+        weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+            weapon.CustomProperties, ammoState);
+        await _characterItemDal.UpdateItemAsync(weapon);
     }
 }
 ```
+
+**NOTE**: This also fixes the existing `MagazineReload` concentration which currently has the same serialization issue.
 
 ### Step 4: Create ReloadAmmoContainerModal Component
 
@@ -503,9 +638,11 @@ private async Task OnReloadAmmoContainerConfirm(ReloadAmmoContainerResult result
 |------|--------|---------|
 | `GameMechanics/Effects/Behaviors/AmmoContainerReloadPayload.cs` | **NEW** | Payload class |
 | `GameMechanics/Effects/Behaviors/ConcentrationBehavior.cs` | Modify | Add type check, factory, executor |
-| `Threa.Client/Components/Pages/GamePlay/Play.razor` | Modify | Add completion handler |
+| `GameMechanics/Time/TimeAdvancementService.cs` | Modify | Add DAL dependency, process concentration results server-side |
 | `Threa.Client/Components/Shared/ReloadAmmoContainerModal.razor` | **NEW** | Modal UI component |
 | `Threa.Client/Components/Pages/GamePlay/TabPlayInventory.razor` | Modify | Add button, modal, handlers |
+
+**Note**: This design also fixes the existing `MagazineReload` concentration which has the same `[NonSerialized]` issue with `LastConcentrationResult`.
 
 ---
 
@@ -523,6 +660,7 @@ private async Task OnReloadAmmoContainerConfirm(ReloadAmmoContainerResult result
 
 ## User Flow
 
+### Player Initiates Reload
 1. Player opens Inventory tab
 2. Clicks on a magazine (ammo container) with space available
 3. Sees "Reload" button (only if compatible loose ammo exists)
@@ -534,24 +672,66 @@ private async Task OnReloadAmmoContainerConfirm(ReloadAmmoContainerResult result
    - Duration: "6 rounds of concentration"
 6. Clicks "Start Reload"
 7. If already concentrating → ConcentrationBreakDialog confirms
-8. Concentration effect created on character
-9. Each round tick: progress updates (visible in effects panel)
-10. On completion: magazine updated, loose ammo reduced
+8. Concentration effect created and saved on character
+9. Player sees concentration effect in effects panel
+
+### GM Advances Time (Round-by-Round)
+10. GM clicks "+1 Round" in GM controls
+11. Server-side `TimeAdvancementService.AdvanceRoundsAsync()`:
+    - Loads character
+    - Calls `character.EndOfRound()` → `Effects.EndOfRound()`
+    - Concentration progresses: `OnTick()` increments `CurrentProgress`
+    - If complete: `OnExpire()` → `ExecuteAmmoContainerReload()` sets `LastConcentrationResult`
+    - **Server processes result**: Updates container and source items via DAL
+    - Clears `LastConcentrationResult`
+    - Saves character
+    - Publishes `CharactersUpdatedMessage`
+12. Player receives update notification
+13. Player UI reloads character from DB
+14. Items are already updated! Magazine now has ammo, loose ammo reduced
+15. Concentration effect gone (expired)
 
 ---
 
 ## Verification
 
 1. **Build**: `dotnet build Threa.sln`
-2. **Manual Test**:
-   - Create character with empty magazine and loose ammo
-   - Select magazine in inventory
-   - Click Reload, select ammo source, set quantity
-   - Verify concentration effect appears in effects panel
-   - Advance time (GM controls)
-   - Verify completion message in log
-   - Verify magazine now has ammo
-   - Verify loose ammo stack reduced
+
+2. **Unit Tests** (new):
+   - `TimeAdvancementService.ProcessConcentrationResultAsync()` updates items correctly
+   - `AmmoContainerReloadPayload` serialization/deserialization
+   - Duration calculation: `Math.Ceiling(roundsToLoad / 3.0)`
+
+3. **Manual Test** (requires GM + Player):
+
+   **Setup**:
+   - Create character with empty magazine (e.g., "9mm Magazine" capacity 30, loaded 0)
+   - Add loose ammo to inventory (e.g., "9mm Rounds" x50)
+   - Join character to a table
+
+   **Player Side**:
+   - Open Inventory tab
+   - Click the magazine
+   - Verify "Reload" button appears
+   - Click Reload → Modal opens
+   - Select "9mm Rounds" as source
+   - Set quantity to 18 (should show "6 rounds of concentration")
+   - Click "Start Reload"
+   - Verify concentration effect appears: "Reloading 9mm Magazine"
+
+   **GM Side**:
+   - Click "+1 Round" 6 times (or "+6 Rounds" if available)
+   - Observe log entries showing progress
+
+   **Player Side (after time advances)**:
+   - Verify concentration effect is gone
+   - Verify magazine now shows "18/30"
+   - Verify loose ammo reduced from 50 to 32
+
+4. **Edge Cases**:
+   - Interrupt concentration mid-reload (player takes action)
+   - Reload when source ammo is exactly the amount needed
+   - Reload when source ammo is less than space available
 
 ---
 

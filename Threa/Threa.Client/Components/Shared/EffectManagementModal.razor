@@ -53,18 +53,13 @@
                                     }
                                     else
                                     {
-                                        <span class="text-warning">Expired</span>
-                                    }
-                                }
-                                else if (effect.DurationRounds.HasValue)
-                                {
-                                    var remaining = effect.DurationRounds.Value - effect.ElapsedRounds;
-                                    <span class="text-info">@remaining round@(remaining != 1 ? "s" : "") remaining</span>
-                                }
-                                else
-                                {
-                                    <span class="text-secondary">Permanent</span>
-                                }
+                                                <span class="text-warning">Expired</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">Permanent</span>
+                                        }
                             </div>
 
                             @* Modifiers Summary *@

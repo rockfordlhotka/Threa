@@ -72,13 +72,8 @@ public class DebuffBehavior : IEffectBehavior
 
   public EffectTickResult OnTick(EffectRecord effect, CharacterEdit character)
   {
-    // Debuffs expire based on duration
-#pragma warning disable CS0618 // Legacy round-based expiration check for backward compatibility
-    if (effect.DurationRounds.HasValue && effect.ElapsedRounds >= effect.DurationRounds.Value)
-#pragma warning restore CS0618
-    {
-      return EffectTickResult.ExpireEarly("Debuff expired");
-    }
+    // Debuffs expire based on duration - expiration is handled by EffectList.EndOfRound
+    // using IsExpired(currentGameTimeSeconds), so OnTick just continues
     return EffectTickResult.Continue();
   }
 

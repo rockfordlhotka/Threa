@@ -358,10 +358,14 @@
                                             </div>
                                         </div>
                                         <div class="text-end">
-                                            @if (effect.RemainingRounds.HasValue)
+                                            @{
+                                                var remainingSeconds = GetRemainingSeconds(effect);
+                                            }
+                                            @if (remainingSeconds.HasValue)
                                             {
-                                                <span class="badge @GetDurationBadgeClass(effect.RemainingRounds.Value)">
-                                                    @effect.RemainingRounds rnd
+                                                var remainingRounds = (int)(remainingSeconds.Value / 3);
+                                                <span class="badge @GetDurationBadgeClass(remainingRounds)">
+                                                    @remainingRounds rnd
                                                 </span>
                                             }
                                             else
@@ -387,10 +391,14 @@
                                             {
                                                 <div class="text-muted">Stacks: @effect.CurrentStacks</div>
                                             }
-                                            @if (effect.DurationRounds.HasValue)
+                                            @if (effect.ExpiresAtEpochSeconds.HasValue && effect.CreatedAtEpochSeconds.HasValue)
                                             {
+                                                var totalDurationSeconds = effect.ExpiresAtEpochSeconds.Value - effect.CreatedAtEpochSeconds.Value;
+                                                var elapsedSeconds = Character.CurrentGameTimeSeconds - effect.CreatedAtEpochSeconds.Value;
+                                                var totalRounds = totalDurationSeconds / 3;
+                                                var elapsedRounds = Math.Max(0, elapsedSeconds / 3);
                                                 <div class="text-muted">
-                                                    Duration: @effect.ElapsedRounds / @effect.DurationRounds rounds
+                                                    Duration: @elapsedRounds / @totalRounds rounds
                                                 </div>
                                             }
                                         </div>
@@ -686,6 +694,14 @@
 
     private string GetDurationBadgeClass(int remainingRounds) =>
         remainingRounds <= 3 ? "bg-danger" : remainingRounds <= 10 ? "bg-warning text-dark" : "bg-info";
+
+    private long? GetRemainingSeconds(GameMechanics.EffectRecord effect)
+    {
+        if (!effect.ExpiresAtEpochSeconds.HasValue) return null;
+        var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
+        var remaining = effect.ExpiresAtEpochSeconds.Value - currentGameTime;
+        return remaining > 0 ? remaining : 0;
+    }
 
     private void ToggleEffectExpansion(Guid effectId)
     {

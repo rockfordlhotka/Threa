@@ -336,11 +336,6 @@
                 var durationSeconds = ExistingEffect.ExpiresAtEpochSeconds.Value - ExistingEffect.CreatedAtEpochSeconds.Value;
                 ParseDurationFromSeconds(durationSeconds);
             }
-            else if (ExistingEffect.DurationRounds.HasValue)
-            {
-                durationType = "Rounds";
-                durationValue = ExistingEffect.DurationRounds.Value;
-            }
             else
             {
                 durationType = "Permanent";

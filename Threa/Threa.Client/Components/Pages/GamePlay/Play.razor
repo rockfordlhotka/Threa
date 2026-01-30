@@ -891,7 +891,20 @@ private async Task SelectCharacterAsync(int characterId)
 
     private string GetEffectTooltip(GameMechanics.EffectRecord effect)
     {
-        var duration = effect.RemainingRounds.HasValue ? $" ({effect.RemainingRounds} rounds left)" : "";
+        string duration = "";
+        if (effect.ExpiresAtEpochSeconds.HasValue)
+        {
+            var remainingSeconds = effect.ExpiresAtEpochSeconds.Value - (character?.CurrentGameTimeSeconds ?? 0);
+            if (remainingSeconds > 0)
+            {
+                var remainingRounds = (int)(remainingSeconds / 3);
+                duration = $" ({remainingRounds} rounds left)";
+            }
+            else
+            {
+                duration = " (Expired)";
+            }
+        }
         var source = string.IsNullOrEmpty(effect.Source) ? "" : $" (Source: {effect.Source})";
         var description = string.IsNullOrEmpty(effect.Description) ? "" : $": {effect.Description}";
 

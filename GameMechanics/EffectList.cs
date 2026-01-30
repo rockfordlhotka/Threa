@@ -272,11 +272,6 @@ public class EffectList : BusinessListBase<EffectList, EffectRecord>
 
     foreach (var effect in this.Where(e => e.IsActive))
     {
-      // Increment elapsed rounds (for legacy/display purposes)
-#pragma warning disable CS0618 // Maintaining ElapsedRounds for backward compatibility and UI display
-      effect.ElapsedRounds++;
-#pragma warning restore CS0618
-
       // Call OnTick
       var tickResult = effect.Behavior.OnTick(effect, Character);
       if (tickResult.ShouldExpireEarly)
