@@ -3,12 +3,14 @@
 @using GameMechanics
 @using GameMechanics.Effects
 @using GameMechanics.Messaging
+@using GameMechanics.Time
 @using Threa.Dal.Dto
 @using Radzen
 
 @inject IDataPortal<CharacterEdit> characterPortal
 @inject DialogService DialogService
 @inject ITimeEventPublisher TimeEventPublisher
+@inject IGameTimeFormatService TimeFormat
 
 <div class="p-3">
     @* Add Effect Button *@
@@ -49,17 +51,17 @@
                                     var remaining = effect.ExpiresAtEpochSeconds.Value - (Character?.CurrentGameTimeSeconds ?? 0);
                                     if (remaining > 0)
                                     {
-                                        <span class="text-info">@FormatDuration(remaining)</span>
+                                        <span class="@GetDurationClass(remaining)">@TimeFormat.FormatRemaining(remaining)</span>
                                     }
                                     else
                                     {
-                                                <span class="text-warning">Expired</span>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <span class="text-secondary">Permanent</span>
-                                        }
+                                        <span class="text-warning">Expired</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-secondary"><i class="bi bi-infinity me-1"></i>Permanent</span>
+                                }
                             </div>
 
                             @* Modifiers Summary *@
@@ -245,15 +247,19 @@
         };
     }
 
-    private static string FormatDuration(long seconds)
+    /// <summary>
+    /// Gets the CSS class for duration display based on urgency.
+    /// </summary>
+    private static string GetDurationClass(long remainingSeconds)
     {
-        if (seconds < 60)
-            return $"{seconds}s";
-        if (seconds < 3600)
-            return $"{seconds / 60}m {seconds % 60}s";
-        if (seconds < 86400)
-            return $"{seconds / 3600}h {(seconds % 3600) / 60}m";
-        return $"{seconds / 86400}d {(seconds % 86400) / 3600}h";
+        // For short durations, check if running out soon
+        if (remainingSeconds < 600)
+        {
+            var rounds = remainingSeconds / 3;
+            if (rounds <= 3) return "text-danger";
+            if (rounds <= 10) return "text-warning";
+        }
+        return "text-info";
     }
 
     private static string GetModifierSummary(EffectState state)

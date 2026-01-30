@@ -3,6 +3,7 @@
 @using Threa.Dal
 @using Threa.Dal.Dto
 @using GameMechanics
+@using GameMechanics.Combat
 @using GameMechanics.Items
 @using GameMechanics.Messaging
 @using Radzen
@@ -105,6 +106,23 @@
         overflow: hidden;
         border-top: 1px solid var(--color-card-border, #e9ecef);
     }
+    .item-loaded-ammo {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        background: var(--bs-primary);
+        color: white;
+        padding: 0 4px;
+        border-radius: 2px;
+        font-size: 0.6rem;
+    }
+    .item-loaded-ammo.empty {
+        background: var(--bs-danger);
+    }
+    .item-loaded-ammo.low {
+        background: var(--bs-warning);
+        color: black;
+    }
 </style>
 
 @if (!string.IsNullOrEmpty(feedbackMessage))
@@ -192,6 +210,7 @@
                     <div class="inventory-grid">
                         @foreach (var item in items.Where(i => !i.IsEquipped && i.ContainerItemId == null))
                         {
+                            var loadedAmmoInfo = GetLoadedAmmoInfo(item);
                             <div class="inventory-tile @(openMenuItemId == item.Id ? "menu-open" : "")">
                                 <div class="position-absolute" style="top: 2px; right: 2px;">
                                     <button class="btn btn-sm p-0 text-muted" style="line-height: 1;"
@@ -211,6 +230,12 @@
                                             {
                                                 <button class="dropdown-item" @onclick="() => StartEditQuantityAndCloseMenu(item)" disabled="@isProcessing">
                                                     <i class="bi bi-hash me-2"></i>Set Quantity
+                                                </button>
+                                            }
+                                            @if (IsAmmoContainer(item))
+                                            {
+                                                <button class="dropdown-item" @onclick="() => ReloadAmmoContainerAndCloseMenu(item)" disabled="@isProcessing">
+                                                    <i class="bi bi-box-arrow-in-down me-2"></i>Reload
                                                 </button>
                                             }
                                             <hr class="dropdown-divider" />
@@ -240,9 +265,15 @@
                                 {
                                     <div class="item-icon">@GetItemIcon(item)</div>
                                     <div class="item-name" title="@GetItemName(item)">@GetItemName(item)</div>
+                                    @if (loadedAmmoInfo.HasAmmo)
+                                    {
+                                        <div class="item-loaded-ammo @loadedAmmoInfo.StatusClass" title="@loadedAmmoInfo.Tooltip">
+                                            @loadedAmmoInfo.Display
+                                        </div>
+                                    }
                                     @if (item.StackSize > 1)
                                     {
-                                        <div class="item-quantity">x@item.StackSize</div>
+                                        <div class="item-quantity">@($"x{item.StackSize}")</div>
                                     }
                                 }
                             </div>
@@ -352,6 +383,9 @@
 
     private record SlotCategory(string Name, EquipmentSlot[] Slots);
 
+    // Loaded ammo display info
+    private record LoadedAmmoInfo(bool HasAmmo, string Display, string StatusClass, string Tooltip);
+
     protected override async Task OnInitializedAsync()
     {
         await LoadItemsAsync();
@@ -446,6 +480,71 @@
         };
     }
 
+    /// <summary>
+    /// Gets loaded ammo information for display on inventory tiles.
+    /// Shows ammo count for ammo containers and weapons with magazines.
+    /// </summary>
+    private LoadedAmmoInfo GetLoadedAmmoInfo(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        if (template == null)
+            return new LoadedAmmoInfo(false, "", "", "");
+
+        // Check for ammo containers (magazines, quivers, speedloaders)
+        if (template.ItemType == ItemType.AmmoContainer)
+        {
+            var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+            var containerProps = AmmoContainerProperties.FromJson(template.CustomProperties);
+
+            int loaded = containerState.LoadedAmmo;
+            int maxCapacity = containerState.MaxCapacity;
+            if (maxCapacity == 0 && containerProps != null)
+                maxCapacity = containerProps.Capacity;
+
+            if (maxCapacity == 0)
+                return new LoadedAmmoInfo(false, "", "", "");
+
+            string statusClass = "";
+            if (loaded == 0)
+                statusClass = "empty";
+            else if (loaded <= maxCapacity / 4)
+                statusClass = "low";
+
+            string ammoType = containerState.AmmoType ?? containerProps?.AmmoType ?? "";
+            string tooltip = $"{loaded}/{maxCapacity} rounds";
+            if (!string.IsNullOrEmpty(ammoType))
+                tooltip += $" ({ammoType})";
+
+            return new LoadedAmmoInfo(true, $"x{loaded}", statusClass, tooltip);
+        }
+
+        // Check for weapons with loaded ammo
+        if (template.ItemType == ItemType.Weapon)
+        {
+            var weaponState = WeaponAmmoState.FromJson(item.CustomProperties);
+            int totalAmmo = weaponState.TotalAvailable; // Includes chamber
+
+            // Only show if weapon has ammo capacity (ranged weapons)
+            if (totalAmmo > 0 || weaponState.LoadedMagazineId.HasValue)
+            {
+                string statusClass = "";
+                if (totalAmmo == 0)
+                    statusClass = "empty";
+                // Can't easily determine "low" without capacity info from template
+
+                string tooltip = $"{totalAmmo} rounds loaded";
+                if (weaponState.ChamberLoaded)
+                    tooltip += " (+1 chambered)";
+                if (!string.IsNullOrEmpty(weaponState.LoadedAmmoType))
+                    tooltip += $" ({weaponState.LoadedAmmoType})";
+
+                return new LoadedAmmoInfo(true, $"x{totalAmmo}", statusClass, tooltip);
+            }
+        }
+
+        return new LoadedAmmoInfo(false, "", "", "");
+    }
+
     // Item operation methods
 
     private async Task OpenAddItemModal()
@@ -519,6 +618,22 @@
                 EquippedSlot = EquipmentSlot.None,
                 CreatedAt = DateTime.UtcNow
             };
+
+            // GM grants ammo containers as full by default
+            if (fullTemplate.ItemType == ItemType.AmmoContainer)
+            {
+                var containerProps = AmmoContainerProperties.FromJson(fullTemplate.CustomProperties);
+                if (containerProps != null)
+                {
+                    var state = new AmmoContainerState
+                    {
+                        LoadedAmmo = containerProps.Capacity,
+                        MaxCapacity = containerProps.Capacity,
+                        AmmoType = containerProps.AmmoType
+                    };
+                    newItem.CustomProperties = state.ToJson();
+                }
+            }
 
             var result = await itemManagementService.AddItemToInventoryAsync(character, newItem);
 
@@ -751,6 +866,75 @@
     {
         var template = templates?.GetValueOrDefault(item.ItemTemplateId);
         return template?.IsStackable ?? false;
+    }
+
+    private bool IsAmmoContainer(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        return template?.ItemType == ItemType.AmmoContainer;
+    }
+
+    private async Task ReloadAmmoContainerAndCloseMenu(CharacterItem item)
+    {
+        CloseMenu();
+        await ReloadAmmoContainer(item);
+    }
+
+    private async Task ReloadAmmoContainer(CharacterItem item)
+    {
+        var template = templates?.GetValueOrDefault(item.ItemTemplateId);
+        if (template == null) return;
+
+        var containerProps = AmmoContainerProperties.FromJson(template.CustomProperties);
+        var maxCapacity = containerProps?.Capacity ?? 0;
+
+        var result = await DialogService.OpenAsync<GmReloadAmmoContainerModal>(
+            "Reload Ammo Container",
+            new Dictionary<string, object>
+            {
+                { "Container", item },
+                { "ContainerName", GetItemName(item) },
+                { "MaxCapacity", maxCapacity }
+            },
+            new DialogOptions { Width = "400px", CloseDialogOnOverlayClick = true });
+
+        if (result is int newAmmoCount)
+        {
+            isProcessing = true;
+            ClearFeedback();
+
+            try
+            {
+                var state = AmmoContainerState.FromJson(item.CustomProperties);
+                state.LoadedAmmo = newAmmoCount;
+                state.MaxCapacity = maxCapacity;
+                if (containerProps != null)
+                    state.AmmoType = containerProps.AmmoType;
+
+                item.CustomProperties = state.ToJson();
+                await itemDal.UpdateItemAsync(item);
+
+                await timeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.InventoryChanged,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Set {GetItemName(item)} ammo to {newAmmoCount}/{maxCapacity}"
+                });
+
+                ShowFeedback($"Set {GetItemName(item)} to {newAmmoCount}/{maxCapacity} rounds", "alert-success", "bi-check-circle");
+                await LoadItemsAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-circle");
+            }
+            finally
+            {
+                isProcessing = false;
+            }
+        }
     }
 
     private int GetMaxStackSize(CharacterItem item)

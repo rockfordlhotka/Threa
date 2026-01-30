@@ -1,13 +1,10 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
+@using System.Reflection
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
 
-@{
-    var isFullWidthPage = IsFullWidthPage();
-}
-
-<div class="page @(isFullWidthPage ? "full-width-mode" : "")">
+<div class="page @(IsFullWidthPage() ? "full-width-mode" : "")">
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -23,6 +20,7 @@
                     <a href="login">Login</a>
                 </NotAuthorized>
             </AuthorizeView>
+            <span class="ms-3 text-muted small">@($"v{Version}")</span>
         </div>
 
         <article class="content px-4">
@@ -38,6 +36,8 @@
 </div>
 
 @code {
+    private string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+
     protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
@@ -59,3 +59,4 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
+

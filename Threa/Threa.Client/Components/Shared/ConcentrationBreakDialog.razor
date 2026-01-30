@@ -9,7 +9,7 @@
     <div class="dialog-content">
         <p class="mb-3">You are concentrating on:</p>
 
-        <div class="concentration-details card p-3 mb-3 bg-light">
+        <div class="concentration-details card p-3 mb-3">
             <h5 class="mb-2">@GetConcentrationName()</h5>
             @if (IsCastingTime)
             {
@@ -109,7 +109,8 @@
 
     private bool IsCastingTime => ConcentrationType == "MagazineReload"
         || ConcentrationType == "SpellCasting"
-        || ConcentrationType == "RitualPreparation";
+        || ConcentrationType == "RitualPreparation"
+        || ConcentrationType == "AmmoContainerReload";
 
     private bool IsSustained => ConcentrationType == "SustainedSpell"
         || ConcentrationType == "SustainedAbility"

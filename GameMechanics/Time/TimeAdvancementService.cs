@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Csla;
+using GameMechanics.Combat;
+using GameMechanics.Effects.Behaviors;
 using GameMechanics.Messaging;
 using Threa.Dal;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Time;
 
@@ -71,17 +74,23 @@ public class TimeAdvancementService
     private readonly IDataPortal<CharacterEdit> _characterPortal;
     private readonly IChildDataPortal<EffectRecord> _effectPortal;
     private readonly ITimeEventPublisher _timeEventPublisher;
+    private readonly ICharacterItemDal _itemDal;
+    private readonly IItemTemplateDal _templateDal;
 
     public TimeAdvancementService(
         ITableDal tableDal,
         IDataPortal<CharacterEdit> characterPortal,
         IChildDataPortal<EffectRecord> effectPortal,
-        ITimeEventPublisher timeEventPublisher)
+        ITimeEventPublisher timeEventPublisher,
+        ICharacterItemDal itemDal,
+        IItemTemplateDal templateDal)
     {
         _tableDal = tableDal;
         _characterPortal = characterPortal;
         _effectPortal = effectPortal;
         _timeEventPublisher = timeEventPublisher;
+        _itemDal = itemDal;
+        _templateDal = templateDal;
     }
 
     /// <summary>
@@ -127,6 +136,16 @@ public class TimeAdvancementService
                     for (int i = 0; i < roundCount; i++)
                     {
                         character.EndOfRound(_effectPortal);
+
+                        // Process any concentration result (deferred actions like ammo reload)
+                        if (character.LastConcentrationResult != null)
+                        {
+                            var concentrationMessage = await ProcessConcentrationResultAsync(character);
+                            if (!string.IsNullOrEmpty(concentrationMessage))
+                            {
+                                result.Messages.Add(concentrationMessage);
+                            }
+                        }
                     }
 
                     // Save the updated character
@@ -197,6 +216,16 @@ public class TimeAdvancementService
                     // Process the time skip
                     character.ProcessTimeSkip(skipUnit, count, _effectPortal);
 
+                    // Process any concentration result (deferred actions like ammo reload)
+                    if (character.LastConcentrationResult != null)
+                    {
+                        var concentrationMessage = await ProcessConcentrationResultAsync(character);
+                        if (!string.IsNullOrEmpty(concentrationMessage))
+                        {
+                            result.Messages.Add(concentrationMessage);
+                        }
+                    }
+
                     // Save the updated character
                     await _characterPortal.UpdateAsync(character);
                     result.UpdatedCharacterIds.Add(tc.CharacterId);
@@ -251,5 +280,226 @@ public class TimeAdvancementService
             TimeEventType.EndOfWeek => $"{count} week(s)",
             _ => $"{count} time unit(s)"
         };
+    }
+
+    /// <summary>
+    /// Processes the LastConcentrationResult from a character after concentration ends.
+    /// Handles magazine reload completion and ammo container reload.
+    /// </summary>
+    /// <returns>A message describing what happened, or null if nothing to process.</returns>
+    private async Task<string?> ProcessConcentrationResultAsync(CharacterEdit character)
+    {
+        var result = character.LastConcentrationResult;
+        if (result == null) return null;
+
+        try
+        {
+            switch (result.ActionType)
+            {
+                case "MagazineReload":
+                    if (result.Success)
+                    {
+                        await ExecuteMagazineReloadAsync(result.Payload);
+                        return result.Message;
+                    }
+                    break;
+
+                case "AmmoContainerReload":
+                    if (result.Success)
+                    {
+                        await ExecuteAmmoContainerReloadAsync(result.Payload);
+                        return result.Message;
+                    }
+                    break;
+
+                case "AmmoContainerUnload":
+                    if (result.Success)
+                    {
+                        await ExecuteAmmoContainerUnloadAsync(result.Payload);
+                        return result.Message;
+                    }
+                    break;
+            }
+
+            // Clear the result after processing
+            character.LastConcentrationResult = null;
+            return result.Success ? result.Message : null;
+        }
+        catch (Exception ex)
+        {
+            return $"Error processing concentration result: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Executes the magazine reload by updating the weapon's ammo state.
+    /// </summary>
+    private async Task ExecuteMagazineReloadAsync(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = MagazineReloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        // Update weapon ammo state
+        var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+        if (weapon != null)
+        {
+            var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+            weaponState.LoadedAmmo += payload.RoundsToLoad;
+            weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                weapon.CustomProperties, weaponState);
+            await _itemDal.UpdateItemAsync(weapon);
+        }
+
+        // Reduce magazine ammo
+        var magazine = await _itemDal.GetItemAsync(payload.MagazineItemId);
+        if (magazine != null)
+        {
+            var magazineState = AmmoContainerState.FromJson(magazine.CustomProperties);
+            magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - payload.RoundsToLoad);
+            magazine.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
+                magazine.CustomProperties, magazineState);
+            await _itemDal.UpdateItemAsync(magazine);
+        }
+    }
+
+    /// <summary>
+    /// Executes the ammo container reload by updating the container's ammo state and reducing the loose ammo stack.
+    /// </summary>
+    private async Task ExecuteAmmoContainerReloadAsync(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = AmmoContainerReloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        // Update container ammo state
+        var container = await _itemDal.GetItemAsync(payload.ContainerId);
+        if (container != null)
+        {
+            var containerState = AmmoContainerState.FromJson(container.CustomProperties);
+
+            // If max capacity not set, try to get from template properties
+            if (containerState.MaxCapacity == 0 && container.Template != null)
+            {
+                var containerProps = AmmoContainerProperties.FromJson(container.Template.CustomProperties);
+                if (containerProps != null)
+                {
+                    containerState.MaxCapacity = containerProps.Capacity;
+                }
+            }
+
+            containerState.LoadedAmmo += payload.RoundsToLoad;
+            if (payload.AmmoType != null)
+                containerState.AmmoType = payload.AmmoType;
+            container.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
+                container.CustomProperties, containerState);
+            await _itemDal.UpdateItemAsync(container);
+        }
+
+        // Reduce source ammo stack
+        var source = await _itemDal.GetItemAsync(payload.SourceItemId);
+        if (source != null)
+        {
+            source.StackSize -= payload.RoundsToLoad;
+            if (source.StackSize <= 0)
+                await _itemDal.DeleteItemAsync(payload.SourceItemId);
+            else
+                await _itemDal.UpdateItemAsync(source);
+        }
+    }
+
+    /// <summary>
+    /// Executes the ammo container unload by reducing the container's ammo
+    /// and returning rounds to the character's inventory as loose ammo.
+    /// </summary>
+    private async Task ExecuteAmmoContainerUnloadAsync(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = AmmoContainerUnloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        // Update container ammo state
+        var container = await _itemDal.GetItemAsync(payload.ContainerId);
+        if (container == null) return;
+
+        var containerState = AmmoContainerState.FromJson(container.CustomProperties);
+        var roundsToUnload = Math.Min(payload.RoundsToUnload, containerState.LoadedAmmo);
+        if (roundsToUnload <= 0) return;
+
+        // Reduce container ammo
+        containerState.LoadedAmmo -= roundsToUnload;
+        container.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
+            container.CustomProperties, containerState);
+        await _itemDal.UpdateItemAsync(container);
+
+        // Get all character's items to find a matching loose ammo stack
+        var characterItems = await _itemDal.GetCharacterItemsAsync(payload.CharacterId);
+
+        // Find existing loose ammo of the same type
+        CharacterItem? existingLooseAmmo = null;
+        foreach (var item in characterItems)
+        {
+            // Must not be in a container
+            if (item.ContainerItemId != null) continue;
+
+            // Get template to check if it's ammunition of the right type
+            var template = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
+            if (template?.ItemType != ItemType.Ammunition) continue;
+
+            var ammoProps = AmmunitionProperties.FromJson(template.CustomProperties);
+            if (ammoProps == null) continue;
+            if (ammoProps.IsContainer) continue; // Not loose ammo
+
+            // Check if same ammo type
+            if (string.Equals(ammoProps.AmmoType, payload.AmmoType, StringComparison.OrdinalIgnoreCase))
+            {
+                existingLooseAmmo = item;
+                break;
+            }
+        }
+
+        if (existingLooseAmmo != null)
+        {
+            // Add to existing stack
+            existingLooseAmmo.StackSize += roundsToUnload;
+            await _itemDal.UpdateItemAsync(existingLooseAmmo);
+        }
+        else
+        {
+            // Need to create a new loose ammo item - find the template
+            var ammoTemplates = await _templateDal.GetTemplatesByTypeAsync(ItemType.Ammunition);
+            ItemTemplate? matchingTemplate = null;
+
+            foreach (var template in ammoTemplates)
+            {
+                var ammoProps = AmmunitionProperties.FromJson(template.CustomProperties);
+                if (ammoProps == null) continue;
+                if (ammoProps.IsContainer) continue; // Not loose ammo
+
+                if (string.Equals(ammoProps.AmmoType, payload.AmmoType, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchingTemplate = template;
+                    break;
+                }
+            }
+
+            if (matchingTemplate != null)
+            {
+                var newAmmo = new CharacterItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemTemplateId = matchingTemplate.Id,
+                    OwnerCharacterId = payload.CharacterId,
+                    StackSize = roundsToUnload,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _itemDal.AddItemAsync(newAmmo);
+            }
+            // If no matching template found, the rounds are lost - this shouldn't happen
+            // if the ammo type is properly set up
+        }
     }
 }

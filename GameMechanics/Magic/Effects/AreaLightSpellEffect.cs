@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GameMechanics.Time;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Magic.Effects;
@@ -137,20 +138,9 @@ public class AreaLightSpellEffect : ISpellEffect
         };
     }
 
-    private static string FormatDuration(int rounds)
-    {
-        if (rounds >= 1200) // 1 hour
-        {
-            var hours = rounds / 1200;
-            return hours == 1 ? "1 hour" : $"{hours} hours";
-        }
-        if (rounds >= 20) // 1 minute
-        {
-            var minutes = rounds / 20;
-            return minutes == 1 ? "1 minute" : $"{minutes} minutes";
-        }
-        return rounds == 1 ? "1 round" : $"{rounds} rounds";
-    }
+    private static readonly IGameTimeFormatService TimeFormat = new DefaultGameTimeFormatService();
+
+    private static string FormatDuration(int rounds) => TimeFormat.FormatRounds(rounds);
 
     private static string GetSpellDisplayName(string spellId) => spellId switch
     {

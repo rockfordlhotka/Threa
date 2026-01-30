@@ -934,3 +934,821 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="scifi"] .character-status-card.selected {
     box-shadow: var(--glow-secondary, 0 0 20px rgba(255, 0, 255, 0.4));
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCI-FI THEME TEXT READABILITY FIXES
+   Ensuring all text is readable on dark backgrounds
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* --- TABLE STYLES --- */
+[data-theme="scifi"] .table {
+  color: var(--color-text-primary);
+  --bs-table-color: var(--color-text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--color-card-border);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+  --bs-table-striped-color: var(--color-text-primary);
+  --bs-table-hover-bg: rgba(0, 240, 255, 0.08);
+  --bs-table-hover-color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .table > :not(caption) > * > * {
+  color: var(--color-text-primary);
+  background-color: transparent;
+  border-bottom-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .table td,
+[data-theme="scifi"] .table th {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .table thead th {
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  color: var(--color-text-primary);
+}
+
+/* --- LIST GROUP STYLES --- */
+[data-theme="scifi"] .list-group-item {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .list-group-item:hover {
+  background-color: rgba(0, 240, 255, 0.08);
+}
+
+[data-theme="scifi"] .list-group-item.active {
+  background-color: rgba(0, 240, 255, 0.15);
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .list-group-item-action:hover,
+[data-theme="scifi"] .list-group-item-action:focus {
+  background-color: rgba(0, 240, 255, 0.1);
+  color: var(--color-text-primary);
+}
+
+/* --- TEXT UTILITY OVERRIDES --- */
+[data-theme="scifi"] .text-muted {
+  color: #a0a0b8 !important; /* Brighter than default for dark bg */
+}
+
+[data-theme="scifi"] .text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="scifi"] .text-body {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="scifi"] .text-dark {
+  color: var(--color-text-primary) !important; /* Invert for dark theme */
+}
+
+[data-theme="scifi"] small,
+[data-theme="scifi"] .small {
+  color: var(--color-text-secondary);
+}
+
+/* --- DROPDOWN / SELECT STYLES --- */
+[data-theme="scifi"] .dropdown-menu {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .dropdown-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .dropdown-item:hover,
+[data-theme="scifi"] .dropdown-item:focus {
+  background-color: rgba(0, 240, 255, 0.15);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .dropdown-item.active,
+[data-theme="scifi"] .dropdown-item:active {
+  background-color: rgba(0, 240, 255, 0.25);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .dropdown-divider {
+  border-color: var(--color-card-border);
+}
+
+/* --- MODAL BODY TEXT --- */
+[data-theme="scifi"] .modal-body {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .modal-body p,
+[data-theme="scifi"] .modal-body span,
+[data-theme="scifi"] .modal-body div,
+[data-theme="scifi"] .modal-body label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .modal-footer {
+  border-top-color: var(--color-card-border);
+}
+
+/* --- TOOLTIP & POPOVER STYLES --- */
+[data-theme="scifi"] .tooltip-inner {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .bs-tooltip-top .tooltip-arrow::before,
+[data-theme="scifi"] .bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
+  border-top-color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .bs-tooltip-bottom .tooltip-arrow::before,
+[data-theme="scifi"] .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
+  border-bottom-color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .popover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .popover-header {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .popover-body {
+  color: var(--color-text-primary);
+}
+
+/* --- ACCORDION STYLES --- */
+[data-theme="scifi"] .accordion-item {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .accordion-button {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .accordion-button:not(.collapsed) {
+  background-color: rgba(0, 240, 255, 0.1);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .accordion-button::after {
+  filter: invert(1);
+}
+
+[data-theme="scifi"] .accordion-body {
+  background-color: var(--color-card-bg);
+  color: var(--color-text-primary);
+}
+
+/* --- PAGINATION STYLES --- */
+[data-theme="scifi"] .page-link {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .page-link:hover {
+  background-color: rgba(0, 240, 255, 0.15);
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .page-item.active .page-link {
+  background-color: transparent;
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  box-shadow: var(--glow-primary);
+}
+
+[data-theme="scifi"] .page-item.disabled .page-link {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-card-border);
+  color: var(--color-text-muted);
+}
+
+/* --- BREADCRUMB STYLES --- */
+[data-theme="scifi"] .breadcrumb {
+  background-color: transparent;
+}
+
+[data-theme="scifi"] .breadcrumb-item a {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .breadcrumb-item.active {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--color-text-muted);
+}
+
+/* --- OFFCANVAS / SIDEBAR STYLES --- */
+[data-theme="scifi"] .offcanvas {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .offcanvas-header {
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+[data-theme="scifi"] .offcanvas-title {
+  color: var(--color-accent-primary);
+}
+
+/* --- CLOSE BUTTON (X) STYLES --- */
+[data-theme="scifi"] .btn-close {
+  filter: invert(1) brightness(0.8);
+}
+
+[data-theme="scifi"] .btn-close:hover {
+  filter: invert(1) brightness(1);
+}
+
+/* --- GENERAL LINK COLORS --- */
+[data-theme="scifi"] a:not(.btn):not(.nav-link):not(.dropdown-item) {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+  color: var(--color-accent-secondary);
+}
+
+/* --- LABEL / FORM LABEL STYLES --- */
+[data-theme="scifi"] label,
+[data-theme="scifi"] .form-label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .form-check-label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .form-text {
+  color: var(--color-text-muted);
+}
+
+/* --- INPUT GROUP STYLES --- */
+[data-theme="scifi"] .input-group-text {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-input-border);
+  color: var(--color-text-primary);
+}
+
+/* --- CARD TEXT SPECIFICS --- */
+[data-theme="scifi"] .card-title {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .card-text {
+  color: var(--color-text-primary);
+}
+
+[data-theme="scifi"] .card-subtitle {
+  color: var(--color-text-secondary) !important;
+}
+
+/* --- FIGURE / CAPTION STYLES --- */
+[data-theme="scifi"] figcaption,
+[data-theme="scifi"] .figure-caption {
+  color: var(--color-text-secondary);
+}
+
+/* --- BLOCKQUOTE STYLES --- */
+[data-theme="scifi"] blockquote,
+[data-theme="scifi"] .blockquote {
+  border-left: 3px solid var(--color-accent-primary);
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="scifi"] .blockquote-footer {
+  color: var(--color-text-muted);
+}
+
+/* --- HR / DIVIDER STYLES --- */
+[data-theme="scifi"] hr {
+  border-color: var(--color-card-border);
+  opacity: 0.5;
+}
+
+/* --- PLACEHOLDER TEXT --- */
+[data-theme="scifi"] ::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.7;
+}
+
+[data-theme="scifi"] .form-control::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+/* --- LEAD TEXT --- */
+[data-theme="scifi"] .lead {
+  color: var(--color-text-primary);
+}
+
+/* --- CODE / PRE STYLES --- */
+[data-theme="scifi"] code {
+  color: var(--color-accent-secondary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="scifi"] pre {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-card-border);
+}
+
+/* --- MARK / HIGHLIGHT STYLES --- */
+[data-theme="scifi"] mark,
+[data-theme="scifi"] .mark {
+  background-color: rgba(255, 204, 0, 0.3);
+  color: var(--color-text-primary);
+}
+
+/* --- TOAST STYLES --- */
+[data-theme="scifi"] .toast {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .toast-header {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-card-border);
+}
+
+[data-theme="scifi"] .toast-body {
+  color: var(--color-text-primary);
+}
+
+/* --- SPINNER / LOADING STYLES --- */
+[data-theme="scifi"] .spinner-border,
+[data-theme="scifi"] .spinner-grow {
+  color: var(--color-accent-primary);
+}
+
+/* --- GENERAL STRONG/BOLD VISIBILITY --- */
+[data-theme="scifi"] strong,
+[data-theme="scifi"] b {
+  color: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FANTASY THEME TEXT READABILITY FIXES
+   Ensuring all text is readable on parchment backgrounds
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* --- TABLE STYLES --- */
+[data-theme="fantasy"] .table {
+  color: var(--color-text-primary);
+  --bs-table-color: var(--color-text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--color-card-border);
+  --bs-table-striped-bg: rgba(139, 115, 85, 0.1);
+  --bs-table-striped-color: var(--color-text-primary);
+  --bs-table-hover-bg: rgba(139, 69, 19, 0.1);
+  --bs-table-hover-color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .table > :not(caption) > * > * {
+  color: var(--color-text-primary);
+  background-color: transparent;
+  border-bottom-color: var(--color-card-border);
+}
+
+[data-theme="fantasy"] .table td,
+[data-theme="fantasy"] .table th {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .table thead th {
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-accent-gold);
+}
+
+/* --- LIST GROUP STYLES --- */
+[data-theme="fantasy"] .list-group-item {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .list-group-item:hover {
+  background-color: rgba(139, 69, 19, 0.08);
+}
+
+[data-theme="fantasy"] .list-group-item.active {
+  background-color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: var(--color-card-header-text);
+}
+
+[data-theme="fantasy"] .list-group-item-action:hover,
+[data-theme="fantasy"] .list-group-item-action:focus {
+  background-color: rgba(139, 69, 19, 0.1);
+  color: var(--color-text-primary);
+}
+
+/* --- TEXT UTILITY OVERRIDES --- */
+/* Prevent white/light text on parchment */
+[data-theme="fantasy"] .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="fantasy"] .text-light {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="fantasy"] .text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme="fantasy"] .text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="fantasy"] .text-body {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="fantasy"] small,
+[data-theme="fantasy"] .small {
+  color: var(--color-text-secondary);
+}
+
+/* --- BADGE STYLES --- */
+/* Ensure badge text is readable - use dark text on light badges */
+[data-theme="fantasy"] .badge.bg-light {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="fantasy"] .badge.bg-warning {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="fantasy"] .badge.bg-info {
+  color: #fff !important;
+}
+
+/* --- DROPDOWN / SELECT STYLES --- */
+[data-theme="fantasy"] .dropdown-menu {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="fantasy"] .dropdown-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .dropdown-item:hover,
+[data-theme="fantasy"] .dropdown-item:focus {
+  background-color: rgba(139, 69, 19, 0.15);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] .dropdown-item.active,
+[data-theme="fantasy"] .dropdown-item:active {
+  background-color: var(--color-accent-primary);
+  color: var(--color-card-header-text);
+}
+
+[data-theme="fantasy"] .dropdown-divider {
+  border-color: var(--color-card-border);
+}
+
+/* --- MODAL BODY TEXT --- */
+[data-theme="fantasy"] .modal-body {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .modal-body p,
+[data-theme="fantasy"] .modal-body span,
+[data-theme="fantasy"] .modal-body div,
+[data-theme="fantasy"] .modal-body label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .modal-footer {
+  border-top-color: var(--color-card-border);
+}
+
+/* --- TOOLTIP & POPOVER STYLES --- */
+[data-theme="fantasy"] .tooltip-inner {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-card-header-text);
+}
+
+[data-theme="fantasy"] .bs-tooltip-top .tooltip-arrow::before,
+[data-theme="fantasy"] .bs-tooltip-auto[data-popper-placement^="top"] .tooltip-arrow::before {
+  border-top-color: var(--color-card-header-bg);
+}
+
+[data-theme="fantasy"] .bs-tooltip-bottom .tooltip-arrow::before,
+[data-theme="fantasy"] .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before {
+  border-bottom-color: var(--color-card-header-bg);
+}
+
+[data-theme="fantasy"] .popover {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-accent-gold);
+}
+
+[data-theme="fantasy"] .popover-header {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-card-header-text);
+  border-bottom-color: var(--color-accent-gold);
+}
+
+[data-theme="fantasy"] .popover-body {
+  color: var(--color-text-primary);
+}
+
+/* --- ACCORDION STYLES --- */
+[data-theme="fantasy"] .accordion-item {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="fantasy"] .accordion-button {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .accordion-button:not(.collapsed) {
+  background-color: rgba(139, 69, 19, 0.15);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] .accordion-body {
+  background-color: var(--color-card-bg);
+  color: var(--color-text-primary);
+}
+
+/* --- PAGINATION STYLES --- */
+[data-theme="fantasy"] .page-link {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .page-link:hover {
+  background-color: rgba(139, 69, 19, 0.15);
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] .page-item.active .page-link {
+  background-color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: var(--color-card-header-text);
+}
+
+[data-theme="fantasy"] .page-item.disabled .page-link {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-card-border);
+  color: var(--color-text-muted);
+}
+
+/* --- BREADCRUMB STYLES --- */
+[data-theme="fantasy"] .breadcrumb {
+  background-color: transparent;
+}
+
+[data-theme="fantasy"] .breadcrumb-item a {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] .breadcrumb-item.active {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--color-text-muted);
+}
+
+/* --- OFFCANVAS / SIDEBAR STYLES --- */
+[data-theme="fantasy"] .offcanvas {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .offcanvas-header {
+  border-bottom: 2px solid var(--color-card-border);
+}
+
+[data-theme="fantasy"] .offcanvas-title {
+  color: var(--color-accent-primary);
+}
+
+/* --- GENERAL LINK COLORS --- */
+[data-theme="fantasy"] a:not(.btn):not(.nav-link):not(.dropdown-item) {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+  color: var(--color-accent-secondary);
+}
+
+/* --- LABEL / FORM LABEL STYLES --- */
+[data-theme="fantasy"] label,
+[data-theme="fantasy"] .form-label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .form-check-label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .form-text {
+  color: var(--color-text-muted);
+}
+
+/* --- INPUT GROUP STYLES --- */
+[data-theme="fantasy"] .input-group-text {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-input-border);
+  color: var(--color-text-primary);
+}
+
+/* --- CARD TEXT SPECIFICS --- */
+[data-theme="fantasy"] .card-title {
+  color: var(--color-accent-primary);
+}
+
+[data-theme="fantasy"] .card-text {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .card-subtitle {
+  color: var(--color-text-secondary) !important;
+}
+
+/* --- FIGURE / CAPTION STYLES --- */
+[data-theme="fantasy"] figcaption,
+[data-theme="fantasy"] .figure-caption {
+  color: var(--color-text-secondary);
+}
+
+/* --- BLOCKQUOTE STYLES --- */
+[data-theme="fantasy"] blockquote,
+[data-theme="fantasy"] .blockquote {
+  border-left: 3px solid var(--color-accent-gold);
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="fantasy"] .blockquote-footer {
+  color: var(--color-text-muted);
+}
+
+/* --- HR / DIVIDER STYLES --- */
+[data-theme="fantasy"] hr {
+  border-color: var(--color-card-border);
+  opacity: 0.5;
+}
+
+/* --- PLACEHOLDER TEXT --- */
+[data-theme="fantasy"] ::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.7;
+}
+
+[data-theme="fantasy"] .form-control::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+/* --- LEAD TEXT --- */
+[data-theme="fantasy"] .lead {
+  color: var(--color-text-primary);
+}
+
+/* --- CODE / PRE STYLES --- */
+[data-theme="fantasy"] code {
+  color: var(--color-accent-red);
+  background-color: rgba(139, 115, 85, 0.15);
+}
+
+[data-theme="fantasy"] pre {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: 2px solid var(--color-card-border);
+}
+
+/* --- MARK / HIGHLIGHT STYLES --- */
+[data-theme="fantasy"] mark,
+[data-theme="fantasy"] .mark {
+  background-color: rgba(218, 165, 32, 0.4);
+  color: var(--color-text-primary);
+}
+
+/* --- TOAST STYLES --- */
+[data-theme="fantasy"] .toast {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="fantasy"] .toast-header {
+  background-color: var(--color-card-header-bg);
+  color: var(--color-card-header-text);
+  border-bottom-color: var(--color-accent-gold);
+}
+
+[data-theme="fantasy"] .toast-body {
+  color: var(--color-text-primary);
+}
+
+/* --- SPINNER / LOADING STYLES --- */
+[data-theme="fantasy"] .spinner-border,
+[data-theme="fantasy"] .spinner-grow {
+  color: var(--color-accent-primary);
+}
+
+/* --- GENERAL STRONG/BOLD VISIBILITY --- */
+[data-theme="fantasy"] strong,
+[data-theme="fantasy"] b {
+  color: inherit;
+}
+
+/* --- ALERT TEXT FIXES --- */
+/* Ensure alert text is dark and readable */
+[data-theme="fantasy"] .alert {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .alert-info {
+  background-color: rgba(25, 25, 112, 0.1);
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+}
+
+[data-theme="fantasy"] .alert-success {
+  background-color: rgba(53, 94, 59, 0.1);
+  border-color: var(--color-accent-green);
+  color: var(--color-accent-green);
+}
+
+[data-theme="fantasy"] .alert-warning {
+  background-color: rgba(184, 134, 11, 0.15);
+  border-color: var(--color-accent-secondary);
+  color: #6b5000;
+}
+
+[data-theme="fantasy"] .alert-danger {
+  background-color: rgba(139, 0, 0, 0.1);
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
+}
+
+/* --- NAV PILLS / TABS WITH LIGHT BACKGROUNDS --- */
+[data-theme="fantasy"] .nav-pills .nav-link {
+  color: var(--color-text-primary);
+}
+
+[data-theme="fantasy"] .nav-pills .nav-link.active {
+  background-color: var(--color-accent-primary);
+  color: var(--color-card-header-text);
+}
+
+/* --- ENSURE CARD HEADER TEXT IS ALWAYS READABLE --- */
+/* Card headers have dark bg, so text should be light */
+[data-theme="fantasy"] .card-header {
+  color: var(--color-card-header-text);
+}
+
+[data-theme="fantasy"] .card-header .text-muted {
+  color: rgba(244, 228, 193, 0.7) !important;
+}
+
+[data-theme="fantasy"] .card-header small,
+[data-theme="fantasy"] .card-header .small {
+  color: rgba(244, 228, 193, 0.8);
+}
+
+/* --- FIX BTN-OUTLINE VARIANTS --- */
+[data-theme="fantasy"] .btn-outline-light {
+  color: var(--color-text-primary);
+  border-color: var(--color-card-border);
+}
+
+[data-theme="fantasy"] .btn-outline-light:hover {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}

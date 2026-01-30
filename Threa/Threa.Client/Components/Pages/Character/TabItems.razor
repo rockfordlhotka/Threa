@@ -298,7 +298,7 @@ else
                                     }
                                     else if (item.StackSize > 1)
                                     {
-                                        <span style="color: #6c757d;"> x@item.StackSize</span>
+                                        <span style="color: #6c757d;"> @($"x{item.StackSize}")</span>
                                     }
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItemAsync(item.Id)" disabled="@isRemovingItem" title="Remove">
@@ -339,7 +339,7 @@ else
                         @(item.Template?.Name ?? "Unknown Item")
                         @if (item.StackSize > 1)
                         {
-                            <span style="color: #6c757d;"> x@item.StackSize</span>
+                            <span style="color: #6c757d;"> @($"x{item.StackSize}")</span>
                         }
                         @if (item.CustomName != null)
                         {

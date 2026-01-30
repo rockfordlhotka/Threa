@@ -175,7 +175,7 @@ The codebase already has a working TTRPG combat system with:
 - "In Rounds" combat mode with toggle button (Start/End Combat)
 - Multiple time increments: round (6s), minute, turn (10m), hour, day, week
 - Epoch-based world time tracking
-- RabbitMQ messaging sends TimeSkipReceived events to all players at table
+- Rx.NET in-memory messaging sends TimeSkipReceived events to all players at table
 - Character-side processing handles time advancement (pending pools, effect expiration, AP recovery)
 - Time skip processing capped at 100 iterations to prevent UI freeze on large skips
 

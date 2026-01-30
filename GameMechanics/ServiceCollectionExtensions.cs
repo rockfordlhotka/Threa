@@ -1,3 +1,4 @@
+using GameMechanics.Actions;
 using GameMechanics.Combat.Effects;
 using GameMechanics.Effects;
 using GameMechanics.Items;
@@ -18,6 +19,12 @@ public static class ServiceCollectionExtensions
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddGameMechanics(this IServiceCollection services)
     {
+        // Register time formatting service (singleton - stateless)
+        services.AddSingleton<IGameTimeFormatService, DefaultGameTimeFormatService>();
+
+        // Register travel calculator service
+        services.AddScoped<ITravelCalculator, TravelCalculator>();
+
         // Register effect services
         services.AddScoped<ItemEffectService>();
 

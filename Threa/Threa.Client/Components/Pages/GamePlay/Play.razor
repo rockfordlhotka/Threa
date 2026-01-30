@@ -30,6 +30,7 @@
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IJSRuntime JS
 @inject ICharacterItemDal CharacterItemDal
+@inject IGameTimeFormatService TimeFormat
 
 @using GameMechanics.Time
 @using Threa.Dal
@@ -336,7 +337,7 @@ else if (character == null)
                 {
                     <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
                         <div style="font-family: var(--font-display); font-size: 0.85rem;">@table.Name</div>
-                        <small style="color: var(--color-text-muted);">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</small>
+                        <small style="color: var(--color-text-muted);">@TimeFormat.FormatCompact(table.CurrentTimeSeconds)</small>
                         <div class="mt-1">
                             @if (table.IsInCombat)
                             {
@@ -405,6 +406,9 @@ else if (character == null)
         }
     </div>
 
+    @* RadzenDialog must be in the interactive context for DialogService to work *@
+    <RadzenDialog />
+
     <!-- Activity Log -->
     <div class="activity-log mt-3" style="background-color: #f8f9fa; padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto;">
         <h6>Activity Log</h6>
@@ -431,8 +435,29 @@ else if (character == null)
 [Parameter]
 public Guid TableId { get; set; }
 
-private static readonly string[] tabNames = new[] { "Status", "Combat", "Skills", "Magic", "Defense", "Inventory" };
-private string activeTab = tabNames[0];
+private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Defense", "Skills", "Magic", "Inventory" };
+private string[] tabNames => GetTabNamesForTheme();
+private string activeTab = "Status";
+
+private string[] GetTabNamesForTheme()
+{
+    var theme = table?.Theme ?? "fantasy";
+    if (theme == "scifi")
+    {
+        // Hide Magic tab for sci-fi theme
+        return AllTabNames.Where(t => t != "Magic").ToArray();
+    }
+    return AllTabNames;
+}
+
+private void EnsureValidActiveTab()
+{
+    // If current tab is not in the available tabs (e.g., Magic in sci-fi), switch to Status
+    if (!tabNames.Contains(activeTab))
+    {
+        activeTab = "Status";
+    }
+}
 
 private GameMechanics.CharacterEdit? character;
 private GameMechanics.GamePlay.TableEdit? table;
@@ -589,7 +614,7 @@ private async Task SelectCharacterAsync(int characterId)
             // If joining an in-progress table, announce the current game time
             if (table != null && table.Status == Threa.Dal.Dto.TableStatus.Active)
             {
-                var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                var timeDisplay = TimeFormat.FormatFull(table.CurrentTimeSeconds);
                 AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
             }
         }
@@ -818,6 +843,8 @@ private async Task SelectCharacterAsync(int characterId)
                     await JS.InvokeVoidAsync("threaTheme.apply", e.Theme);
                     // Update local table state
                     table = await tablePortal.FetchAsync(table.Id);
+                    // Ensure active tab is valid for the new theme (e.g., Magic not available in sci-fi)
+                    EnsureValidActiveTab();
                 }
                 StateHasChanged();
             }
@@ -1036,7 +1063,7 @@ private async Task SelectCharacterAsync(int characterId)
                 // If joining an in-progress table, announce the current game time
                 if (table?.Status == Threa.Dal.Dto.TableStatus.Active)
                 {
-                    var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+                    var timeDisplay = TimeFormat.FormatFull(table.CurrentTimeSeconds);
                     AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
                 }
             }
@@ -1100,6 +1127,18 @@ private async Task SelectCharacterAsync(int characterId)
                         AddLogEntry(result.Message, ActivityCategory.Effect);
                     }
                     break;
+
+                case "AmmoContainerReload":
+                    if (result.Success)
+                    {
+                        await ExecuteAmmoContainerReload(targetCharacter, result.Payload);
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    else
+                    {
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
             }
         }
         finally
@@ -1142,6 +1181,51 @@ private async Task SelectCharacterAsync(int characterId)
         catch (Exception ex)
         {
             errorMessage = $"Failed to complete magazine reload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Executes the ammo container reload by updating the container's ammo state and reducing the loose ammo stack.
+    /// </summary>
+    private async Task ExecuteAmmoContainerReload(GameMechanics.CharacterEdit targetCharacter, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = GameMechanics.Effects.Behaviors.AmmoContainerReloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        try
+        {
+            // Update container ammo state
+            var container = await CharacterItemDal.GetItemAsync(payload.ContainerId);
+            if (container != null)
+            {
+                var containerState = GameMechanics.Combat.AmmoContainerState.FromJson(container.CustomProperties);
+                containerState.LoadedAmmo += payload.RoundsToLoad;
+                if (payload.AmmoType != null)
+                    containerState.AmmoType = payload.AmmoType;
+                container.CustomProperties = GameMechanics.Combat.AmmoContainerState.MergeIntoCustomProperties(
+                    container.CustomProperties, containerState);
+                await CharacterItemDal.UpdateItemAsync(container);
+            }
+
+            // Reduce source ammo stack
+            var source = await CharacterItemDal.GetItemAsync(payload.SourceItemId);
+            if (source != null)
+            {
+                source.StackSize -= payload.RoundsToLoad;
+                if (source.StackSize <= 0)
+                    await CharacterItemDal.DeleteItemAsync(payload.SourceItemId);
+                else
+                    await CharacterItemDal.UpdateItemAsync(source);
+            }
+
+            // Reload equipped items to reflect the change
+            await LoadEquippedItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to complete ammo container reload: {ex.Message}";
         }
     }
 

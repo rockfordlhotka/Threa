@@ -1,14 +1,16 @@
 @* GM Actions tab - damage, healing, effects, and character management *@
 
 @using GameMechanics
+@using GameMechanics.Effects.Behaviors
 @using GameMechanics.Messaging
+@using GameMechanics.Time
 @using Threa.Dal.Dto
 @using Radzen
 
 @inject IDataPortal<CharacterEdit> characterPortal
-@inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
 @inject ITimeEventPublisher TimeEventPublisher
 @inject DialogService DialogService
+@inject IGameTimeFormatService TimeFormat
 
 <div class="row g-3">
     <!-- Health Management (unified damage/healing) -->
@@ -73,85 +75,165 @@
         </div>
     </div>
 
-    <!-- Effects -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-info text-white">
-                <strong><i class="bi bi-stars me-1"></i>Manage Effects</strong>
+    <!-- Right Column: Wounds and Effects -->
+    <div class="col-md-6 d-flex flex-column gap-3">
+        <!-- Wounds -->
+        <div class="card">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-bandaid me-1"></i>Wounds</strong>
+                @if (TotalWoundCount > 0)
+                {
+                    <span class="badge bg-light text-danger">@TotalWoundCount</span>
+                }
             </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small flex-grow-1">
-                    Add, edit, and remove effects. Effects modify stats, apply damage over time, or provide conditions.
-                </p>
-                <button class="btn btn-outline-info w-100" @onclick="OpenEffectManagement" disabled="@isProcessing">
-                    <i class="bi bi-stars me-1"></i>Manage Effects
-                    @if (Character != null)
-                    {
-                        var effectCount = Character.Effects.Count(e => e.EffectType != EffectType.Wound);
-                        if (effectCount > 0)
-                        {
-                            <span class="badge bg-light text-info ms-1">@effectCount</span>
-                        }
-                    }
-                </button>
-            </div>
-        </div>
-    </div>
+            <div class="card-body">
+                @if (TotalWoundCount == 0)
+                {
+                    <p class="text-muted small mb-2">No active wounds</p>
+                }
+                else
+                {
+                    <!-- AS Penalty Summary -->
+                    <div class="alert alert-warning py-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-arrow-down-circle me-1"></i>Total AS Penalty</span>
+                            <strong class="text-danger">@TotalWoundPenalty</strong>
+                        </div>
+                    </div>
 
-    <!-- Wounds -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-danger text-white">
-                <strong><i class="bi bi-bandaid me-1"></i>Manage Wounds</strong>
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small flex-grow-1">
-                    Add, edit, and remove wounds. Wounds apply AS penalties and periodic damage.
-                </p>
-                <button class="btn btn-outline-danger w-100" @onclick="OpenWoundManagement" disabled="@isProcessing">
+                    <!-- Wound Summary by Location -->
+                    <div class="mb-2" style="max-height: 150px; overflow-y: auto;">
+                        @foreach (var wound in GetActiveWounds())
+                        {
+                            var woundState = WoundState.Deserialize(wound.BehaviorState);
+                            var healingTime = GetWoundHealingTime(wound);
+                            var currentSeverity = woundState.CurrentSeverity ?? woundState.Severity;
+                            var originalSeverity = woundState.OriginalSeverity ?? woundState.Severity;
+                            <div class="p-2 mb-1 rounded border" style="border-color: var(--color-card-border);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi @GetLocationIcon(wound.Location) text-danger"></i>
+                                        <div>
+                                            <span class="small">@FormatLocation(wound.Location ?? "Unknown")</span>
+                                            @if (!string.IsNullOrEmpty(currentSeverity))
+                                            {
+                                                <br />
+                                                <span class="badge @GetSeverityBadgeClass(currentSeverity)" style="font-size: 0.65rem;">
+                                                    @currentSeverity
+                                                </span>
+                                                @if (currentSeverity != originalSeverity)
+                                                {
+                                                    <small class="text-muted ms-1">(was @originalSeverity)</small>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        @if (woundState.SeriousWounds > 0)
+                                        {
+                                            <span class="badge bg-danger" title="Serious wounds">
+                                                <i class="bi bi-x-circle"></i> @woundState.SeriousWounds
+                                            </span>
+                                        }
+                                        @if (woundState.LightWounds > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark" title="Light wounds">
+                                                <i class="bi bi-dash-circle"></i> @woundState.LightWounds
+                                            </span>
+                                        }
+                                        @if (woundState.IsCrippled)
+                                        {
+                                            <span class="badge bg-dark">CRIPPLED</span>
+                                        }
+                                        else if (woundState.IsDisabled)
+                                        {
+                                            <span class="badge bg-secondary">Disabled</span>
+                                        }
+                                    </div>
+                                </div>
+                                @if (healingTime.HasValue)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mt-1 small">
+                                        <span class="text-muted"><i class="bi bi-bandaid me-1"></i>Heals in:</span>
+                                        <span class="badge @GetHealingTimeBadgeClass(healingTime.Value)">
+                                            @TimeFormat.FormatRemaining(healingTime.Value)
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mt-1 small text-muted">
+                                        <i class="bi bi-infinity me-1"></i>Manual healing required
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                <button class="btn btn-outline-danger btn-sm w-100" @onclick="OpenWoundManagement" disabled="@isProcessing">
                     <i class="bi bi-bandaid me-1"></i>Manage Wounds
-                    @if (Character != null)
-                    {
-                        var woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
-                        if (woundCount > 0)
+                </button>
+            </div>
+        </div>
+
+        <!-- Effects -->
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-stars me-1"></i>Effects</strong>
+                @{
+                    var effectCount = Character?.Effects.Count(e => e.EffectType != EffectType.Wound) ?? 0;
+                }
+                @if (effectCount > 0)
+                {
+                    <span class="badge bg-light text-info">@effectCount</span>
+                }
+            </div>
+            <div class="card-body">
+                @if (effectCount == 0)
+                {
+                    <p class="text-muted small mb-2">No active effects</p>
+                }
+                else
+                {
+                    <!-- Effect Summary Cards -->
+                    <div class="mb-2" style="max-height: 200px; overflow-y: auto;">
+                        @foreach (var effect in GetActiveEffects())
                         {
-                            <span class="badge bg-light text-danger ms-1">@woundCount</span>
+                            <div class="d-flex justify-content-between align-items-center p-2 mb-1 rounded @GetEffectItemClass(effect)">
+                                <div class="d-flex align-items-center gap-2">
+                                    <EffectIcon EffectType="@effect.EffectType.ToString()"
+                                                EffectName="@effect.Name"
+                                                Stacks="@(effect.CurrentStacks > 1 ? effect.CurrentStacks : null)"
+                                                Color="@GetEffectIconColor(effect)" />
+                                    <div>
+                                        <span class="small fw-bold">@effect.Name</span>
+                                        @if (!string.IsNullOrEmpty(effect.Source))
+                                        {
+                                            <br /><small class="text-muted">@effect.Source</small>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    @{
+                                        var remainingSeconds = GetRemainingSeconds(effect);
+                                    }
+                                    @if (remainingSeconds.HasValue)
+                                    {
+                                        <span class="badge @GetDurationBadgeClass(remainingSeconds.Value)">
+                                            @TimeFormat.FormatRemaining(remainingSeconds.Value)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary"><i class="bi bi-infinity"></i></span>
+                                    }
+                                </div>
+                            </div>
                         }
-                    }
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stat Editing -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-primary text-white">
-                <strong><i class="bi bi-sliders me-1"></i>Edit Stats</strong>
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small flex-grow-1">
-                    Modify character attributes and skill levels. Changes recalculate health pools and AP.
-                </p>
-                <button class="btn btn-outline-primary w-100" @onclick="TriggerEditStats" disabled="@isProcessing">
-                    <i class="bi bi-sliders me-1"></i>Edit Stats
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Character Management -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-secondary text-white">
-                <strong><i class="bi bi-gear me-1"></i>Character Management</strong>
-            </div>
-            <div class="card-body d-flex flex-column">
-                <p class="text-muted small flex-grow-1">
-                    Remove this character from the table. They will need to submit a new join request to rejoin.
-                </p>
-                <button class="btn btn-outline-danger w-100" @onclick="ConfirmRemove" disabled="@isProcessing">
-                    <i class="bi bi-x-circle me-1"></i>Remove from Table
+                    </div>
+                }
+                <button class="btn btn-outline-info btn-sm w-100" @onclick="OpenEffectManagement" disabled="@isProcessing">
+                    <i class="bi bi-stars me-1"></i>Manage Effects
                 </button>
             </div>
         </div>
@@ -168,30 +250,6 @@
     </div>
 }
 
-@* Remove Confirmation Dialog *@
-@if (showRemoveConfirm)
-{
-    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Remove Character</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to remove <strong>@Character?.Name</strong> from this table?</p>
-                    <p class="text-muted small">The character will no longer be attached to this campaign and the player will need to submit a new join request to rejoin.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
-                    <button type="button" class="btn btn-danger" @onclick="ExecuteRemove" disabled="@isProcessing">
-                        <i class="bi bi-x-circle"></i> Remove
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @code {
     [Parameter]
@@ -204,13 +262,7 @@
     public Guid TableId { get; set; }
 
     [Parameter]
-    public EventCallback OnCharacterRemoved { get; set; }
-
-    [Parameter]
     public EventCallback OnCharacterUpdated { get; set; }
-
-    [Parameter]
-    public EventCallback OnEditStatsRequested { get; set; }
 
     // Health mode enum and state
     private enum HealthMode { Damage, Healing }
@@ -223,12 +275,168 @@
 
     // General state
     private bool isProcessing;
-    private bool showRemoveConfirm;
 
     // Feedback
     private string? feedbackMessage;
     private string feedbackClass = "alert-info";
     private string feedbackIcon = "bi-info-circle";
+
+    // Body locations with their icons
+    private static readonly Dictionary<string, string> BodyLocations = new()
+    {
+        { "Head", "bi-emoji-neutral" },
+        { "Torso", "bi-person" },
+        { "LeftArm", "bi-hand-index" },
+        { "RightArm", "bi-hand-index" },
+        { "LeftLeg", "bi-arrow-down" },
+        { "RightLeg", "bi-arrow-down" }
+    };
+
+    // Wound helpers
+    private int TotalWoundCount => Character?.Effects.TotalWoundCount ?? 0;
+
+    private int TotalWoundPenalty
+    {
+        get
+        {
+            if (Character?.Effects == null) return 0;
+
+            var woundEffects = Character.Effects.GetEffectsByType(EffectType.Wound).ToList();
+            if (!woundEffects.Any()) return 0;
+
+            return woundEffects.Sum(wound =>
+            {
+                var modifiers = wound.GetAbilityScoreModifiers("AnySkill", "AnyAttr", 0);
+                return modifiers.Sum(m => m.Value);
+            });
+        }
+    }
+
+    private WoundState? GetWoundStateForLocation(string location) =>
+        Character?.Effects.GetWoundState(location);
+
+    private IEnumerable<EffectRecord> GetActiveWounds()
+    {
+        if (Character?.Effects == null) return Enumerable.Empty<EffectRecord>();
+        return Character.Effects
+            .Where(e => e.EffectType == EffectType.Wound && e.IsActive)
+            .OrderBy(e => e.Location);
+    }
+
+    private string GetLocationIcon(string? location) => location switch
+    {
+        "Head" => "bi-emoji-neutral",
+        "Torso" => "bi-person",
+        "LeftArm" or "RightArm" => "bi-hand-index",
+        "LeftLeg" or "RightLeg" => "bi-arrow-down",
+        _ => "bi-bandaid"
+    };
+
+    private long? GetWoundHealingTime(EffectRecord wound)
+    {
+        // Use EffectRecord's ExpiresAtEpochSeconds (preferred) or legacy WoundState.ExpiryTimeSeconds
+        long? expiryTime = wound.ExpiresAtEpochSeconds;
+        if (!expiryTime.HasValue && !string.IsNullOrEmpty(wound.BehaviorState))
+        {
+            var state = WoundState.Deserialize(wound.BehaviorState);
+            expiryTime = state.ExpiryTimeSeconds;
+        }
+
+        if (!expiryTime.HasValue) return null;
+
+        var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
+        var remaining = expiryTime.Value - currentGameTime;
+        return remaining > 0 ? remaining : 0;
+    }
+
+    private string GetHealingTimeBadgeClass(long remainingSeconds)
+    {
+        // Use different colors based on how soon healing will occur
+        if (remainingSeconds < 60) return "bg-success"; // Less than a minute - healing soon
+        if (remainingSeconds < 600) return "bg-info"; // Less than 10 minutes
+        if (remainingSeconds < 3600) return "bg-secondary"; // Less than an hour
+        return "bg-secondary"; // Longer duration
+    }
+
+    private string GetSeverityBadgeClass(string? severity) => severity switch
+    {
+        "Critical" => "bg-danger",
+        "Severe" => "bg-warning text-dark",
+        "Moderate" => "bg-info",
+        "Minor" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    private string FormatLocation(string location) => location switch
+    {
+        "LeftArm" => "Left Arm",
+        "RightArm" => "Right Arm",
+        "LeftLeg" => "Left Leg",
+        "RightLeg" => "Right Leg",
+        _ => location
+    };
+
+    // Effect helpers
+    private IEnumerable<EffectRecord> GetActiveEffects()
+    {
+        if (Character?.Effects == null) return Enumerable.Empty<EffectRecord>();
+        return Character.Effects
+            .Where(e => e.EffectType != EffectType.Wound && e.IsActive)
+            .OrderBy(e => e.EffectType)
+            .ThenBy(e => e.Name);
+    }
+
+    private string GetEffectItemClass(EffectRecord effect) => effect.EffectType switch
+    {
+        EffectType.Buff => "bg-success bg-opacity-10",
+        EffectType.Debuff or EffectType.Poison or EffectType.Disease => "bg-danger bg-opacity-10",
+        EffectType.Condition => "bg-purple bg-opacity-10",
+        EffectType.SpellEffect => "bg-primary bg-opacity-10",
+        EffectType.Concentration => "bg-info bg-opacity-10",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetEffectIconColor(EffectRecord effect) => effect.EffectType switch
+    {
+        EffectType.Buff => "#198754",
+        EffectType.Debuff or EffectType.Poison => "#dc3545",
+        EffectType.Disease => "#6f42c1",
+        EffectType.Condition => "#ffc107",
+        EffectType.SpellEffect => "#0d6efd",
+        EffectType.ItemEffect => "#20c997",
+        _ => "#6c757d"
+    };
+
+    private long? GetRemainingSeconds(EffectRecord effect)
+    {
+        // For concentration effects, calculate remaining from behavior state
+        if (effect.EffectType == EffectType.Concentration && !string.IsNullOrEmpty(effect.BehaviorState))
+        {
+            var state = ConcentrationState.FromJson(effect.BehaviorState);
+            if (state != null)
+            {
+                var remainingRounds = state.TotalRequired - state.CurrentProgress;
+                return remainingRounds * 3; // 3 seconds per round
+            }
+        }
+
+        if (!effect.ExpiresAtEpochSeconds.HasValue) return null;
+        var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
+        var remaining = effect.ExpiresAtEpochSeconds.Value - currentGameTime;
+        return remaining > 0 ? remaining : 0;
+    }
+
+    private string GetDurationBadgeClass(long remainingSeconds)
+    {
+        if (remainingSeconds < 60)
+        {
+            var rounds = remainingSeconds / 3;
+            return rounds <= 3 ? "bg-danger" : rounds <= 10 ? "bg-warning text-dark" : "bg-info";
+        }
+        if (remainingSeconds < 600) return "bg-info";
+        if (remainingSeconds < 3600) return "bg-info";
+        return "bg-secondary";
+    }
 
     private void SetMode(HealthMode mode)
     {
@@ -408,44 +616,6 @@
         }
     }
 
-    private void ConfirmRemove()
-    {
-        showRemoveConfirm = true;
-    }
-
-    private void CancelRemove()
-    {
-        showRemoveConfirm = false;
-    }
-
-    private async Task ExecuteRemove()
-    {
-        isProcessing = true;
-
-        try
-        {
-            var result = await detacherPortal.ExecuteAsync(CharacterId);
-
-            if (result.Success)
-            {
-                await OnCharacterRemoved.InvokeAsync();
-            }
-            else
-            {
-                ShowFeedback($"Error: {result.ErrorMessage}", "alert-danger", "bi-exclamation-triangle");
-            }
-        }
-        catch (Exception ex)
-        {
-            ShowFeedback($"Error: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
-        }
-        finally
-        {
-            isProcessing = false;
-            showRemoveConfirm = false;
-        }
-    }
-
     private void ShowFeedback(string message, string alertClass, string icon = "bi-check-circle")
     {
         feedbackMessage = message;
@@ -472,10 +642,5 @@
 
         // Refresh character data when modal closes
         await OnCharacterUpdated.InvokeAsync();
-    }
-
-    private async Task TriggerEditStats()
-    {
-        await OnEditStatsRequested.InvokeAsync();
     }
 }
