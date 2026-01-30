@@ -803,6 +803,7 @@ namespace GameMechanics
         nameof(Effects),
         nameof(IsPassedOut),
         nameof(IsBeingSaved),
+        nameof(LastConcentrationResult),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
         nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
