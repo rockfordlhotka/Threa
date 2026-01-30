@@ -2,10 +2,12 @@
 
 @using GameMechanics
 @using GameMechanics.Effects
+@using GameMechanics.Time
 @using Threa.Dal.Dto
 @using Radzen
 
 @inject DialogService DialogService
+@inject IGameTimeFormatService TimeFormat
 
 <div class="character-detail-effects">
     @* Summary Header *@
@@ -13,7 +15,7 @@
     {
         <div class="row g-3 mb-4">
             <div class="col-auto">
-                <div class="card bg-light">
+                <div class="card">
                     <div class="card-body py-2 px-3 text-center">
                         <div class="text-muted small">Active Effects</div>
                         <div class="h4 mb-0">@GetEffects().Count()</div>
@@ -42,7 +44,7 @@
             @if (attrMods.Any())
             {
                 <div class="col-auto">
-                    <div class="card bg-light">
+                    <div class="card">
                         <div class="card-body py-2 px-3">
                             <div class="text-muted small mb-1">Attribute Modifiers</div>
                             <div class="d-flex flex-wrap gap-1">
@@ -102,8 +104,8 @@
                                     var remaining = effect.ExpiresAtEpochSeconds.Value - (Character?.CurrentGameTimeSeconds ?? 0);
                                     if (remaining > 0)
                                     {
-                                        <span class="text-info">
-                                            <i class="bi bi-clock me-1"></i>@FormatDuration(remaining)
+                                        <span class="@GetDurationClass(remaining)">
+                                            <i class="bi bi-clock me-1"></i>@TimeFormat.FormatRemaining(remaining)
                                         </span>
                                     }
                                     else
@@ -255,15 +257,19 @@
         _ => "bg-secondary"
     };
 
-    private static string FormatDuration(long seconds)
+    /// <summary>
+    /// Gets the CSS class for duration display based on urgency.
+    /// </summary>
+    private static string GetDurationClass(long remainingSeconds)
     {
-        if (seconds < 60)
-            return $"{seconds}s";
-        if (seconds < 3600)
-            return $"{seconds / 60}m {seconds % 60}s";
-        if (seconds < 86400)
-            return $"{seconds / 3600}h {(seconds % 3600) / 60}m";
-        return $"{seconds / 86400}d {(seconds % 86400) / 3600}h";
+        // For short durations, check if running out soon
+        if (remainingSeconds < 600)
+        {
+            var rounds = remainingSeconds / 3;
+            if (rounds <= 3) return "text-danger";
+            if (rounds <= 10) return "text-warning";
+        }
+        return "text-info";
     }
 
     private static string GetModifierSummary(EffectState state)

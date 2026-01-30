@@ -13,15 +13,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class DefenseConcentrationTests
+public class DefenseConcentrationTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     /// <summary>
     /// Creates a character with a Focus skill at the specified level.

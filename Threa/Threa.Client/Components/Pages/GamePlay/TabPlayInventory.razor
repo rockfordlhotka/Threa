@@ -2,12 +2,16 @@
 @using Threa.Dal
 @using Threa.Dal.Dto
 @using GameMechanics.Items
+@using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
+@using Threa.Client.Components.Shared
 @using Radzen
 
 @inject ICharacterItemDal itemDal
 @inject IItemTemplateDal templateDal
 @inject ItemManagementService itemService
 @inject DialogService DialogService
+@inject IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
 
 <style>
     .inventory-grid {
@@ -81,6 +85,26 @@
         padding: 0 4px;
         border-radius: 2px;
         font-size: 11px;
+    }
+
+    .item-loaded-ammo {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        background: var(--bs-primary);
+        color: white;
+        padding: 0 4px;
+        border-radius: 2px;
+        font-size: 11px;
+    }
+
+    .item-loaded-ammo.empty {
+        background: var(--bs-danger);
+    }
+
+    .item-loaded-ammo.low {
+        background: var(--bs-warning);
+        color: black;
     }
 
     .item-icon {
@@ -307,6 +331,15 @@
                                 }
                                 <div class="item-icon">@GetItemIcon(item)</div>
                                 <div class="item-name">@GetItemDisplayName(item)</div>
+                                @{
+                                    var loadedAmmoInfo = GetLoadedAmmoInfo(item);
+                                }
+                                @if (loadedAmmoInfo.HasAmmo)
+                                {
+                                    <div class="item-loaded-ammo @loadedAmmoInfo.StatusClass" title="@loadedAmmoInfo.Tooltip">
+                                        @loadedAmmoInfo.Display
+                                    </div>
+                                }
                                 @if (item.Template?.IsStackable == true && item.StackSize > 1)
                                 {
                                     <div class="item-quantity">@($"x{item.StackSize}")</div>
@@ -325,6 +358,20 @@
                     @onclick="ConfirmDropItem">
                 <i class="bi bi-trash"></i> Drop
             </button>
+            @if (IsReloadableAmmoContainer(selectedItem) && GetCompatibleLooseAmmo(selectedItem!).Any())
+            {
+                <button class="btn btn-outline-primary ms-2"
+                        @onclick="OpenReloadAmmoContainerModal">
+                    <i class="bi bi-box-arrow-in-down"></i> Reload
+                </button>
+            }
+            @if (IsUnloadableAmmoContainer(selectedItem))
+            {
+                <button class="btn btn-outline-warning ms-2"
+                        @onclick="OpenUnloadAmmoContainerModal">
+                    <i class="bi bi-box-arrow-up"></i> Unload
+                </button>
+            }
             @if (selectedItem != null)
             {
                 <span class="ms-3 text-muted">
@@ -413,7 +460,7 @@
                                     <span class="item-name">@GetItemDisplayName(item)</span>
                                     @if (item.Template?.IsStackable == true && item.StackSize > 1)
                                     {
-                                        <span class="item-qty">x@item.StackSize</span>
+                                        <span class="item-qty">@($"x{item.StackSize}")</span>
                                     }
                                 </div>
                             }
@@ -680,6 +727,74 @@
         return inventoryItems?.FirstOrDefault(i => i.IsEquipped && i.EquippedSlot == slot);
     }
 
+    // Loaded ammo display info
+    private record LoadedAmmoInfo(bool HasAmmo, string Display, string StatusClass, string Tooltip);
+
+    /// <summary>
+    /// Gets loaded ammo information for display on inventory tiles.
+    /// Shows ammo count for ammo containers and weapons with magazines.
+    /// </summary>
+    private LoadedAmmoInfo GetLoadedAmmoInfo(CharacterItem item)
+    {
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null)
+            return new LoadedAmmoInfo(false, "", "", "");
+
+        // Check for ammo containers (magazines, quivers, speedloaders)
+        if (template.ItemType == ItemType.AmmoContainer)
+        {
+            var containerState = GameMechanics.Combat.AmmoContainerState.FromJson(item.CustomProperties);
+            var containerProps = AmmoContainerProperties.FromJson(template.CustomProperties);
+
+            int loaded = containerState.LoadedAmmo;
+            int maxCapacity = containerState.MaxCapacity;
+            if (maxCapacity == 0 && containerProps != null)
+                maxCapacity = containerProps.Capacity;
+
+            if (maxCapacity == 0)
+                return new LoadedAmmoInfo(false, "", "", "");
+
+            string statusClass = "";
+            if (loaded == 0)
+                statusClass = "empty";
+            else if (loaded <= maxCapacity / 4)
+                statusClass = "low";
+
+            string ammoType = containerState.AmmoType ?? containerProps?.AmmoType ?? "";
+            string tooltip = $"{loaded}/{maxCapacity} rounds";
+            if (!string.IsNullOrEmpty(ammoType))
+                tooltip += $" ({ammoType})";
+
+            return new LoadedAmmoInfo(true, $"x{loaded}", statusClass, tooltip);
+        }
+
+        // Check for weapons with loaded ammo
+        if (template.ItemType == ItemType.Weapon)
+        {
+            var weaponState = GameMechanics.Combat.WeaponAmmoState.FromJson(item.CustomProperties);
+            int totalAmmo = weaponState.TotalAvailable; // Includes chamber
+
+            // Only show if weapon has ammo capacity (ranged weapons)
+            if (totalAmmo > 0 || weaponState.LoadedMagazineId.HasValue)
+            {
+                string statusClass = "";
+                if (totalAmmo == 0)
+                    statusClass = "empty";
+                // Can't easily determine "low" without capacity info from template
+
+                string tooltip = $"{totalAmmo} rounds loaded";
+                if (weaponState.ChamberLoaded)
+                    tooltip += " (+1 chambered)";
+                if (!string.IsNullOrEmpty(weaponState.LoadedAmmoType))
+                    tooltip += $" ({weaponState.LoadedAmmoType})";
+
+                return new LoadedAmmoInfo(true, $"x{totalAmmo}", statusClass, tooltip);
+            }
+        }
+
+        return new LoadedAmmoInfo(false, "", "", "");
+    }
+
     // Selection methods
     private async Task SelectItem(CharacterItem item)
     {
@@ -688,6 +803,45 @@
         // If user has an item selected and clicks a container, move item into container
         if (selectedItem != null && IsContainerItem(item) && selectedItem.Id != item.Id)
         {
+            // Special handling for AmmoContainers: check if user is trying to load ammo
+            var containerTemplate = GetTemplate(item.ItemTemplateId);
+            if (containerTemplate?.ItemType == ItemType.AmmoContainer)
+            {
+                // Check if selected item is compatible loose ammo
+                var selectedTemplate = GetTemplate(selectedItem.ItemTemplateId);
+                if (selectedTemplate?.ItemType == ItemType.Ammunition)
+                {
+                    // Select the container and open reload dialog if ammo is compatible
+                    var previousAmmo = selectedItem;
+                    selectedItemId = item.Id;
+                    selectedItem = item;
+
+                    var compatibleAmmo = GetCompatibleLooseAmmo(item);
+                    if (compatibleAmmo.Any(a => a.Id == previousAmmo.Id))
+                    {
+                        // Ammo is compatible - open reload modal directly
+                        await OpenReloadAmmoContainerModal();
+                    }
+                    else
+                    {
+                        // Ammo is not compatible - show error but keep container selected
+                        errorMessage = $"{GetItemName(previousAmmo)} is not compatible with this {containerTemplate.Name}. " +
+                                       "Select the container and click Reload to see compatible ammo types.";
+                    }
+                    return;
+                }
+                else
+                {
+                    // Non-ammo item trying to go into ammo container
+                    errorMessage = "Only ammunition can be loaded into ammo containers. " +
+                                   "Select the magazine/quiver and click Reload.";
+                    // Select the container so Reload button appears
+                    selectedItemId = item.Id;
+                    selectedItem = item;
+                    return;
+                }
+            }
+
             await MoveToContainer(selectedItem.Id, item.Id);
             return;
         }
@@ -695,6 +849,16 @@
         // If clicking a container with no item selected, open container panel
         if (IsContainerItem(item) && selectedItem == null)
         {
+            // For AmmoContainers, don't open container panel - just select for reload
+            var template = GetTemplate(item.ItemTemplateId);
+            if (template?.ItemType == ItemType.AmmoContainer)
+            {
+                selectedItemId = item.Id;
+                selectedItem = item;
+                // Don't open container panel for ammo containers
+                return;
+            }
+
             OpenContainerPanel(item);
             // Also select the container in inventory (for potential drop)
             selectedItemId = item.Id;
@@ -1357,5 +1521,331 @@
         selectedItemId = null;
         await LoadItemsAsync();
         await NotifyCharacterChanged();
+    }
+
+    // ==========================================
+    // Ammo Container Reload Methods
+    // ==========================================
+
+    /// <summary>
+    /// Checks if the selected item is an ammo container with space available.
+    /// </summary>
+    private bool IsReloadableAmmoContainer(CharacterItem? item)
+    {
+        if (item == null) return false;
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null) return false;
+
+        // Check if it's an ammo container type
+        if (template.ItemType != ItemType.AmmoContainer)
+            return false;
+
+        // Get container properties - may be null for legacy items
+        var containerProps = AmmoContainerProperties.FromJson(template.CustomProperties);
+
+        // Check container state for space available
+        var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+
+        // Determine capacity from state or template properties
+        int maxCapacity = containerState.MaxCapacity;
+        if (maxCapacity == 0 && containerProps != null)
+            maxCapacity = containerProps.Capacity;
+
+        // If we still don't have capacity, assume it's reloadable (show button, let modal handle details)
+        if (maxCapacity == 0)
+            return true;
+
+        return containerState.LoadedAmmo < maxCapacity;
+    }
+
+    /// <summary>
+    /// Checks if the selected item is an ammo container with ammo loaded that can be unloaded.
+    /// </summary>
+    private bool IsUnloadableAmmoContainer(CharacterItem? item)
+    {
+        if (item == null) return false;
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null) return false;
+
+        // Check if it's an ammo container type
+        if (template.ItemType != ItemType.AmmoContainer)
+            return false;
+
+        // Check container state for loaded ammo
+        var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+        return containerState.LoadedAmmo > 0;
+    }
+
+    /// <summary>
+    /// Gets loose ammo items compatible with the selected ammo container.
+    /// </summary>
+    private List<CharacterItem> GetCompatibleLooseAmmo(CharacterItem container)
+    {
+        if (inventoryItems == null) return new List<CharacterItem>();
+
+        var template = GetTemplate(container.ItemTemplateId);
+        if (template == null) return new List<CharacterItem>();
+
+        // Get container properties - may be null for legacy items
+        var containerProps = AmmoContainerProperties.FromJson(template.CustomProperties);
+        var allowedTypes = containerProps?.GetAllowedAmmoTypes().ToList() ?? new List<string>();
+
+        return inventoryItems.Where(item =>
+        {
+            // Skip items in containers
+            if (item.ContainerItemId != null) return false;
+
+            var itemTemplate = GetTemplate(item.ItemTemplateId);
+            if (itemTemplate == null) return false;
+
+            // Must be ammunition type
+            if (itemTemplate.ItemType != ItemType.Ammunition) return false;
+
+            var ammoProps = AmmunitionProperties.FromJson(itemTemplate.CustomProperties);
+
+            // If no ammo properties, check if it's a stackable item (likely ammo)
+            if (ammoProps == null)
+            {
+                // Fall back to checking if item is stackable ammo without explicit properties
+                return itemTemplate.IsStackable;
+            }
+
+            // Must be loose ammo, not a container
+            if (ammoProps.IsContainer) return false;
+
+            // If container has no allowed types specified, accept any ammunition
+            if (!allowedTypes.Any())
+                return true;
+
+            // Must be compatible ammo type
+            if (string.IsNullOrEmpty(ammoProps.AmmoType)) return true; // Accept untyped ammo
+            return allowedTypes.Contains(ammoProps.AmmoType, StringComparer.OrdinalIgnoreCase);
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Opens the reload ammo container modal.
+    /// </summary>
+    private async Task OpenReloadAmmoContainerModal()
+    {
+        if (selectedItem == null) return;
+
+        var availableAmmo = GetCompatibleLooseAmmo(selectedItem);
+        if (!availableAmmo.Any())
+        {
+            errorMessage = "No compatible loose ammo available.";
+            return;
+        }
+
+        var containerName = GetItemName(selectedItem);
+
+        var result = await DialogService.OpenAsync<ReloadAmmoContainerModal>(
+            "Reload Ammo Container",
+            new Dictionary<string, object>
+            {
+                { "Container", selectedItem },
+                { "ContainerName", containerName },
+                { "AvailableAmmo", availableAmmo },
+                { "AvailableAp", Character?.ActionPoints?.Available ?? 0 },
+                { "AvailableFat", Character?.Fatigue?.Value ?? 0 }
+            },
+            new DialogOptions
+            {
+                Width = "400px",
+                CloseDialogOnOverlayClick = true,
+                ShowClose = true
+            });
+
+        if (result is ReloadAmmoContainerResult reloadResult)
+        {
+            await OnReloadAmmoContainerConfirm(reloadResult);
+        }
+    }
+
+    /// <summary>
+    /// Handles the reload ammo container confirmation.
+    /// Costs 1 AP + 1 FAT (standard) or 2 AP (speed reload).
+    /// </summary>
+    private async Task OnReloadAmmoContainerConfirm(ReloadAmmoContainerResult result)
+    {
+        if (Character == null) return;
+
+        ClearMessages();
+
+        try
+        {
+            // Check AP cost based on reload type
+            var apCost = result.ApCost;
+            var fatCost = result.FatCost;
+
+            if (Character.ActionPoints.Available < apCost)
+            {
+                errorMessage = $"Not enough AP to start reloading. Requires {apCost} AP.";
+                return;
+            }
+
+            // Check for existing concentration effect
+            var concentrationEffect = Character.GetConcentrationEffect();
+            if (concentrationEffect != null)
+            {
+                var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+                if (state != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService, state, concentrationEffect.Name);
+                    if (!confirmed)
+                        return;
+                    ConcentrationBehavior.BreakConcentration(Character, "Started ammo container reload");
+                }
+            }
+
+            // Spend AP and FAT based on reload type
+            Character.ActionPoints.Available -= apCost;
+            if (fatCost > 0)
+            {
+                Character.Fatigue.PendingDamage += fatCost;
+            }
+
+            // Create concentration effect for the reload
+            var behaviorState = ConcentrationBehavior.CreateAmmoContainerReloadState(
+                result.ContainerId,
+                result.SourceItemId,
+                result.RoundsToLoad,
+                result.ContainerName ?? "Ammo Container",
+                result.AmmoType);
+
+            // Create the effect using CSLA child portal pattern
+            var effect = await EffectPortal.CreateChildAsync(
+                Threa.Dal.Dto.EffectType.Concentration,
+                $"Reloading {result.ContainerName}",
+                (string?)null, // location
+                (int?)null,    // duration (handled by concentration system)
+                behaviorState);
+
+            effect.Source = "Player";
+            effect.Description = $"Loading {result.RoundsToLoad} rounds ({result.DurationRounds} rounds)";
+
+            Character.Effects.AddEffect(effect);
+            await NotifyCharacterChanged();
+
+            // Build cost description
+            var costDesc = fatCost > 0 ? $"{apCost} AP, {fatCost} FAT" : $"{apCost} AP";
+            successMessage = $"Started reloading {result.ContainerName} ({result.RoundsToLoad} rounds, {result.DurationRounds} round(s)). Cost: {costDesc}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error starting reload: {ex.Message}";
+        }
+    }
+
+    // ==========================================
+    // Ammo Container Unload Methods
+    // ==========================================
+
+    /// <summary>
+    /// Opens the unload ammo container modal.
+    /// </summary>
+    private async Task OpenUnloadAmmoContainerModal()
+    {
+        if (selectedItem == null) return;
+
+        var containerName = GetItemName(selectedItem);
+
+        var result = await DialogService.OpenAsync<UnloadAmmoContainerModal>(
+            "Unload Ammo Container",
+            new Dictionary<string, object>
+            {
+                { "Container", selectedItem },
+                { "ContainerName", containerName },
+                { "AvailableAp", Character?.ActionPoints?.Available ?? 0 },
+                { "AvailableFat", Character?.Fatigue?.Value ?? 0 }
+            },
+            new DialogOptions
+            {
+                Width = "400px",
+                CloseDialogOnOverlayClick = true,
+                ShowClose = true
+            });
+
+        if (result is UnloadAmmoContainerResult unloadResult)
+        {
+            await OnUnloadAmmoContainerConfirm(unloadResult);
+        }
+    }
+
+    /// <summary>
+    /// Handles the unload ammo container confirmation.
+    /// Costs 1 AP + 1 FAT (standard) or 2 AP (no fatigue).
+    /// </summary>
+    private async Task OnUnloadAmmoContainerConfirm(UnloadAmmoContainerResult result)
+    {
+        if (Character == null) return;
+
+        ClearMessages();
+
+        try
+        {
+            // Check AP cost based on unload type
+            var apCost = result.ApCost;
+            var fatCost = result.FatCost;
+
+            if (Character.ActionPoints.Available < apCost)
+            {
+                errorMessage = $"Not enough AP to start unloading. Requires {apCost} AP.";
+                return;
+            }
+
+            // Check for existing concentration effect
+            var concentrationEffect = Character.GetConcentrationEffect();
+            if (concentrationEffect != null)
+            {
+                var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+                if (state != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService, state, concentrationEffect.Name);
+                    if (!confirmed)
+                        return;
+                    ConcentrationBehavior.BreakConcentration(Character, "Started ammo container unload");
+                }
+            }
+
+            // Spend AP and FAT based on unload type
+            Character.ActionPoints.Available -= apCost;
+            if (fatCost > 0)
+            {
+                Character.Fatigue.PendingDamage += fatCost;
+            }
+
+            // Create concentration effect for the unload
+            var behaviorState = ConcentrationBehavior.CreateAmmoContainerUnloadState(
+                result.ContainerId,
+                Character.Id,
+                result.RoundsToUnload,
+                result.ContainerName ?? "Ammo Container",
+                result.AmmoType);
+
+            // Create the effect using CSLA child portal pattern
+            var effect = await EffectPortal.CreateChildAsync(
+                Threa.Dal.Dto.EffectType.Concentration,
+                $"Unloading {result.ContainerName}",
+                (string?)null, // location
+                (int?)null,    // duration (handled by concentration system)
+                behaviorState);
+
+            effect.Source = "Player";
+            effect.Description = $"Unloading {result.RoundsToUnload} rounds ({result.DurationRounds} rounds)";
+
+            Character.Effects.AddEffect(effect);
+            await NotifyCharacterChanged();
+
+            // Build cost description
+            var costDesc = fatCost > 0 ? $"{apCost} AP, {fatCost} FAT" : $"{apCost} AP";
+            successMessage = $"Started unloading {result.ContainerName} ({result.RoundsToUnload} rounds, {result.DurationRounds} round(s)). Cost: {costDesc}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error starting unload: {ex.Message}";
+        }
     }
 }

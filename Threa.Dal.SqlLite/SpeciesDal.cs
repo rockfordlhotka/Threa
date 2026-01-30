@@ -110,7 +110,7 @@ public class SpeciesDal : ISpeciesDal
                     new SpeciesAttributeModifier { AttributeName = "STR", Modifier = 2 },
                     new SpeciesAttributeModifier { AttributeName = "END", Modifier = 1 },
                     new SpeciesAttributeModifier { AttributeName = "INT", Modifier = -1 },
-                    new SpeciesAttributeModifier { AttributeName = "PHY", Modifier = -1 }
+                    new SpeciesAttributeModifier { AttributeName = "SOC", Modifier = -1 }
                 ]
             }
         ];

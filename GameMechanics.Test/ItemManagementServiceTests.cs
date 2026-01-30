@@ -14,15 +14,11 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class ItemManagementServiceTests
+public class ItemManagementServiceTests : TestBase
 {
-  private ServiceProvider InitServices()
+  protected override void ConfigureAdditionalServices(IServiceCollection services)
   {
-    IServiceCollection services = new ServiceCollection();
-    services.AddCsla();
-    services.AddMockDb();
     services.AddGameMechanics();
-    return services.BuildServiceProvider();
   }
 
   // Use existing template IDs from MockDb to avoid concurrency issues

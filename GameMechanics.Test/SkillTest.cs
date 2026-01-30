@@ -9,15 +9,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test
 {
   [TestClass]
-  public class SkillTest
+  public class SkillTest : TestBase
   {
-    private ServiceProvider InitServices()
-    {
-      IServiceCollection services = new ServiceCollection();
-      services.AddCsla();
-      services.AddMockDb();
-      return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public void SingleAttributeBonus()

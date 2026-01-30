@@ -31,6 +31,7 @@
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject DialogService DialogService
 @inject TimeAdvancementService TimeAdvancementService
+@inject IGameTimeFormatService TimeFormat
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -57,7 +58,7 @@ else
                            OnThemeChanged="ChangeTheme" />
             <div class="text-end me-3">
                 <small class="d-block text-muted">Game Time</small>
-                <span class="fw-bold">@GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)</span>
+                <span class="fw-bold">@TimeFormat.FormatCompact(table.CurrentTimeSeconds)</span>
             </div>
             @if (table.IsInCombat)
             {
@@ -101,7 +102,7 @@ else
 
                                     @if (expandedCharacterId == request.CharacterId && expandedCharacter != null)
                                     {
-                                        <div class="border rounded p-2 mb-2 bg-light" style="font-size: 0.85rem;">
+                                        <div class="border rounded p-2 mb-2" style="font-size: 0.85rem;">
                                             <div class="row">
                                                 <div class="col-6">
                                                     <strong>Attributes:</strong>
@@ -198,7 +199,7 @@ else
                     <div class="text-center mb-3 p-2 rounded" style="background: var(--color-bg-tertiary);">
                         <small style="color: var(--color-text-muted);">CURRENT TIME</small>
                         <div class="fw-bold" style="font-family: var(--font-display);">
-                            @GameTimeFormatter.FormatCompact(table.CurrentTimeSeconds)
+                            @TimeFormat.FormatCompact(table.CurrentTimeSeconds)
                         </div>
                     </div>
 
@@ -209,7 +210,7 @@ else
                             <input type="number" class="form-control" @bind="table.StartTimeSeconds"
                                    min="0" placeholder="e.g., 0 for beginning of time" />
                             <small class="text-muted">
-                                Preview: @GameTimeFormatter.FormatCompact(table.StartTimeSeconds)
+                                Preview: @TimeFormat.FormatCompact(table.StartTimeSeconds)
                             </small>
                         </div>
                         <button class="btn btn-success btn-lg w-100" @onclick="StartSession">
@@ -612,7 +613,7 @@ else
         AddLogEntry("Session started", ActivityCategory.Session);
 
         // Announce the current game time to all players
-        var timeDisplay = GameTimeFormatter.FormatFull(table.CurrentTimeSeconds);
+        var timeDisplay = TimeFormat.FormatFull(table.CurrentTimeSeconds);
         AddLogEntry($"The in-game time is: {timeDisplay}", ActivityCategory.Time);
     }
 

@@ -339,27 +339,13 @@ public class ItemManagementService
         {
           var containerTemplate = await _templateDal.GetTemplateAsync(containerItem.ItemTemplateId);
 
-          // If target is an AmmoContainer, validate ammo compatibility
+          // AmmoContainers (magazines, quivers, etc.) cannot receive items via drag-and-drop.
+          // They must be loaded using the Reload button which properly tracks rounds and time.
           if (containerTemplate.ItemType == ItemType.AmmoContainer)
           {
-            var itemTemplate = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
-
-            // Only ammunition can go into AmmoContainers
-            if (itemTemplate.ItemType != ItemType.Ammunition)
-            {
-              return ItemOperationResult.Failed(
-                "Only ammunition can be placed into ammo containers (magazines, quivers, etc.).");
-            }
-
-            var containerProps = AmmoContainerProperties.FromJson(containerTemplate.CustomProperties);
-            var ammoProps = AmmunitionProperties.FromJson(itemTemplate.CustomProperties);
-
-            if (containerProps != null && ammoProps != null)
-            {
-              var validation = _ammoValidator.CanLoadAmmoIntoContainer(ammoProps, containerProps);
-              if (!validation.IsValid)
-                return ItemOperationResult.Failed(validation.ErrorMessage!);
-            }
+            return ItemOperationResult.Failed(
+              "Ammo containers must be loaded using the Reload button. " +
+              "Select the magazine/quiver and click Reload.");
           }
         }
       }

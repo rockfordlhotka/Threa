@@ -13,6 +13,7 @@
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
 @inject IJSRuntime JS
+@inject IGameTimeFormatService TimeFormat
 
 <PageTitle>Create Campaign</PageTitle>
 
@@ -91,7 +92,7 @@
                 </small>
                 <div class="mt-1">
                     <small class="text-info">
-                        Preview: @GameTimeFormatter.FormatCompact(startTimeSeconds)
+                        Preview: @TimeFormat.FormatCompact(startTimeSeconds)
                     </small>
                 </div>
             </div>

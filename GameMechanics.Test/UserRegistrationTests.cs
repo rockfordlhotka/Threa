@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
-using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test;
 
@@ -15,15 +14,8 @@ namespace GameMechanics.Test;
 /// Tests username validation rules.
 /// </summary>
 [TestClass]
-public class UserRegistrationTests
+public class UserRegistrationTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public async Task UsernameWithSpaces_ShouldFail()
@@ -53,7 +45,7 @@ public class UserRegistrationTests
         var provider = InitServices();
         var portal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear(); // Ensure no duplicate username
+        await ClearPlayersAsync(); // Ensure no duplicate username
 
         // Act
         var registration = await portal.CreateAsync();
@@ -76,7 +68,7 @@ public class UserRegistrationTests
         var provider = InitServices();
         var portal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear(); // Ensure no duplicate username
+        await ClearPlayersAsync(); // Ensure no duplicate username
 
         // Act
         var registration = await portal.CreateAsync();
@@ -99,7 +91,7 @@ public class UserRegistrationTests
         var provider = InitServices();
         var portal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear(); // Ensure no duplicate username
+        await ClearPlayersAsync(); // Ensure no duplicate username
 
         // Act
         var registration = await portal.CreateAsync();

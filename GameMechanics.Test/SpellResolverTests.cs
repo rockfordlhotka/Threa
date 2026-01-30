@@ -3,9 +3,10 @@ using System.Threading.Tasks;
 using GameMechanics.Effects;
 using GameMechanics.Magic;
 using GameMechanics.Magic.Resolvers;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Threa.Dal;
 using Threa.Dal.Dto;
-using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test;
 
@@ -13,18 +14,28 @@ namespace GameMechanics.Test;
 /// Unit tests for Phase 2 spell resolvers.
 /// </summary>
 [TestClass]
-public class SpellResolverTests
+public class SpellResolverTests : TestBase
 {
+    private EffectManager? _effectManager;
+    private ILocationEffectDal? _locationEffectDal;
+
+    [TestInitialize]
+    public void Setup()
+    {
+        var provider = InitServices();
+        var effectDefinitionDal = provider.GetRequiredService<IEffectDefinitionDal>();
+        var characterItemDal = provider.GetRequiredService<ICharacterItemDal>();
+        var characterEffectDal = provider.GetRequiredService<ICharacterEffectDal>();
+        var itemEffectDal = provider.GetRequiredService<IItemEffectDal>();
+        _locationEffectDal = provider.GetRequiredService<ILocationEffectDal>();
+        _effectManager = new EffectManager(characterEffectDal, itemEffectDal, effectDefinitionDal);
+    }
+
     #region Test Helpers
 
-    private static EffectManager CreateEffectManager()
+    private EffectManager CreateEffectManager()
     {
-        var effectDefinitionDal = new EffectDefinitionDal();
-        var characterItemDal = new CharacterItemDal();
-        return new EffectManager(
-            new CharacterEffectDal(effectDefinitionDal),
-            new ItemEffectDal(effectDefinitionDal, characterItemDal),
-            effectDefinitionDal);
+        return _effectManager!;
     }
 
     private static SpellDefinition CreateSelfBuffSpell(string skillId = "flame-shield")
@@ -524,8 +535,7 @@ public class SpellResolverTests
     public async Task EnvironmentalSpellResolver_CreatesLocationWithDuration()
     {
         var effectManager = CreateEffectManager();
-        var locationDal = new LocationEffectDal();
-        var resolver = new EnvironmentalSpellResolver(effectManager, locationDal);
+        var resolver = new EnvironmentalSpellResolver(effectManager, _locationEffectDal!);
         var spell = CreateEnvironmentalSpell(); // Base duration = 5
         var request = new SpellCastRequest
         {
@@ -548,7 +558,7 @@ public class SpellResolverTests
         Assert.IsNotNull(result.AffectedLocation);
 
         // Verify the location effect was created with duration
-        var effects = await locationDal.GetActiveEffectsAtLocationAsync(result.AffectedLocation.Id);
+        var effects = await _locationEffectDal!.GetActiveEffectsAtLocationAsync(result.AffectedLocation.Id);
         Assert.AreEqual(1, effects.Count);
         Assert.IsTrue(effects[0].RoundsRemaining >= 5); // At least base duration
     }

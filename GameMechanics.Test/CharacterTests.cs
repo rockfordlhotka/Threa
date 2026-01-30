@@ -10,15 +10,8 @@ using Threa.Dal;
 namespace GameMechanics.Test
 {
   [TestClass]
-  public class CharacterTests
+  public class CharacterTests : TestBase
   {
-    private ServiceProvider InitServices()
-    {
-      IServiceCollection services = new ServiceCollection();
-      services.AddCsla();
-      services.AddMockDb();
-      return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public void CheckHealth()
@@ -90,10 +83,28 @@ namespace GameMechanics.Test
 
       // use damage value
       c.TakeDamage(dmg, effectPortal);
-      c.EndOfRound(effectPortal);
-      Assert.IsTrue(c.Vitality.BaseValue > c.Vitality.Value, $"no initial damage {dmg.Damage}");
-      while (c.Vitality.Value < c.Vitality.BaseValue)
+
+      // Wait for all pending damage to be applied first
+      int maxIterations = 100; // prevent infinite loop
+      int iterations = 0;
+      while (c.Vitality.PendingDamage > 0 && iterations < maxIterations)
+      {
         c.EndOfRound(effectPortal);
+        iterations++;
+      }
+      Assert.IsTrue(c.Vitality.BaseValue > c.Vitality.Value, $"no initial damage {dmg.Damage}");
+
+      // Unlike Fatigue, Vitality does NOT have passive healing in EndOfRound.
+      // VIT healing requires PendingHealing to be set externally (spells, potions, hourly recovery).
+      // Set PendingHealing to simulate receiving healing.
+      c.Vitality.PendingHealing = c.Vitality.BaseValue - c.Vitality.Value;
+
+      iterations = 0;
+      while (c.Vitality.Value < c.Vitality.BaseValue && iterations < maxIterations)
+      {
+        c.EndOfRound(effectPortal);
+        iterations++;
+      }
       Assert.IsTrue(c.Vitality.Value >= c.Vitality.BaseValue, "improper healing");
     }
 

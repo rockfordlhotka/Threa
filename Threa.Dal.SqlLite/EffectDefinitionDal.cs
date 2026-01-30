@@ -134,24 +134,17 @@ public class EffectDefinitionDal : IEffectDefinitionDal
         try
         {
             string sql;
-            if (definition.Id == 0)
-            {
-                sql = "INSERT INTO EffectDefinitions (Name, Json) VALUES (@Name, @Json)";
-            }
-            else
-            {
-                sql = "UPDATE EffectDefinitions SET Name = @Name, Json = @Json WHERE Id = @Id";
-            }
-
             using var command = Connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.AddWithValue("@Id", definition.Id);
-            command.Parameters.AddWithValue("@Name", definition.Name);
-            command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(definition));
-            await command.ExecuteNonQueryAsync();
 
-            if (definition.Id == 0)
+            if (definition.Id <= 0)
             {
+                // New definition - insert
+                sql = "INSERT INTO EffectDefinitions (Name, Json) VALUES (@Name, @Json)";
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Name", definition.Name);
+                command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(definition));
+                await command.ExecuteNonQueryAsync();
+
                 using var idCommand = Connection.CreateCommand();
                 idCommand.CommandText = "SELECT last_insert_rowid()";
                 long? lastInsertId = (long?)await idCommand.ExecuteScalarAsync();
@@ -159,6 +152,28 @@ public class EffectDefinitionDal : IEffectDefinitionDal
                 {
                     definition.Id = (int)lastInsertId.Value;
                 }
+            }
+            else
+            {
+                // Check if exists
+                using var checkCommand = Connection.CreateCommand();
+                checkCommand.CommandText = "SELECT COUNT(*) FROM EffectDefinitions WHERE Id = @Id";
+                checkCommand.Parameters.AddWithValue("@Id", definition.Id);
+                var exists = (long)(await checkCommand.ExecuteScalarAsync() ?? 0) > 0;
+
+                if (exists)
+                {
+                    sql = "UPDATE EffectDefinitions SET Name = @Name, Json = @Json WHERE Id = @Id";
+                }
+                else
+                {
+                    sql = "INSERT INTO EffectDefinitions (Id, Name, Json) VALUES (@Id, @Name, @Json)";
+                }
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Id", definition.Id);
+                command.Parameters.AddWithValue("@Name", definition.Name);
+                command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(definition));
+                await command.ExecuteNonQueryAsync();
             }
             return definition;
         }

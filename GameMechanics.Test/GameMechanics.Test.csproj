@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameMechanics\GameMechanics.csproj" />
-    <ProjectReference Include="..\Threa.Dal.MockDb\Threa.Dal.MockDb.csproj" />
+    <ProjectReference Include="..\Threa.Dal.SqlLite\Threa.Dal.Sqlite.csproj" />
   </ItemGroup>
 
 </Project>

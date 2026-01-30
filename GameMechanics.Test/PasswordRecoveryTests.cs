@@ -4,21 +4,13 @@ using Csla.Configuration;
 using GameMechanics.Player;
 using Microsoft.Extensions.DependencyInjection;
 using Threa.Dal;
-using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test;
 
 [TestClass]
 [DoNotParallelize]
-public class PasswordRecoveryTests
+public class PasswordRecoveryTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     private async Task<int> CreateTestUser(IDataPortal<UserRegistration> registrationPortal, string username = "testuser", string secretAnswer = "test answer")
     {
@@ -40,7 +32,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser");
 
         // Act
@@ -61,7 +53,7 @@ public class PasswordRecoveryTests
         var provider = InitServices();
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
 
         // Act - no user created
         var cmd = await portal.CreateAsync();
@@ -81,7 +73,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "my secret");
 
         // Act
@@ -103,7 +95,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "correct answer");
 
         // Act
@@ -126,7 +118,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "correct answer");
 
         // Act - 3 wrong attempts
@@ -155,7 +147,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "secret");
 
         // Act
@@ -177,7 +169,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "secret");
 
         // Act
@@ -199,7 +191,7 @@ public class PasswordRecoveryTests
         var portal = provider.GetRequiredService<IDataPortal<PasswordRecovery>>();
         var registrationPortal = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        MockDb.Players.Clear();
+        await ClearPlayersAsync();
         await CreateTestUser(registrationPortal, "testuser", "My Secret Answer");
 
         // Act - provide different case with extra spaces

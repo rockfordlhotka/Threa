@@ -1,12 +1,15 @@
 @* Status Tab - Shows character portrait, health pools, effects, and wounds *@
 
 @using GameMechanics.Effects.Behaviors
+@using GameMechanics.Time
 
 @* Suppress warnings for using legacy round-based properties for UI display *@
 #pragma warning disable CS0618
 @using GameMechanics.Items
 @using Threa.Dal.Dto
 @using Threa.Client.Components.Shared
+
+@inject IGameTimeFormatService TimeFormat
 
 <div class="row">
     <!-- Left Column: Portrait and Quick Status -->
@@ -363,14 +366,13 @@
                                             }
                                             @if (remainingSeconds.HasValue)
                                             {
-                                                var remainingRounds = (int)(remainingSeconds.Value / 3);
-                                                <span class="badge @GetDurationBadgeClass(remainingRounds)">
-                                                    @remainingRounds rnd
+                                                <span class="badge @GetDurationBadgeClass(remainingSeconds.Value)">
+                                                    @TimeFormat.FormatRemaining(remainingSeconds.Value)
                                                 </span>
                                             }
                                             else
                                             {
-                                                <span class="badge bg-secondary">Permanent</span>
+                                                <span class="badge bg-secondary"><i class="bi bi-infinity me-1"></i>Permanent</span>
                                             }
                                             <i class="bi @(expandedEffects.Contains(effect.Id) ? "bi-chevron-up" : "bi-chevron-down") ms-1"></i>
                                         </div>
@@ -395,10 +397,8 @@
                                             {
                                                 var totalDurationSeconds = effect.ExpiresAtEpochSeconds.Value - effect.CreatedAtEpochSeconds.Value;
                                                 var elapsedSeconds = Character.CurrentGameTimeSeconds - effect.CreatedAtEpochSeconds.Value;
-                                                var totalRounds = totalDurationSeconds / 3;
-                                                var elapsedRounds = Math.Max(0, elapsedSeconds / 3);
                                                 <div class="text-muted">
-                                                    Duration: @elapsedRounds / @totalRounds rounds
+                                                    Duration: @TimeFormat.FormatProgress(elapsedSeconds, totalDurationSeconds)
                                                 </div>
                                             }
                                         </div>
@@ -436,22 +436,37 @@
                         <small class="text-muted">Applied to all ability scores</small>
                     </div>
 
-                    <!-- Body Location Diagram -->
+                    <!-- Wound Cards by Location -->
                     <div class="wound-locations">
-                        @foreach (var location in BodyLocations)
+                        @foreach (var wound in GetActiveWounds())
                         {
-                            var woundState = GetWoundStateForLocation(location.Key);
-                            var hasWounds = woundState != null && woundState.TotalWounds > 0;
+                            var woundState = WoundState.Deserialize(wound.BehaviorState);
+                            var healingTime = GetWoundHealingTime(wound);
+                            var locationIcon = GetLocationIcon(wound.Location);
+                            var currentSeverity = woundState.CurrentSeverity ?? woundState.Severity;
+                            var originalSeverity = woundState.OriginalSeverity ?? woundState.Severity;
 
-                            <div class="wound-location-row d-flex justify-content-between align-items-center p-2 mb-1 rounded @(hasWounds ? "border" : "")" style="@(hasWounds ? "border-color: var(--color-card-border);" : "")">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi @location.Value"></i>
-                                    <span>@FormatLocation(location.Key)</span>
-                                </div>
-                                @if (hasWounds)
-                                {
+                            <div class="wound-location-row p-2 mb-2 rounded border" style="border-color: var(--color-card-border);">
+                                <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center gap-2">
-                                        @if (woundState!.SeriousWounds > 0)
+                                        <i class="bi @locationIcon text-danger"></i>
+                                        <div>
+                                            <span>@FormatLocation(wound.Location ?? "Unknown")</span>
+                                            @if (!string.IsNullOrEmpty(currentSeverity))
+                                            {
+                                                <br />
+                                                <span class="badge @GetSeverityBadgeClass(currentSeverity)" style="font-size: 0.7rem;">
+                                                    @currentSeverity
+                                                </span>
+                                                @if (currentSeverity != originalSeverity)
+                                                {
+                                                    <small class="text-muted ms-1">(was @originalSeverity)</small>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (woundState.SeriousWounds > 0)
                                         {
                                             <span class="badge bg-danger" title="Serious wounds: major damage, periodic VIT drain">
                                                 <i class="bi bi-x-circle"></i> @woundState.SeriousWounds
@@ -472,10 +487,21 @@
                                             <span class="badge bg-secondary" title="Limb is disabled">Disabled</span>
                                         }
                                     </div>
+                                </div>
+                                @if (healingTime.HasValue)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mt-1 small">
+                                        <span class="text-muted"><i class="bi bi-bandaid me-1"></i>Heals in:</span>
+                                        <span class="badge @GetHealingTimeBadgeClass(healingTime.Value)">
+                                            @TimeFormat.FormatRemaining(healingTime.Value)
+                                        </span>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="text-muted small">No wounds</span>
+                                    <div class="mt-1 small text-muted">
+                                        <i class="bi bi-infinity me-1"></i>Manual healing required
+                                    </div>
                                 }
                             </div>
                         }
@@ -593,6 +619,56 @@
     private WoundState? GetWoundStateForLocation(string location) =>
         Character?.Effects.GetWoundState(location);
 
+    private IEnumerable<GameMechanics.EffectRecord> GetActiveWounds()
+    {
+        if (Character?.Effects == null) return Enumerable.Empty<GameMechanics.EffectRecord>();
+        return Character.Effects
+            .Where(e => e.EffectType == EffectType.Wound && e.IsActive)
+            .OrderBy(e => e.Location);
+    }
+
+    private string GetLocationIcon(string? location) => location switch
+    {
+        "Head" => "bi-emoji-neutral",
+        "Torso" => "bi-person",
+        "LeftArm" or "RightArm" => "bi-hand-index",
+        "LeftLeg" or "RightLeg" => "bi-arrow-down",
+        _ => "bi-bandaid"
+    };
+
+    private long? GetWoundHealingTime(GameMechanics.EffectRecord wound)
+    {
+        // Use EffectRecord's ExpiresAtEpochSeconds (preferred) or legacy WoundState.ExpiryTimeSeconds
+        long? expiryTime = wound.ExpiresAtEpochSeconds;
+        if (!expiryTime.HasValue && !string.IsNullOrEmpty(wound.BehaviorState))
+        {
+            var state = WoundState.Deserialize(wound.BehaviorState);
+            expiryTime = state.ExpiryTimeSeconds;
+        }
+
+        if (!expiryTime.HasValue) return null;
+
+        var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
+        var remaining = expiryTime.Value - currentGameTime;
+        return remaining > 0 ? remaining : 0;
+    }
+
+    private string GetHealingTimeBadgeClass(long remainingSeconds)
+    {
+        if (remainingSeconds < 60) return "bg-success";
+        if (remainingSeconds < 600) return "bg-info";
+        return "bg-secondary";
+    }
+
+    private string GetSeverityBadgeClass(string? severity) => severity switch
+    {
+        "Critical" => "bg-danger",
+        "Severe" => "bg-warning text-dark",
+        "Moderate" => "bg-info",
+        "Minor" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
     private int? GetNextWoundDrainRounds()
     {
         if (Character?.Effects == null) return null;
@@ -678,7 +754,8 @@
         EffectType.Debuff or EffectType.Poison or EffectType.Disease => "bg-danger bg-opacity-10",
         EffectType.Condition => "bg-purple bg-opacity-10",
         EffectType.SpellEffect => "bg-primary bg-opacity-10",
-        _ => "bg-light"
+        EffectType.Concentration => "bg-info bg-opacity-10",
+        _ => "bg-light text-dark"
     };
 
     private string GetEffectIconColor(GameMechanics.EffectRecord effect) => effect.EffectType switch
@@ -692,11 +769,33 @@
         _ => "#6c757d"
     };
 
-    private string GetDurationBadgeClass(int remainingRounds) =>
-        remainingRounds <= 3 ? "bg-danger" : remainingRounds <= 10 ? "bg-warning text-dark" : "bg-info";
+    private string GetDurationBadgeClass(long remainingSeconds)
+    {
+        // For short durations (< 1 minute), use round-based thresholds
+        if (remainingSeconds < 60)
+        {
+            var rounds = remainingSeconds / 3;
+            return rounds <= 3 ? "bg-danger" : rounds <= 10 ? "bg-warning text-dark" : "bg-info";
+        }
+        // For longer durations, use time-based thresholds
+        if (remainingSeconds < 600) return "bg-info"; // < 10 minutes
+        if (remainingSeconds < 3600) return "bg-info"; // < 1 hour
+        return "bg-secondary"; // >= 1 hour (long duration)
+    }
 
     private long? GetRemainingSeconds(GameMechanics.EffectRecord effect)
     {
+        // For concentration effects, calculate remaining from behavior state
+        if (effect.EffectType == EffectType.Concentration && !string.IsNullOrEmpty(effect.BehaviorState))
+        {
+            var state = ConcentrationState.FromJson(effect.BehaviorState);
+            if (state != null)
+            {
+                var remainingRounds = state.TotalRequired - state.CurrentProgress;
+                return remainingRounds * 3; // 3 seconds per round
+            }
+        }
+
         if (!effect.ExpiresAtEpochSeconds.HasValue) return null;
         var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
         var remaining = effect.ExpiresAtEpochSeconds.Value - currentGameTime;

@@ -373,13 +373,21 @@ public class MovementTests
 [TestClass]
 public class TravelCalculatorTests
 {
+  private TravelCalculator _calculator = null!;
+
+  [TestInitialize]
+  public void Setup()
+  {
+    _calculator = new TravelCalculator();
+  }
+
   #region Travel Rate Tests
 
   [TestMethod]
   public void GetTravelRate_Walking_Returns4MPerRound()
   {
-    var rate = TravelCalculator.GetTravelRate(TravelType.Walking);
-    
+    var rate = _calculator.GetTravelRate(TravelType.Walking);
+
     Assert.AreEqual(4, rate.MetersPerRound);
     Assert.AreEqual(TravelType.Walking, rate.Type);
   }
@@ -387,32 +395,32 @@ public class TravelCalculatorTests
   [TestMethod]
   public void GetTravelRate_EnduranceRunning_Returns10MPerRound()
   {
-    var rate = TravelCalculator.GetTravelRate(TravelType.EnduranceRunning);
-    
+    var rate = _calculator.GetTravelRate(TravelType.EnduranceRunning);
+
     Assert.AreEqual(10, rate.MetersPerRound);
   }
 
   [TestMethod]
   public void GetTravelRate_BurstRunning_Returns12MPerRound()
   {
-    var rate = TravelCalculator.GetTravelRate(TravelType.BurstRunning);
-    
+    var rate = _calculator.GetTravelRate(TravelType.BurstRunning);
+
     Assert.AreEqual(12, rate.MetersPerRound);
   }
 
   [TestMethod]
   public void GetTravelRate_FastSprinting_Returns16MPerRound()
   {
-    var rate = TravelCalculator.GetTravelRate(TravelType.FastSprinting);
-    
+    var rate = _calculator.GetTravelRate(TravelType.FastSprinting);
+
     Assert.AreEqual(16, rate.MetersPerRound);
   }
 
   [TestMethod]
   public void TravelRate_MetersPerHour_CalculatesCorrectly()
   {
-    var rate = TravelCalculator.GetTravelRate(TravelType.Walking);
-    
+    var rate = _calculator.GetTravelRate(TravelType.Walking);
+
     // 4m/round * 1200 rounds/hour = 4800m/hour = 4.8km/hour
     Assert.AreEqual(4800, rate.MetersPerHour);
     Assert.AreEqual(4.8, rate.KilometersPerHour, 0.01);
@@ -425,8 +433,8 @@ public class TravelCalculatorTests
   [TestMethod]
   public void CalculateTravel_ZeroDistance_ReturnsZero()
   {
-    var result = TravelCalculator.CalculateTravel(0, TravelType.Walking);
-    
+    var result = _calculator.CalculateTravel(0, TravelType.Walking);
+
     Assert.AreEqual(0, result.RoundsRequired);
     Assert.AreEqual(0, result.FatigueCost);
   }
@@ -435,8 +443,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_Walking2km_Returns1Fatigue()
   {
     // Walking: 1 FAT per 2km
-    var result = TravelCalculator.CalculateTravel(2000, TravelType.Walking);
-    
+    var result = _calculator.CalculateTravel(2000, TravelType.Walking);
+
     Assert.AreEqual(1, result.FatigueCost);
   }
 
@@ -444,8 +452,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_Walking_RoundsCalculation()
   {
     // 100m at 4m/round = 25 rounds
-    var result = TravelCalculator.CalculateTravel(100, TravelType.Walking);
-    
+    var result = _calculator.CalculateTravel(100, TravelType.Walking);
+
     Assert.AreEqual(25, result.RoundsRequired);
   }
 
@@ -453,8 +461,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_EnduranceRunning1km_Returns1Fatigue()
   {
     // Endurance running: 1 FAT per km
-    var result = TravelCalculator.CalculateTravel(1000, TravelType.EnduranceRunning);
-    
+    var result = _calculator.CalculateTravel(1000, TravelType.EnduranceRunning);
+
     Assert.AreEqual(1, result.FatigueCost);
   }
 
@@ -462,8 +470,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_BurstRunning_HighFatigueCost()
   {
     // Burst running: 1 FAT per 6m = 10 FAT for 60m
-    var result = TravelCalculator.CalculateTravel(60, TravelType.BurstRunning);
-    
+    var result = _calculator.CalculateTravel(60, TravelType.BurstRunning);
+
     Assert.AreEqual(10, result.FatigueCost);
   }
 
@@ -471,8 +479,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_FastSprinting_HighestFatigueCost()
   {
     // Fast sprinting: 1 FAT per 5m = 10 FAT for 50m
-    var result = TravelCalculator.CalculateTravel(50, TravelType.FastSprinting);
-    
+    var result = _calculator.CalculateTravel(50, TravelType.FastSprinting);
+
     Assert.AreEqual(10, result.FatigueCost);
   }
 
@@ -480,8 +488,8 @@ public class TravelCalculatorTests
   public void CalculateTravel_TimeSeconds_CalculatesCorrectly()
   {
     // 12m at 4m/round = 3 rounds * 3 seconds = 9 seconds
-    var result = TravelCalculator.CalculateTravel(12, TravelType.Walking);
-    
+    var result = _calculator.CalculateTravel(12, TravelType.Walking);
+
     Assert.AreEqual(3, result.RoundsRequired);
     Assert.AreEqual(9, result.TimeSeconds);
   }
@@ -494,8 +502,8 @@ public class TravelCalculatorTests
   public void CalculateMaxDistance_Walking_ReturnsCorrectDistance()
   {
     // 1 FAT = 2000m walking
-    var maxDistance = TravelCalculator.CalculateMaxDistance(1, TravelType.Walking);
-    
+    var maxDistance = _calculator.CalculateMaxDistance(1, TravelType.Walking);
+
     Assert.AreEqual(2000, maxDistance);
   }
 
@@ -503,16 +511,16 @@ public class TravelCalculatorTests
   public void CalculateMaxDistance_FastSprinting_ReturnsCorrectDistance()
   {
     // 1 FAT = 5m fast sprinting
-    var maxDistance = TravelCalculator.CalculateMaxDistance(10, TravelType.FastSprinting);
-    
+    var maxDistance = _calculator.CalculateMaxDistance(10, TravelType.FastSprinting);
+
     Assert.AreEqual(50, maxDistance);
   }
 
   [TestMethod]
   public void CalculateMaxDistance_ZeroFatigue_ReturnsZero()
   {
-    var maxDistance = TravelCalculator.CalculateMaxDistance(0, TravelType.Walking);
-    
+    var maxDistance = _calculator.CalculateMaxDistance(0, TravelType.Walking);
+
     Assert.AreEqual(0, maxDistance);
   }
 
@@ -523,8 +531,8 @@ public class TravelCalculatorTests
   [TestMethod]
   public void RoundsToTimeString_ShortTime_ReturnsSeconds()
   {
-    var timeString = TravelCalculator.RoundsToTimeString(5);
-    
+    var timeString = _calculator.RoundsToTimeString(5);
+
     Assert.AreEqual("15 seconds", timeString);
   }
 
@@ -532,8 +540,8 @@ public class TravelCalculatorTests
   public void RoundsToTimeString_OneMinute_ReturnsMinutes()
   {
     // 20 rounds = 1 minute
-    var timeString = TravelCalculator.RoundsToTimeString(20);
-    
+    var timeString = _calculator.RoundsToTimeString(20);
+
     Assert.AreEqual("1 minutes", timeString);
   }
 
@@ -541,8 +549,8 @@ public class TravelCalculatorTests
   public void RoundsToTimeString_MixedMinutes_IncludesSeconds()
   {
     // 25 rounds = 75 seconds = 1 min 15 sec
-    var timeString = TravelCalculator.RoundsToTimeString(25);
-    
+    var timeString = _calculator.RoundsToTimeString(25);
+
     Assert.AreEqual("1 min 15 sec", timeString);
   }
 
@@ -550,8 +558,8 @@ public class TravelCalculatorTests
   public void RoundsToTimeString_OneHour_ReturnsHours()
   {
     // 1200 rounds = 1 hour
-    var timeString = TravelCalculator.RoundsToTimeString(1200);
-    
+    var timeString = _calculator.RoundsToTimeString(1200);
+
     Assert.AreEqual("1 hours", timeString);
   }
 
@@ -562,9 +570,9 @@ public class TravelCalculatorTests
   [TestMethod]
   public void TravelResult_GetSummary_ReturnsFormattedString()
   {
-    var result = TravelCalculator.CalculateTravel(100, TravelType.Walking);
+    var result = _calculator.CalculateTravel(100, TravelType.Walking);
     var summary = result.GetSummary();
-    
+
     Assert.IsTrue(summary.Contains("Walking"));
     Assert.IsTrue(summary.Contains("100m"));
     Assert.IsTrue(summary.Contains("FAT"));

@@ -1,0 +1,211 @@
+@* Modal for unloading an ammo container (magazine, speedloader, etc.) back to loose ammo *@
+
+@using GameMechanics
+@using GameMechanics.Combat
+@using Threa.Dal
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject DialogService DialogService
+
+<div class="p-3">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+        </div>
+    }
+
+    @* Container Info *@
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="card-title">@ContainerName</h6>
+            <div class="d-flex gap-3">
+                <div>
+                    <small class="text-muted">Currently Loaded</small>
+                    <div class="fw-bold">@currentAmmo / @maxCapacity</div>
+                </div>
+                @if (!string.IsNullOrEmpty(containerAmmoType))
+                {
+                    <div>
+                        <small class="text-muted">Ammo Type</small>
+                        <div class="fw-bold">@containerAmmoType</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (currentAmmo <= 0)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            This container is empty - nothing to unload.
+        </div>
+    }
+    else
+    {
+        @* Quantity Slider *@
+        <div class="mb-3">
+            <label class="form-label">Rounds to Unload: <strong>@roundsToUnload</strong></label>
+            <input type="range" class="form-range"
+                   min="1" max="@currentAmmo"
+                   @bind="roundsToUnload" @bind:event="oninput" />
+            <div class="d-flex justify-content-between text-muted small">
+                <span>1</span>
+                <span>All: @currentAmmo</span>
+            </div>
+        </div>
+
+        @* Unload Cost Selection *@
+        <div class="mb-3">
+            <label class="form-label">Unload Cost</label>
+            @if (!CanAffordAnyCost)
+            {
+                <div class="alert alert-danger py-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Not enough AP or FAT to unload.
+                </div>
+            }
+            else
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="unloadCost" id="normalUnload"
+                           checked="@(!useTwoApCost)" @onchange="() => useTwoApCost = false"
+                           disabled="@(!CanAffordOneApOneFat)" />
+                    <label class="form-check-label @(!CanAffordOneApOneFat ? "text-muted" : "")" for="normalUnload">
+                        <strong>1 AP + 1 FAT</strong>
+                        @if (!CanAffordOneApOneFat)
+                        {
+                            <span class="text-danger ms-2">(not enough)</span>
+                        }
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="unloadCost" id="twoApUnload"
+                           checked="@useTwoApCost" @onchange="() => useTwoApCost = true"
+                           disabled="@(!CanAffordTwoAp)" />
+                    <label class="form-check-label @(!CanAffordTwoAp ? "text-muted" : "")" for="twoApUnload">
+                        <strong>2 AP</strong>
+                        <span class="text-muted ms-2">(no fatigue)</span>
+                        @if (!CanAffordTwoAp)
+                        {
+                            <span class="text-danger ms-2">(not enough)</span>
+                        }
+                    </label>
+                </div>
+            }
+        </div>
+
+        @* Duration Display *@
+        <div class="alert alert-info">
+            <i class="bi bi-clock me-1"></i>
+            <strong>Duration:</strong> @durationRounds round(s) of concentration
+            <br />
+            <small class="text-muted">Rate: 3 rounds per game round (1 per second)</small>
+            <br />
+            <small class="text-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Taking other actions will break concentration and cancel the unload.
+            </small>
+        </div>
+    }
+
+    @* Action Buttons *@
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">
+            Cancel
+        </button>
+        <button type="button" class="btn btn-warning"
+                @onclick="Confirm"
+                disabled="@(!IsFormValid)">
+            <i class="bi bi-box-arrow-up me-1"></i>
+            Start Unload
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public CharacterItem? Container { get; set; }
+    [Parameter] public string ContainerName { get; set; } = "";
+    [Parameter] public int AvailableAp { get; set; }
+    [Parameter] public int AvailableFat { get; set; }
+
+    // Cost availability
+    private bool CanAffordOneApOneFat => AvailableAp >= 1 && AvailableFat >= 1;
+    private bool CanAffordTwoAp => AvailableAp >= 2;
+    private bool CanAffordAnyCost => CanAffordOneApOneFat || CanAffordTwoAp;
+    private bool CanAffordSelectedCost => useTwoApCost ? CanAffordTwoAp : CanAffordOneApOneFat;
+
+    private int roundsToUnload = 1;
+    private bool useTwoApCost = false;
+#pragma warning disable CS0649 // Field is never assigned - reserved for future validation
+    private string? errorMessage;
+#pragma warning restore CS0649
+
+    // Container state
+    private int currentAmmo;
+    private int maxCapacity;
+    private string? containerAmmoType;
+
+    // Computed values
+    private int durationRounds => (int)Math.Ceiling(roundsToUnload / 3.0);
+    private bool IsFormValid => currentAmmo > 0 && roundsToUnload > 0 && roundsToUnload <= currentAmmo && CanAffordSelectedCost;
+
+    protected override void OnParametersSet()
+    {
+        // Default to an available cost option
+        if (!CanAffordOneApOneFat && CanAffordTwoAp)
+        {
+            useTwoApCost = true;
+        }
+        else if (CanAffordOneApOneFat)
+        {
+            useTwoApCost = false;
+        }
+
+        if (Container != null)
+        {
+            // Load container state
+            var containerState = AmmoContainerState.FromJson(Container.CustomProperties);
+            currentAmmo = containerState.LoadedAmmo;
+            maxCapacity = containerState.MaxCapacity;
+            containerAmmoType = containerState.AmmoType;
+
+            // If max capacity is 0, try to get it from the template
+            if (maxCapacity == 0 && Container.Template != null)
+            {
+                var containerProps = AmmoContainerProperties.FromJson(Container.Template.CustomProperties);
+                if (containerProps != null)
+                {
+                    maxCapacity = containerProps.Capacity;
+                }
+            }
+
+            // Default to unloading everything
+            roundsToUnload = currentAmmo;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    private void Confirm()
+    {
+        if (!IsFormValid) return;
+
+        var result = new UnloadAmmoContainerResult
+        {
+            ContainerId = Container!.Id,
+            RoundsToUnload = roundsToUnload,
+            AmmoType = containerAmmoType,
+            ContainerName = ContainerName,
+            DurationRounds = durationRounds,
+            UseTwoApCost = useTwoApCost
+        };
+
+        DialogService.Close(result);
+    }
+}

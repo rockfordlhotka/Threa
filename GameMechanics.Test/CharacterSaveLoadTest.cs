@@ -9,15 +9,8 @@ using Threa.Dal;
 namespace GameMechanics.Test
 {
   [TestClass]
-  public class CharacterSaveLoadTest
+  public class CharacterSaveLoadTest : TestBase
   {
-    private ServiceProvider InitServices()
-    {
-      IServiceCollection services = new ServiceCollection();
-      services.AddCsla();
-      services.AddMockDb();
-      return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public async Task Character_SaveAndLoad_AllPropertiesPersist()

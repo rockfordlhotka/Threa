@@ -14,15 +14,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class ConcentrationBehaviorSustainedTests
+public class ConcentrationBehaviorSustainedTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     private string CreateSustainedStateWithDrain(string spellName, int fatDrain, int vitDrain, List<Guid>? linkedEffectIds = null)
     {

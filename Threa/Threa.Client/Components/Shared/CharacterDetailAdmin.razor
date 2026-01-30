@@ -1,0 +1,123 @@
+@* Admin tab - rarely used administrative functions *@
+
+@using GameMechanics
+@using Radzen
+
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
+@inject DialogService DialogService
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <strong>Administrative Actions</strong> - These actions are rarely needed during normal gameplay.
+        </div>
+
+        <!-- Remove from Table -->
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <strong><i class="bi bi-person-x me-1"></i>Remove from Table</strong>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Remove this character from the table. They will no longer be attached to this campaign
+                    and the player will need to submit a new join request to rejoin.
+                </p>
+                <button class="btn btn-outline-danger" @onclick="ConfirmRemove" disabled="@isProcessing">
+                    <i class="bi bi-x-circle me-1"></i>Remove @Character?.Name from Table
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Remove Confirmation Dialog *@
+@if (showRemoveConfirm)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Remove Character</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to remove <strong>@Character?.Name</strong> from this table?</p>
+                    <p class="text-muted small">The character will no longer be attached to this campaign and the player will need to submit a new join request to rejoin.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ExecuteRemove" disabled="@isProcessing">
+                        <i class="bi bi-x-circle"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Feedback messages *@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3 alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public int CharacterId { get; set; }
+
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    [Parameter]
+    public EventCallback OnCharacterRemoved { get; set; }
+
+    private bool isProcessing;
+    private bool showRemoveConfirm;
+    private string? errorMessage;
+
+    private void ConfirmRemove()
+    {
+        showRemoveConfirm = true;
+    }
+
+    private void CancelRemove()
+    {
+        showRemoveConfirm = false;
+    }
+
+    private async Task ExecuteRemove()
+    {
+        isProcessing = true;
+
+        try
+        {
+            var result = await detacherPortal.ExecuteAsync(CharacterId);
+
+            if (result.Success)
+            {
+                await OnCharacterRemoved.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+            showRemoveConfirm = false;
+        }
+    }
+}

@@ -1,31 +1,49 @@
 using System;
+using GameMechanics.Time;
 
 namespace GameMechanics.Actions;
 
 /// <summary>
 /// Calculates travel time and fatigue costs for sustained movement.
+/// Injectable service implementation.
 /// </summary>
-public static class TravelCalculator
+public class TravelCalculator : ITravelCalculator
 {
+    private readonly IGameTimeFormatService _timeFormat;
+
     /// <summary>
-    /// Seconds per round.
+    /// Seconds per round constant for backward compatibility.
     /// </summary>
     public const int SecondsPerRound = 3;
 
     /// <summary>
-    /// Rounds per minute.
+    /// Rounds per minute constant for backward compatibility.
     /// </summary>
     public const int RoundsPerMinute = 20;
 
     /// <summary>
-    /// Rounds per hour.
+    /// Rounds per hour constant for backward compatibility.
     /// </summary>
     public const int RoundsPerHour = 1200;
 
     /// <summary>
-    /// Gets the travel rate definition for a travel type.
+    /// Creates a new TravelCalculator with default time formatting.
     /// </summary>
-    public static TravelRate GetTravelRate(TravelType travelType)
+    public TravelCalculator() : this(new DefaultGameTimeFormatService())
+    {
+    }
+
+    /// <summary>
+    /// Creates a new TravelCalculator with the specified time format service.
+    /// </summary>
+    /// <param name="timeFormat">The time format service to use.</param>
+    public TravelCalculator(IGameTimeFormatService timeFormat)
+    {
+        _timeFormat = timeFormat ?? throw new ArgumentNullException(nameof(timeFormat));
+    }
+
+    /// <inheritdoc />
+    public TravelRate GetTravelRate(TravelType travelType)
     {
         return travelType switch
         {
@@ -61,13 +79,8 @@ public static class TravelCalculator
         };
     }
 
-    /// <summary>
-    /// Calculates travel result for a given distance and travel type.
-    /// </summary>
-    /// <param name="distanceMeters">Distance to travel in meters.</param>
-    /// <param name="travelType">The travel type/pace.</param>
-    /// <returns>Travel result with time and fatigue calculations.</returns>
-    public static TravelResult CalculateTravel(int distanceMeters, TravelType travelType)
+    /// <inheritdoc />
+    public TravelResult CalculateTravel(int distanceMeters, TravelType travelType)
     {
         if (distanceMeters <= 0)
         {
@@ -81,10 +94,10 @@ public static class TravelCalculator
         }
 
         var rate = GetTravelRate(travelType);
-        
+
         // Calculate rounds needed (round up for partial rounds)
         int rounds = (int)Math.Ceiling((double)distanceMeters / rate.MetersPerRound);
-        
+
         // Calculate fatigue cost
         int fatigue = (int)Math.Ceiling(distanceMeters * rate.FatigueCostPerMeter);
 
@@ -97,46 +110,23 @@ public static class TravelCalculator
         };
     }
 
-    /// <summary>
-    /// Calculates how far a character can travel with available fatigue.
-    /// </summary>
-    /// <param name="availableFatigue">Available FAT to spend.</param>
-    /// <param name="travelType">The travel type/pace.</param>
-    /// <returns>Maximum distance achievable in meters.</returns>
-    public static int CalculateMaxDistance(int availableFatigue, TravelType travelType)
+    /// <inheritdoc />
+    public int CalculateMaxDistance(int availableFatigue, TravelType travelType)
     {
         if (availableFatigue <= 0) return 0;
 
         var rate = GetTravelRate(travelType);
-        
+
         // Invert the fatigue cost formula
         // fatigue = distance * costPerMeter
         // distance = fatigue / costPerMeter
         return (int)(availableFatigue / rate.FatigueCostPerMeter);
     }
 
-    /// <summary>
-    /// Converts rounds to a readable time string.
-    /// </summary>
-    public static string RoundsToTimeString(int rounds)
+    /// <inheritdoc />
+    public string RoundsToTimeString(int rounds)
     {
-        if (rounds <= 0) return "0 seconds";
-
-        int totalSeconds = rounds * SecondsPerRound;
-        
-        if (totalSeconds < 60)
-            return $"{totalSeconds} seconds";
-        
-        if (totalSeconds < 3600)
-        {
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            return seconds > 0 ? $"{minutes} min {seconds} sec" : $"{minutes} minutes";
-        }
-
-        int hours = totalSeconds / 3600;
-        int remainingMinutes = (totalSeconds % 3600) / 60;
-        return remainingMinutes > 0 ? $"{hours} hr {remainingMinutes} min" : $"{hours} hours";
+        return _timeFormat.FormatRoundsDetailed(rounds);
     }
 }
 
@@ -235,7 +225,15 @@ public class TravelResult
     /// <summary>
     /// Human-readable time string.
     /// </summary>
-    public string TimeString => TravelCalculator.RoundsToTimeString(RoundsRequired);
+    public string TimeString
+    {
+        get
+        {
+            // Use the default time format service for static access
+            var formatter = new DefaultGameTimeFormatService();
+            return formatter.FormatRoundsDetailed(RoundsRequired);
+        }
+    }
 
     /// <summary>
     /// Gets a summary of the travel result.

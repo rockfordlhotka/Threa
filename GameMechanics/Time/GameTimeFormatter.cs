@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace GameMechanics.Time;
@@ -6,6 +7,11 @@ namespace GameMechanics.Time;
 /// Formats game time (in seconds from epoch 0) into human-readable strings.
 /// Uses a simplified calendar: 60 sec/min, 60 min/hour, 24 hours/day, 30 days/month, 12 months/year.
 /// </summary>
+/// <remarks>
+/// This static class is provided for backward compatibility.
+/// For new code, prefer injecting <see cref="IGameTimeFormatService"/> instead.
+/// </remarks>
+[Obsolete("Use IGameTimeFormatService instead. This static class is provided for backward compatibility.")]
 public static class GameTimeFormatter
 {
     // Time constants in seconds
@@ -120,6 +126,13 @@ public static class GameTimeFormatter
 /// </summary>
 public class GameTimeComponents
 {
+    // Time constants used for TotalSeconds calculation
+    private const long SecondsPerMinute = 60;
+    private const long SecondsPerHour = 3600;
+    private const long SecondsPerDay = 86400;
+    private const long SecondsPerMonth = 2592000;
+    private const long SecondsPerYear = 31104000;
+
     public long Years { get; init; }
     public long Months { get; init; }
     public long Days { get; init; }
@@ -131,10 +144,10 @@ public class GameTimeComponents
     /// Total seconds represented by these components.
     /// </summary>
     public long TotalSeconds =>
-        Years * GameTimeFormatter.SecondsPerYear +
-        Months * GameTimeFormatter.SecondsPerMonth +
-        Days * GameTimeFormatter.SecondsPerDay +
-        Hours * GameTimeFormatter.SecondsPerHour +
-        Minutes * GameTimeFormatter.SecondsPerMinute +
+        Years * SecondsPerYear +
+        Months * SecondsPerMonth +
+        Days * SecondsPerDay +
+        Hours * SecondsPerHour +
+        Minutes * SecondsPerMinute +
         Seconds;
 }

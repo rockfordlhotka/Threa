@@ -13,15 +13,8 @@ namespace GameMechanics.Test;
 /// Tests to verify the round duration bug fix (3 seconds per round, not 6).
 /// </summary>
 [TestClass]
-public class RoundDurationFixTests
+public class RoundDurationFixTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public async Task EffectDuration_5Rounds_ShouldBe15Seconds()

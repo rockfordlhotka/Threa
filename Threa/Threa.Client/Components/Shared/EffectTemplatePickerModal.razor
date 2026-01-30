@@ -2,6 +2,7 @@
 
 @using GameMechanics
 @using GameMechanics.Effects
+@using GameMechanics.Time
 @using Threa.Dal.Dto
 @using Radzen
 @using System.Timers
@@ -11,6 +12,7 @@
 @inject IDataPortal<EffectTemplateList> templateListPortal
 @inject IEffectTemplateDal templateDal
 @inject DialogService DialogService
+@inject IGameTimeFormatService TimeFormat
 
 <div class="p-3">
     @* Search and Filter Bar *@
@@ -316,21 +318,9 @@
         };
     }
 
-    private static string FormatDuration(EffectTemplate template)
+    private string FormatDuration(EffectTemplate template)
     {
-        if (template.DurationType == DurationType.Permanent || template.DurationType == DurationType.UntilRemoved)
-            return "Permanent";
-
-        var value = template.DefaultDurationValue ?? 0;
-        return template.DurationType switch
-        {
-            DurationType.Rounds => $"{value} rnd{(value != 1 ? "s" : "")}",
-            DurationType.Minutes => $"{value} min",
-            DurationType.Hours => $"{value} hr{(value != 1 ? "s" : "")}",
-            DurationType.Days => $"{value} day{(value != 1 ? "s" : "")}",
-            DurationType.Weeks => $"{value} wk{(value != 1 ? "s" : "")}",
-            _ => "Unknown"
-        };
+        return TimeFormat.FormatDuration(template.DurationType, template.DefaultDurationValue ?? 0);
     }
 
     private static string GetModifierSummary(EffectState state)

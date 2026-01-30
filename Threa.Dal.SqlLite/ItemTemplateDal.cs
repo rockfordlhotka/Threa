@@ -119,26 +119,16 @@ public class ItemTemplateDal : IItemTemplateDal
         try
         {
             string sql;
-            if (template.Id == 0)
-            {
-                sql = "INSERT INTO ItemTemplates (Json) VALUES (@Json)";
-            }
-            else
-            {
-                sql = "UPDATE ItemTemplates SET Json = @Json WHERE Id = @Id";
-            }
-            
             using var command = Connection.CreateCommand();
-            command.CommandText = sql;
-            if (template.Id != 0)
-            {
-                command.Parameters.AddWithValue("@Id", template.Id);
-            }
-            command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(template));
-            await command.ExecuteNonQueryAsync();
 
-            if (template.Id == 0)
+            if (template.Id <= 0)
             {
+                // New template - insert
+                sql = "INSERT INTO ItemTemplates (Json) VALUES (@Json)";
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(template));
+                await command.ExecuteNonQueryAsync();
+
                 using var idCommand = Connection.CreateCommand();
                 idCommand.CommandText = "SELECT last_insert_rowid()";
                 long? lastInsertId = (long?)await idCommand.ExecuteScalarAsync();
@@ -146,6 +136,27 @@ public class ItemTemplateDal : IItemTemplateDal
                 {
                     template.Id = (int)lastInsertId.Value;
                 }
+            }
+            else
+            {
+                // Check if exists
+                using var checkCommand = Connection.CreateCommand();
+                checkCommand.CommandText = "SELECT COUNT(*) FROM ItemTemplates WHERE Id = @Id";
+                checkCommand.Parameters.AddWithValue("@Id", template.Id);
+                var exists = (long)(await checkCommand.ExecuteScalarAsync() ?? 0) > 0;
+
+                if (exists)
+                {
+                    sql = "UPDATE ItemTemplates SET Json = @Json WHERE Id = @Id";
+                }
+                else
+                {
+                    sql = "INSERT INTO ItemTemplates (Id, Json) VALUES (@Id, @Json)";
+                }
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@Id", template.Id);
+                command.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(template));
+                await command.ExecuteNonQueryAsync();
             }
             return template;
         }

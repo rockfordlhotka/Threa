@@ -63,7 +63,9 @@ public class ConcentrationBehavior : IEffectBehavior
     {
         return concentrationType == "MagazineReload"
             || concentrationType == "SpellCasting"
-            || concentrationType == "RitualPreparation";
+            || concentrationType == "RitualPreparation"
+            || concentrationType == "AmmoContainerReload"
+            || concentrationType == "AmmoContainerUnload";
     }
 
     /// <summary>
@@ -197,6 +199,8 @@ public class ConcentrationBehavior : IEffectBehavior
             "MagazineReload" => $"Loading magazine: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "SpellCasting" => $"Casting spell: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "RitualPreparation" => $"Preparing ritual: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "AmmoContainerReload" => $"Loading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "AmmoContainerUnload" => $"Unloading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             _ => $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds"
         };
     }
@@ -227,6 +231,12 @@ public class ConcentrationBehavior : IEffectBehavior
                 break;
             case "SpellCast":
                 ExecuteSpellCast(character, state);
+                break;
+            case "AmmoContainerReload":
+                ExecuteAmmoContainerReload(character, state);
+                break;
+            case "AmmoContainerUnload":
+                ExecuteAmmoContainerUnload(character, state);
                 break;
             // Future action types can be added here
         }
@@ -269,6 +279,46 @@ public class ConcentrationBehavior : IEffectBehavior
             ActionType = "SpellCast",
             Payload = state.DeferredActionPayload,
             Message = state.CompletionMessage ?? "Spell cast successfully!",
+            Success = true
+        };
+    }
+
+    /// <summary>
+    /// Handles ammo container reload completion.
+    /// Stores result in character.LastConcentrationResult for UI to process.
+    /// </summary>
+    private void ExecuteAmmoContainerReload(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = AmmoContainerReloadPayload.FromJson(state.DeferredActionPayload);
+        if (payload == null)
+            return;
+
+        // Store result for UI/controller to process
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "AmmoContainerReload",
+            Payload = state.DeferredActionPayload,
+            Message = state.CompletionMessage ?? "Ammo container reloaded!",
+            Success = true
+        };
+    }
+
+    /// <summary>
+    /// Handles ammo container unload completion.
+    /// Stores result in character.LastConcentrationResult for server-side processing.
+    /// </summary>
+    private void ExecuteAmmoContainerUnload(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = AmmoContainerUnloadPayload.FromJson(state.DeferredActionPayload);
+        if (payload == null)
+            return;
+
+        // Store result for TimeAdvancementService to process
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "AmmoContainerUnload",
+            Payload = state.DeferredActionPayload,
+            Message = state.CompletionMessage ?? "Ammo container unloaded!",
             Success = true
         };
     }
@@ -492,6 +542,94 @@ public class ConcentrationBehavior : IEffectBehavior
             // No fixed duration - sustained until dropped or broken
             TotalRequired = 0,
             CurrentProgress = 0
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for ammo container reload concentration.
+    /// Rate: 3 rounds per game round (1 round per second).
+    /// </summary>
+    /// <param name="containerId">The ammo container CharacterItem ID being loaded</param>
+    /// <param name="sourceItemId">The loose ammo source CharacterItem ID</param>
+    /// <param name="roundsToLoad">Number of rounds to load when complete</param>
+    /// <param name="containerName">Display name of the container</param>
+    /// <param name="ammoType">Type of ammo being loaded (optional)</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateAmmoContainerReloadState(
+        Guid containerId,
+        Guid sourceItemId,
+        int roundsToLoad,
+        string containerName,
+        string? ammoType = null)
+    {
+        // Rate: 3 rounds per game round (1 round per second)
+        int totalRounds = (int)Math.Ceiling(roundsToLoad / 3.0);
+
+        var payload = new AmmoContainerReloadPayload
+        {
+            ContainerId = containerId,
+            SourceItemId = sourceItemId,
+            RoundsToLoad = roundsToLoad,
+            AmmoType = ammoType,
+            ContainerName = containerName
+        };
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "AmmoContainerReload",
+            TotalRequired = totalRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            TargetItemId = containerId,
+            SourceItemId = sourceItemId,
+            DeferredActionType = "AmmoContainerReload",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"{containerName} loaded with {roundsToLoad} rounds!",
+            InterruptionMessage = "Reload interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for ammo container unload concentration.
+    /// Used when unloading individual rounds from a magazine/container back to loose ammo.
+    /// Rate: 3 rounds per game round (1 round per second).
+    /// </summary>
+    /// <param name="containerId">The ammo container CharacterItem ID being unloaded</param>
+    /// <param name="characterId">The character ID who owns the container</param>
+    /// <param name="roundsToUnload">Number of rounds to unload when complete</param>
+    /// <param name="containerName">Display name of the container</param>
+    /// <param name="ammoType">Type of ammo being unloaded (optional)</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateAmmoContainerUnloadState(
+        Guid containerId,
+        int characterId,
+        int roundsToUnload,
+        string containerName,
+        string? ammoType = null)
+    {
+        // Rate: 3 rounds per game round (1 round per second)
+        int totalRounds = (int)Math.Ceiling(roundsToUnload / 3.0);
+
+        var payload = new AmmoContainerUnloadPayload
+        {
+            ContainerId = containerId,
+            CharacterId = characterId,
+            RoundsToUnload = roundsToUnload,
+            AmmoType = ammoType,
+            ContainerName = containerName
+        };
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "AmmoContainerUnload",
+            TotalRequired = totalRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            TargetItemId = containerId,
+            DeferredActionType = "AmmoContainerUnload",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"{containerName} unloaded - {roundsToUnload} rounds returned to inventory!",
+            InterruptionMessage = "Unload interrupted!"
         }.Serialize();
     }
 }

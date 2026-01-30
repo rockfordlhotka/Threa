@@ -45,7 +45,14 @@ public class WoundState
   public int RoundsToDamage { get; set; }
 
   /// <summary>
+  /// The original severity when the wound was created (Minor, Moderate, Severe, Critical).
+  /// Used for half-life healing calculation.
+  /// </summary>
+  public string? OriginalSeverity { get; set; }
+
+  /// <summary>
   /// Custom severity label set by GM (Minor, Moderate, Severe, Critical).
+  /// This is the current severity, which may decrease over time as the wound heals.
   /// </summary>
   public string? Severity { get; set; }
 
@@ -55,26 +62,46 @@ public class WoundState
   public string? Description { get; set; }
 
   /// <summary>
-  /// Custom AS penalty override (null = use default calculation).
+  /// Custom AS penalty override (null = use severity-based calculation).
+  /// When set, disables automatic severity-based penalty scaling.
   /// </summary>
   public int? CustomASPenalty { get; set; }
 
   /// <summary>
-  /// FAT damage per tick (20 rounds). Null = use default based on wound type.
+  /// Custom FAT damage per tick override (null = use severity-based calculation).
+  /// When set, disables automatic severity-based damage scaling.
+  /// </summary>
+  public int? CustomFatDamagePerTick { get; set; }
+
+  /// <summary>
+  /// Custom VIT damage per tick override (null = use severity-based calculation).
+  /// When set, disables automatic severity-based damage scaling.
+  /// </summary>
+  public int? CustomVitDamagePerTick { get; set; }
+
+  /// <summary>
+  /// Legacy: FAT damage per tick. Use CustomFatDamagePerTick instead.
+  /// Kept for backwards compatibility with existing wounds.
   /// </summary>
   public int? FatDamagePerTick { get; set; }
 
   /// <summary>
-  /// VIT damage per tick (20 rounds). Null = use default based on wound type.
+  /// Legacy: VIT damage per tick. Use CustomVitDamagePerTick instead.
+  /// Kept for backwards compatibility with existing wounds.
   /// </summary>
   public int? VitDamagePerTick { get; set; }
 
   /// <summary>
-  /// Optional epoch-based expiry time (in game seconds).
-  /// If set, the wound will automatically heal when the character's CurrentGameTimeSeconds reaches this value.
-  /// Null = wound never expires (must be healed manually).
+  /// Legacy: epoch-based expiry time. Use EffectRecord.ExpiresAtEpochSeconds instead.
+  /// Kept for backwards compatibility with existing wounds.
   /// </summary>
   public long? ExpiryTimeSeconds { get; set; }
+
+  /// <summary>
+  /// Cached current severity (updated each tick based on healing progress).
+  /// Used for half-life healing model calculations.
+  /// </summary>
+  public string? CurrentSeverity { get; set; }
 
   /// <summary>
   /// Total wounds (light + serious) at this location.
@@ -118,12 +145,82 @@ public class WoundState
   /// </summary>
   public static (int asPenalty, int fatPerTick, int vitPerTick) GetSeverityDefaults(string? severity) => severity switch
   {
-    "Minor" => (-2, 1, 0),
+    "Minor" => (-1, 1, 0),
     "Moderate" => (-2, 2, 1),
     "Severe" => (-4, 3, 2),
     "Critical" => (-6, 4, 3),
-    _ => (-2, 1, 0)
+    _ => (-1, 1, 0)
   };
+
+  /// <summary>
+  /// Gets the default healing time in seconds for a severity level.
+  /// Uses a half-life model where severity decreases as the wound heals.
+  /// </summary>
+  public static long GetDefaultHealingTimeSeconds(string? severity) => severity switch
+  {
+    "Minor" => 7 * 24 * 3600,      // 1 week
+    "Moderate" => 14 * 24 * 3600,  // 2 weeks
+    "Severe" => 28 * 24 * 3600,    // 4 weeks
+    "Critical" => 56 * 24 * 3600,  // 8 weeks
+    _ => 7 * 24 * 3600             // Default 1 week
+  };
+
+  /// <summary>
+  /// Severity levels in order from least to most severe.
+  /// </summary>
+  public static readonly string[] SeverityLevels = ["Minor", "Moderate", "Severe", "Critical"];
+
+  /// <summary>
+  /// Gets the severity index (0=Minor, 1=Moderate, 2=Severe, 3=Critical).
+  /// </summary>
+  public static int GetSeverityIndex(string? severity) => severity switch
+  {
+    "Minor" => 0,
+    "Moderate" => 1,
+    "Severe" => 2,
+    "Critical" => 3,
+    _ => 0
+  };
+
+  /// <summary>
+  /// Calculates the current severity based on healing progress using a half-life model.
+  /// At 50% healed, drops one severity level. At 75%, drops two. At 87.5%, drops three.
+  /// </summary>
+  /// <param name="originalSeverity">The severity when the wound was created</param>
+  /// <param name="healingProgress">Progress from 0.0 (just created) to 1.0 (fully healed)</param>
+  /// <returns>The current severity level</returns>
+  public static string GetCurrentSeverity(string? originalSeverity, double healingProgress)
+  {
+    if (string.IsNullOrEmpty(originalSeverity))
+      return "Minor";
+
+    int originalIndex = GetSeverityIndex(originalSeverity);
+
+    // Half-life model: each severity level covers half the remaining time
+    // 0-50%: original, 50-75%: -1, 75-87.5%: -2, 87.5-100%: -3
+    int levelsToReduce = 0;
+    if (healingProgress >= 0.5) levelsToReduce++;
+    if (healingProgress >= 0.75) levelsToReduce++;
+    if (healingProgress >= 0.875) levelsToReduce++;
+
+    int currentIndex = Math.Max(0, originalIndex - levelsToReduce);
+    return SeverityLevels[currentIndex];
+  }
+
+  /// <summary>
+  /// Gets the effective current severity, considering healing progress.
+  /// If CustomASPenalty is set, returns the stored Severity (no auto-degradation).
+  /// </summary>
+  public string GetEffectiveSeverity(double healingProgress)
+  {
+    // If custom values are set, don't auto-degrade
+    if (CustomASPenalty.HasValue)
+      return Severity ?? "Minor";
+
+    // Use original severity for half-life calculation
+    var original = OriginalSeverity ?? Severity ?? "Minor";
+    return GetCurrentSeverity(original, healingProgress);
+  }
 }
 
 /// <summary>
@@ -203,46 +300,27 @@ public class WoundBehavior : IEffectBehavior
   {
     var state = WoundState.Deserialize(effect.BehaviorState);
 
-    // Check for epoch-based expiry
-    if (state.ExpiryTimeSeconds.HasValue && character.CurrentGameTimeSeconds >= state.ExpiryTimeSeconds.Value)
+    // Check for wound expiry (use EffectRecord's ExpiresAtEpochSeconds, falling back to legacy WoundState.ExpiryTimeSeconds)
+    long? expiryTime = effect.ExpiresAtEpochSeconds ?? state.ExpiryTimeSeconds;
+    if (expiryTime.HasValue && character.CurrentGameTimeSeconds >= expiryTime.Value)
     {
-      // Wound has expired - auto-heal it
-      if (state.SeriousWounds > 0)
-      {
-        state.SeriousWounds--;
-        state.LightWounds++;
-        effect.BehaviorState = state.Serialize();
-      }
-      else if (state.LightWounds > 0)
-      {
-        state.LightWounds--;
-        effect.BehaviorState = state.Serialize();
-      }
-
-      // If fully healed, remove the effect
-      if (state.TotalWounds == 0)
-      {
-        return EffectTickResult.ExpireEarly("Wound fully healed");
-      }
-
-      // Reset expiry for next healing cycle if still wounded
-      if (state.ExpiryTimeSeconds.HasValue)
-      {
-        // Add same duration again for next healing cycle
-        // This assumes the expiry represents a healing interval
-        long healingInterval = state.ExpiryTimeSeconds.Value - character.CurrentGameTimeSeconds;
-        state.ExpiryTimeSeconds = character.CurrentGameTimeSeconds + Math.Abs(healingInterval);
-        effect.BehaviorState = state.Serialize();
-      }
-
-      return EffectTickResult.Continue();
+      // Wound has fully healed
+      return EffectTickResult.ExpireEarly("Wound fully healed");
     }
 
-    // Custom wounds with severity use custom tick rates
+    // Custom wounds with severity use severity-based tick rates
     bool isCustomWound = state.Severity != null;
 
     if (!isCustomWound && state.TotalWounds == 0)
       return EffectTickResult.Continue();
+
+    // Update cached current severity based on healing progress (half-life model)
+    if (isCustomWound && !state.CustomASPenalty.HasValue)
+    {
+      var progress = effect.GetDurationProgress(character.CurrentGameTimeSeconds) ?? 0.0;
+      var originalSeverity = state.OriginalSeverity ?? state.Severity ?? "Minor";
+      state.CurrentSeverity = WoundState.GetCurrentSeverity(originalSeverity, progress);
+    }
 
     if (state.RoundsToDamage > 0)
     {
@@ -252,9 +330,26 @@ public class WoundBehavior : IEffectBehavior
       {
         if (isCustomWound)
         {
-          // Use custom damage rates if set, otherwise use severity defaults
-          int fatDamage = state.FatDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).fatPerTick;
-          int vitDamage = state.VitDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).vitPerTick;
+          // Check for custom overrides first
+          bool hasCustomDamage = state.CustomFatDamagePerTick.HasValue || state.CustomVitDamagePerTick.HasValue
+                                || state.FatDamagePerTick.HasValue || state.VitDamagePerTick.HasValue;
+
+          int fatDamage, vitDamage;
+
+          if (hasCustomDamage)
+          {
+            // Use explicit custom damage rates (no auto-degradation)
+            fatDamage = state.CustomFatDamagePerTick ?? state.FatDamagePerTick ?? 1;
+            vitDamage = state.CustomVitDamagePerTick ?? state.VitDamagePerTick ?? 0;
+          }
+          else
+          {
+            // Use cached current severity for damage calculation
+            var currentSeverity = state.CurrentSeverity ?? state.Severity ?? "Minor";
+            var defaults = WoundState.GetSeverityDefaults(currentSeverity);
+            fatDamage = defaults.fatPerTick;
+            vitDamage = defaults.vitPerTick;
+          }
 
           character.Fatigue.PendingDamage += fatDamage;
           character.Vitality.PendingDamage += vitDamage;
@@ -273,6 +368,11 @@ public class WoundBehavior : IEffectBehavior
         state.RoundsToDamage = DamageIntervalRounds;
       }
 
+      effect.BehaviorState = state.Serialize();
+    }
+    else
+    {
+      // Even if no damage this tick, save updated CurrentSeverity
       effect.BehaviorState = state.Serialize();
     }
 
@@ -299,7 +399,7 @@ public class WoundBehavior : IEffectBehavior
   {
     var state = WoundState.Deserialize(effect.BehaviorState);
 
-    // Custom wounds with severity use custom AS penalty
+    // Custom wounds with severity use severity-based AS penalty
     bool isCustomWound = state.Severity != null;
 
     if (!isCustomWound && state.TotalWounds == 0)
@@ -310,9 +410,25 @@ public class WoundBehavior : IEffectBehavior
 
     if (isCustomWound)
     {
-      // Use custom AS penalty if set, otherwise use severity defaults
-      totalPenalty = state.CustomASPenalty ?? WoundState.GetSeverityDefaults(state.Severity).asPenalty;
-      description = $"Wound: {effect.Location} ({state.Severity})";
+      if (state.CustomASPenalty.HasValue)
+      {
+        // Use explicit custom AS penalty (no auto-degradation)
+        totalPenalty = state.CustomASPenalty.Value;
+        description = $"Wound: {effect.Location} ({state.Severity})";
+      }
+      else
+      {
+        // Use cached current severity (updated each tick via half-life model)
+        var currentSeverity = state.CurrentSeverity ?? state.Severity ?? "Minor";
+        totalPenalty = WoundState.GetSeverityDefaults(currentSeverity).asPenalty;
+
+        // Show both original and current severity if different
+        var originalSeverity = state.OriginalSeverity ?? state.Severity;
+        if (currentSeverity != originalSeverity)
+          description = $"Wound: {effect.Location} ({currentSeverity}, was {originalSeverity})";
+        else
+          description = $"Wound: {effect.Location} ({currentSeverity})";
+      }
     }
     else
     {
@@ -446,16 +562,17 @@ public class WoundBehavior : IEffectBehavior
 
   /// <summary>
   /// Creates a custom wound with GM-specified severity and damage rates.
+  /// Wounds use a half-life healing model where severity decreases over time.
   /// </summary>
   /// <param name="character">The character to add the wound to</param>
   /// <param name="effectPortal">The effect portal for creating child objects</param>
   /// <param name="location">Body location (Head, Torso, LeftArm, RightArm, LeftLeg, RightLeg)</param>
   /// <param name="severity">Severity level (Minor, Moderate, Severe, Critical)</param>
   /// <param name="description">GM-provided description of the wound</param>
-  /// <param name="asPenalty">Custom AS penalty override (null = use severity default)</param>
-  /// <param name="fatPerTick">Custom FAT damage per tick (null = use severity default)</param>
-  /// <param name="vitPerTick">Custom VIT damage per tick (null = use severity default)</param>
-  /// <param name="healingTimeSeconds">Optional auto-heal time in game seconds (null = must be healed manually)</param>
+  /// <param name="asPenalty">Custom AS penalty override (null = use severity-based auto-degradation)</param>
+  /// <param name="fatPerTick">Custom FAT damage per tick (null = use severity-based auto-degradation)</param>
+  /// <param name="vitPerTick">Custom VIT damage per tick (null = use severity-based auto-degradation)</param>
+  /// <param name="healingTimeSeconds">Time until fully healed in game seconds (null = use severity default, 0 = manual healing only)</param>
   /// <returns>The created EffectRecord</returns>
   public static EffectRecord CreateCustomWound(
     CharacterEdit character,
@@ -468,27 +585,47 @@ public class WoundBehavior : IEffectBehavior
     int? vitPerTick = null,
     long? healingTimeSeconds = null)
   {
+    // Determine actual healing time
+    long? actualHealingTime = healingTimeSeconds;
+    if (!healingTimeSeconds.HasValue)
+    {
+      // Use severity-based default healing time
+      actualHealingTime = WoundState.GetDefaultHealingTimeSeconds(severity);
+    }
+    else if (healingTimeSeconds.Value == 0)
+    {
+      // Explicit 0 means manual healing only
+      actualHealingTime = null;
+    }
+
+    // Only set custom overrides if values differ from severity defaults
+    var defaults = WoundState.GetSeverityDefaults(severity);
+    int? customAsPenalty = (asPenalty.HasValue && asPenalty.Value != defaults.asPenalty) ? asPenalty : null;
+    int? customFatPerTick = (fatPerTick.HasValue && fatPerTick.Value != defaults.fatPerTick) ? fatPerTick : null;
+    int? customVitPerTick = (vitPerTick.HasValue && vitPerTick.Value != defaults.vitPerTick) ? vitPerTick : null;
+
     var state = new WoundState
     {
+      OriginalSeverity = severity,
       Severity = severity,
       Description = description,
-      CustomASPenalty = asPenalty,
-      FatDamagePerTick = fatPerTick,
-      VitDamagePerTick = vitPerTick,
+      CustomASPenalty = customAsPenalty,
+      CustomFatDamagePerTick = customFatPerTick,
+      CustomVitDamagePerTick = customVitPerTick,
       MaxWounds = WoundState.GetMaxWoundsForLocation(location),
       RoundsToDamage = DamageIntervalRounds,
-      SeriousWounds = 1, // Custom wounds count as 1 serious wound for location tracking
-      ExpiryTimeSeconds = healingTimeSeconds.HasValue
-        ? character.CurrentGameTimeSeconds + healingTimeSeconds.Value
-        : null
+      SeriousWounds = 1 // Custom wounds count as 1 serious wound for location tracking
     };
 
+    // Create wound with proper expiry time on the EffectRecord
+    // Use CreateWithEpochTime for seconds-based duration
     var wound = effectPortal.CreateChild(
       EffectType.Wound,
       $"Wound: {location}",
       location,
-      null, // Wounds don't expire by duration
-      state.Serialize());
+      actualHealingTime, // Duration in seconds
+      state.Serialize(),
+      character.CurrentGameTimeSeconds); // Current game time for epoch calculation
 
     wound.Description = description;
     wound.Source = "GM";

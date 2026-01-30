@@ -11,15 +11,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class TableCharacterInfoTests
+public class TableCharacterInfoTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     [TestMethod]
     public void TableCharacterInfo_PopulatesPendingPools_FromCharacterDto()

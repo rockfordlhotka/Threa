@@ -123,9 +123,7 @@
                 <CharacterDetailGmActions Character="character"
                                           CharacterId="selectedCharacterId"
                                           TableId="TableId"
-                                          OnCharacterRemoved="OnCharacterRemoved"
-                                          OnCharacterUpdated="OnCharacterUpdated"
-                                          OnEditStatsRequested="SwitchToSheetAndEdit" />
+                                          OnCharacterUpdated="OnCharacterUpdated" />
             }
             else if (activeTab == "Character Sheet")
             {
@@ -136,24 +134,11 @@
                                        IsEditModeChanged="@((bool val) => { isEditMode = val; StateHasChanged(); })"
                                        OnCharacterUpdated="OnCharacterUpdated" />
             }
-            else if (activeTab == "Effects")
-            {
-                <CharacterDetailEffects Character="character"
-                                         CharacterId="selectedCharacterId"
-                                         TableId="TableId" />
-            }
             else if (activeTab == "Inventory")
             {
                 <CharacterDetailInventory Character="character"
                                          CharacterId="selectedCharacterId"
                                          TableId="TableId" />
-            }
-            else if (activeTab == "Grant Items")
-            {
-                <CharacterDetailItemDistribution Character="character"
-                                                  CharacterId="selectedCharacterId"
-                                                  TableId="TableId"
-                                                  OnItemGranted="OnCharacterUpdated" />
             }
             else if (activeTab == "Narrative")
             {
@@ -162,6 +147,13 @@
                                           CharacterId="selectedCharacterId"
                                           InitialGmNotes="@currentGmNotes"
                                           OnGmNotesChanged="@((notes) => currentGmNotes = notes)" />
+            }
+            else if (activeTab == "Admin")
+            {
+                <CharacterDetailAdmin Character="character"
+                                       CharacterId="selectedCharacterId"
+                                       TableId="TableId"
+                                       OnCharacterRemoved="OnCharacterRemoved" />
             }
         }
         else
@@ -184,7 +176,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Effects", "Inventory", "Grant Items", "Narrative"];
+    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Inventory", "Narrative", "Admin"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
@@ -271,15 +263,6 @@
     {
         // Reload the character to reflect changes
         await LoadCharacterAsync();
-    }
-
-    private void SwitchToSheetAndEdit()
-    {
-        activeTab = "Character Sheet";
-        isEditMode = true;
-        // CharacterDetailSheet's OnParametersSetAsync will detect IsEditMode=true
-        // and call LoadEditingCharacter() to fetch the character for editing
-        StateHasChanged();
     }
 
     private void OnCharacterRemoved()

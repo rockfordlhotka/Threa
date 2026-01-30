@@ -97,6 +97,31 @@
             </div>
         </div>
 
+        @* Healing Time *@
+        <div class="mb-3">
+            <label class="form-label">Healing Time</label>
+            <div class="input-group">
+                <input type="number" class="form-control" @bind="healingTimeValue" min="0" placeholder="0" />
+                <select class="form-select" style="max-width: 120px;" @bind="healingTimeUnit">
+                    <option value="rounds">Rounds</option>
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                </select>
+            </div>
+            <small class="text-muted">
+                @if (healingTimeValue > 0)
+                {
+                    <span>Wound fully heals in @FormatHealingTime(). Severity decreases as it heals (half-life model).</span>
+                }
+                else
+                {
+                    <span>Leave at 0 for manual healing only (no auto-degradation)</span>
+                }
+            </small>
+        </div>
+
         @if (!string.IsNullOrEmpty(selectedSeverity))
         {
             <div class="alert alert-secondary small mb-3">
@@ -145,19 +170,25 @@
     private int asPenalty = -2;
     private int fatDamage = 1;
     private int vitDamage = 0;
+    private int healingTimeValue = 0;
+    private string healingTimeUnit = "hours";
     private bool isProcessing;
     private string? errorMessage;
 
-    // Common wound templates
-    private static readonly (string Name, string Location, string Severity, string Description)[] CommonWounds =
+    // Common wound templates with healing times based on severity
+    // Healing times: Minor=1 week, Moderate=2 weeks, Severe=4 weeks, Critical=8 weeks
+    private static readonly (string Name, string Location, string Severity, string Description, int HealingDays)[] CommonWounds =
     [
-        ("Broken Arm", "RightArm", "Moderate", "Fractured arm bone"),
-        ("Broken Leg", "RightLeg", "Moderate", "Fractured leg bone"),
-        ("Concussion", "Head", "Moderate", "Traumatic head injury"),
-        ("Deep Cut", "Torso", "Minor", "Deep bleeding laceration"),
-        ("Puncture Wound", "Torso", "Moderate", "Piercing injury"),
-        ("Burns", "Torso", "Minor", "Thermal damage to skin"),
-        ("Internal Bleeding", "Torso", "Severe", "Internal hemorrhage")
+        ("Broken Arm", "RightArm", "Severe", "Fractured arm bone", 28),
+        ("Broken Leg", "RightLeg", "Severe", "Fractured leg bone", 42),
+        ("Concussion", "Head", "Moderate", "Traumatic head injury", 14),
+        ("Deep Cut", "Torso", "Minor", "Deep bleeding laceration", 7),
+        ("Puncture Wound", "Torso", "Moderate", "Piercing injury", 14),
+        ("Burns", "Torso", "Minor", "Thermal damage to skin", 10),
+        ("Internal Bleeding", "Torso", "Critical", "Internal hemorrhage", 56),
+        ("Sprained Ankle", "RightLeg", "Minor", "Twisted ankle joint", 7),
+        ("Cracked Ribs", "Torso", "Moderate", "Fractured rib bones", 21),
+        ("Severed Tendon", "RightArm", "Critical", "Major tendon damage", 56)
     ];
 
     private bool IsFormValid =>
@@ -172,13 +203,82 @@
         {
             // Edit mode - populate form from existing wound
             var state = WoundState.Deserialize(ExistingWound.BehaviorState);
-            selectedSeverity = state.Severity ?? "Minor";
+
+            // Use original severity for the form (what the wound started as)
+            selectedSeverity = state.OriginalSeverity ?? state.Severity ?? "Minor";
             selectedLocation = ExistingWound.Location ?? "Torso";
             description = state.Description ?? ExistingWound.Description ?? "";
-            asPenalty = state.CustomASPenalty ?? WoundState.GetSeverityDefaults(state.Severity).asPenalty;
-            fatDamage = state.FatDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).fatPerTick;
-            vitDamage = state.VitDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).vitPerTick;
+
+            // Load custom overrides if set, otherwise use severity defaults
+            var defaults = WoundState.GetSeverityDefaults(selectedSeverity);
+            asPenalty = state.CustomASPenalty ?? defaults.asPenalty;
+            fatDamage = state.CustomFatDamagePerTick ?? state.FatDamagePerTick ?? defaults.fatPerTick;
+            vitDamage = state.CustomVitDamagePerTick ?? state.VitDamagePerTick ?? defaults.vitPerTick;
+
+            // Load healing time from EffectRecord (preferred) or legacy WoundState
+            long? expiryTime = ExistingWound.ExpiresAtEpochSeconds ?? state.ExpiryTimeSeconds;
+            if (expiryTime.HasValue && Character != null)
+            {
+                var remainingSeconds = expiryTime.Value - Character.CurrentGameTimeSeconds;
+                if (remainingSeconds > 0)
+                {
+                    ConvertSecondsToTimeValue(remainingSeconds);
+                }
+            }
         }
+    }
+
+    private void ConvertSecondsToTimeValue(long seconds)
+    {
+        // Convert to the most appropriate unit
+        long weekSeconds = 7 * 86400;
+        if (seconds >= weekSeconds && seconds % weekSeconds == 0)
+        {
+            healingTimeValue = (int)(seconds / weekSeconds);
+            healingTimeUnit = "weeks";
+        }
+        else if (seconds >= 86400 && seconds % 86400 == 0)
+        {
+            healingTimeValue = (int)(seconds / 86400);
+            healingTimeUnit = "days";
+        }
+        else if (seconds >= 3600 && seconds % 3600 == 0)
+        {
+            healingTimeValue = (int)(seconds / 3600);
+            healingTimeUnit = "hours";
+        }
+        else if (seconds >= 60 && seconds % 60 == 0)
+        {
+            healingTimeValue = (int)(seconds / 60);
+            healingTimeUnit = "minutes";
+        }
+        else
+        {
+            // Show as rounds (3 seconds per round)
+            healingTimeValue = (int)(seconds / 3);
+            healingTimeUnit = "rounds";
+        }
+    }
+
+    private long? GetHealingTimeSeconds()
+    {
+        if (healingTimeValue <= 0) return null;
+
+        return healingTimeUnit switch
+        {
+            "rounds" => healingTimeValue * 3,
+            "minutes" => healingTimeValue * 60,
+            "hours" => healingTimeValue * 3600,
+            "days" => healingTimeValue * 86400,
+            "weeks" => healingTimeValue * 7 * 86400,
+            _ => null
+        };
+    }
+
+    private string FormatHealingTime()
+    {
+        if (healingTimeValue <= 0) return "";
+        return $"{healingTimeValue} {healingTimeUnit}";
     }
 
     private void OnTemplateSelected(ChangeEventArgs e)
@@ -193,6 +293,10 @@
             selectedSeverity = template.Severity;
             description = template.Description;
             OnSeverityChanged();
+
+            // Set healing time from template
+            healingTimeValue = template.HealingDays;
+            healingTimeUnit = "days";
         }
     }
 
@@ -204,6 +308,20 @@
             asPenalty = defaults.asPenalty;
             fatDamage = defaults.fatPerTick;
             vitDamage = defaults.vitPerTick;
+
+            // Set default healing time based on severity (use weeks for 7+ days)
+            var healingSeconds = WoundState.GetDefaultHealingTimeSeconds(selectedSeverity);
+            var healingDays = (int)(healingSeconds / 86400);
+            if (healingDays >= 7 && healingDays % 7 == 0)
+            {
+                healingTimeValue = healingDays / 7;
+                healingTimeUnit = "weeks";
+            }
+            else
+            {
+                healingTimeValue = healingDays;
+                healingTimeUnit = "days";
+            }
         }
     }
 
@@ -219,6 +337,8 @@
             // Re-fetch character for fresh state
             var character = await characterPortal.FetchAsync(CharacterId);
 
+            var healingSeconds = GetHealingTimeSeconds();
+
             if (ExistingWound != null)
             {
                 // Edit: Find and update existing wound
@@ -231,6 +351,9 @@
                     state.CustomASPenalty = asPenalty;
                     state.FatDamagePerTick = fatDamage;
                     state.VitDamagePerTick = vitDamage;
+                    state.ExpiryTimeSeconds = healingSeconds.HasValue
+                        ? character.CurrentGameTimeSeconds + healingSeconds.Value
+                        : null;
                     wound.BehaviorState = state.Serialize();
                     wound.Location = selectedLocation;
                     wound.Name = $"Wound: {selectedLocation}";
@@ -243,7 +366,8 @@
                 WoundBehavior.CreateCustomWound(
                     character, effectPortal,
                     selectedLocation, selectedSeverity, description,
-                    asPenalty, fatDamage, vitDamage);
+                    asPenalty, fatDamage, vitDamage,
+                    healingSeconds);
             }
 
             await characterPortal.UpdateAsync(character);

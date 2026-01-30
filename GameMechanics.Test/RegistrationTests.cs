@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
-using Threa.Dal.MockDb;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Test;
 
@@ -14,27 +14,16 @@ namespace GameMechanics.Test;
 /// Unit tests for the UserRegistration business object.
 /// Tests validation rules and first-user-admin logic.
 /// </summary>
-/// <remarks>
-/// Integration tests that modify MockDb state run sequentially to avoid race conditions.
-/// </remarks>
 [TestClass]
-[DoNotParallelize]
-public class RegistrationTests
+public class RegistrationTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     #region Validation Tests
 
     [TestMethod]
     public void Create_HasBrokenRules_WhenFieldsEmpty()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -52,7 +41,7 @@ public class RegistrationTests
     [TestMethod]
     public void Create_HasBrokenRules_WhenPasswordTooShort()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -71,7 +60,7 @@ public class RegistrationTests
     [TestMethod]
     public void Create_HasBrokenRules_WhenUsernameTooShort()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -90,7 +79,7 @@ public class RegistrationTests
     [TestMethod]
     public void Create_IsSavable_WhenAllFieldsValid()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -107,7 +96,7 @@ public class RegistrationTests
     [TestMethod]
     public void Create_HasBrokenRules_WhenUsernameTooLong()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -125,7 +114,7 @@ public class RegistrationTests
     [TestMethod]
     public void Create_IsValid_WithBoundaryLengths()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
         var registration = dp.Create();
@@ -139,23 +128,15 @@ public class RegistrationTests
 
     #endregion
 
-    #region Insert Tests (Integration with MockDb)
+    #region Insert Tests (Integration with SQLite)
 
     [TestMethod]
     public async Task Insert_FirstUser_BecomesAdministrator()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        // Use lock to ensure atomic clear and insert for this test
-        // Note: This tests the first-user-becomes-admin logic
-        lock (MockDb.Players)
-        {
-            MockDb.Players.Clear();
-        }
-
         var registration = dp.Create();
-        // Use unique username to avoid conflicts with parallel tests
         var uniqueUsername = $"firstadmin_{Guid.NewGuid():N}";
         registration.Username = uniqueUsername;
         registration.Password = "password123";
@@ -166,26 +147,27 @@ public class RegistrationTests
 
         Assert.IsTrue(saved.Id >= 0, "Should have assigned an ID after save");
 
-        // Verify in MockDb
-        var player = MockDb.Players.FirstOrDefault(p => p.Email == uniqueUsername);
-        Assert.IsNotNull(player, "Player should exist in MockDb");
+        // Verify in database
+        var player = await GetPlayerByEmailAsync(uniqueUsername);
+        Assert.IsNotNull(player, "Player should exist in database");
         Assert.AreEqual(Roles.Administrator, player.Roles, "First user should be Administrator");
     }
 
     [TestMethod]
     public async Task Insert_SubsequentUser_BecomesPlayer()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        // Clear MockDb and add a first user
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        // Add a first user (admin)
+        var savedAdmin = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "existingadmin",
             Name = "Existing Admin",
-            Roles = Roles.Administrator
+            Roles = Roles.Administrator,
+            HashedPassword = "dummy",
+            Salt = "dummy"
         });
 
         var registration = dp.Create();
@@ -196,26 +178,27 @@ public class RegistrationTests
 
         var saved = await registration.SaveAsync();
 
-        // Verify in MockDb
-        var player = MockDb.Players.FirstOrDefault(p => p.Email == "newplayer");
-        Assert.IsNotNull(player, "Player should exist in MockDb");
+        // Verify in database
+        var player = await GetPlayerByEmailAsync("newplayer");
+        Assert.IsNotNull(player, "Player should exist in database");
         Assert.AreEqual(Roles.Player, player.Roles, "Subsequent user should be Player");
     }
 
     [TestMethod]
     public async Task Insert_DuplicateUsername_ThrowsException()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
 
-        // Clear MockDb and add an existing user
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        // Add an existing user
+        var savedUser = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "existinguser",
             Name = "Existing User",
-            Roles = Roles.Player
+            Roles = Roles.Player,
+            HashedPassword = "dummy",
+            Salt = "dummy"
         });
 
         var registration = dp.Create();
@@ -245,10 +228,8 @@ public class RegistrationTests
     [TestMethod]
     public async Task Insert_PasswordIsHashed()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
-
-        MockDb.Players.Clear();
 
         var registration = dp.Create();
         registration.Username = "hashtest";
@@ -258,8 +239,8 @@ public class RegistrationTests
 
         _ = await registration.SaveAsync();
 
-        var player = MockDb.Players.FirstOrDefault(p => p.Email == "hashtest");
-        Assert.IsNotNull(player, "Player should exist in MockDb");
+        var player = await GetPlayerByEmailAsync("hashtest");
+        Assert.IsNotNull(player, "Player should exist in database");
         Assert.AreNotEqual("myplainpassword", player.HashedPassword, "Password should be hashed, not stored plain");
         Assert.IsTrue(player.HashedPassword.StartsWith("$2"), "Hashed password should be BCrypt format");
         Assert.IsFalse(string.IsNullOrEmpty(player.Salt), "Salt should be stored");
@@ -268,10 +249,8 @@ public class RegistrationTests
     [TestMethod]
     public async Task Insert_SecretAnswerIsNormalized()
     {
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var dp = provider.GetRequiredService<IDataPortal<UserRegistration>>();
-
-        MockDb.Players.Clear();
 
         var registration = dp.Create();
         registration.Username = "normalizetest";
@@ -281,8 +260,8 @@ public class RegistrationTests
 
         _ = await registration.SaveAsync();
 
-        var player = MockDb.Players.FirstOrDefault(p => p.Email == "normalizetest");
-        Assert.IsNotNull(player, "Player should exist in MockDb");
+        var player = await GetPlayerByEmailAsync("normalizetest");
+        Assert.IsNotNull(player, "Player should exist in database");
         Assert.AreEqual("fluffy", player.SecretAnswer, "Secret answer should be trimmed and lowercase");
     }
 

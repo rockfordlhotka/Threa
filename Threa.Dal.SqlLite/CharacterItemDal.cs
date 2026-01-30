@@ -257,7 +257,11 @@ public class CharacterItemDal : ICharacterItemDal
         if (containerItemId.HasValue)
         {
             var container = await GetItemAsync(containerItemId.Value);
-            if (container.Template == null || !container.Template.IsContainer)
+            var isValidContainer = container.Template != null &&
+                (container.Template.IsContainer ||
+                 container.Template.ItemType == ItemType.Container ||
+                 container.Template.ItemType == ItemType.AmmoContainer);
+            if (!isValidContainer)
                 throw new OperationFailedException("Target item is not a container");
         }
 

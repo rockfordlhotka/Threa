@@ -11,15 +11,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class EffectsTests
+public class EffectsTests : TestBase
 {
-  private ServiceProvider InitServices()
-  {
-    IServiceCollection services = new ServiceCollection();
-    services.AddCsla();
-    services.AddMockDb();
-    return services.BuildServiceProvider();
-  }
 
   #region WoundState Tests
 
@@ -1707,10 +1700,11 @@ public class EffectsTests
 
     var initialFat = c.Fatigue.PendingDamage;
 
-    // Run through duration
-    for (int i = 0; i < 5; i++)
+    // Run through duration - each round is 3 seconds in epoch time
+    // Drug expires at 5 rounds * 3 seconds = 15 seconds
+    for (int i = 1; i <= 5; i++)
     {
-      c.Effects.EndOfRound(0);
+      c.Effects.EndOfRound(i * 3); // Pass incrementing epoch time (3, 6, 9, 12, 15)
     }
 
     // Should have taken crash damage

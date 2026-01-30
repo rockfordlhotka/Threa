@@ -93,7 +93,9 @@ public class PlayerDal : IPlayerDal
                 return null;
             string json = reader.GetString(0);
             var result = System.Text.Json.JsonSerializer.Deserialize<Player>(json);
-            return result ?? throw new OperationFailedException($"Player {id} not found");
+            if (result != null)
+                result.Id = id;
+            return result;
         }
         catch (Exception ex)
         {
@@ -172,7 +174,7 @@ public class PlayerDal : IPlayerDal
         {
             string sql;
             using var command = Connection.CreateCommand();
-            if (player.Id < 0)
+            if (player.Id <= 0)
             {
                 sql = "INSERT INTO Players (Email, Json) VALUES (@Email, @Json)";
                 command.Parameters.AddWithValue("@Email", player.Email);
@@ -186,7 +188,7 @@ public class PlayerDal : IPlayerDal
             command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(player));
             await command.ExecuteNonQueryAsync();
 
-            if (player.Id < 0)
+            if (player.Id <= 0)
             {
                 sql = "SELECT last_insert_rowid()";
                 using var idCommand = Connection.CreateCommand();
