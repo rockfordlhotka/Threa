@@ -170,7 +170,7 @@ else
                         <div class="row row-cols-1 row-cols-lg-2 g-2">
                             @foreach (var character in tableCharacters)
                             {
-                                <div class="col">
+                                <div class="col" @key="@($"{character.CharacterId}-{characterListVersion}")">
                                     <CharacterStatusCard Character="@character"
                                                         IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
                                                         OnClick="OpenCharacterDetails" />
@@ -321,6 +321,9 @@ else
     private bool timeEventSubscribed;
     private bool _disposed;
 
+    // Version counter to force re-render of character cards
+    private int characterListVersion = 0;
+
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
@@ -352,46 +355,104 @@ else
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
     {
-        // Ignore events if component is disposed or not our table
-        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
+        Console.WriteLine($"[GmTable] OnTimeEventReceived: EventType={e.EventType}, CampaignId={e.CampaignId}, TableId={table?.Id}");
 
-        // When time advances, schedule a refresh of character data after a short delay
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString())
+        {
+            Console.WriteLine($"[GmTable] OnTimeEventReceived: skipping (disposed={_disposed}, tableNull={table == null}, idMatch={e.CampaignId == table?.Id.ToString()})");
+            return;
+        }
+
+        Console.WriteLine("[GmTable] OnTimeEventReceived: scheduling delayed refresh");
+        // When time advances, schedule a refresh of character data after a delay
         // to allow player clients to process their end-of-round effects first
+        // Players will also publish CharacterUpdateMessage which triggers a faster refresh
         _ = InvokeAsync(async () =>
         {
-            // Wait briefly for players to process and save their character updates
-            await Task.Delay(500);
-            await RefreshCharacterListAsync();
-            StateHasChanged();
+            try
+            {
+                // Wait for players to process and save their character updates
+                Console.WriteLine("[GmTable] OnTimeEventReceived: waiting 1.5s for player updates");
+                await Task.Delay(1500);
+                Console.WriteLine("[GmTable] OnTimeEventReceived: delay complete, refreshing");
+                await RefreshCharacterListAsync();
+                Console.WriteLine("[GmTable] OnTimeEventReceived: calling StateHasChanged");
+                StateHasChanged();
+                Console.WriteLine("[GmTable] OnTimeEventReceived: StateHasChanged complete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GmTable] OnTimeEventReceived error: {ex.Message}");
+            }
         });
     }
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
-        // Ignore events if component is disposed or not our table
-        if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
+        Console.WriteLine($"[GmTable] OnTimeSkipReceived: CampaignId={e.CampaignId}, TableId={table?.Id}, SkipUnit={e.SkipUnit}");
 
-        // When calendar time advances, schedule a refresh of character data after a short delay
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString())
+        {
+            Console.WriteLine("[GmTable] OnTimeSkipReceived: skipping (disposed or campaign mismatch)");
+            return;
+        }
+
+        Console.WriteLine("[GmTable] OnTimeSkipReceived: scheduling delayed refresh");
+        // When calendar time advances, schedule a refresh of character data after a delay
         // to allow player clients to process their time skip effects first
+        // Players will also publish CharacterUpdateMessage which triggers a faster refresh
         _ = InvokeAsync(async () =>
         {
-            // Wait briefly for players to process and save their character updates
-            await Task.Delay(500);
-            await RefreshCharacterListAsync();
-            StateHasChanged();
+            try
+            {
+                // Wait for players to process and save their character updates
+                Console.WriteLine("[GmTable] OnTimeSkipReceived: waiting 1.5s for player updates");
+                await Task.Delay(1500);
+                await RefreshCharacterListAsync();
+                StateHasChanged();
+                Console.WriteLine("[GmTable] OnTimeSkipReceived: refresh complete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GmTable] OnTimeSkipReceived error: {ex.Message}");
+            }
         });
     }
 
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
-        // Ignore events if component is disposed
-        if (_disposed) return;
+        Console.WriteLine($"[GmTable] OnCharacterUpdateReceived: CharId={e.CharacterId}, CampaignId={e.CampaignId}, TableId={table?.Id}");
 
-        // Refresh character list when any character at this table is updated
+        // Ignore events if component is disposed
+        if (_disposed)
+        {
+            Console.WriteLine("[GmTable] OnCharacterUpdateReceived: disposed, skipping");
+            return;
+        }
+
+        // Only process updates for characters at this table
+        // Check by CampaignId if available, otherwise check if character is in our list
+        if (!string.IsNullOrEmpty(e.CampaignId) && table != null && e.CampaignId != table.Id.ToString())
+        {
+            Console.WriteLine($"[GmTable] OnCharacterUpdateReceived: CampaignId mismatch, skipping");
+            return;
+        }
+
+        Console.WriteLine("[GmTable] OnCharacterUpdateReceived: triggering refresh");
+        // Refresh character list when a character is updated
         _ = InvokeAsync(async () =>
         {
-            await RefreshCharacterListAsync();
-            StateHasChanged();
+            try
+            {
+                await RefreshCharacterListAsync();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GmTable] OnCharacterUpdateReceived error: {ex.Message}");
+            }
         });
     }
 
@@ -413,8 +474,16 @@ else
     {
         try
         {
+            Console.WriteLine($"[GmTable] RefreshCharacterListAsync starting, version={characterListVersion}");
             var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
+            // Materialize to a new list to ensure Blazor detects the change
+            tableCharacters = charList.ToList();
+
+            // Log the fetched values for debugging
+            foreach (var c in tableCharacters)
+            {
+                Console.WriteLine($"[GmTable] Fetched {c.CharacterName}: FAT={c.FatValue}/{c.FatMax} (pending dmg={c.FatPendingDamage}), VIT={c.VitValue}/{c.VitMax} (pending dmg={c.VitPendingDamage})");
+            }
 
             // Update selected character reference if it still exists
             if (selectedCharacter != null)
@@ -422,9 +491,16 @@ else
                 selectedCharacter = tableCharacters.FirstOrDefault(c => c.CharacterId == selectedCharacter.CharacterId);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore refresh errors
+            Console.WriteLine($"[GmTable] RefreshCharacterListAsync error: {ex.Message}");
+        }
+        finally
+        {
+            // Always increment version to force re-render of character cards
+            // even if fetch failed - this ensures UI stays responsive
+            characterListVersion++;
+            Console.WriteLine($"[GmTable] RefreshCharacterListAsync complete, new version={characterListVersion}");
         }
     }
 
@@ -480,7 +556,8 @@ else
         {
             table = await tablePortal.FetchAsync(TableId);
             var charList = await characterListPortal.FetchAsync(TableId);
-            tableCharacters = charList.AsEnumerable();
+            // Materialize to a list to ensure consistent behavior with RefreshCharacterListAsync
+            tableCharacters = charList.ToList();
 
             // Apply the table's theme
             if (table != null)
@@ -588,6 +665,10 @@ else
             SourceId = "GM",
             Reason = $"Advanced to round {table.CurrentRound}"
         });
+
+        // Schedule multiple refreshes to catch player updates as they process end-of-round
+        // This ensures GM dashboard stays updated even if message-based notifications are missed
+        _ = ScheduleDelayedRefreshesAsync();
     }
 
     private async Task EnterCombat()
@@ -652,6 +733,33 @@ else
             SourceId = "GM",
             NarrativeDescription = $"GM advanced time by {timeDescription}"
         });
+
+        // Schedule multiple refreshes to catch player updates as they process the time skip
+        // This ensures GM dashboard stays updated even if message-based notifications are missed
+        _ = ScheduleDelayedRefreshesAsync();
+    }
+
+    /// <summary>
+    /// Schedules multiple delayed refreshes to catch character updates from players.
+    /// This is a fallback mechanism in case CharacterUpdateReceived messages are missed.
+    /// </summary>
+    private async Task ScheduleDelayedRefreshesAsync()
+    {
+        try
+        {
+            // Refresh multiple times over 5 seconds to catch player updates
+            for (int i = 0; i < 3; i++)
+            {
+                await Task.Delay(1500);
+                if (_disposed) return;
+                await RefreshCharacterListAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GmTable] ScheduleDelayedRefreshesAsync error: {ex.Message}");
+        }
     }
 
     private void SendAnnouncement()

@@ -147,6 +147,8 @@ public class AmmunitionProperties
 
     /// <summary>
     /// Deserializes from JSON string.
+    /// Returns the properties if this represents ammunition (IsAmmunition is true, 
+    /// or if AmmoType is specified which implies it's ammunition).
     /// </summary>
     public static AmmunitionProperties? FromJson(string? json)
     {
@@ -156,7 +158,10 @@ public class AmmunitionProperties
         try
         {
             var props = JsonSerializer.Deserialize<AmmunitionProperties>(json);
-            return props?.IsAmmunition == true ? props : null;
+            // Consider it ammunition if explicitly marked OR if it has an ammo type defined
+            if (props?.IsAmmunition == true || !string.IsNullOrEmpty(props?.AmmoType))
+                return props;
+            return null;
         }
         catch
         {

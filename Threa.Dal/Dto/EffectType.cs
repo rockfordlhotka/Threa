@@ -11,7 +11,9 @@ public enum EffectType
     Wound = 0,
 
     /// <summary>
-    /// General status condition (stunned, unconscious, prone, etc.).
+    /// General status condition for neutral or mechanical states.
+    /// For clearly beneficial narrative effects (Invisibility, Flying), use Buff instead.
+    /// For clearly harmful narrative effects (Stunned, Paralyzed), use Debuff instead.
     /// </summary>
     Condition = 1,
 

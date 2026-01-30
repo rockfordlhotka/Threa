@@ -118,7 +118,7 @@ public class EffectState
 ```csharp
 public enum EffectDurationType
 {
-    Rounds,        // Combat rounds (6 seconds each)
+    Rounds,        // Combat rounds (3 seconds each)
     Turns,         // Character's turns only
     RealTime,      // Epoch-based timestamp
     Permanent      // Until manually removed

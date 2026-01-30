@@ -65,16 +65,20 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <strong>2. Select Ammo Source</strong>
+                            @if (!string.IsNullOrEmpty(selectedWeapon.AcceptedAmmoType))
+                            {
+                                <small class="text-muted ms-2">(requires @selectedWeapon.AcceptedAmmoType)</small>
+                            }
                         </div>
                         <div class="card-body">
-                            @if (AvailableMagazines == null || !AvailableMagazines.Any())
+                            @if (!GetCompatibleAmmoSources().Any())
                             {
                                 <p class="text-muted">No compatible magazines or ammo in inventory.</p>
                             }
                             else
                             {
                                 <div class="list-group">
-                                    @foreach (var mag in AvailableMagazines)
+                                    @foreach (var mag in GetCompatibleAmmoSources())
                                     {
                                         <button class="list-group-item list-group-item-action @(selectedMagazine?.ItemId == mag.ItemId ? "active" : "")"
                                                 @onclick="() => SelectMagazine(mag)">
@@ -292,6 +296,24 @@
     private void OnCostTypeChanged(ActionCostType type)
     {
         costType = type;
+    }
+
+    /// <summary>
+    /// Gets ammo sources that are compatible with the selected weapon's ammo type.
+    /// Uses the weapon's AcceptedAmmoType (what it can use) rather than LoadedAmmoType (what's currently loaded).
+    /// </summary>
+    private IEnumerable<AmmoSourceInfo> GetCompatibleAmmoSources()
+    {
+        if (AvailableMagazines == null || selectedWeapon == null)
+            return Enumerable.Empty<AmmoSourceInfo>();
+
+        var weaponAmmoType = selectedWeapon.AcceptedAmmoType;
+        if (string.IsNullOrEmpty(weaponAmmoType))
+            return Enumerable.Empty<AmmoSourceInfo>();
+
+        return AvailableMagazines.Where(m => 
+            string.Equals(m.AmmoType, weaponAmmoType, StringComparison.OrdinalIgnoreCase) &&
+            m.CurrentAmmo > 0);
     }
 
     private string GetAmmoBadgeClass(RangedWeaponInfo weapon)

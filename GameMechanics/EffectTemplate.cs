@@ -170,6 +170,17 @@ public class EffectTemplate : ReadOnlyBase<EffectTemplate>
     [Fetch]
     private void Fetch(EffectTemplateDto dto)
     {
+        LoadFromDto(dto);
+    }
+
+    [FetchChild]
+    private void FetchChild(EffectTemplateDto dto)
+    {
+        LoadFromDto(dto);
+    }
+
+    private void LoadFromDto(EffectTemplateDto dto)
+    {
         Id = dto.Id;
         Name = dto.Name;
         EffectType = dto.EffectType;

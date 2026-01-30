@@ -25,10 +25,16 @@
         flex-direction: column;
         align-items: center;
         padding: 6px;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        background: #fff;
+        border: 1px solid var(--color-card-border, #dee2e6);
+        border-radius: var(--border-radius, 4px);
+        background: var(--color-card-bg, #fff);
+        color: var(--color-text-primary, #212529);
         font-size: 0.8rem;
+        position: relative;
+        overflow: visible;
+    }
+    .inventory-tile.menu-open {
+        z-index: 100;
     }
     .item-icon {
         font-size: 18px;
@@ -43,7 +49,7 @@
     }
     .item-quantity {
         font-size: 0.65rem;
-        color: #6c757d;
+        color: var(--color-text-muted, #6c757d);
     }
     .quantity-edit-overlay {
         position: absolute;
@@ -51,13 +57,53 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(255, 255, 255, 0.95);
+        background: var(--color-card-bg, rgba(255, 255, 255, 0.95));
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 10;
-        border-radius: 4px;
+        border-radius: var(--border-radius, 4px);
+    }
+    .item-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 1000;
+        min-width: 10rem;
+        padding: 0.5rem 0;
+        background-color: var(--color-card-bg, #fff);
+        border: 1px solid var(--color-card-border, rgba(0,0,0,.15));
+        border-radius: var(--border-radius, 0.25rem);
+        box-shadow: var(--shadow-card, 0 0.5rem 1rem rgba(0,0,0,.175));
+    }
+    .item-dropdown-menu .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 0.25rem 1rem;
+        clear: both;
+        font-weight: 400;
+        color: var(--color-text-primary, #212529);
+        text-align: inherit;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+        cursor: pointer;
+    }
+    .item-dropdown-menu .dropdown-item:hover {
+        background-color: var(--color-bg-tertiary, #e9ecef);
+    }
+    .item-dropdown-menu .dropdown-item.text-danger {
+        color: var(--color-accent-red, #dc3545);
+    }
+    .item-dropdown-menu .dropdown-item.text-danger:hover {
+        background-color: var(--color-bg-tertiary, #f8d7da);
+    }
+    .item-dropdown-menu .dropdown-divider {
+        height: 0;
+        margin: 0.5rem 0;
+        overflow: hidden;
+        border-top: 1px solid var(--color-card-border, #e9ecef);
     }
 </style>
 
@@ -146,29 +192,33 @@
                     <div class="inventory-grid">
                         @foreach (var item in items.Where(i => !i.IsEquipped && i.ContainerItemId == null))
                         {
-                            <div class="inventory-tile position-relative">
-                                <div class="dropdown position-absolute" style="top: 2px; right: 2px;">
-                                    <button class="btn btn-sm p-0 text-muted" data-bs-toggle="dropdown" style="line-height: 1;">
+                            <div class="inventory-tile @(openMenuItemId == item.Id ? "menu-open" : "")">
+                                <div class="position-absolute" style="top: 2px; right: 2px;">
+                                    <button class="btn btn-sm p-0 text-muted" style="line-height: 1;"
+                                            @onclick="() => ToggleItemMenu(item.Id)" @onclick:stopPropagation="true">
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        @if (CanEquip(item))
-                                        {
-                                            <li><button class="dropdown-item" @onclick="() => EquipItem(item)" disabled="@isProcessing">
-                                                <i class="bi bi-box-arrow-in-up me-2"></i>Equip
-                                            </button></li>
-                                        }
-                                        @if (IsStackable(item))
-                                        {
-                                            <li><button class="dropdown-item" @onclick="() => StartEditQuantity(item)" disabled="@isProcessing">
-                                                <i class="bi bi-hash me-2"></i>Set Quantity
-                                            </button></li>
-                                        }
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><button class="dropdown-item text-danger" @onclick="() => RemoveItem(item)" disabled="@isProcessing">
-                                            <i class="bi bi-trash me-2"></i>Remove
-                                        </button></li>
-                                    </ul>
+                                    @if (openMenuItemId == item.Id)
+                                    {
+                                        <div class="item-dropdown-menu">
+                                            @if (CanEquip(item))
+                                            {
+                                                <button class="dropdown-item" @onclick="() => EquipItemAndCloseMenu(item)" disabled="@isProcessing">
+                                                    <i class="bi bi-box-arrow-in-up me-2"></i>Equip
+                                                </button>
+                                            }
+                                            @if (IsStackable(item))
+                                            {
+                                                <button class="dropdown-item" @onclick="() => StartEditQuantityAndCloseMenu(item)" disabled="@isProcessing">
+                                                    <i class="bi bi-hash me-2"></i>Set Quantity
+                                                </button>
+                                            }
+                                            <hr class="dropdown-divider" />
+                                            <button class="dropdown-item text-danger" @onclick="() => RemoveItemAndCloseMenu(item)" disabled="@isProcessing">
+                                                <i class="bi bi-trash me-2"></i>Remove
+                                            </button>
+                                        </div>
+                                    }
                                 </div>
 
                                 @if (editingQuantityItemId == item.Id)
@@ -282,6 +332,9 @@
     // Quantity editing state (for existing items in inventory)
     private Guid? editingQuantityItemId = null;
     private int editingQuantityValue = 0;
+
+    // Dropdown menu state
+    private Guid? openMenuItemId = null;
 
     // Add item flow state (for quantity prompt after template selection)
     private ItemTemplateInfo? pendingAddTemplate = null;
@@ -663,6 +716,35 @@
     {
         var template = templates?.GetValueOrDefault(item.ItemTemplateId);
         return template?.EquipmentSlot != EquipmentSlot.None && !item.IsEquipped;
+    }
+
+    // Dropdown menu methods
+    private void ToggleItemMenu(Guid itemId)
+    {
+        openMenuItemId = openMenuItemId == itemId ? null : itemId;
+    }
+
+    private void CloseMenu()
+    {
+        openMenuItemId = null;
+    }
+
+    private async Task EquipItemAndCloseMenu(CharacterItem item)
+    {
+        CloseMenu();
+        await EquipItem(item);
+    }
+
+    private void StartEditQuantityAndCloseMenu(CharacterItem item)
+    {
+        CloseMenu();
+        StartEditQuantity(item);
+    }
+
+    private async Task RemoveItemAndCloseMenu(CharacterItem item)
+    {
+        CloseMenu();
+        await RemoveItem(item);
     }
 
     private bool IsStackable(CharacterItem item)

@@ -26,6 +26,7 @@
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
 @inject IActivityLogService ActivityLog
 @inject ITimeEventSubscriber TimeEventSubscriber
+@inject ITimeEventPublisher TimeEventPublisher
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IJSRuntime JS
 @inject ICharacterItemDal CharacterItemDal
@@ -647,6 +648,9 @@ private async Task SelectCharacterAsync(int characterId)
         await TimeEventSubscriber.ConnectAsync();
         await TimeEventSubscriber.SubscribeAsync();
 
+        // Connect publisher to send character update notifications
+        await TimeEventPublisher.ConnectAsync();
+
         TimeEventSubscriber.TimeEventReceived += OnTimeEventReceived;
         TimeEventSubscriber.TimeSkipReceived += OnTimeSkipReceived;
         TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
@@ -692,6 +696,15 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
+
+                    // Notify other clients (GM page) that this character was updated
+                    await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                    {
+                        CharacterId = character.Id,
+                        CampaignId = table?.Id.ToString() ?? "",
+                        UpdateType = CharacterUpdateType.Healing,
+                        Description = "End of round effects processed"
+                    });
 
                     // Process any concentration results after effects tick/expire
                     await ProcessConcentrationResult(character);
@@ -781,6 +794,15 @@ private async Task SelectCharacterAsync(int characterId)
 
                     // Save the updated character
                     await characterPortal.UpdateAsync(character);
+
+                    // Notify other clients (GM page) that this character was updated
+                    await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                    {
+                        CharacterId = character.Id,
+                        CampaignId = table?.Id.ToString() ?? "",
+                        UpdateType = CharacterUpdateType.Healing,
+                        Description = "Time skip effects processed"
+                    });
 
                     // Process any concentration results after effects expire
                     await ProcessConcentrationResult(character);

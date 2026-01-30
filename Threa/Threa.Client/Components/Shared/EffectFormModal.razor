@@ -387,16 +387,16 @@
             durationType = "Minutes";
             durationValue = (int)(seconds / 60);
         }
-        else if (seconds >= 360 && seconds % 360 == 0)
+        else if (seconds >= 600 && seconds % 600 == 0)
         {
             durationType = "Turns";
-            durationValue = (int)(seconds / 360);
+            durationValue = (int)(seconds / 600);
         }
         else
         {
-            // Default to rounds (6 seconds each)
+            // Default to rounds (3 seconds each)
             durationType = "Rounds";
-            durationValue = (int)(seconds / 6);
+            durationValue = (int)(seconds / 3);
             if (durationValue < 1) durationValue = 1;
         }
     }
@@ -408,8 +408,8 @@
 
         return durationType switch
         {
-            "Rounds" => durationValue * 6L,
-            "Turns" => durationValue * 360L, // 60 rounds * 6 seconds
+            "Rounds" => durationValue * 3L,
+            "Turns" => durationValue * 600L, // 10 minutes = 600 seconds
             "Minutes" => durationValue * 60L,
             "Hours" => durationValue * 3600L,
             "Days" => durationValue * 86400L,
@@ -507,7 +507,7 @@
                     selectedEffectType,
                     effectName,
                     (string?)null, // location
-                    durationSeconds.HasValue ? (int?)(durationSeconds.Value / 6) : null, // rounds for legacy
+                    durationSeconds.HasValue ? (int?)(durationSeconds.Value / 3) : null, // rounds for legacy
                     state.Serialize()
                 );
 

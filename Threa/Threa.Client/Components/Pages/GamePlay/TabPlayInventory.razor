@@ -28,17 +28,18 @@
         align-items: center;
         justify-content: center;
         padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
+        border: 1px solid var(--color-card-border, #dee2e6);
+        border-radius: var(--border-radius, 4px);
         cursor: pointer;
-        background: #fff;
+        background: var(--color-card-bg, #fff);
+        color: var(--color-text-primary, #212529);
         min-height: 80px;
         transition: all 0.15s ease-in-out;
     }
 
     .inventory-tile:hover {
-        border-color: #adb5bd;
-        background: #e9ecef;
+        border-color: var(--color-accent-primary, #adb5bd);
+        background: var(--color-bg-tertiary, #e9ecef);
     }
 
     .inventory-tile.equipped {
@@ -85,6 +86,7 @@
     .item-icon {
         font-size: 24px;
         margin-bottom: 4px;
+        color: var(--color-text-primary, #212529);
     }
 
     .item-name {
@@ -94,6 +96,7 @@
         text-overflow: ellipsis;
         max-width: 100%;
         white-space: nowrap;
+        color: var(--color-text-primary, #212529);
     }
 
     .equipment-slots-container {
@@ -106,7 +109,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 6px 10px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--color-card-border, #eee);
         font-size: 0.9rem;
     }
 
@@ -115,16 +118,17 @@
     }
 
     .slot-name {
-        color: #6c757d;
+        color: var(--color-text-muted, #6c757d);
         min-width: 120px;
     }
 
     .slot-item-name {
         font-weight: 500;
+        color: var(--color-text-primary, #212529);
     }
 
     .empty-slot {
-        color: #adb5bd;
+        color: var(--color-text-muted, #adb5bd);
         font-style: italic;
     }
 
@@ -144,7 +148,7 @@
     }
 
     .equipment-slot.clickable:hover {
-        background: #f0f0f0;
+        background: var(--color-bg-tertiary, #f0f0f0);
     }
 
     .equipment-slot.valid-target {
@@ -170,14 +174,15 @@
         align-items: center;
         gap: 8px;
         padding: 6px 10px;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
+        border: 1px solid var(--color-card-border, #dee2e6);
+        border-radius: var(--border-radius, 4px);
         cursor: pointer;
-        background: #fff;
+        background: var(--color-card-bg, #fff);
+        color: var(--color-text-primary, #212529);
     }
 
     .container-item:hover {
-        background: #f0f0f0;
+        background: var(--color-bg-tertiary, #f0f0f0);
     }
 
     .container-item.selected {
@@ -189,15 +194,17 @@
         font-size: 16px;
         width: 20px;
         text-align: center;
+        color: var(--color-text-primary, #212529);
     }
 
     .container-item .item-name {
         flex: 1;
         font-size: 0.9rem;
+        color: var(--color-text-primary, #212529);
     }
 
     .container-item .item-qty {
-        color: #6c757d;
+        color: var(--color-text-muted, #6c757d);
         font-size: 0.8rem;
     }
 
@@ -212,11 +219,11 @@
         left: 0;
         right: 0;
         height: 3px;
-        background: #6c757d;
+        background: var(--color-text-muted, #6c757d);
     }
 
     .inventory-tile.container-empty::before {
-        background: #6c757d;
+        background: var(--color-text-muted, #6c757d);
     }
 
     .inventory-tile.container-partial {

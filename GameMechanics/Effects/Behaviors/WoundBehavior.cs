@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -67,6 +68,13 @@ public class WoundState
   /// VIT damage per tick (20 rounds). Null = use default based on wound type.
   /// </summary>
   public int? VitDamagePerTick { get; set; }
+
+  /// <summary>
+  /// Optional epoch-based expiry time (in game seconds).
+  /// If set, the wound will automatically heal when the character's CurrentGameTimeSeconds reaches this value.
+  /// Null = wound never expires (must be healed manually).
+  /// </summary>
+  public long? ExpiryTimeSeconds { get; set; }
 
   /// <summary>
   /// Total wounds (light + serious) at this location.
@@ -194,6 +202,41 @@ public class WoundBehavior : IEffectBehavior
   public EffectTickResult OnTick(EffectRecord effect, CharacterEdit character)
   {
     var state = WoundState.Deserialize(effect.BehaviorState);
+
+    // Check for epoch-based expiry
+    if (state.ExpiryTimeSeconds.HasValue && character.CurrentGameTimeSeconds >= state.ExpiryTimeSeconds.Value)
+    {
+      // Wound has expired - auto-heal it
+      if (state.SeriousWounds > 0)
+      {
+        state.SeriousWounds--;
+        state.LightWounds++;
+        effect.BehaviorState = state.Serialize();
+      }
+      else if (state.LightWounds > 0)
+      {
+        state.LightWounds--;
+        effect.BehaviorState = state.Serialize();
+      }
+
+      // If fully healed, remove the effect
+      if (state.TotalWounds == 0)
+      {
+        return EffectTickResult.ExpireEarly("Wound fully healed");
+      }
+
+      // Reset expiry for next healing cycle if still wounded
+      if (state.ExpiryTimeSeconds.HasValue)
+      {
+        // Add same duration again for next healing cycle
+        // This assumes the expiry represents a healing interval
+        long healingInterval = state.ExpiryTimeSeconds.Value - character.CurrentGameTimeSeconds;
+        state.ExpiryTimeSeconds = character.CurrentGameTimeSeconds + Math.Abs(healingInterval);
+        effect.BehaviorState = state.Serialize();
+      }
+
+      return EffectTickResult.Continue();
+    }
 
     // Custom wounds with severity use custom tick rates
     bool isCustomWound = state.Severity != null;
@@ -412,6 +455,7 @@ public class WoundBehavior : IEffectBehavior
   /// <param name="asPenalty">Custom AS penalty override (null = use severity default)</param>
   /// <param name="fatPerTick">Custom FAT damage per tick (null = use severity default)</param>
   /// <param name="vitPerTick">Custom VIT damage per tick (null = use severity default)</param>
+  /// <param name="healingTimeSeconds">Optional auto-heal time in game seconds (null = must be healed manually)</param>
   /// <returns>The created EffectRecord</returns>
   public static EffectRecord CreateCustomWound(
     CharacterEdit character,
@@ -421,7 +465,8 @@ public class WoundBehavior : IEffectBehavior
     string? description,
     int? asPenalty = null,
     int? fatPerTick = null,
-    int? vitPerTick = null)
+    int? vitPerTick = null,
+    long? healingTimeSeconds = null)
   {
     var state = new WoundState
     {
@@ -432,7 +477,10 @@ public class WoundBehavior : IEffectBehavior
       VitDamagePerTick = vitPerTick,
       MaxWounds = WoundState.GetMaxWoundsForLocation(location),
       RoundsToDamage = DamageIntervalRounds,
-      SeriousWounds = 1 // Custom wounds count as 1 serious wound for location tracking
+      SeriousWounds = 1, // Custom wounds count as 1 serious wound for location tracking
+      ExpiryTimeSeconds = healingTimeSeconds.HasValue
+        ? character.CurrentGameTimeSeconds + healingTimeSeconds.Value
+        : null
     };
 
     var wound = effectPortal.CreateChild(

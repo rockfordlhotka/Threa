@@ -68,6 +68,7 @@ public class UserRegistration : BusinessBase<UserRegistration>
         // Username constraints
         BusinessRules.AddRule(new MinLength(UsernameProperty, 3) { MessageText = "Username must be at least 3 characters" });
         BusinessRules.AddRule(new MaxLength(UsernameProperty, 50) { MessageText = "Username cannot exceed 50 characters" });
+        BusinessRules.AddRule(new RegExMatch(UsernameProperty, @"^\S+$") { MessageText = "Username cannot contain spaces" });
 
         // Password minimum length
         BusinessRules.AddRule(new MinLength(PasswordProperty, 6) { MessageText = "Password must be at least 6 characters" });

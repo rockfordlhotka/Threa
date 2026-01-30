@@ -20,6 +20,7 @@ public class PendingPoolBarBase : ComponentBase
 
     protected override void OnParametersSet()
     {
+        Console.WriteLine($"[PendingPoolBar] OnParametersSet: Current={CurrentValue}, Max={MaxValue}, PendingDmg={PendingDamage}, PendingHeal={PendingHealing}");
         if (MaxValue <= 0)
         {
             BasePercentage = 0;
@@ -47,6 +48,8 @@ public class PendingPoolBarBase : ComponentBase
         BasePercentage = (double)valueAfterDamage / MaxValue * 100;
         DamagePercentage = (double)damage / MaxValue * 100;
         HealingPercentage = (double)Math.Max(0, healingDisplay) / MaxValue * 100;
+
+        Console.WriteLine($"[PendingPoolBar] Calculated: Base={BasePercentage:F1}%, Damage={DamagePercentage:F1}%, Healing={HealingPercentage:F1}%");
 
         // Calculate color class based on effective health percentage
         BarColorClass = GetBarColorClass(effectiveValue);
