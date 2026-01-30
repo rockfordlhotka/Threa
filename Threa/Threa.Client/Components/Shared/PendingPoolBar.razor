@@ -1,14 +1,45 @@
 @namespace Threa.Client.Components.Shared
 @inherits PendingPoolBarBase
 
-<div class="pending-pool-bar-container" style="height: @Height;" title="@TooltipText">
-    <div class="progress" style="height: 100%;">
-        <div class="progress-bar" role="progressbar" style="width: @(BasePercentage)%; background-color: #0d6efd;" aria-valuenow="@(CurrentValue - PendingDamage)" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
-        <div class="progress-bar" role="progressbar" style="width: @(DamagePercentage)%; background-color: #dc3545;" aria-valuenow="@PendingDamage" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
-        <div class="progress-bar" role="progressbar" style="width: @(HealingPercentage)%; background-color: #198754;" aria-valuenow="@PendingHealing" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+<div class="pending-pool-bar-container d-flex align-items-center" style="height: @Height;" title="@TooltipText">
+    <div class="progress flex-grow-1" style="height: 100%;">
+        <div class="progress-bar @BarColorClass" role="progressbar" style="width: @(BasePercentage)%;" aria-valuenow="@(CurrentValue - PendingDamage)" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+        <div class="progress-bar pending-damage" role="progressbar" style="width: @(DamagePercentage)%;" aria-valuenow="@PendingDamage" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
+        <div class="progress-bar pending-healing" role="progressbar" style="width: @(HealingPercentage)%;" aria-valuenow="@PendingHealing" aria-valuemin="0" aria-valuemax="@MaxValue"></div>
     </div>
+    @if (OverhealAmount > 0)
+    {
+        <span class="badge bg-success ms-1" title="Temporary overheal">+@OverhealAmount</span>
+    }
     @if (ShowLabels)
     {
-        <div class="pool-bar-label">@($"{CurrentValue - PendingDamage + PendingHealing} / {MaxValue}")</div>
+        @if (OverhealAmount > 0)
+        {
+            <div class="pool-bar-label">@($"{MaxValue + OverhealAmount} / {MaxValue} (+{OverhealAmount})")</div>
+        }
+        else
+        {
+            <div class="pool-bar-label">@($"{CurrentValue - PendingDamage + PendingHealing} / {MaxValue}")</div>
+        }
     }
 </div>
+
+<style>
+    /* Health color classes using theme variables */
+    .health-full {
+        background-color: var(--color-health-full) !important;
+    }
+    .health-mid {
+        background-color: var(--color-health-mid) !important;
+    }
+    .health-low {
+        background-color: var(--color-health-low) !important;
+    }
+    /* Pending damage/healing segments use theme progress colors */
+    .pending-damage {
+        background-color: var(--progress-damage-color) !important;
+    }
+    .pending-healing {
+        background-color: var(--progress-healing-color) !important;
+    }
+</style>

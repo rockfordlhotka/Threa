@@ -1,6 +1,9 @@
 @using Threa.Client.Components.Shared
 @using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
 @using Threa.Dal.Dto
+
+@inject Radzen.DialogService DialogService
 
 <div class="ranged-attack-mode">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -784,6 +787,25 @@
     private async Task ExecuteAttack()
     {
         if (!CanAttack() || Character == null) return;
+
+        // Check if character is concentrating - prompt before breaking
+        var concentrationEffect = Character.GetConcentrationEffect();
+        if (concentrationEffect != null)
+        {
+            var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+            if (state != null)
+            {
+                var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                    DialogService,
+                    state,
+                    concentrationEffect.Name);
+                if (!confirmed)
+                    return; // User cancelled - don't execute action
+
+                // User confirmed - break concentration before proceeding
+                ConcentrationBehavior.BreakConcentration(Character, "Took ranged attack action");
+            }
+        }
 
         var weapon = GetSelectedWeapon();
         if (weapon == null) return;

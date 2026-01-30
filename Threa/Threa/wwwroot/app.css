@@ -73,3 +73,49 @@ h1:focus {
     font-weight: 600;
     text-transform: uppercase;
 }
+
+/* Concentration Break Dialog */
+.concentration-break-dialog {
+    min-width: 350px;
+    padding: 1rem;
+}
+
+.concentration-break-dialog .concentration-details {
+    border-left: 4px solid var(--rz-warning);
+}
+
+.concentration-break-dialog .concentration-details h5 {
+    color: var(--rz-text-color);
+    font-weight: 600;
+}
+
+/* Concentration Indicator */
+.concentration-indicator {
+    background: var(--rz-base-100);
+    border: 1px solid var(--rz-warning);
+    border-left: 4px solid var(--rz-warning);
+    border-radius: var(--rz-border-radius);
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.concentration-indicator.compact {
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: none;
+}
+
+.concentration-indicator .concentration-name {
+    font-weight: 500;
+    color: var(--rz-text-color);
+}
+
+.concentration-indicator .progress-section .rz-progressbar {
+    background: var(--rz-base-200);
+}
+
+.concentration-indicator .sustained-section small {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}

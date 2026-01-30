@@ -104,18 +104,18 @@ public class EffectsTests
     Assert.AreEqual(EffectType.Wound, effect.EffectType);
     Assert.AreEqual("Test Wound", effect.Name);
     Assert.AreEqual("LeftArm", effect.Location);
-    Assert.IsNull(effect.DurationRounds);
-    Assert.AreEqual(0, effect.ElapsedRounds);
+    Assert.IsNull(effect.ExpiresAtEpochSeconds);
     Assert.AreEqual(1, effect.CurrentStacks);
     Assert.IsTrue(effect.IsActive);
   }
 
   [TestMethod]
-  public void EffectRecord_RemainingRounds_CalculatedCorrectly()
+  public void EffectRecord_ExpiresAtEpochSeconds_CalculatedCorrectly()
   {
     var provider = InitServices();
     var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
 
+    // Create effect with 10 rounds duration (30 seconds at 3s/round)
     var effect = effectPortal.CreateChild(
       EffectType.Buff,
       "Test Buff",
@@ -123,10 +123,10 @@ public class EffectsTests
       10,
       null);
 
-    Assert.AreEqual(10, effect.RemainingRounds);
-
-    effect.ElapsedRounds = 3;
-    Assert.AreEqual(7, effect.RemainingRounds);
+    // Since effect isn't attached to a character with game time,
+    // CreatedAtEpochSeconds should be 0 and ExpiresAtEpochSeconds should be 30
+    Assert.AreEqual(0, effect.CreatedAtEpochSeconds);
+    Assert.AreEqual(30, effect.ExpiresAtEpochSeconds);
   }
 
   [TestMethod]
@@ -135,6 +135,7 @@ public class EffectsTests
     var provider = InitServices();
     var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
 
+    // Create effect with 5 rounds duration (15 seconds)
     var effect = effectPortal.CreateChild(
       EffectType.Buff,
       "Test Buff",
@@ -142,10 +143,15 @@ public class EffectsTests
       5,
       null);
 
-    Assert.IsFalse(effect.IsExpiredLegacy);
+    // Not expired at game time 0
+    Assert.IsFalse(effect.IsExpired(0));
 
-    effect.ElapsedRounds = 5;
-    Assert.IsTrue(effect.IsExpiredLegacy);
+    // Not expired just before expiration
+    Assert.IsFalse(effect.IsExpired(14));
+
+    // Expired at or after expiration time (15 seconds)
+    Assert.IsTrue(effect.IsExpired(15));
+    Assert.IsTrue(effect.IsExpired(20));
   }
 
   [TestMethod]
@@ -161,9 +167,9 @@ public class EffectsTests
       null, // null duration = permanent
       null);
 
-    effect.ElapsedRounds = 1000;
-    Assert.IsFalse(effect.IsExpiredLegacy);
-    Assert.IsNull(effect.RemainingRounds);
+    // Permanent effects should never expire, even at very large game times
+    Assert.IsFalse(effect.IsExpired(1_000_000));
+    Assert.IsNull(effect.ExpiresAtEpochSeconds);
   }
 
   #endregion
@@ -469,10 +475,11 @@ public class EffectsTests
   }
 
   [TestMethod]
-  public void EffectBehaviorFactory_GetBehavior_ReturnsDefaultForUnknown()
+  public void EffectBehaviorFactory_GetBehavior_ReturnsGenericForEnvironmental()
   {
+    // Environmental effects now use GenericEffectBehavior for EffectState modifier support
     var behavior = EffectBehaviorFactory.GetBehavior(EffectType.Environmental);
-    Assert.IsInstanceOfType(behavior, typeof(DefaultEffectBehavior));
+    Assert.IsInstanceOfType(behavior, typeof(GenericEffectBehavior));
   }
 
   #endregion
@@ -981,6 +988,95 @@ public class EffectsTests
 
     // Total should sum both penalties
     Assert.AreEqual(-5, c.Effects.TotalPoisonPenalty);
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_GenericEffectState_AppliesDamageOnTick()
+  {
+    // Test that poison effects created via the generic effect form (using EffectState)
+    // still apply damage on tick through the PoisonBehavior fallback
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Create an EffectState (as if created via the generic effect form)
+    var effectState = new GameMechanics.Effects.EffectState
+    {
+      Description = "A nasty poison effect",
+      FatDamagePerTick = 2,
+      VitDamagePerTick = 1
+    };
+
+    // Verify serialization round-trip works
+    var json = effectState.Serialize();
+    var deserializedState = GameMechanics.Effects.EffectState.Deserialize(json);
+    Assert.AreEqual(2, deserializedState.FatDamagePerTick, "EffectState FatDamagePerTick should survive serialization");
+    Assert.AreEqual(1, deserializedState.VitDamagePerTick, "EffectState VitDamagePerTick should survive serialization");
+
+    // Create the effect record directly with EffectType.Poison but EffectState JSON
+    var effect = effectPortal.CreateChild(
+      EffectType.Poison,
+      "Generic Poison",
+      null,
+      5, // 5 rounds duration
+      json
+    );
+
+    c.Effects.AddEffect(effect);
+    Assert.AreEqual(1, c.Effects.Count, "Effect should be added");
+
+    // Verify effect is active and has correct BehaviorState
+    var addedEffect = c.Effects.First();
+    Assert.IsTrue(addedEffect.IsActive, "Effect should be active");
+    Assert.AreEqual(json, addedEffect.BehaviorState, "BehaviorState should match the serialized EffectState");
+
+    // Check that TotalDurationRounds in PoisonState is 0 (since we used EffectState)
+    var poisonState = GameMechanics.Effects.Behaviors.PoisonState.Deserialize(addedEffect.BehaviorState);
+    Assert.AreEqual(0, poisonState.TotalDurationRounds, "PoisonState.TotalDurationRounds should be 0 for EffectState JSON");
+
+    // Directly test the behavior's OnTick method
+    var behavior = addedEffect.Behavior;
+    Assert.IsInstanceOfType(behavior, typeof(GameMechanics.Effects.Behaviors.PoisonBehavior), "Behavior should be PoisonBehavior");
+
+    var initialFatPending = c.Fatigue.PendingDamage;
+    var initialVitPending = c.Vitality.PendingDamage;
+
+    // Call OnTick directly to test the fallback
+    var tickResult = behavior.OnTick(addedEffect, c);
+    Assert.IsFalse(tickResult.ShouldExpireEarly, "Effect should not expire early");
+
+    Assert.AreEqual(initialFatPending + 2, c.Fatigue.PendingDamage, "FAT damage should be applied via generic fallback (direct OnTick call)");
+    Assert.AreEqual(initialVitPending + 1, c.Vitality.PendingDamage, "VIT damage should be applied via generic fallback (direct OnTick call)");
+  }
+
+  [TestMethod]
+  public void PoisonBehavior_GenericEffectState_AppliesASModifier()
+  {
+    // Test that poison effects with EffectState apply AS modifiers through fallback
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    var effectState = new GameMechanics.Effects.EffectState
+    {
+      ASModifier = -3
+    };
+
+    var effect = effectPortal.CreateChild(
+      EffectType.Poison,
+      "Weakening Poison",
+      null,
+      10,
+      effectState.Serialize()
+    );
+
+    c.Effects.AddEffect(effect);
+
+    // Check that the AS modifier is applied via fallback
+    var modifier = c.Effects.GetAbilityScoreModifier("Any Skill", "DEX", 10);
+    Assert.AreEqual(-3, modifier, "AS modifier should be applied via generic fallback");
   }
 
   #endregion

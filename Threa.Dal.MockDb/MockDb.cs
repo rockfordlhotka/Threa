@@ -84,6 +84,130 @@ public static class MockDb
     /// </summary>
     public static readonly List<Skill> Skills = CreateSkills();
 
+    /// <summary>
+    /// Effect templates - reusable effect presets for the system-wide library.
+    /// </summary>
+    public static readonly List<EffectTemplateDto> EffectTemplates = CreateEffectTemplates();
+
+    private static List<EffectTemplateDto> CreateEffectTemplates()
+    {
+        return
+        [
+            new EffectTemplateDto
+            {
+                Id = 1,
+                Name = "Stunned",
+                EffectType = EffectType.Condition,
+                Description = "Unable to take actions, severely impaired.",
+                IconName = "bi-lightning",
+                Color = "#ffc107",
+                DefaultDurationValue = 1,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"ASModifier\":-4,\"BehaviorTags\":[\"condition\",\"end-of-turn-remove\"]}",
+                Tags = "combat,condition,debilitating",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 2,
+                Name = "Blessed",
+                EffectType = EffectType.Buff,
+                Description = "Divine favor enhances all actions.",
+                IconName = "bi-star-fill",
+                Color = "#ffd700",
+                DefaultDurationValue = 10,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"ASModifier\":2,\"BehaviorTags\":[\"modifier\",\"magic\"]}",
+                Tags = "magic,buff,divine",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 3,
+                Name = "Poisoned",
+                EffectType = EffectType.Poison,
+                Description = "Toxin causes ongoing damage.",
+                IconName = "bi-droplet-fill",
+                Color = "#28a745",
+                DefaultDurationValue = 5,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"FatDamagePerTick\":2,\"VitDamagePerTick\":1,\"BehaviorTags\":[\"poison\",\"end-of-round-trigger\"]}",
+                Tags = "poison,damage-over-time",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 4,
+                Name = "Haste",
+                EffectType = EffectType.Buff,
+                Description = "Supernatural speed enhances reflexes.",
+                IconName = "bi-speedometer2",
+                Color = "#17a2b8",
+                DefaultDurationValue = 3,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"AttributeModifiers\":{\"DEX\":2},\"BehaviorTags\":[\"modifier\",\"magic\"]}",
+                Tags = "magic,buff,speed",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 5,
+                Name = "Weakened",
+                EffectType = EffectType.Debuff,
+                Description = "Physical strength is sapped.",
+                IconName = "bi-person-dash",
+                Color = "#6c757d",
+                DefaultDurationValue = 5,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"AttributeModifiers\":{\"STR\":-2},\"BehaviorTags\":[\"modifier\",\"debuff\"]}",
+                Tags = "debuff,physical",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 6,
+                Name = "Regenerating",
+                EffectType = EffectType.Buff,
+                Description = "Wounds heal over time.",
+                IconName = "bi-heart-pulse",
+                Color = "#dc3545",
+                DefaultDurationValue = 10,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"FatHealingPerTick\":1,\"VitHealingPerTick\":1,\"BehaviorTags\":[\"healing\",\"end-of-round-trigger\"]}",
+                Tags = "healing,regeneration,buff",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new EffectTemplateDto
+            {
+                Id = 7,
+                Name = "Blinded",
+                EffectType = EffectType.Condition,
+                Description = "Cannot see, severely impacting combat and awareness.",
+                IconName = "bi-eye-slash",
+                Color = "#343a40",
+                DefaultDurationValue = 3,
+                DurationType = DurationType.Rounds,
+                StateJson = "{\"ASModifier\":-6,\"BehaviorTags\":[\"condition\",\"sensory\"]}",
+                Tags = "condition,sensory,debilitating",
+                IsSystem = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            }
+        ];
+    }
+
     private static List<GameTable> CreateTables()
     {
         return

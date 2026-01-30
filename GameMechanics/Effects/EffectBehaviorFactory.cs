@@ -18,7 +18,11 @@ public static class EffectBehaviorFactory
     { EffectType.ItemEffect, new Behaviors.ItemEffectBehavior() },
     { EffectType.CombatStance, new Behaviors.CombatStanceBehavior() },
     { EffectType.Debuff, new Behaviors.DebuffBehavior() },
-    { EffectType.Concentration, new Behaviors.ConcentrationBehavior() }
+    { EffectType.Concentration, new Behaviors.ConcentrationBehavior() },
+    // Generic behavior for types that use EffectState modifiers
+    { EffectType.Disease, new Behaviors.GenericEffectBehavior() },
+    { EffectType.ObjectEffect, new Behaviors.GenericEffectBehavior() },
+    { EffectType.Environmental, new Behaviors.GenericEffectBehavior() }
   };
 
   private static readonly IEffectBehavior _defaultBehavior = new Behaviors.DefaultEffectBehavior();

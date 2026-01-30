@@ -1,0 +1,422 @@
+@* Modal for managing all effects on a character (excludes wounds - they have separate management) *@
+
+@using GameMechanics
+@using GameMechanics.Effects
+@using GameMechanics.Messaging
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject DialogService DialogService
+@inject ITimeEventPublisher TimeEventPublisher
+
+<div class="p-3">
+    @* Add Effect Button *@
+    <button class="btn btn-primary mb-3" @onclick="OpenAddEffect" disabled="@isProcessing">
+        <i class="bi bi-plus-lg me-1"></i>Add Effect
+    </button>
+
+    @* Effects Card Grid *@
+    @if (GetEffects().Any())
+    {
+        <div class="row g-3">
+            @foreach (var effect in GetEffects())
+            {
+                var state = EffectState.Deserialize(effect.BehaviorState);
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header @GetEffectHeaderClass(effect.EffectType) text-white d-flex align-items-center">
+                            <i class="bi @GetEffectIcon(effect, state) me-2"></i>
+                            <span class="flex-grow-1 text-truncate" title="@effect.Name">@effect.Name</span>
+                            <span class="badge bg-light @GetEffectBadgeTextClass(effect.EffectType) ms-2">
+                                @effect.EffectType
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(effect.Description ?? state.Description))
+                            {
+                                <p class="card-text text-muted small text-truncate mb-2"
+                                   title="@(effect.Description ?? state.Description)">
+                                    @(effect.Description ?? state.Description)
+                                </p>
+                            }
+
+                            @* Duration Info *@
+                            <div class="small mb-2">
+                                <i class="bi bi-clock me-1"></i>
+                                @if (effect.ExpiresAtEpochSeconds.HasValue)
+                                {
+                                    var remaining = effect.ExpiresAtEpochSeconds.Value - (Character?.CurrentGameTimeSeconds ?? 0);
+                                    if (remaining > 0)
+                                    {
+                                        <span class="text-info">@FormatDuration(remaining)</span>
+                                    }
+                                    else
+                                    {
+                                                <span class="text-warning">Expired</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">Permanent</span>
+                                        }
+                            </div>
+
+                            @* Modifiers Summary *@
+                            @{
+                                var modSummary = GetModifierSummary(state);
+                            }
+                            @if (!string.IsNullOrEmpty(modSummary))
+                            {
+                                <div class="small text-muted">
+                                    <i class="bi bi-sliders me-1"></i>@modSummary
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <div class="btn-group btn-group-sm w-100">
+                                <button class="btn btn-outline-primary" @onclick="() => OpenEditEffect(effect)"
+                                        disabled="@isProcessing" title="Edit effect">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => ConfirmRemoveEffect(effect)"
+                                        disabled="@isProcessing" title="Remove effect">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary text-center">
+            <i class="bi bi-stars me-1"></i>
+            No active effects. Click "Add Effect" to create one.
+        </div>
+    }
+
+    @* Summary Stats *@
+    @if (GetEffects().Any())
+    {
+        <div class="mt-3 small text-muted">
+            <strong>Total effects:</strong> @GetEffects().Count()
+            @{
+                var totalASMod = GetEffects().Sum(e =>
+                {
+                    var st = EffectState.Deserialize(e.BehaviorState);
+                    return st.ASModifier ?? 0;
+                });
+            }
+            @if (totalASMod != 0)
+            {
+                <span class="ms-3">
+                    <strong>Total AS modifier:</strong>
+                    <span class="@(totalASMod > 0 ? "text-success" : "text-danger")">
+                        @(totalASMod > 0 ? "+" : "")@totalASMod
+                    </span>
+                </span>
+            }
+        </div>
+    }
+
+    @* Feedback Messages *@
+    @if (!string.IsNullOrEmpty(feedbackMessage))
+    {
+        <div class="alert @feedbackClass mt-3 alert-dismissible fade show" role="alert">
+            <i class="bi @feedbackIcon me-1"></i>
+            @feedbackMessage
+            <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
+        </div>
+    }
+</div>
+
+@* Remove Confirmation Dialog *@
+@if (showRemoveConfirm && effectToRemove != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5); z-index: 1060;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Remove Effect</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelRemove"></button>
+                </div>
+                <div class="modal-body">
+                    @{
+                        var removeState = EffectState.Deserialize(effectToRemove.BehaviorState);
+                    }
+                    <p>Are you sure you want to remove this effect?</p>
+                    <p class="text-muted small">
+                        <span class="badge @GetEffectHeaderClass(effectToRemove.EffectType) text-white me-1">
+                            @effectToRemove.EffectType
+                        </span>
+                        <strong>@effectToRemove.Name</strong>
+                        @if (!string.IsNullOrEmpty(effectToRemove.Description ?? removeState.Description))
+                        {
+                            <br /><span>@(effectToRemove.Description ?? removeState.Description)</span>
+                        }
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelRemove">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ExecuteRemove" disabled="@isProcessing">
+                        <i class="bi bi-trash me-1"></i>Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public CharacterEdit? Character { get; set; }
+    [Parameter] public int CharacterId { get; set; }
+    [Parameter] public Guid TableId { get; set; }
+
+    private bool isProcessing;
+    private bool showRemoveConfirm;
+    private EffectRecord? effectToRemove;
+
+    private string? feedbackMessage;
+    private string feedbackClass = "alert-info";
+    private string feedbackIcon = "bi-info-circle";
+
+    private IEnumerable<EffectRecord> GetEffects() =>
+        Character?.Effects
+            .Where(e => e.EffectType != EffectType.Wound)
+            .OrderBy(e => e.EffectType)
+            .ThenBy(e => e.Name)
+        ?? Enumerable.Empty<EffectRecord>();
+
+    private static string GetEffectHeaderClass(EffectType effectType) => effectType switch
+    {
+        EffectType.Buff => "bg-success",
+        EffectType.Debuff => "bg-danger",
+        EffectType.Condition => "bg-purple",
+        EffectType.Poison => "bg-dark",
+        EffectType.Disease => "bg-secondary",
+        EffectType.SpellEffect => "bg-info",
+        EffectType.ItemEffect => "bg-primary",
+        EffectType.Environmental => "bg-dark",
+        EffectType.CombatStance => "bg-secondary",
+        EffectType.Concentration => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    private static string GetEffectBadgeTextClass(EffectType effectType) => effectType switch
+    {
+        EffectType.Buff => "text-success",
+        EffectType.Debuff => "text-danger",
+        EffectType.Condition => "text-warning",
+        EffectType.Poison => "text-purple",
+        EffectType.Disease => "text-secondary",
+        EffectType.SpellEffect => "text-info",
+        EffectType.ItemEffect => "text-primary",
+        EffectType.Environmental => "text-dark",
+        _ => "text-secondary"
+    };
+
+    private static string GetEffectIcon(EffectRecord effect, EffectState state)
+    {
+        // Use state icon if set
+        if (!string.IsNullOrEmpty(state.IconName))
+            return state.IconName;
+
+        // Use effect icon if set
+        if (!string.IsNullOrEmpty(effect.IconName))
+            return effect.IconName;
+
+        // Default by type
+        return effect.EffectType switch
+        {
+            EffectType.Buff => "bi-arrow-up-circle-fill",
+            EffectType.Debuff => "bi-arrow-down-circle-fill",
+            EffectType.Condition => "bi-exclamation-triangle-fill",
+            EffectType.Poison => "bi-droplet-fill",
+            EffectType.Disease => "bi-virus",
+            EffectType.SpellEffect => "bi-magic",
+            EffectType.ItemEffect => "bi-gem",
+            EffectType.Environmental => "bi-cloud-fill",
+            EffectType.CombatStance => "bi-shield-fill",
+            EffectType.Concentration => "bi-hourglass-split",
+            _ => "bi-stars"
+        };
+    }
+
+    private static string FormatDuration(long seconds)
+    {
+        if (seconds < 60)
+            return $"{seconds}s";
+        if (seconds < 3600)
+            return $"{seconds / 60}m {seconds % 60}s";
+        if (seconds < 86400)
+            return $"{seconds / 3600}h {(seconds % 3600) / 60}m";
+        return $"{seconds / 86400}d {(seconds % 86400) / 3600}h";
+    }
+
+    private static string GetModifierSummary(EffectState state)
+    {
+        var parts = new List<string>();
+
+        if (state.ASModifier.HasValue && state.ASModifier.Value != 0)
+        {
+            var sign = state.ASModifier.Value > 0 ? "+" : "";
+            parts.Add($"AS {sign}{state.ASModifier.Value}");
+        }
+
+        if (state.AttributeModifiers != null)
+        {
+            foreach (var kvp in state.AttributeModifiers.Where(m => m.Value != 0))
+            {
+                var sign = kvp.Value > 0 ? "+" : "";
+                parts.Add($"{kvp.Key} {sign}{kvp.Value}");
+            }
+        }
+
+        if (state.SkillModifiers != null)
+        {
+            foreach (var kvp in state.SkillModifiers.Where(m => m.Value != 0).Take(2))
+            {
+                var sign = kvp.Value > 0 ? "+" : "";
+                parts.Add($"{kvp.Key} {sign}{kvp.Value}");
+            }
+            if (state.SkillModifiers.Count > 2)
+                parts.Add("...");
+        }
+
+        if (state.FatDamagePerTick.HasValue || state.VitDamagePerTick.HasValue)
+        {
+            var dmg = new List<string>();
+            if (state.FatDamagePerTick.HasValue)
+                dmg.Add($"FAT {state.FatDamagePerTick}");
+            if (state.VitDamagePerTick.HasValue)
+                dmg.Add($"VIT {state.VitDamagePerTick}");
+            parts.Add($"{string.Join("/", dmg)}/tick");
+        }
+
+        if (state.FatHealingPerTick.HasValue || state.VitHealingPerTick.HasValue)
+        {
+            var heal = new List<string>();
+            if (state.FatHealingPerTick.HasValue)
+                heal.Add($"FAT +{state.FatHealingPerTick}");
+            if (state.VitHealingPerTick.HasValue)
+                heal.Add($"VIT +{state.VitHealingPerTick}");
+            parts.Add($"{string.Join("/", heal)}/tick");
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    private async Task OpenAddEffect()
+    {
+        var result = await DialogService.OpenAsync<EffectFormModal>(
+            "Add Effect",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId }
+            },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result is true)
+        {
+            await RefreshCharacter();
+            ShowFeedback("Effect added successfully", "alert-success", "bi-check-circle");
+        }
+    }
+
+    private async Task OpenEditEffect(EffectRecord effect)
+    {
+        var result = await DialogService.OpenAsync<EffectFormModal>(
+            "Edit Effect",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! },
+                { "CharacterId", CharacterId },
+                { "TableId", TableId },
+                { "ExistingEffect", effect }
+            },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result is true)
+        {
+            await RefreshCharacter();
+            ShowFeedback("Effect updated successfully", "alert-success", "bi-check-circle");
+        }
+    }
+
+    private void ConfirmRemoveEffect(EffectRecord effect)
+    {
+        effectToRemove = effect;
+        showRemoveConfirm = true;
+    }
+
+    private void CancelRemove()
+    {
+        effectToRemove = null;
+        showRemoveConfirm = false;
+    }
+
+    private async Task ExecuteRemove()
+    {
+        if (effectToRemove == null) return;
+
+        isProcessing = true;
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+            var toRemove = character.Effects.FirstOrDefault(e => e.Id == effectToRemove.Id);
+            if (toRemove != null)
+            {
+                character.Effects.Remove(toRemove);
+                await characterPortal.UpdateAsync(character);
+
+                await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CharacterId = CharacterId,
+                    UpdateType = CharacterUpdateType.EffectRemoved,
+                    CampaignId = TableId.ToString(),
+                    SourceId = "GM",
+                    Description = $"Effect removed: {effectToRemove.Name}"
+                });
+
+                await RefreshCharacter();
+                ShowFeedback("Effect removed successfully", "alert-success", "bi-check-circle");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error removing effect: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+        finally
+        {
+            isProcessing = false;
+            effectToRemove = null;
+            showRemoveConfirm = false;
+        }
+    }
+
+    private async Task RefreshCharacter()
+    {
+        try
+        {
+            Character = await characterPortal.FetchAsync(CharacterId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error refreshing: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+    }
+
+    private void ShowFeedback(string message, string alertClass, string icon)
+    {
+        feedbackMessage = message;
+        feedbackClass = alertClass;
+        feedbackIcon = icon;
+    }
+}

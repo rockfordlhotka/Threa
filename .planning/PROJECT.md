@@ -8,6 +8,17 @@ A web-based TTRPG assistant for the Threa game system that helps players manage 
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
+## Current Milestone: v1.3 GM Character Manipulation
+
+**Goal:** Complete GM powers by enabling direct character manipulation - apply damage/healing, manage effects, edit stats, and manipulate inventory from the dashboard.
+
+**Target features:**
+- Apply damage and healing to character health pools (FAT/VIT pending pools)
+- Add, remove, and edit effects on characters (duration, modifiers, expiration)
+- Manipulate character inventory (add/remove items directly)
+- Edit character stats and properties outside normal player restrictions
+- Support GM character manipulation workflows in the existing dashboard
+
 ## Recent Achievement (v1.2)
 
 **v1.2 GM Table & Campaign Management** (shipped 2026-01-28)
@@ -83,12 +94,14 @@ These capabilities exist in the codebase:
 
 ### Active
 
-Future requirements (for next milestone):
+Milestone v1.3 (GM Character Manipulation):
 - [ ] GM can apply damage/healing to characters (add to pending pools)
 - [ ] GM can add/remove effects to/from characters
 - [ ] GM can edit effect properties (duration, modifiers, expiration)
 - [ ] GM can manipulate character inventory (add/remove items)
 - [ ] GM can edit character stats/properties outside normal restrictions
+
+Future milestones:
 - [ ] GM can create and manage NPCs with stats and abilities
 - [ ] NPC status appears in dashboard alongside player characters
 
@@ -238,4 +251,4 @@ Users are already familiar with:
 | NPC placeholder in v1.2 | Foundation laid, full NPC management deferred to v1.3+ | ✓ Good (v1.2) |
 
 ---
-*Last updated: 2026-01-28 after v1.2 milestone completion*
+*Last updated: 2026-01-28 after v1.3 milestone initialized*

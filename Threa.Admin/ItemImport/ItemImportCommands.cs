@@ -334,6 +334,7 @@ public class ImportAmmoCommand : AsyncCommand<ImportItemSettings>
     {
         var ammoProps = new AmmunitionProperties
         {
+            IsAmmunition = true,
             AmmoType = row.AmmoType,
             DamageModifier = row.DamageModifier,
             AccuracyModifier = row.AVModifier,

@@ -53,6 +53,14 @@ public interface ITimeEventPublisher : IAsyncDisposable
     Task PublishJoinRequestAsync(JoinRequestMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Publishes a notification that characters have been updated after time processing.
+    /// Player clients should refresh their character state from the database.
+    /// </summary>
+    /// <param name="message">The characters updated message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishCharactersUpdatedAsync(CharactersUpdatedMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);
@@ -61,4 +69,4 @@ public interface ITimeEventPublisher : IAsyncDisposable
     /// Gets whether the publisher is connected to the broker.
     /// </summary>
     bool IsConnected { get; }
-}
+    }

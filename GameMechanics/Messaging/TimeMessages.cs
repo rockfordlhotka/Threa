@@ -378,3 +378,26 @@ public class JoinRequestMessage : TimeMessageBase
     /// </summary>
     public string? TableName { get; init; }
 }
+
+/// <summary>
+/// Message sent when the GM advances time and characters have been updated server-side.
+/// Player clients should refresh their character state from the database when receiving this.
+/// This is the authoritative signal that time processing has completed.
+/// </summary>
+public class CharactersUpdatedMessage : TimeMessageBase
+{
+    /// <summary>
+    /// The ID of the table where time was advanced.
+    /// </summary>
+    public Guid TableId { get; init; }
+
+    /// <summary>
+    /// IDs of characters that were updated.
+    /// </summary>
+    public List<int> CharacterIds { get; init; } = new();
+
+    /// <summary>
+    /// The type of time event that triggered the update.
+    /// </summary>
+    public Time.TimeEventType EventType { get; init; }
+}

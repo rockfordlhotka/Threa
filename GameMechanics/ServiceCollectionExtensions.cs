@@ -1,6 +1,7 @@
 using GameMechanics.Combat.Effects;
 using GameMechanics.Effects;
 using GameMechanics.Items;
+using GameMechanics.Time;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GameMechanics;
@@ -25,6 +26,9 @@ public static class ServiceCollectionExtensions
 
         // Register item management service
         services.AddScoped<ItemManagementService>();
+
+        // Register time advancement service for server-side time processing
+        services.AddScoped<TimeAdvancementService>();
 
         return services;
     }

@@ -1,6 +1,9 @@
 @using Threa.Client.Components.Shared
 @using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
 @using Threa.Dal.Dto
+
+@inject Radzen.DialogService DialogService
 
 <div class="reload-mode">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -62,16 +65,20 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <strong>2. Select Ammo Source</strong>
+                            @if (!string.IsNullOrEmpty(selectedWeapon.AcceptedAmmoType))
+                            {
+                                <small class="text-muted ms-2">(requires @selectedWeapon.AcceptedAmmoType)</small>
+                            }
                         </div>
                         <div class="card-body">
-                            @if (AvailableMagazines == null || !AvailableMagazines.Any())
+                            @if (!GetCompatibleAmmoSources().Any())
                             {
                                 <p class="text-muted">No compatible magazines or ammo in inventory.</p>
                             }
                             else
                             {
                                 <div class="list-group">
-                                    @foreach (var mag in AvailableMagazines)
+                                    @foreach (var mag in GetCompatibleAmmoSources())
                                     {
                                         <button class="list-group-item list-group-item-action @(selectedMagazine?.ItemId == mag.ItemId ? "active" : "")"
                                                 @onclick="() => SelectMagazine(mag)">
@@ -291,6 +298,24 @@
         costType = type;
     }
 
+    /// <summary>
+    /// Gets ammo sources that are compatible with the selected weapon's ammo type.
+    /// Uses the weapon's AcceptedAmmoType (what it can use) rather than LoadedAmmoType (what's currently loaded).
+    /// </summary>
+    private IEnumerable<AmmoSourceInfo> GetCompatibleAmmoSources()
+    {
+        if (AvailableMagazines == null || selectedWeapon == null)
+            return Enumerable.Empty<AmmoSourceInfo>();
+
+        var weaponAmmoType = selectedWeapon.AcceptedAmmoType;
+        if (string.IsNullOrEmpty(weaponAmmoType))
+            return Enumerable.Empty<AmmoSourceInfo>();
+
+        return AvailableMagazines.Where(m => 
+            string.Equals(m.AmmoType, weaponAmmoType, StringComparison.OrdinalIgnoreCase) &&
+            m.CurrentAmmo > 0);
+    }
+
     private string GetAmmoBadgeClass(RangedWeaponInfo weapon)
     {
         if (weapon.LoadedAmmo >= weapon.Capacity) return "bg-success";
@@ -338,6 +363,25 @@
     private async Task ExecuteReload()
     {
         if (!CanReload() || Character == null || selectedWeapon == null || selectedMagazine == null) return;
+
+        // Check if character is concentrating - prompt before breaking
+        var concentrationEffect = Character.GetConcentrationEffect();
+        if (concentrationEffect != null)
+        {
+            var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+            if (state != null)
+            {
+                var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                    DialogService,
+                    state,
+                    concentrationEffect.Name);
+                if (!confirmed)
+                    return; // User cancelled - don't execute action
+
+                // User confirmed - break concentration before proceeding
+                ConcentrationBehavior.BreakConcentration(Character, "Took reload action");
+            }
+        }
 
         // Deduct costs
         var apCost = costType == ActionCostType.TwoAP ? 2 : 1;

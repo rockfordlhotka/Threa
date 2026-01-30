@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using GameMechanics.Effects;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Effects.Behaviors;
@@ -262,46 +263,56 @@ public class PoisonBehavior : IEffectBehavior
   {
     var newState = PoisonState.Deserialize(effect.BehaviorState);
 
-    // Check for existing poison of the same name
-    var existingPoison = character.Effects
-      .Where(e => e.EffectType == EffectType.Poison && e.IsActive)
-      .FirstOrDefault(e =>
-      {
-        var state = PoisonState.Deserialize(e.BehaviorState);
-        return state.PoisonName == newState.PoisonName;
-      });
+    // Check if this is a generic EffectState (from the effect form) rather than a proper PoisonState.
+    // If TotalDurationRounds is 0, it's likely an EffectState - preserve it as-is to allow fallback handling.
+    bool isGenericEffectState = newState.TotalDurationRounds <= 0;
 
-    if (existingPoison != null)
+    // Check for existing poison of the same name (only for proper PoisonState effects)
+    if (!isGenericEffectState)
     {
-      var existingState = PoisonState.Deserialize(existingPoison.BehaviorState);
+      var existingPoison = character.Effects
+        .Where(e => e.EffectType == EffectType.Poison && e.IsActive)
+        .FirstOrDefault(e =>
+        {
+          var state = PoisonState.Deserialize(e.BehaviorState);
+          return state.PoisonName == newState.PoisonName;
+        });
 
-      // Stack if not at max
-      if (existingState.Stacks < existingState.MaxStacks)
+      if (existingPoison != null)
       {
-        existingState.Stacks++;
-        // Reset duration on stack
-        existingState.ElapsedRounds = 0;
-        existingState.RoundsUntilNextTick = existingState.TickIntervalRounds;
-        existingPoison.BehaviorState = existingState.Serialize();
+        var existingState = PoisonState.Deserialize(existingPoison.BehaviorState);
 
-        return EffectAddResult.Reject($"Poison stacked to {existingState.Stacks}");
-      }
-      else
-      {
-        // At max stacks - just refresh duration
-        existingState.ElapsedRounds = 0;
-        existingState.RoundsUntilNextTick = existingState.TickIntervalRounds;
-        existingPoison.BehaviorState = existingState.Serialize();
+        // Stack if not at max
+        if (existingState.Stacks < existingState.MaxStacks)
+        {
+          existingState.Stacks++;
+          // Reset duration on stack
+          existingState.ElapsedRounds = 0;
+          existingState.RoundsUntilNextTick = existingState.TickIntervalRounds;
+          existingPoison.BehaviorState = existingState.Serialize();
 
-        return EffectAddResult.Reject("Poison refreshed (max stacks)");
+          return EffectAddResult.Reject($"Poison stacked to {existingState.Stacks}");
+        }
+        else
+        {
+          // At max stacks - just refresh duration
+          existingState.ElapsedRounds = 0;
+          existingState.RoundsUntilNextTick = existingState.TickIntervalRounds;
+          existingPoison.BehaviorState = existingState.Serialize();
+
+          return EffectAddResult.Reject("Poison refreshed (max stacks)");
+        }
       }
+
+      // New poison - initialize state
+      if (newState.RoundsUntilNextTick == 0)
+        newState.RoundsUntilNextTick = newState.TickIntervalRounds;
+
+      effect.BehaviorState = newState.Serialize();
     }
+    // For generic EffectState, preserve the original BehaviorState as-is
+    // The OnTick/GetModifiers methods will handle the fallback to EffectState
 
-    // New poison - initialize state
-    if (newState.RoundsUntilNextTick == 0)
-      newState.RoundsUntilNextTick = newState.TickIntervalRounds;
-
-    effect.BehaviorState = newState.Serialize();
     return EffectAddResult.AddNormally();
   }
 
@@ -314,6 +325,14 @@ public class PoisonBehavior : IEffectBehavior
   public EffectTickResult OnTick(EffectRecord effect, CharacterEdit character)
   {
     var state = PoisonState.Deserialize(effect.BehaviorState);
+
+    // Check if this is a proper PoisonState (created via ApplyPoison) or a generic EffectState
+    // (created via the generic effect form). If TotalDurationRounds is 0, it's likely an EffectState.
+    if (state.TotalDurationRounds <= 0)
+    {
+      // Fall back to generic tick behavior for effects created via generic form
+      return ApplyGenericTick(effect, character);
+    }
 
     // Advance elapsed time
     state.ElapsedRounds++;
@@ -337,6 +356,41 @@ public class PoisonBehavior : IEffectBehavior
     }
 
     effect.BehaviorState = state.Serialize();
+    return EffectTickResult.Continue();
+  }
+
+  /// <summary>
+  /// Applies generic tick behavior for poison effects created via the generic effect form.
+  /// Uses EffectState's FatDamagePerTick/VitDamagePerTick instead of PoisonState.
+  /// </summary>
+  private static EffectTickResult ApplyGenericTick(EffectRecord effect, CharacterEdit character)
+  {
+    var effectState = EffectState.Deserialize(effect.BehaviorState);
+
+    // Apply FAT damage per tick
+    if (effectState.FatDamagePerTick.HasValue && effectState.FatDamagePerTick.Value > 0)
+    {
+      character.Fatigue.PendingDamage += effectState.FatDamagePerTick.Value;
+    }
+
+    // Apply VIT damage per tick
+    if (effectState.VitDamagePerTick.HasValue && effectState.VitDamagePerTick.Value > 0)
+    {
+      character.Vitality.PendingDamage += effectState.VitDamagePerTick.Value;
+    }
+
+    // Apply FAT healing per tick
+    if (effectState.FatHealingPerTick.HasValue && effectState.FatHealingPerTick.Value > 0)
+    {
+      character.Fatigue.PendingHealing += effectState.FatHealingPerTick.Value;
+    }
+
+    // Apply VIT healing per tick
+    if (effectState.VitHealingPerTick.HasValue && effectState.VitHealingPerTick.Value > 0)
+    {
+      character.Vitality.PendingHealing += effectState.VitHealingPerTick.Value;
+    }
+
     return EffectTickResult.Continue();
   }
 
@@ -387,13 +441,41 @@ public class PoisonBehavior : IEffectBehavior
 
   public IEnumerable<EffectModifier> GetAttributeModifiers(EffectRecord effect, string attributeName, int baseValue)
   {
-    // Poisons don't directly modify attributes
+    var state = PoisonState.Deserialize(effect.BehaviorState);
+
+    // Fall back to EffectState for generic effects
+    if (state.TotalDurationRounds <= 0)
+    {
+      var effectState = EffectState.Deserialize(effect.BehaviorState);
+      var modifier = effectState.GetAttributeModifier(attributeName);
+      if (modifier != 0)
+      {
+        return
+        [
+          new EffectModifier
+          {
+            Description = effect.Name,
+            Value = modifier,
+            TargetAttribute = attributeName
+          }
+        ];
+      }
+      return [];
+    }
+
+    // Poisons don't directly modify attributes (in PoisonState mode)
     return [];
   }
 
   public IEnumerable<EffectModifier> GetAbilityScoreModifiers(EffectRecord effect, string skillName, string attributeName, int currentAS)
   {
     var state = PoisonState.Deserialize(effect.BehaviorState);
+
+    // Fall back to EffectState for generic effects
+    if (state.TotalDurationRounds <= 0)
+    {
+      return GetGenericAbilityScoreModifiers(effect, skillName);
+    }
 
     var penalty = state.CurrentASPenalty;
     if (penalty >= 0)
@@ -407,6 +489,40 @@ public class PoisonBehavior : IEffectBehavior
         Value = penalty
       }
     ];
+  }
+
+  /// <summary>
+  /// Gets ability score modifiers from EffectState for generic poison effects.
+  /// </summary>
+  private static IEnumerable<EffectModifier> GetGenericAbilityScoreModifiers(EffectRecord effect, string skillName)
+  {
+    var effectState = EffectState.Deserialize(effect.BehaviorState);
+    var modifiers = new List<EffectModifier>();
+
+    // Apply global AS modifier
+    if (effectState.ASModifier.HasValue && effectState.ASModifier.Value != 0)
+    {
+      modifiers.Add(new EffectModifier
+      {
+        Description = effect.Name,
+        Value = effectState.ASModifier.Value,
+        TargetSkill = skillName
+      });
+    }
+
+    // Apply skill-specific modifier
+    var skillModifier = effectState.GetSkillModifier(skillName);
+    if (skillModifier != 0)
+    {
+      modifiers.Add(new EffectModifier
+      {
+        Description = $"{effect.Name} ({skillName})",
+        Value = skillModifier,
+        TargetSkill = skillName
+      });
+    }
+
+    return modifiers;
   }
 
   public IEnumerable<EffectModifier> GetSuccessValueModifiers(EffectRecord effect, string actionType, int currentSV)

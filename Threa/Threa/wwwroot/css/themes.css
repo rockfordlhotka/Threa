@@ -104,8 +104,8 @@
   --color-bg-secondary: #12121a;
   --color-bg-tertiary: #1a1a25;
   --color-text-primary: #e0e0e8;
-  --color-text-secondary: #a0a0b0;
-  --color-text-muted: #606070;
+  --color-text-secondary: #b0b0c0;
+  --color-text-muted: #8888a0;
 
   /* Accent Colors - Neon palette */
   --color-accent-primary: #00f0ff;      /* Cyan neon */

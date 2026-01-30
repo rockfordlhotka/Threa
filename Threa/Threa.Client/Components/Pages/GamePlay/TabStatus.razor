@@ -91,6 +91,11 @@
                         <i class="bi bi-x-circle"></i> <strong>Crippled Limb</strong>
                     </div>
                 }
+
+                @* Concentration Status *@
+                <ConcentrationIndicator Character="@Character"
+                                        ShowDropButton="true"
+                                        OnConcentrationDropped="@HandleConcentrationDropped" />
             </div>
         </div>
 
@@ -353,10 +358,14 @@
                                             </div>
                                         </div>
                                         <div class="text-end">
-                                            @if (effect.RemainingRounds.HasValue)
+                                            @{
+                                                var remainingSeconds = GetRemainingSeconds(effect);
+                                            }
+                                            @if (remainingSeconds.HasValue)
                                             {
-                                                <span class="badge @GetDurationBadgeClass(effect.RemainingRounds.Value)">
-                                                    @effect.RemainingRounds rnd
+                                                var remainingRounds = (int)(remainingSeconds.Value / 3);
+                                                <span class="badge @GetDurationBadgeClass(remainingRounds)">
+                                                    @remainingRounds rnd
                                                 </span>
                                             }
                                             else
@@ -382,10 +391,14 @@
                                             {
                                                 <div class="text-muted">Stacks: @effect.CurrentStacks</div>
                                             }
-                                            @if (effect.DurationRounds.HasValue)
+                                            @if (effect.ExpiresAtEpochSeconds.HasValue && effect.CreatedAtEpochSeconds.HasValue)
                                             {
+                                                var totalDurationSeconds = effect.ExpiresAtEpochSeconds.Value - effect.CreatedAtEpochSeconds.Value;
+                                                var elapsedSeconds = Character.CurrentGameTimeSeconds - effect.CreatedAtEpochSeconds.Value;
+                                                var totalRounds = totalDurationSeconds / 3;
+                                                var elapsedRounds = Math.Max(0, elapsedSeconds / 3);
                                                 <div class="text-muted">
-                                                    Duration: @effect.ElapsedRounds / @effect.DurationRounds rounds
+                                                    Duration: @elapsedRounds / @totalRounds rounds
                                                 </div>
                                             }
                                         </div>
@@ -420,7 +433,7 @@
                             <span><i class="bi bi-arrow-down-circle"></i> Total AS Penalty</span>
                             <strong class="text-danger">@TotalWoundPenalty</strong>
                         </div>
-                        <small class="text-muted">-2 per wound to all ability scores</small>
+                        <small class="text-muted">Applied to all ability scores</small>
                     </div>
 
                     <!-- Body Location Diagram -->
@@ -430,7 +443,7 @@
                             var woundState = GetWoundStateForLocation(location.Key);
                             var hasWounds = woundState != null && woundState.TotalWounds > 0;
 
-                            <div class="wound-location-row d-flex justify-content-between align-items-center p-2 mb-1 rounded @(hasWounds ? "bg-light" : "")">
+                            <div class="wound-location-row d-flex justify-content-between align-items-center p-2 mb-1 rounded @(hasWounds ? "border" : "")" style="@(hasWounds ? "border-color: var(--color-card-border);" : "")">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi @location.Value"></i>
                                     <span>@FormatLocation(location.Key)</span>
@@ -471,7 +484,7 @@
                     <!-- Wound Drain Info -->
                     @if (HasActiveWoundDrain)
                     {
-                        <div class="mt-3 p-2 bg-light rounded small">
+                        <div class="mt-3 p-2 border rounded small" style="border-color: var(--color-card-border);">
                             <div class="fw-bold mb-1"><i class="bi bi-hourglass-split"></i> Wound Effects</div>
                             <div class="text-muted">
                                 Every 20 rounds, wounds cause periodic damage:
@@ -506,7 +519,22 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
+    /// <summary>
+    /// Callback when character is modified (e.g., concentration dropped).
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
     private HashSet<Guid> expandedEffects = new();
+
+    /// <summary>
+    /// Handles concentration being voluntarily dropped.
+    /// </summary>
+    private async Task HandleConcentrationDropped()
+    {
+        await OnCharacterChanged.InvokeAsync();
+        StateHasChanged();
+    }
 
     // Body locations with their icons
     private static readonly Dictionary<string, string> BodyLocations = new()
@@ -539,7 +567,23 @@
     // Wound helpers
     private int TotalWoundCount => Character?.Effects.TotalWoundCount ?? 0;
 
-    private int TotalWoundPenalty => TotalWoundCount * WoundBehavior.PenaltyPerWound;
+    private int TotalWoundPenalty
+    {
+        get
+        {
+            if (Character?.Effects == null) return 0;
+
+            // Sum actual AS penalties from all wounds (supports custom penalties from Plan 01)
+            var woundEffects = Character.Effects.GetEffectsByType(EffectType.Wound).ToList();
+            if (!woundEffects.Any()) return 0;
+
+            return woundEffects.Sum(wound =>
+            {
+                var modifiers = wound.GetAbilityScoreModifiers("AnySkill", "AnyAttr", 0);
+                return modifiers.Sum(m => m.Value);
+            });
+        }
+    }
 
     private bool HasCrippledLimbs => Character?.Effects.GetAllWoundStates()
         .Any(w => w.State.IsCrippled) ?? false;
@@ -632,7 +676,7 @@
     {
         EffectType.Buff => "bg-success bg-opacity-10",
         EffectType.Debuff or EffectType.Poison or EffectType.Disease => "bg-danger bg-opacity-10",
-        EffectType.Condition => "bg-warning bg-opacity-10",
+        EffectType.Condition => "bg-purple bg-opacity-10",
         EffectType.SpellEffect => "bg-primary bg-opacity-10",
         _ => "bg-light"
     };
@@ -650,6 +694,14 @@
 
     private string GetDurationBadgeClass(int remainingRounds) =>
         remainingRounds <= 3 ? "bg-danger" : remainingRounds <= 10 ? "bg-warning text-dark" : "bg-info";
+
+    private long? GetRemainingSeconds(GameMechanics.EffectRecord effect)
+    {
+        if (!effect.ExpiresAtEpochSeconds.HasValue) return null;
+        var currentGameTime = Character?.CurrentGameTimeSeconds ?? 0;
+        var remaining = effect.ExpiresAtEpochSeconds.Value - currentGameTime;
+        return remaining > 0 ? remaining : 0;
+    }
 
     private void ToggleEffectExpansion(Guid effectId)
     {

@@ -179,6 +179,27 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
         private set => LoadProperty(GmNotesProperty, value);
     }
 
+    // Concentration status
+    public static readonly PropertyInfo<bool> IsConcentratingProperty = RegisterProperty<bool>(nameof(IsConcentrating));
+    /// <summary>
+    /// Whether the character is currently concentrating on an effect.
+    /// </summary>
+    public bool IsConcentrating
+    {
+        get => GetProperty(IsConcentratingProperty);
+        private set => LoadProperty(IsConcentratingProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> ConcentrationNameProperty = RegisterProperty<string?>(nameof(ConcentrationName));
+    /// <summary>
+    /// Name of the effect being concentrated on (spell name or effect name).
+    /// </summary>
+    public string? ConcentrationName
+    {
+        get => GetProperty(ConcentrationNameProperty);
+        private set => LoadProperty(ConcentrationNameProperty, value);
+    }
+
     public string ConnectionStatusDisplay => ConnectionStatus switch
     {
         ConnectionStatus.Connected => "Connected",
@@ -231,9 +252,43 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
             var effectDescriptions = nonWoundEffects
                 .Select(e => e.RoundsRemaining.HasValue ? $"{e.Name} ({e.RoundsRemaining} rnd)" : e.Name);
             EffectSummary = string.Join(", ", effectDescriptions);
+
+            // Check concentration status
+            var concentrationEffect = character.Effects?.FirstOrDefault(e => e.EffectType == EffectType.Concentration);
+            IsConcentrating = concentrationEffect != null;
+            if (concentrationEffect != null)
+            {
+                // Try to get the spell name from custom properties (behavior state stored there)
+                var stateJson = concentrationEffect.CustomProperties;
+                if (!string.IsNullOrEmpty(stateJson))
+                {
+                    try
+                    {
+                        var state = System.Text.Json.JsonSerializer.Deserialize<ConcentrationStateMinimal>(stateJson);
+                        ConcentrationName = state?.SpellName ?? concentrationEffect.Name;
+                    }
+                    catch
+                    {
+                        ConcentrationName = concentrationEffect.Name;
+                    }
+                }
+                else
+                {
+                    ConcentrationName = concentrationEffect.Name;
+                }
+            }
         }
 
         // Load GM notes from table character record
         GmNotes = tableChar.GmNotes;
     }
+}
+
+/// <summary>
+/// Minimal DTO for deserializing concentration state to get spell name.
+/// </summary>
+file class ConcentrationStateMinimal
+{
+    [System.Text.Json.Serialization.JsonPropertyName("spellName")]
+    public string? SpellName { get; set; }
 }

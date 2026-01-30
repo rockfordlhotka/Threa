@@ -1,0 +1,277 @@
+@* Form modal for adding or editing a wound on a character *@
+
+@using GameMechanics
+@using GameMechanics.Effects.Behaviors
+@using GameMechanics.Messaging
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject IChildDataPortal<EffectRecord> effectPortal
+@inject DialogService DialogService
+@inject ITimeEventPublisher TimeEventPublisher
+
+<div class="p-3">
+    <EditForm Model="@this" OnValidSubmit="SaveWound">
+        <DataAnnotationsValidator />
+
+        @* Common Wound Templates *@
+        <div class="mb-3">
+            <label class="form-label">Quick Template (Optional)</label>
+            <select class="form-select" @onchange="OnTemplateSelected">
+                <option value="">-- Select a template --</option>
+                @foreach (var template in CommonWounds)
+                {
+                    <option value="@template.Name">@template.Name</option>
+                }
+            </select>
+            <small class="text-muted">Pre-fill form with common wound values</small>
+        </div>
+
+        <hr class="my-3" />
+
+        @* Severity Selection *@
+        <div class="mb-3">
+            <label class="form-label">Severity <span class="text-danger">*</span></label>
+            <select class="form-select @(string.IsNullOrEmpty(selectedSeverity) ? "is-invalid" : "")"
+                    @bind="selectedSeverity" @bind:after="OnSeverityChanged">
+                <option value="">-- Select severity --</option>
+                <option value="Minor">Minor</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Severe">Severe</option>
+                <option value="Critical">Critical</option>
+            </select>
+            @if (string.IsNullOrEmpty(selectedSeverity))
+            {
+                <div class="invalid-feedback">Severity is required</div>
+            }
+        </div>
+
+        @* Location Selection *@
+        <div class="mb-3">
+            <label class="form-label">Location <span class="text-danger">*</span></label>
+            <select class="form-select @(string.IsNullOrEmpty(selectedLocation) ? "is-invalid" : "")" @bind="selectedLocation">
+                <option value="">-- Select location --</option>
+                <option value="Head">Head</option>
+                <option value="Torso">Torso</option>
+                <option value="LeftArm">Left Arm</option>
+                <option value="RightArm">Right Arm</option>
+                <option value="LeftLeg">Left Leg</option>
+                <option value="RightLeg">Right Leg</option>
+            </select>
+            @if (string.IsNullOrEmpty(selectedLocation))
+            {
+                <div class="invalid-feedback">Location is required</div>
+            }
+        </div>
+
+        @* Description *@
+        <div class="mb-3">
+            <label class="form-label">Description <span class="text-danger">*</span></label>
+            <input type="text" class="form-control @(string.IsNullOrEmpty(description) || description.Length < 3 ? "is-invalid" : "")"
+                   @bind="description" placeholder="Describe the wound..." />
+            @if (string.IsNullOrEmpty(description) || description.Length < 3)
+            {
+                <div class="invalid-feedback">Description is required (min 3 characters)</div>
+            }
+        </div>
+
+        <hr class="my-3" />
+
+        @* Effect Values (with severity defaults) *@
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">AS Penalty</label>
+                <input type="number" class="form-control" @bind="asPenalty" max="0" />
+                <small class="text-muted">Penalty to all ability scores</small>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">FAT/Tick</label>
+                <input type="number" class="form-control" @bind="fatDamage" min="0" />
+                <small class="text-muted">FAT damage per 20 rounds</small>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">VIT/Tick</label>
+                <input type="number" class="form-control" @bind="vitDamage" min="0" />
+                <small class="text-muted">VIT damage per 20 rounds</small>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(selectedSeverity))
+        {
+            <div class="alert alert-secondary small mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>@selectedSeverity defaults:</strong>
+                AS @(WoundState.GetSeverityDefaults(selectedSeverity).asPenalty),
+                FAT @(WoundState.GetSeverityDefaults(selectedSeverity).fatPerTick)/tick,
+                VIT @(WoundState.GetSeverityDefaults(selectedSeverity).vitPerTick)/tick
+            </div>
+        }
+
+        @* Validation Messages *@
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-3">
+                <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+            </div>
+        }
+
+        @* Action Buttons *@
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@isProcessing">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-danger" disabled="@(!IsFormValid || isProcessing)">
+                @if (isProcessing)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                <i class="bi bi-bandaid me-1"></i>
+                @(ExistingWound != null ? "Update Wound" : "Add Wound")
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public CharacterEdit? Character { get; set; }
+    [Parameter] public int CharacterId { get; set; }
+    [Parameter] public Guid TableId { get; set; }
+    [Parameter] public EffectRecord? ExistingWound { get; set; }
+
+    private string selectedSeverity = "";
+    private string selectedLocation = "";
+    private string description = "";
+    private int asPenalty = -2;
+    private int fatDamage = 1;
+    private int vitDamage = 0;
+    private bool isProcessing;
+    private string? errorMessage;
+
+    // Common wound templates
+    private static readonly (string Name, string Location, string Severity, string Description)[] CommonWounds =
+    [
+        ("Broken Arm", "RightArm", "Moderate", "Fractured arm bone"),
+        ("Broken Leg", "RightLeg", "Moderate", "Fractured leg bone"),
+        ("Concussion", "Head", "Moderate", "Traumatic head injury"),
+        ("Deep Cut", "Torso", "Minor", "Deep bleeding laceration"),
+        ("Puncture Wound", "Torso", "Moderate", "Piercing injury"),
+        ("Burns", "Torso", "Minor", "Thermal damage to skin"),
+        ("Internal Bleeding", "Torso", "Severe", "Internal hemorrhage")
+    ];
+
+    private bool IsFormValid =>
+        !string.IsNullOrEmpty(selectedSeverity) &&
+        !string.IsNullOrEmpty(selectedLocation) &&
+        !string.IsNullOrEmpty(description) &&
+        description.Length >= 3;
+
+    protected override void OnParametersSet()
+    {
+        if (ExistingWound != null)
+        {
+            // Edit mode - populate form from existing wound
+            var state = WoundState.Deserialize(ExistingWound.BehaviorState);
+            selectedSeverity = state.Severity ?? "Minor";
+            selectedLocation = ExistingWound.Location ?? "Torso";
+            description = state.Description ?? ExistingWound.Description ?? "";
+            asPenalty = state.CustomASPenalty ?? WoundState.GetSeverityDefaults(state.Severity).asPenalty;
+            fatDamage = state.FatDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).fatPerTick;
+            vitDamage = state.VitDamagePerTick ?? WoundState.GetSeverityDefaults(state.Severity).vitPerTick;
+        }
+    }
+
+    private void OnTemplateSelected(ChangeEventArgs e)
+    {
+        var templateName = e.Value?.ToString();
+        if (string.IsNullOrEmpty(templateName)) return;
+
+        var template = CommonWounds.FirstOrDefault(t => t.Name == templateName);
+        if (template != default)
+        {
+            selectedLocation = template.Location;
+            selectedSeverity = template.Severity;
+            description = template.Description;
+            OnSeverityChanged();
+        }
+    }
+
+    private void OnSeverityChanged()
+    {
+        if (!string.IsNullOrEmpty(selectedSeverity))
+        {
+            var defaults = WoundState.GetSeverityDefaults(selectedSeverity);
+            asPenalty = defaults.asPenalty;
+            fatDamage = defaults.fatPerTick;
+            vitDamage = defaults.vitPerTick;
+        }
+    }
+
+    private async Task SaveWound()
+    {
+        if (!IsFormValid) return;
+
+        isProcessing = true;
+        errorMessage = null;
+
+        try
+        {
+            // Re-fetch character for fresh state
+            var character = await characterPortal.FetchAsync(CharacterId);
+
+            if (ExistingWound != null)
+            {
+                // Edit: Find and update existing wound
+                var wound = character.Effects.FirstOrDefault(e => e.Id == ExistingWound.Id);
+                if (wound != null)
+                {
+                    var state = WoundState.Deserialize(wound.BehaviorState);
+                    state.Severity = selectedSeverity;
+                    state.Description = description;
+                    state.CustomASPenalty = asPenalty;
+                    state.FatDamagePerTick = fatDamage;
+                    state.VitDamagePerTick = vitDamage;
+                    wound.BehaviorState = state.Serialize();
+                    wound.Location = selectedLocation;
+                    wound.Name = $"Wound: {selectedLocation}";
+                    wound.Description = description;
+                }
+            }
+            else
+            {
+                // Add: Create new wound using WoundBehavior.CreateCustomWound
+                WoundBehavior.CreateCustomWound(
+                    character, effectPortal,
+                    selectedLocation, selectedSeverity, description,
+                    asPenalty, fatDamage, vitDamage);
+            }
+
+            await characterPortal.UpdateAsync(character);
+
+            // Publish update
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = CharacterId,
+                UpdateType = CharacterUpdateType.EffectAdded,
+                CampaignId = TableId.ToString(),
+                SourceId = "GM",
+                Description = $"Wound {(ExistingWound != null ? "updated" : "added")}: {description}"
+            });
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving wound: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+}

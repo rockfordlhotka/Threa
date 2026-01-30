@@ -1,0 +1,317 @@
+@* Modal for browsing and selecting item templates *@
+
+@using GameMechanics.Items
+@using Threa.Dal.Dto
+@using Radzen
+@using System.Timers
+
+@implements IDisposable
+
+@inject IDataPortal<ItemTemplateList> templateListPortal
+@inject DialogService DialogService
+
+<div class="p-3">
+    @* Search and Filter Bar *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search templates..."
+                       @bind="searchTerm" @bind:event="oninput" @bind:after="OnSearchInput" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filterType">
+                <option value="">All Types</option>
+                @foreach (var type in FilterableTypes)
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="filterRarity">
+                <option value="">All Rarities</option>
+                @foreach (var rarity in FilterableRarities)
+                {
+                    <option value="@rarity">@rarity</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @* Loading State *@
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading templates...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading templates...</p>
+        </div>
+    }
+    else
+    {
+        @* Template Grid *@
+        var filtered = GetFilteredTemplates();
+        @if (filtered.Any())
+        {
+            <div class="row g-3" style="max-height: 400px; overflow-y: auto;">
+                @foreach (var template in filtered)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 template-card" @onclick="() => SelectTemplate(template)" style="cursor: pointer;">
+                            <div class="card-header @GetRarityHeaderClass(template.Rarity) text-white d-flex align-items-center py-2">
+                                <i class="bi @GetItemTypeIcon(template.ItemType) me-2"></i>
+                                <span class="flex-grow-1 text-truncate small" title="@template.Name">@template.Name</span>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge @GetRarityBadgeClass(template.Rarity)">@template.Rarity</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">@template.ItemType</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small text-muted">
+                                        <i class="bi bi-box me-1"></i>@template.Weight.ToString("0.#") lbs
+                                    </span>
+                                    @if (template.Value > 0)
+                                    {
+                                        <span class="small text-muted">
+                                            <i class="bi bi-coin me-1"></i>@template.Value
+                                        </span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(template.ShortDescription))
+                                {
+                                    <p class="card-text text-muted small text-truncate mb-1"
+                                       style="max-height: 2.4em; overflow: hidden;"
+                                       title="@template.ShortDescription">
+                                        @template.ShortDescription
+                                    </p>
+                                }
+                                else if (!string.IsNullOrEmpty(template.Description))
+                                {
+                                    <p class="card-text text-muted small text-truncate mb-1"
+                                       style="max-height: 2.4em; overflow: hidden;"
+                                       title="@template.Description">
+                                        @template.Description
+                                    </p>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0 pt-0">
+                                <button class="btn btn-sm btn-outline-primary w-100" @onclick:stopPropagation="true"
+                                        @onclick="() => SelectTemplate(template)">
+                                    <i class="bi bi-check2 me-1"></i>Select
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-secondary text-center">
+                <i class="bi bi-search me-1"></i>
+                @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(filterType) && string.IsNullOrEmpty(filterRarity))
+                {
+                    <span>No item templates available.</span>
+                }
+                else
+                {
+                    <span>No templates found matching your search.</span>
+                }
+            </div>
+        }
+    }
+
+    @* Footer with Cancel *@
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-secondary" @onclick="Cancel">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<style>
+    .template-card:hover {
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        transition: all 0.15s ease-in-out;
+    }
+</style>
+
+@code {
+    private ItemTemplateList? templates;
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string filterType = "";
+    private string filterRarity = "";
+    private Timer? debounceTimer;
+
+    private static readonly ItemType[] FilterableTypes =
+    [
+        ItemType.Weapon,
+        ItemType.Armor,
+        ItemType.Shield,
+        ItemType.Ammunition,
+        ItemType.AmmoContainer,
+        ItemType.Consumable,
+        ItemType.Container,
+        ItemType.Jewelry,
+        ItemType.Clothing,
+        ItemType.Food,
+        ItemType.Drink,
+        ItemType.Tool,
+        ItemType.Key,
+        ItemType.Magic,
+        ItemType.Treasure,
+        ItemType.RawMaterial,
+        ItemType.Miscellaneous
+    ];
+
+    private static readonly ItemRarity[] FilterableRarities =
+    [
+        ItemRarity.Common,
+        ItemRarity.Uncommon,
+        ItemRarity.Rare,
+        ItemRarity.Epic,
+        ItemRarity.Legendary
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplatesAsync();
+    }
+
+    private async Task LoadTemplatesAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            templates = await templateListPortal.FetchAsync();
+        }
+        catch
+        {
+            templates = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchInput()
+    {
+        // Debounce search - wait 300ms after last input
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new Timer(300);
+        debounceTimer.Elapsed += (_, _) => InvokeAsync(StateHasChanged);
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = "";
+    }
+
+    private IEnumerable<ItemTemplateInfo> GetFilteredTemplates()
+    {
+        if (templates == null)
+            return Enumerable.Empty<ItemTemplateInfo>();
+
+        var result = templates.AsEnumerable();
+
+        // Filter by item type
+        if (!string.IsNullOrEmpty(filterType) && Enum.TryParse<ItemType>(filterType, out var type))
+        {
+            result = result.Where(t => t.ItemType == type);
+        }
+
+        // Filter by rarity
+        if (!string.IsNullOrEmpty(filterRarity) && Enum.TryParse<ItemRarity>(filterRarity, out var rarity))
+        {
+            result = result.Where(t => t.Rarity == rarity);
+        }
+
+        // Filter by search term
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            var term = searchTerm.ToLowerInvariant();
+            result = result.Where(t =>
+                t.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (t.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (t.ShortDescription?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (t.Tags?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        return result.OrderBy(t => t.ItemType).ThenBy(t => t.Name);
+    }
+
+    private void SelectTemplate(ItemTemplateInfo template)
+    {
+        DialogService.Close(template);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    private static string GetRarityHeaderClass(ItemRarity rarity) => rarity switch
+    {
+        ItemRarity.Common => "bg-secondary",
+        ItemRarity.Uncommon => "bg-success",
+        ItemRarity.Rare => "bg-primary",
+        ItemRarity.Epic => "bg-purple",
+        ItemRarity.Legendary => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private static string GetRarityBadgeClass(ItemRarity rarity) => rarity switch
+    {
+        ItemRarity.Common => "bg-secondary-subtle text-secondary",
+        ItemRarity.Uncommon => "bg-success-subtle text-success",
+        ItemRarity.Rare => "bg-primary-subtle text-primary",
+        ItemRarity.Epic => "bg-purple-subtle text-purple",
+        ItemRarity.Legendary => "bg-warning-subtle text-warning",
+        _ => "bg-secondary"
+    };
+
+    private static string GetItemTypeIcon(ItemType type) => type switch
+    {
+        ItemType.Weapon => "bi-sword",
+        ItemType.Armor => "bi-shield-fill",
+        ItemType.Shield => "bi-shield-shaded",
+        ItemType.Ammunition => "bi-bullseye",
+        ItemType.AmmoContainer => "bi-box",
+        ItemType.Consumable => "bi-capsule",
+        ItemType.Container => "bi-box-seam",
+        ItemType.Jewelry => "bi-gem",
+        ItemType.Clothing => "bi-person-arms-up",
+        ItemType.Food => "bi-egg-fried",
+        ItemType.Drink => "bi-cup-straw",
+        ItemType.Tool => "bi-tools",
+        ItemType.Key => "bi-key",
+        ItemType.Magic => "bi-magic",
+        ItemType.Treasure => "bi-coin",
+        ItemType.RawMaterial => "bi-box-seam-fill",
+        ItemType.Miscellaneous => "bi-question-circle",
+        _ => "bi-question-circle"
+    };
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+    }
+}

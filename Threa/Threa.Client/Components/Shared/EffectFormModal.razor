@@ -1,0 +1,735 @@
+@* Form modal for adding or editing an effect on a character *@
+
+@using GameMechanics
+@using GameMechanics.Effects
+@using GameMechanics.Messaging
+@using Threa.Dal
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject IChildDataPortal<EffectRecord> effectPortal
+@inject DialogService DialogService
+@inject ITimeEventPublisher TimeEventPublisher
+@inject IEffectTemplateDal EffectTemplateDal
+
+<div class="p-3">
+    <EditForm Model="@this" OnValidSubmit="SaveEffect">
+        <DataAnnotationsValidator />
+
+        @* Template Selection (only for new effects) *@
+        @if (ExistingEffect == null)
+        {
+            <div class="mb-3">
+                <label class="form-label">Quick Template (Optional)</label>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary flex-grow-1" @onclick="OpenTemplatePicker" disabled="@isProcessing">
+                        <i class="bi bi-collection me-1"></i>Choose from Templates...
+                    </button>
+                    @if (!string.IsNullOrEmpty(effectName) && effectName.Length >= 2)
+                    {
+                        <button type="button" class="btn btn-outline-secondary" @onclick="SaveAsTemplate"
+                                disabled="@(!IsFormValid || isSavingTemplate)" title="Save current values as reusable template">
+                            @if (isSavingTemplate)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-bookmark-plus"></i>
+                            }
+                        </button>
+                    }
+                </div>
+                <small class="text-muted">Pre-fill form with a saved template, or save current values as new template</small>
+            </div>
+
+            <hr class="my-3" />
+        }
+
+        @* Basic Info Section *@
+        <div class="row g-3 mb-3">
+            <div class="col-md-8">
+                <label class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(string.IsNullOrEmpty(effectName) || effectName.Length < 2 ? "is-invalid" : "")"
+                       @bind="effectName" placeholder="Effect name..." />
+                @if (string.IsNullOrEmpty(effectName) || effectName.Length < 2)
+                {
+                    <div class="invalid-feedback">Name is required (min 2 characters)</div>
+                }
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Type <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="selectedEffectType">
+                    @foreach (var type in AvailableEffectTypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @* Description *@
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" @bind="description" rows="2" placeholder="Describe the effect..."></textarea>
+        </div>
+
+        <hr class="my-3" />
+
+        @* Duration Section *@
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Duration Type</label>
+                <select class="form-select" @bind="durationType">
+                    <option value="Permanent">Permanent</option>
+                    <option value="Rounds">Rounds</option>
+                    <option value="Turns">Turns (60 rounds)</option>
+                    <option value="Minutes">Minutes</option>
+                    <option value="Hours">Hours</option>
+                    <option value="Days">Days</option>
+                </select>
+            </div>
+            @if (durationType != "Permanent")
+            {
+                <div class="col-md-6">
+                    <label class="form-label">Duration Value</label>
+                    <input type="number" class="form-control" @bind="durationValue" min="1" />
+                </div>
+            }
+        </div>
+
+        <hr class="my-3" />
+
+        @* Modifiers Section (Collapsible) *@
+        <div class="mb-3">
+            <button type="button" class="btn btn-sm @(showAdvanced ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => showAdvanced = !showAdvanced">
+                <i class="bi @(showAdvanced ? "bi-chevron-up" : "bi-chevron-down") me-1"></i>
+                Advanced: Modifiers & Tick Effects
+            </button>
+        </div>
+
+        @if (showAdvanced)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    @* AS Modifier *@
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Global AS Modifier</label>
+                            <input type="number" class="form-control" @bind="asModifier" />
+                            <small class="text-muted">Applies to all ability checks</small>
+                        </div>
+                    </div>
+
+                    @* Attribute Modifiers *@
+                    <div class="mb-3">
+                        <label class="form-label">Attribute Modifiers</label>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-5">
+                                <select class="form-select form-select-sm" @bind="newAttrName">
+                                    <option value="">Select attribute...</option>
+                                    @foreach (var attr in AvailableAttributes)
+                                    {
+                                        @if (!attributeModifiers.ContainsKey(attr))
+                                        {
+                                            <option value="@attr">@attr</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control form-control-sm" @bind="newAttrValue" placeholder="Value" />
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100" @onclick="AddAttributeModifier"
+                                        disabled="@(string.IsNullOrEmpty(newAttrName))">
+                                    <i class="bi bi-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                        @if (attributeModifiers.Any())
+                        {
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var kvp in attributeModifiers)
+                                {
+                                    <span class="badge bg-primary d-flex align-items-center">
+                                        @kvp.Key @(kvp.Value >= 0 ? "+" : "")@kvp.Value
+                                        <button type="button" class="btn-close btn-close-white ms-2"
+                                                style="font-size: 0.6rem;" @onclick="() => RemoveAttributeModifier(kvp.Key)"></button>
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @* Skill Modifiers *@
+                    <div class="mb-3">
+                        <label class="form-label">Skill Modifiers</label>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control form-control-sm" @bind="newSkillName" placeholder="Skill name..." />
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control form-control-sm" @bind="newSkillValue" placeholder="Value" />
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100" @onclick="AddSkillModifier"
+                                        disabled="@(string.IsNullOrEmpty(newSkillName))">
+                                    <i class="bi bi-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                        @if (skillModifiers.Any())
+                        {
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var kvp in skillModifiers)
+                                {
+                                    <span class="badge bg-info d-flex align-items-center">
+                                        @kvp.Key @(kvp.Value >= 0 ? "+" : "")@kvp.Value
+                                        <button type="button" class="btn-close btn-close-white ms-2"
+                                                style="font-size: 0.6rem;" @onclick="() => RemoveSkillModifier(kvp.Key)"></button>
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <hr class="my-3" />
+
+                    @* Damage/Healing Per Tick *@
+                    <label class="form-label">Periodic Effects (per tick)</label>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small">FAT Dmg</label>
+                            <input type="number" class="form-control form-control-sm" @bind="fatDamagePerTick" min="0" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">VIT Dmg</label>
+                            <input type="number" class="form-control form-control-sm" @bind="vitDamagePerTick" min="0" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">FAT Heal</label>
+                            <input type="number" class="form-control form-control-sm" @bind="fatHealingPerTick" min="0" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">VIT Heal</label>
+                            <input type="number" class="form-control form-control-sm" @bind="vitHealingPerTick" min="0" />
+                        </div>
+                    </div>
+                    <small class="text-muted">Damage reduces pools, healing restores them (per tick cycle)</small>
+                </div>
+            </div>
+        }
+
+        @* Effect Type Preview *@
+        <div class="alert @GetEffectTypeAlertClass(selectedEffectType) small mb-3">
+            <i class="bi @GetEffectTypeIcon(selectedEffectType) me-1"></i>
+            <strong>@selectedEffectType:</strong> @GetEffectTypeDescription(selectedEffectType)
+        </div>
+
+        @* Feedback Messages *@
+        @if (!string.IsNullOrEmpty(feedbackMessage))
+        {
+            <div class="alert @feedbackClass mb-3 alert-dismissible fade show" role="alert">
+                <i class="bi @feedbackIcon me-1"></i>@feedbackMessage
+                <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
+            </div>
+        }
+
+        @* Validation Messages *@
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-3">
+                <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+            </div>
+        }
+
+        @* Action Buttons *@
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@isProcessing">
+                Cancel
+            </button>
+            <button type="submit" class="btn @GetEffectTypeButtonClass(selectedEffectType)" disabled="@(!IsFormValid || isProcessing)">
+                @if (isProcessing)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                <i class="bi bi-stars me-1"></i>
+                @(ExistingEffect != null ? "Update Effect" : "Add Effect")
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public CharacterEdit? Character { get; set; }
+    [Parameter] public int CharacterId { get; set; }
+    [Parameter] public Guid TableId { get; set; }
+    [Parameter] public EffectRecord? ExistingEffect { get; set; }
+
+    // Form fields
+    private string effectName = "";
+    private EffectType selectedEffectType = EffectType.Buff;
+    private string description = "";
+    private string durationType = "Rounds";
+    private int durationValue = 5;
+    private int asModifier = 0;
+    private Dictionary<string, int> attributeModifiers = new();
+    private Dictionary<string, int> skillModifiers = new();
+    private int fatDamagePerTick = 0;
+    private int vitDamagePerTick = 0;
+    private int fatHealingPerTick = 0;
+    private int vitHealingPerTick = 0;
+
+    // UI state for adding modifiers
+    private string newAttrName = "";
+    private int newAttrValue = 1;
+    private string newSkillName = "";
+    private int newSkillValue = 1;
+    private bool showAdvanced = false;
+
+    private bool isProcessing;
+    private bool isSavingTemplate;
+    private string? errorMessage;
+    private string? feedbackMessage;
+    private string feedbackClass = "alert-info";
+    private string feedbackIcon = "bi-info-circle";
+
+    // Available effect types (exclude Wound, CombatStance, Concentration - special handling)
+    private static readonly EffectType[] AvailableEffectTypes =
+    [
+        EffectType.Buff,
+        EffectType.Debuff,
+        EffectType.Condition,
+        EffectType.Poison,
+        EffectType.Disease,
+        EffectType.SpellEffect,
+        EffectType.ItemEffect,
+        EffectType.Environmental
+    ];
+
+    private static readonly string[] AvailableAttributes =
+    [
+        "STR", "DEX", "END", "INT", "ITT", "WIL", "PHY"
+    ];
+
+    private bool IsFormValid =>
+        !string.IsNullOrEmpty(effectName) &&
+        effectName.Length >= 2;
+
+    protected override void OnParametersSet()
+    {
+        if (ExistingEffect != null)
+        {
+            // Edit mode - populate form from existing effect
+            var state = EffectState.Deserialize(ExistingEffect.BehaviorState);
+
+            effectName = ExistingEffect.Name;
+            selectedEffectType = ExistingEffect.EffectType;
+            description = ExistingEffect.Description ?? state.Description ?? "";
+
+            // Duration
+            if (ExistingEffect.ExpiresAtEpochSeconds.HasValue && ExistingEffect.CreatedAtEpochSeconds.HasValue)
+            {
+                var durationSeconds = ExistingEffect.ExpiresAtEpochSeconds.Value - ExistingEffect.CreatedAtEpochSeconds.Value;
+                ParseDurationFromSeconds(durationSeconds);
+            }
+            else
+            {
+                durationType = "Permanent";
+            }
+
+            // Modifiers from state
+            asModifier = state.ASModifier ?? 0;
+            attributeModifiers = state.AttributeModifiers != null
+                ? new Dictionary<string, int>(state.AttributeModifiers)
+                : new Dictionary<string, int>();
+            skillModifiers = state.SkillModifiers != null
+                ? new Dictionary<string, int>(state.SkillModifiers)
+                : new Dictionary<string, int>();
+            fatDamagePerTick = state.FatDamagePerTick ?? 0;
+            vitDamagePerTick = state.VitDamagePerTick ?? 0;
+            fatHealingPerTick = state.FatHealingPerTick ?? 0;
+            vitHealingPerTick = state.VitHealingPerTick ?? 0;
+
+            // Show advanced if any modifiers set
+            showAdvanced = asModifier != 0 ||
+                           attributeModifiers.Any() ||
+                           skillModifiers.Any() ||
+                           fatDamagePerTick > 0 ||
+                           vitDamagePerTick > 0 ||
+                           fatHealingPerTick > 0 ||
+                           vitHealingPerTick > 0;
+        }
+    }
+
+    private void ParseDurationFromSeconds(long seconds)
+    {
+        if (seconds >= 86400 && seconds % 86400 == 0)
+        {
+            durationType = "Days";
+            durationValue = (int)(seconds / 86400);
+        }
+        else if (seconds >= 3600 && seconds % 3600 == 0)
+        {
+            durationType = "Hours";
+            durationValue = (int)(seconds / 3600);
+        }
+        else if (seconds >= 60 && seconds % 60 == 0)
+        {
+            durationType = "Minutes";
+            durationValue = (int)(seconds / 60);
+        }
+        else if (seconds >= 600 && seconds % 600 == 0)
+        {
+            durationType = "Turns";
+            durationValue = (int)(seconds / 600);
+        }
+        else
+        {
+            // Default to rounds (3 seconds each)
+            durationType = "Rounds";
+            durationValue = (int)(seconds / 3);
+            if (durationValue < 1) durationValue = 1;
+        }
+    }
+
+    private long? GetDurationSeconds()
+    {
+        if (durationType == "Permanent")
+            return null;
+
+        return durationType switch
+        {
+            "Rounds" => durationValue * 3L,
+            "Turns" => durationValue * 600L, // 10 minutes = 600 seconds
+            "Minutes" => durationValue * 60L,
+            "Hours" => durationValue * 3600L,
+            "Days" => durationValue * 86400L,
+            _ => null
+        };
+    }
+
+    private void AddAttributeModifier()
+    {
+        if (!string.IsNullOrEmpty(newAttrName) && !attributeModifiers.ContainsKey(newAttrName))
+        {
+            attributeModifiers[newAttrName] = newAttrValue;
+            newAttrName = "";
+            newAttrValue = 1;
+        }
+    }
+
+    private void RemoveAttributeModifier(string name)
+    {
+        attributeModifiers.Remove(name);
+    }
+
+    private void AddSkillModifier()
+    {
+        if (!string.IsNullOrEmpty(newSkillName) && !skillModifiers.ContainsKey(newSkillName))
+        {
+            skillModifiers[newSkillName] = newSkillValue;
+            newSkillName = "";
+            newSkillValue = 1;
+        }
+    }
+
+    private void RemoveSkillModifier(string name)
+    {
+        skillModifiers.Remove(name);
+    }
+
+    private EffectState BuildEffectState()
+    {
+        var state = new EffectState
+        {
+            Description = string.IsNullOrWhiteSpace(description) ? null : description,
+            ASModifier = asModifier != 0 ? asModifier : null,
+            AttributeModifiers = attributeModifiers.Any() ? new Dictionary<string, int>(attributeModifiers) : null,
+            SkillModifiers = skillModifiers.Any() ? new Dictionary<string, int>(skillModifiers) : null,
+            FatDamagePerTick = fatDamagePerTick > 0 ? fatDamagePerTick : null,
+            VitDamagePerTick = vitDamagePerTick > 0 ? vitDamagePerTick : null,
+            FatHealingPerTick = fatHealingPerTick > 0 ? fatHealingPerTick : null,
+            VitHealingPerTick = vitHealingPerTick > 0 ? vitHealingPerTick : null
+        };
+
+        return state;
+    }
+
+    private async Task SaveEffect()
+    {
+        if (!IsFormValid) return;
+
+        isProcessing = true;
+        errorMessage = null;
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+            var state = BuildEffectState();
+            var durationSeconds = GetDurationSeconds();
+
+            if (ExistingEffect != null)
+            {
+                // Edit: Find and update existing effect
+                var effect = character.Effects.FirstOrDefault(e => e.Id == ExistingEffect.Id);
+                if (effect != null)
+                {
+                    effect.Name = effectName;
+                    effect.Description = description;
+                    effect.BehaviorState = state.Serialize();
+
+                    // Update duration
+                    if (durationSeconds.HasValue)
+                    {
+                        effect.CreatedAtEpochSeconds = character.CurrentGameTimeSeconds;
+                        effect.ExpiresAtEpochSeconds = character.CurrentGameTimeSeconds + durationSeconds.Value;
+                    }
+                    else
+                    {
+                        effect.ExpiresAtEpochSeconds = null;
+                    }
+                }
+            }
+            else
+            {
+                // Add: Create new effect with epoch-based expiration
+                var currentTime = character.CurrentGameTimeSeconds;
+                var effect = await effectPortal.CreateChildAsync(
+                    selectedEffectType,
+                    effectName,
+                    (string?)null, // location
+                    durationSeconds.HasValue ? (int?)(durationSeconds.Value / 3) : null, // rounds for legacy
+                    state.Serialize()
+                );
+
+                // Set epoch-based expiration
+                if (currentTime > 0)
+                {
+                    effect.CreatedAtEpochSeconds = currentTime;
+                    if (durationSeconds.HasValue)
+                    {
+                        effect.ExpiresAtEpochSeconds = currentTime + durationSeconds.Value;
+                    }
+                }
+
+                effect.Description = description;
+                effect.Source = "GM";
+                character.Effects.AddEffect(effect);
+            }
+
+            await characterPortal.UpdateAsync(character);
+
+            // Publish update
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = CharacterId,
+                UpdateType = ExistingEffect != null ? CharacterUpdateType.EffectAdded : CharacterUpdateType.EffectAdded,
+                CampaignId = TableId.ToString(),
+                SourceId = "GM",
+                Description = $"Effect {(ExistingEffect != null ? "updated" : "added")}: {effectName}"
+            });
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving effect: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    private async Task OpenTemplatePicker()
+    {
+        var result = await DialogService.OpenAsync<EffectTemplatePickerModal>(
+            "Select Effect Template",
+            null,
+            new DialogOptions { Width = "900px", Height = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result is EffectTemplate selectedTemplate)
+        {
+            ApplyTemplate(selectedTemplate);
+        }
+    }
+
+    private void ApplyTemplate(EffectTemplate template)
+    {
+        effectName = template.Name;
+        selectedEffectType = template.EffectType;
+        description = template.Description ?? "";
+
+        // Map DurationType enum to string
+        durationType = template.DurationType switch
+        {
+            DurationType.Rounds => "Rounds",
+            DurationType.Minutes => "Minutes",
+            DurationType.Hours => "Hours",
+            DurationType.Days => "Days",
+            DurationType.Weeks => "Days", // Map weeks to days (convert value)
+            DurationType.Permanent => "Permanent",
+            DurationType.UntilRemoved => "Permanent",
+            _ => "Rounds"
+        };
+
+        durationValue = template.DefaultDurationValue ?? 0;
+        if (template.DurationType == DurationType.Weeks)
+        {
+            durationValue *= 7; // Convert weeks to days
+        }
+
+        var state = template.State;
+        asModifier = state.ASModifier ?? 0;
+        fatDamagePerTick = state.FatDamagePerTick ?? 0;
+        vitDamagePerTick = state.VitDamagePerTick ?? 0;
+        fatHealingPerTick = state.FatHealingPerTick ?? 0;
+        vitHealingPerTick = state.VitHealingPerTick ?? 0;
+
+        // Clear and repopulate modifier dictionaries
+        attributeModifiers.Clear();
+        if (state.AttributeModifiers != null)
+        {
+            foreach (var mod in state.AttributeModifiers)
+                attributeModifiers[mod.Key] = mod.Value;
+        }
+
+        skillModifiers.Clear();
+        if (state.SkillModifiers != null)
+        {
+            foreach (var mod in state.SkillModifiers)
+                skillModifiers[mod.Key] = mod.Value;
+        }
+
+        // Show advanced section if any modifiers are set
+        showAdvanced = asModifier != 0 ||
+                       attributeModifiers.Any() ||
+                       skillModifiers.Any() ||
+                       fatDamagePerTick > 0 ||
+                       vitDamagePerTick > 0 ||
+                       fatHealingPerTick > 0 ||
+                       vitHealingPerTick > 0;
+
+        ShowFeedback($"Template '{template.Name}' applied", "alert-success", "bi-check-circle");
+        StateHasChanged();
+    }
+
+    private async Task SaveAsTemplate()
+    {
+        if (!IsFormValid) return;
+        isSavingTemplate = true;
+        feedbackMessage = null;
+
+        try
+        {
+            var state = BuildEffectState();
+
+            // Map string durationType back to enum
+            var durationTypeEnum = durationType switch
+            {
+                "Rounds" => DurationType.Rounds,
+                "Turns" => DurationType.Rounds, // Turns are just 60 rounds
+                "Minutes" => DurationType.Minutes,
+                "Hours" => DurationType.Hours,
+                "Days" => DurationType.Days,
+                "Permanent" => DurationType.Permanent,
+                _ => DurationType.Rounds
+            };
+
+            var durationVal = durationType == "Turns" ? durationValue * 60 : durationValue;
+
+            var templateDto = new EffectTemplateDto
+            {
+                Name = effectName,
+                EffectType = selectedEffectType,
+                Description = description,
+                DefaultDurationValue = durationVal,
+                DurationType = durationTypeEnum,
+                StateJson = state.Serialize(),
+                Tags = "",
+                IsSystem = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await EffectTemplateDal.SaveTemplateAsync(templateDto);
+            ShowFeedback("Template saved!", "alert-success", "bi-check-circle");
+        }
+        catch (Exception ex)
+        {
+            ShowFeedback($"Error saving template: {ex.Message}", "alert-danger", "bi-exclamation-triangle");
+        }
+        finally
+        {
+            isSavingTemplate = false;
+        }
+    }
+
+    private void ShowFeedback(string message, string alertClass, string icon)
+    {
+        feedbackMessage = message;
+        feedbackClass = alertClass;
+        feedbackIcon = icon;
+    }
+
+    private static string GetEffectTypeAlertClass(EffectType type) => type switch
+    {
+        EffectType.Buff => "alert-success",
+        EffectType.Debuff => "alert-danger",
+        EffectType.Condition => "alert-warning",
+        EffectType.Poison => "alert-dark",
+        EffectType.Disease => "alert-secondary",
+        EffectType.SpellEffect => "alert-info",
+        EffectType.ItemEffect => "alert-primary",
+        EffectType.Environmental => "alert-dark",
+        _ => "alert-secondary"
+    };
+
+    private static string GetEffectTypeButtonClass(EffectType type) => type switch
+    {
+        EffectType.Buff => "btn-success",
+        EffectType.Debuff => "btn-danger",
+        EffectType.Condition => "btn-warning",
+        EffectType.Poison => "btn-dark",
+        EffectType.Disease => "btn-secondary",
+        EffectType.SpellEffect => "btn-info",
+        EffectType.ItemEffect => "btn-primary",
+        EffectType.Environmental => "btn-dark",
+        _ => "btn-secondary"
+    };
+
+    private static string GetEffectTypeIcon(EffectType type) => type switch
+    {
+        EffectType.Buff => "bi-arrow-up-circle-fill",
+        EffectType.Debuff => "bi-arrow-down-circle-fill",
+        EffectType.Condition => "bi-exclamation-triangle-fill",
+        EffectType.Poison => "bi-droplet-fill",
+        EffectType.Disease => "bi-virus",
+        EffectType.SpellEffect => "bi-magic",
+        EffectType.ItemEffect => "bi-gem",
+        EffectType.Environmental => "bi-cloud-fill",
+        _ => "bi-stars"
+    };
+
+    private static string GetEffectTypeDescription(EffectType type) => type switch
+    {
+        EffectType.Buff => "Positive enhancement that improves character abilities or stats.",
+        EffectType.Debuff => "Negative hindrance that reduces character abilities or stats.",
+        EffectType.Condition => "Status effect like stunned, prone, frightened, etc.",
+        EffectType.Poison => "Toxic effect that deals damage over time.",
+        EffectType.Disease => "Illness that may progress and worsen over time.",
+        EffectType.SpellEffect => "Magical effect from spells, rituals, or supernatural sources.",
+        EffectType.ItemEffect => "Effect granted by equipment, implants, or magical items.",
+        EffectType.Environmental => "Effect from surroundings like weather, terrain, or magical zones.",
+        _ => "Custom effect."
+    };
+}

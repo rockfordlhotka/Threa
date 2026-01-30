@@ -350,6 +350,7 @@
                     LoadedAmmo = ammoState.LoadedAmmo,
                     Capacity = rangedProps?.Capacity ?? 0,
                     LoadedAmmoType = ammoState.LoadedAmmoType,
+                    AcceptedAmmoType = rangedProps?.AmmoType,
                     AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
                     IsDodgeable = rangedProps?.IsDodgeable ?? true,
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
@@ -582,8 +583,19 @@
             if (item.IsEquipped && rangedWeapons.Any(w => w.ItemId == item.Id))
                 continue;
 
-            // Check if this is ammunition
+            // Check if this is ammunition - try CustomProperties first, then fall back to ItemType
             var ammoProps = AmmunitionProperties.FromJson(item.Template?.CustomProperties);
+
+            // If no ammo props from CustomProperties but ItemType is Ammunition, 
+            // try to extract basic info for display
+            if (ammoProps == null && item.Template?.ItemType == ItemType.Ammunition)
+            {
+                // Item is marked as ammunition but doesn't have structured AmmunitionProperties
+                // This can happen with older data or imports that didn't set isAmmunition
+                // Try to parse just the ammoType from the JSON
+                ammoProps = TryParseBasicAmmoProperties(item.Template.CustomProperties);
+            }
+
             if (ammoProps != null)
             {
                 if (ammoProps.IsContainer)
@@ -618,6 +630,32 @@
                     });
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to parse basic ammo properties from JSON even if isAmmunition flag is not set.
+    /// Used as fallback for older data or imports.
+    /// </summary>
+    private AmmunitionProperties? TryParseBasicAmmoProperties(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            // Force parse without the IsAmmunition check
+            var props = System.Text.Json.JsonSerializer.Deserialize<AmmunitionProperties>(json);
+            if (props != null && !string.IsNullOrEmpty(props.AmmoType))
+            {
+                props.IsAmmunition = true; // Mark it as ammunition since we know ItemType says it is
+                return props;
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
         }
     }
 

@@ -9,7 +9,16 @@ public class CharacterStatusCardBase : ComponentBase
     [Parameter] public EventCallback<TableCharacterInfo> OnClick { get; set; }
     [Parameter] public bool IsSelected { get; set; }
 
-    protected string CardBorderClass => GetHealthStateClass();
+    // Cached values recalculated in OnParametersSet to ensure fresh renders
+    protected string CardBorderClass { get; private set; } = "border-success";
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        Console.WriteLine($"[CharacterStatusCard] OnParametersSet: {Character?.CharacterName} FAT={Character?.FatValue}/{Character?.FatMax}");
+        // Recalculate all display values when parameters change
+        CardBorderClass = GetHealthStateClass();
+    }
 
     /// <summary>
     /// Determines card border color based on health state:

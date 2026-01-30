@@ -54,6 +54,12 @@ public class RangedWeaponInfo
     public string? LoadedAmmoType { get; set; }
 
     /// <summary>
+    /// Ammo type the weapon accepts (from weapon properties).
+    /// Used for reload filtering.
+    /// </summary>
+    public string? AcceptedAmmoType { get; set; }
+
+    /// <summary>
     /// Damage modifier from special ammo.
     /// </summary>
     public int AmmoDamageModifier { get; set; }

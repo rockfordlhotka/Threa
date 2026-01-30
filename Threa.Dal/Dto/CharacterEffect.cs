@@ -123,6 +123,18 @@ public class CharacterEffect
     public string? CustomProperties { get; set; }
 
     /// <summary>
+    /// Links an active spell effect back to the concentration effect on the caster.
+    /// When concentration breaks, all effects with this SourceEffectId are removed.
+    /// </summary>
+    public Guid? SourceEffectId { get; set; }
+
+    /// <summary>
+    /// The character ID of the caster who is concentrating on this effect.
+    /// Used to find the caster when displaying effect information.
+    /// </summary>
+    public Guid? SourceCasterId { get; set; }
+
+    /// <summary>
     /// Reference to the effect definition (populated when loading).
     /// </summary>
     public EffectDefinition? Definition { get; set; }

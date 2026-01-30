@@ -1,3 +1,5 @@
+using GameMechanics.Effects.Behaviors;
+
 namespace GameMechanics.Combat
 {
   /// <summary>
@@ -33,10 +35,55 @@ namespace GameMechanics.Combat
 
     /// <summary>
     /// Calculates passive defense TV.
+    /// For concentrating defenders, a concentration check is performed after damage calculation.
     /// </summary>
     private DefenseResult ResolvePassive(DefenseRequest request)
     {
-      return DefenseResult.Passive(request.DodgeAS);
+      var result = DefenseResult.Passive(request.DodgeAS);
+
+      // Passive defense triggers concentration check AFTER damage is determined
+      // The caller sets DamageDealt and AttackerAV when calling this
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        // Perform concentration check: Focus AS + 4dF+ vs attacker AV
+        // Damage penalty: -1 per 2 damage dealt
+        var checkResult = request.Defender.CheckConcentration(
+          request.AttackerAV,
+          request.DamageDealt,
+          _diceRoller);
+
+        result.ConcentrationCheck = checkResult;
+        result.ConcentrationBroken = !checkResult.Success;
+
+        // Auto-break on incapacitation: if health pools would be depleted, break concentration
+        // This happens even if the concentration check succeeded
+        if (!result.ConcentrationBroken && ConcentrationBehavior.IsConcentrating(request.Defender))
+        {
+          CheckHealthDepletionBreak(request.Defender, result);
+        }
+      }
+
+      return result;
+    }
+
+    /// <summary>
+    /// Checks if the defender's health pools are depleted and breaks concentration if so.
+    /// Called after concentration check for passive defense.
+    /// </summary>
+    private static void CheckHealthDepletionBreak(CharacterEdit defender, DefenseResult result)
+    {
+      // Check current health pools
+      // Using current damage values - if FAT or VIT is already at/below 0 effective value
+      bool fatigueExhausted = defender.Fatigue.Value <= defender.Fatigue.PendingDamage;
+      bool vitalityExhausted = defender.Vitality.Value <= defender.Vitality.PendingDamage;
+
+      if (fatigueExhausted || vitalityExhausted)
+      {
+        ConcentrationBehavior.BreakConcentration(
+          defender,
+          "Incapacitated - concentration broken");
+        result.ConcentrationBroken = true;
+      }
     }
 
     /// <summary>
@@ -44,8 +91,20 @@ namespace GameMechanics.Combat
     /// </summary>
     private DefenseResult ResolveDodge(DefenseRequest request)
     {
+      // Active defense breaks concentration before the roll
+      bool concentrationBroken = false;
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        ConcentrationBehavior.BreakConcentration(
+          request.Defender,
+          "Chose active defense - concentration broken");
+        concentrationBroken = true;
+      }
+
       int roll = _diceRoller.Roll4dFPlus();
-      return DefenseResult.ActiveDodge(request.DodgeAS, roll);
+      var result = DefenseResult.ActiveDodge(request.DodgeAS, roll);
+      result.ConcentrationBroken = concentrationBroken;
+      return result;
     }
 
     /// <summary>
@@ -61,8 +120,20 @@ namespace GameMechanics.Combat
           "Cannot parry ranged attacks");
       }
 
+      // Active defense breaks concentration before the roll
+      bool concentrationBroken = false;
+      if (request.Defender != null && ConcentrationBehavior.IsConcentrating(request.Defender))
+      {
+        ConcentrationBehavior.BreakConcentration(
+          request.Defender,
+          "Chose active defense - concentration broken");
+        concentrationBroken = true;
+      }
+
       int roll = _diceRoller.Roll4dFPlus();
-      return DefenseResult.ActiveParry(request.ParryAS, roll, request.IsInParryMode);
+      var result = DefenseResult.ActiveParry(request.ParryAS, roll, request.IsInParryMode);
+      result.ConcentrationBroken = concentrationBroken;
+      return result;
     }
 
     /// <summary>

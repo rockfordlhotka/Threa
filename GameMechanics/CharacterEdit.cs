@@ -1,6 +1,7 @@
 ﻿using Csla;
 using Csla.Core;
 using Csla.Rules;
+using GameMechanics.Effects.Behaviors;
 using GameMechanics.Items;
 using GameMechanics.Reference;
 using System;
@@ -27,6 +28,14 @@ namespace GameMechanics
     private List<EquippedItemInfo>? _equippedItems;
 
     /// <summary>
+    /// Result from the last concentration effect that completed or was interrupted.
+    /// Used by UI/controller to handle deferred actions like magazine reload.
+    /// Cleared after processing.
+    /// </summary>
+    [NonSerialized]
+    private ConcentrationCompletionResult? _lastConcentrationResult;
+
+    /// <summary>
     /// Sets equipped items for bonus calculations. Call this after fetching character.
     /// </summary>
     /// <param name="items">Character items with templates populated.</param>
@@ -46,14 +55,41 @@ namespace GameMechanics
       _equippedItems = null;
     }
 
+    /// <summary>
+    /// Result from the last concentration effect that completed or was interrupted.
+    /// The UI/controller layer should read this after processing effect expiration/removal.
+    /// </summary>
+    public ConcentrationCompletionResult? LastConcentrationResult
+    {
+      get => _lastConcentrationResult;
+      set => _lastConcentrationResult = value;
+    }
+
+    /// <summary>
+    /// Clears the last concentration result after processing.
+    /// Call this after the UI/controller has handled the result.
+    /// </summary>
+    public void ClearConcentrationResult()
+    {
+      _lastConcentrationResult = null;
+    }
+
     protected override void OnChildChanged(ChildChangedEventArgs e)
     {
-      if (!IsBeingSaved && e.ChildObject is AttributeEdit)
+      if (!IsBeingSaved)
       {
-        BusinessRules.CheckRules(FatigueProperty);
-        BusinessRules.CheckRules(VitalityProperty);
-        OnPropertyChanged(FatigueProperty);
-        OnPropertyChanged(VitalityProperty);
+        if (e.ChildObject is AttributeEdit)
+        {
+          BusinessRules.CheckRules(FatigueProperty);
+          BusinessRules.CheckRules(VitalityProperty);
+          OnPropertyChanged(FatigueProperty);
+          OnPropertyChanged(VitalityProperty);
+        }
+        else if (e.ChildObject is SkillEdit)
+        {
+          BusinessRules.CheckRules(ActionPointsProperty);
+          OnPropertyChanged(ActionPointsProperty);
+        }
       }
     }
 
@@ -190,6 +226,113 @@ namespace GameMechanics
     {
       get => GetProperty(EffectsProperty);
       private set => LoadProperty(EffectsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the active concentration effect on this character, if any.
+    /// </summary>
+    /// <returns>The concentration effect, or null if not concentrating</returns>
+    public EffectRecord? GetConcentrationEffect()
+    {
+      foreach (var effect in Effects)
+      {
+        if (effect.EffectType == EffectType.Concentration)
+          return effect;
+      }
+      return null;
+    }
+
+    /// <summary>
+    /// Gets the type of concentration the character is performing.
+    /// </summary>
+    /// <returns>The concentration type (e.g., "MagazineReload", "SustainedSpell"), or null if not concentrating</returns>
+    public string? GetConcentrationType()
+    {
+      var effect = GetConcentrationEffect();
+      if (effect == null)
+        return null;
+
+      var state = ConcentrationState.FromJson(effect.BehaviorState);
+      return state?.ConcentrationType;
+    }
+
+    /// <summary>
+    /// Performs a concentration check against an attacker's AV.
+    /// Called when the character uses passive defense while concentrating.
+    /// </summary>
+    /// <param name="attackerAV">The attacker's Attack Value (target value for the check)</param>
+    /// <param name="damageDealt">Damage dealt by the attack (applies -1 per 2 damage penalty)</param>
+    /// <param name="diceRoller">Dice roller for testability</param>
+    /// <returns>Result of the concentration check</returns>
+    public ConcentrationCheckResult CheckConcentration(int attackerAV, int damageDealt, IDiceRoller diceRoller)
+    {
+      // Check if actually concentrating
+      if (GetConcentrationEffect() == null)
+      {
+        return new ConcentrationCheckResult
+        {
+          Success = true,  // Not concentrating, no check needed
+          Reason = "Not concentrating"
+        };
+      }
+
+      // Find Focus skill
+      var focusSkill = Skills.FirstOrDefault(s =>
+          s.Name.Equals("Focus", StringComparison.OrdinalIgnoreCase));
+
+      if (focusSkill == null)
+      {
+        // No Focus skill - automatic failure
+        ConcentrationBehavior.BreakConcentration(this, "No Focus skill - concentration broken");
+        return new ConcentrationCheckResult
+        {
+          Success = false,
+          Reason = "No Focus skill",
+          TV = attackerAV
+        };
+      }
+
+      // Calculate damage penalty: -1 per 2 damage dealt (round down)
+      int damagePenalty = -(damageDealt / 2);
+
+      // Calculate Focus AS (uses skill's AbilityScore property which includes attribute + bonus)
+      int focusAS = focusSkill.AbilityScore + damagePenalty;
+
+      // Roll 4dF+
+      int roll = diceRoller.Roll4dFPlus();
+
+      // Calculate result
+      int result = focusAS + roll;
+      bool success = result >= attackerAV;
+
+      // Break concentration if failed
+      if (!success)
+      {
+        string reason = $"Failed concentration check ({result} vs {attackerAV})";
+        ConcentrationBehavior.BreakConcentration(this, reason);
+      }
+
+      return new ConcentrationCheckResult
+      {
+        Success = success,
+        AS = focusAS,
+        Roll = roll,
+        Result = result,
+        TV = attackerAV,
+        DamagePenalty = damagePenalty,
+        Reason = success ? null : "Check failed"
+      };
+    }
+
+    /// <summary>
+    /// Performs a concentration check against an attacker's AV using default dice roller.
+    /// </summary>
+    /// <param name="attackerAV">The attacker's Attack Value (target value for the check)</param>
+    /// <param name="damageDealt">Damage dealt by the attack (applies -1 per 2 damage penalty)</param>
+    /// <returns>Result of the concentration check</returns>
+    public ConcentrationCheckResult CheckConcentration(int attackerAV, int damageDealt)
+    {
+      return CheckConcentration(attackerAV, damageDealt, new RandomDiceRoller());
     }
 
     public static readonly PropertyInfo<bool> IsPassedOutProperty = RegisterProperty<bool>(nameof(IsPassedOut));
@@ -450,12 +593,12 @@ namespace GameMechanics
     }
 
     /// <summary>
-    /// Processes end-of-round effects. Advances game time by 6 seconds (1 round).
+    /// Processes end-of-round effects. Advances game time by 3 seconds (1 round).
     /// </summary>
     public void EndOfRound(IChildDataPortal<EffectRecord>? effectPortal = null)
     {
-      // Advance game time by 1 round (6 seconds)
-      CurrentGameTimeSeconds += 6;
+      // Advance game time by 1 round (3 seconds)
+      CurrentGameTimeSeconds += 3;
 
       Fatigue.EndOfRound();
       Vitality.EndOfRound(effectPortal);
@@ -524,10 +667,12 @@ namespace GameMechanics
 
       // Process pending pools and AP recovery multiple times to simulate gradual healing
       // Cap at 100 iterations to avoid performance issues
-      int totalRoundsPassed = (int)(totalSecondsPassed / 6);  // Each round = 6 seconds
+      int totalRoundsPassed = (int)(totalSecondsPassed / 3);  // Each round = 3 seconds
       int iterations = Math.Min(totalRoundsPassed, 100);
       for (int i = 0; i < iterations; i++)
       {
+        // Tick effects first to apply wound damage and other periodic effects
+        Effects.EndOfRound(CurrentGameTimeSeconds);
         Fatigue.EndOfRound();
         Vitality.EndOfRound(effectPortal);
         ActionPoints.EndOfRound();
@@ -658,6 +803,7 @@ namespace GameMechanics
         nameof(Effects),
         nameof(IsPassedOut),
         nameof(IsBeingSaved),
+        nameof(LastConcentrationResult),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
         nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
@@ -835,7 +981,7 @@ namespace GameMechanics
       protected override void Execute(IRuleContext context)
       {
         var target = (CharacterEdit)context.Target;
-        
+
         // Only validate if character is not playable yet
         if (!target.IsPlayable)
         {
@@ -847,5 +993,46 @@ namespace GameMechanics
         }
       }
     }
+  }
+
+  /// <summary>
+  /// Result of a concentration check when defending passively while concentrating.
+  /// </summary>
+  public class ConcentrationCheckResult
+  {
+    /// <summary>
+    /// True if concentration was maintained, false if broken.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// The Ability Score used (Focus AS with damage penalty applied).
+    /// </summary>
+    public int AS { get; set; }
+
+    /// <summary>
+    /// The 4dF+ roll result.
+    /// </summary>
+    public int Roll { get; set; }
+
+    /// <summary>
+    /// The total result (AS + Roll).
+    /// </summary>
+    public int Result { get; set; }
+
+    /// <summary>
+    /// The Target Value (attacker's AV).
+    /// </summary>
+    public int TV { get; set; }
+
+    /// <summary>
+    /// The damage penalty applied (-1 per 2 damage).
+    /// </summary>
+    public int DamagePenalty { get; set; }
+
+    /// <summary>
+    /// Reason for failure (if Success is false).
+    /// </summary>
+    public string? Reason { get; set; }
   }
 }

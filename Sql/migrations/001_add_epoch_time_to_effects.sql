@@ -54,7 +54,7 @@ SET
     ce.CreatedAtEpochSeconds = 0,  -- Unknown creation time for existing effects
     ce.ExpiresAtEpochSeconds = CASE
         WHEN ce.RoundsRemaining IS NOT NULL
-        THEN ce.RoundsRemaining * 6  -- Convert rounds to seconds (6 sec per round)
+        THEN ce.RoundsRemaining * 3  -- Convert rounds to seconds (3 sec per round)
         ELSE NULL  -- Permanent effect
     END
 FROM dbo.CharacterEffect ce
