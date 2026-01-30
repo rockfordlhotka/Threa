@@ -10,7 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\GameMechanics\GameMechanics.csproj" />
     <ProjectReference Include="..\..\GameMechanics.Messaging.InMemory\GameMechanics.Messaging.InMemory.csproj" />
-    <ProjectReference Include="..\..\Threa.Dal.MockDb\Threa.Dal.MockDb.csproj" />
     <ProjectReference Include="..\..\Threa.Dal.SqlLite\Threa.Dal.Sqlite.csproj" />
     <ProjectReference Include="..\..\Threa.Dal\Threa.Dal.csproj" />
     <ProjectReference Include="..\Threa.Client\Threa.Client.csproj" />

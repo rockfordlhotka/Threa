@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GameMechanics.Effects;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Threa.Dal;
 using Threa.Dal.Dto;
-using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test
 {
     [TestClass]
-    public class EffectsSystemTests
+    public class EffectsSystemTests : TestBase
     {
         private IEffectDefinitionDal _definitionDal = null!;
         private ICharacterEffectDal _characterEffectDal = null!;
@@ -22,10 +22,11 @@ namespace GameMechanics.Test
         [TestInitialize]
         public void Setup()
         {
-            _definitionDal = new EffectDefinitionDal();
-            _itemDal = new CharacterItemDal();
-            _characterEffectDal = new CharacterEffectDal(_definitionDal);
-            _itemEffectDal = new ItemEffectDal(_definitionDal, _itemDal);
+            var provider = InitServices();
+            _definitionDal = provider.GetRequiredService<IEffectDefinitionDal>();
+            _itemDal = provider.GetRequiredService<ICharacterItemDal>();
+            _characterEffectDal = provider.GetRequiredService<ICharacterEffectDal>();
+            _itemEffectDal = provider.GetRequiredService<IItemEffectDal>();
             _calculator = new EffectCalculator();
         }
 

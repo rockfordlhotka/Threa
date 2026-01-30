@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
-using Threa.Dal.MockDb;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Test;
 
@@ -15,29 +15,52 @@ namespace GameMechanics.Test;
 /// Tests the last-admin protection rule.
 /// </summary>
 [TestClass]
-[DoNotParallelize]
-public class AdminUserEditTests
+public class AdminUserEditTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
-
     /// <summary>
     /// Wait for async validation rules to complete.
     /// CSLA runs async rules in background; we need to wait for them before checking IsSavable.
     /// </summary>
     private static async Task WaitForRulesAsync(AdminUserEdit user)
     {
-        // Give async rules time to execute and complete
-        // In CSLA 9, IsBusy indicates rules are still running
-        var timeout = DateTime.UtcNow.AddSeconds(5);
-        while (user.IsBusy && DateTime.UtcNow < timeout)
+        // Wait for the object to not be busy (async rules complete)
+        // Use a TaskCompletionSource to wait for BusyChanged event
+        if (!user.IsBusy)
         {
-            await Task.Delay(50);
+            // Trigger a small delay to allow any pending rules to start
+            await Task.Delay(100);
+        }
+
+        var tcs = new TaskCompletionSource<bool>();
+        var timeout = Task.Delay(5000);
+
+        void BusyChangedHandler(object? sender, Csla.Core.BusyChangedEventArgs e)
+        {
+            if (!e.Busy)
+            {
+                tcs.TrySetResult(true);
+            }
+        }
+
+        user.BusyChanged += BusyChangedHandler;
+        try
+        {
+            if (!user.IsBusy)
+            {
+                // Already not busy
+                return;
+            }
+
+            // Wait for either not busy or timeout
+            var completed = await Task.WhenAny(tcs.Task, timeout);
+            if (completed == timeout)
+            {
+                throw new TimeoutException("Timed out waiting for async rules to complete");
+            }
+        }
+        finally
+        {
+            user.BusyChanged -= BusyChangedHandler;
         }
     }
 
@@ -45,11 +68,10 @@ public class AdminUserEditTests
     public async Task DisableLastAdmin_ShouldFail()
     {
         // Arrange
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedPlayer = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "admin@test.com",
@@ -60,29 +82,45 @@ public class AdminUserEditTests
             Salt = "salt"
         });
 
+        // Verify the DAL count is correct
+        var dal = provider.GetRequiredService<IPlayerDal>();
+        var adminCount = await dal.CountEnabledAdminsAsync();
+        Assert.AreEqual(1, adminCount, "Should have exactly 1 enabled admin before test");
+
         // Act
-        var user = await portal.FetchAsync(0);
+        var user = await portal.FetchAsync(savedPlayer.Id);
+
+        // Check if the async rule will be triggered
+        bool wasBusyEver = false;
+        user.BusyChanged += (s, e) => { if (e.Busy) wasBusyEver = true; };
+
         user.IsEnabled = false;
+        bool isBusyAfterChange = user.IsBusy;
 
         // Wait for async rules to complete
         await WaitForRulesAsync(user);
 
+        // Debug: Was the object ever busy?
+        System.Diagnostics.Debug.WriteLine($"IsBusy after change: {isBusyAfterChange}, WasBusyEver: {wasBusyEver}");
+
+        // Debug output - check broken rules
+        var brokenRules = string.Join(", ", user.BrokenRulesCollection.Select(r => $"{r.Property}: {r.Description}"));
+
         // Assert
-        Assert.IsFalse(user.IsSavable, "Should not be savable when disabling last admin");
+        Assert.IsFalse(user.IsSavable, $"Should not be savable when disabling last admin. IsDirty={user.IsDirty}, IsValid={user.IsValid}, BrokenRules=[{brokenRules}]");
         Assert.IsTrue(user.BrokenRulesCollection.Any(r =>
             r.Description.Contains("at least one enabled administrator")),
-            "Should have broken rule about needing at least one admin");
+            $"Should have broken rule about needing at least one admin. BrokenRules=[{brokenRules}]");
     }
 
     [TestMethod]
     public async Task DemoteLastAdmin_ShouldFail()
     {
         // Arrange
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedPlayer = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "admin@test.com",
@@ -94,7 +132,7 @@ public class AdminUserEditTests
         });
 
         // Act
-        var user = await portal.FetchAsync(0);
+        var user = await portal.FetchAsync(savedPlayer.Id);
         user.IsAdministrator = false;
 
         // Wait for async rules to complete
@@ -111,11 +149,10 @@ public class AdminUserEditTests
     public async Task DisableNonLastAdmin_ShouldSucceed()
     {
         // Arrange
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedAdmin1 = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "admin1@test.com",
@@ -125,9 +162,9 @@ public class AdminUserEditTests
             HashedPassword = "test",
             Salt = "salt"
         });
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedAdmin2 = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "admin2@test.com",
             Name = "Admin 2",
             Roles = "Administrator",
@@ -137,7 +174,7 @@ public class AdminUserEditTests
         });
 
         // Act
-        var user = await portal.FetchAsync(0);
+        var user = await portal.FetchAsync(savedAdmin1.Id);
         user.IsEnabled = false;
 
         // Wait for async rules to complete
@@ -151,11 +188,10 @@ public class AdminUserEditTests
     public async Task DisableNonAdmin_ShouldAlwaysSucceed()
     {
         // Arrange
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedAdmin = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "admin@test.com",
@@ -165,9 +201,9 @@ public class AdminUserEditTests
             HashedPassword = "test",
             Salt = "salt"
         });
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedUser = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "user@test.com",
             Name = "User",
             Roles = "Player",
@@ -177,7 +213,7 @@ public class AdminUserEditTests
         });
 
         // Act
-        var user = await portal.FetchAsync(1); // Regular user
+        var user = await portal.FetchAsync(savedUser.Id); // Regular user
         user.IsEnabled = false;
 
         // Wait for async rules to complete
@@ -191,11 +227,10 @@ public class AdminUserEditTests
     public async Task DemoteNonLastAdmin_ShouldSucceed()
     {
         // Arrange
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedAdmin1 = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "admin1@test.com",
@@ -205,9 +240,9 @@ public class AdminUserEditTests
             HashedPassword = "test",
             Salt = "salt"
         });
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedAdmin2 = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "admin2@test.com",
             Name = "Admin 2",
             Roles = "Administrator",
@@ -217,7 +252,7 @@ public class AdminUserEditTests
         });
 
         // Act
-        var user = await portal.FetchAsync(0);
+        var user = await portal.FetchAsync(savedAdmin1.Id);
         user.IsAdministrator = false;
 
         // Wait for async rules to complete
@@ -231,11 +266,10 @@ public class AdminUserEditTests
     public async Task DisableDisabledAdmin_ShouldNotAffectCount()
     {
         // Arrange: One enabled admin, one disabled admin
-        var provider = InitServices();
+        var provider = InitServices(seedData: false);
         var portal = provider.GetRequiredService<IDataPortal<AdminUserEdit>>();
 
-        MockDb.Players.Clear();
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedEnabledAdmin = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
             Id = 0,
             Email = "enabledadmin@test.com",
@@ -245,9 +279,9 @@ public class AdminUserEditTests
             HashedPassword = "test",
             Salt = "salt"
         });
-        MockDb.Players.Add(new Threa.Dal.Dto.Player
+        var savedDisabledAdmin = await AddPlayerAsync(new Threa.Dal.Dto.Player
         {
-            Id = 1,
+            Id = 0,
             Email = "disabledadmin@test.com",
             Name = "Disabled Admin",
             Roles = "Administrator",
@@ -257,7 +291,7 @@ public class AdminUserEditTests
         });
 
         // Act: Try to disable the only enabled admin
-        var user = await portal.FetchAsync(0);
+        var user = await portal.FetchAsync(savedEnabledAdmin.Id);
         user.IsEnabled = false;
 
         // Wait for async rules to complete

@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameMechanics", "GameMechan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal", "Threa.Dal\Threa.Dal.csproj", "{E59AA6EB-44F4-49D1-8D60-842EF4C02F7F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Threa.Dal.MockDb", "Threa.Dal.MockDb\Threa.Dal.MockDb.csproj", "{AE860E62-2473-47BD-A9EE-0421DC0B5CB3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameMechanics.Test", "GameMechanics.Test\GameMechanics.Test.csproj", "{E3725288-3FAB-4A8B-B592-868B0AF8CD4B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8721FFF8-E211-450E-9FAE-F34C45052D62}"

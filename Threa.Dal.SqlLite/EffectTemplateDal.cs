@@ -212,6 +212,37 @@ public class EffectTemplateDal : IEffectTemplateDal
         await command.ExecuteNonQueryAsync();
     }
 
+    private async Task InsertTemplateWithIdAsync(EffectTemplateDto template)
+    {
+        var sql = @"
+            INSERT INTO EffectTemplates
+            (Id, Name, EffectType, Description, IconName, Color, DefaultDurationValue,
+             DurationType, StateJson, Tags, IsSystem, IsActive, CreatedAt, UpdatedAt)
+            VALUES
+            (@Id, @Name, @EffectType, @Description, @IconName, @Color, @DefaultDurationValue,
+             @DurationType, @StateJson, @Tags, @IsSystem, @IsActive, @CreatedAt, @UpdatedAt)
+        ";
+
+        using var command = Connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("@Id", template.Id);
+        command.Parameters.AddWithValue("@Name", template.Name);
+        command.Parameters.AddWithValue("@EffectType", (int)template.EffectType);
+        command.Parameters.AddWithValue("@Description", template.Description ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@IconName", template.IconName ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@Color", template.Color ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@DefaultDurationValue", template.DefaultDurationValue ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@DurationType", (int)template.DurationType);
+        command.Parameters.AddWithValue("@StateJson", template.StateJson ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@Tags", template.Tags ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@IsSystem", template.IsSystem ? 1 : 0);
+        command.Parameters.AddWithValue("@IsActive", template.IsActive ? 1 : 0);
+        command.Parameters.AddWithValue("@CreatedAt", template.CreatedAt.ToString("o"));
+        command.Parameters.AddWithValue("@UpdatedAt", template.UpdatedAt?.ToString("o") ?? (object)DBNull.Value);
+
+        await command.ExecuteNonQueryAsync();
+    }
+
     public async Task<List<EffectTemplateDto>> GetAllTemplatesAsync()
     {
         await InitializeTableAsync();
@@ -321,7 +352,7 @@ public class EffectTemplateDal : IEffectTemplateDal
 
         try
         {
-            if (template.Id == 0)
+            if (template.Id <= 0)
             {
                 // Insert
                 template.CreatedAt = DateTime.UtcNow;
@@ -337,43 +368,58 @@ public class EffectTemplateDal : IEffectTemplateDal
             }
             else
             {
-                // Update
-                template.UpdatedAt = DateTime.UtcNow;
+                // Check if exists
+                using var checkCommand = Connection.CreateCommand();
+                checkCommand.CommandText = "SELECT COUNT(*) FROM EffectTemplates WHERE Id = @Id";
+                checkCommand.Parameters.AddWithValue("@Id", template.Id);
+                var exists = (long)(await checkCommand.ExecuteScalarAsync() ?? 0) > 0;
 
-                var sql = @"
-                    UPDATE EffectTemplates SET
-                        Name = @Name,
-                        EffectType = @EffectType,
-                        Description = @Description,
-                        IconName = @IconName,
-                        Color = @Color,
-                        DefaultDurationValue = @DefaultDurationValue,
-                        DurationType = @DurationType,
-                        StateJson = @StateJson,
-                        Tags = @Tags,
-                        IsSystem = @IsSystem,
-                        IsActive = @IsActive,
-                        UpdatedAt = @UpdatedAt
-                    WHERE Id = @Id
-                ";
+                if (exists)
+                {
+                    // Update
+                    template.UpdatedAt = DateTime.UtcNow;
 
-                using var command = Connection.CreateCommand();
-                command.CommandText = sql;
-                command.Parameters.AddWithValue("@Id", template.Id);
-                command.Parameters.AddWithValue("@Name", template.Name);
-                command.Parameters.AddWithValue("@EffectType", (int)template.EffectType);
-                command.Parameters.AddWithValue("@Description", template.Description ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@IconName", template.IconName ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@Color", template.Color ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@DefaultDurationValue", template.DefaultDurationValue ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@DurationType", (int)template.DurationType);
-                command.Parameters.AddWithValue("@StateJson", template.StateJson ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@Tags", template.Tags ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@IsSystem", template.IsSystem ? 1 : 0);
-                command.Parameters.AddWithValue("@IsActive", template.IsActive ? 1 : 0);
-                command.Parameters.AddWithValue("@UpdatedAt", template.UpdatedAt?.ToString("o") ?? (object)DBNull.Value);
+                    var sql = @"
+                        UPDATE EffectTemplates SET
+                            Name = @Name,
+                            EffectType = @EffectType,
+                            Description = @Description,
+                            IconName = @IconName,
+                            Color = @Color,
+                            DefaultDurationValue = @DefaultDurationValue,
+                            DurationType = @DurationType,
+                            StateJson = @StateJson,
+                            Tags = @Tags,
+                            IsSystem = @IsSystem,
+                            IsActive = @IsActive,
+                            UpdatedAt = @UpdatedAt
+                        WHERE Id = @Id
+                    ";
 
-                await command.ExecuteNonQueryAsync();
+                    using var command = Connection.CreateCommand();
+                    command.CommandText = sql;
+                    command.Parameters.AddWithValue("@Id", template.Id);
+                    command.Parameters.AddWithValue("@Name", template.Name);
+                    command.Parameters.AddWithValue("@EffectType", (int)template.EffectType);
+                    command.Parameters.AddWithValue("@Description", template.Description ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@IconName", template.IconName ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Color", template.Color ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@DefaultDurationValue", template.DefaultDurationValue ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@DurationType", (int)template.DurationType);
+                    command.Parameters.AddWithValue("@StateJson", template.StateJson ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Tags", template.Tags ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@IsSystem", template.IsSystem ? 1 : 0);
+                    command.Parameters.AddWithValue("@IsActive", template.IsActive ? 1 : 0);
+                    command.Parameters.AddWithValue("@UpdatedAt", template.UpdatedAt?.ToString("o") ?? (object)DBNull.Value);
+
+                    await command.ExecuteNonQueryAsync();
+                }
+                else
+                {
+                    // Insert with explicit Id
+                    template.CreatedAt = DateTime.UtcNow;
+                    await InsertTemplateWithIdAsync(template);
+                }
             }
 
             return template;

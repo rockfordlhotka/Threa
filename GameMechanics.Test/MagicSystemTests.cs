@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using GameMechanics;
 using GameMechanics.Magic;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Threa.Dal;
 using Threa.Dal.Dto;
-using Threa.Dal.MockDb;
 
 namespace GameMechanics.Test;
 
@@ -12,17 +12,25 @@ namespace GameMechanics.Test;
 /// Tests for the magic and mana system.
 /// </summary>
 [TestClass]
-public class MagicSystemTests
+public class MagicSystemTests : TestBase
 {
+    private IManaDal _dal = null!;
+
+    [TestInitialize]
+    public void Setup()
+    {
+        var provider = InitServices(seedData: false);
+        _dal = provider.GetRequiredService<IManaDal>();
+    }
+
     #region Mana Pool Tests
 
     [TestMethod]
     public async Task GetManaPool_ReturnsNull_WhenPoolDoesNotExist()
     {
         // Arrange
-        var dal = new ManaDal();
         var diceRoller = new DeterministicDiceRoller();
-        var manager = new ManaManager(dal, diceRoller);
+        var manager = new ManaManager(_dal, diceRoller);
 
         // Act
         var pool = await manager.GetManaPoolAsync(999, MagicSchool.Fire);
@@ -35,7 +43,7 @@ public class MagicSystemTests
     public async Task EnsureManaPool_CreatesNewPool()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -57,7 +65,7 @@ public class MagicSystemTests
     public async Task HasSufficientMana_ReturnsFalse_WhenNoPool()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
 
@@ -72,7 +80,7 @@ public class MagicSystemTests
     public async Task HasSufficientMana_ReturnsTrue_WhenEnoughMana()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -91,7 +99,7 @@ public class MagicSystemTests
     public async Task HasSufficientMana_ReturnsFalse_WhenNotEnoughMana()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -114,7 +122,7 @@ public class MagicSystemTests
     public async Task SpendMana_ReducesManaPool()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -135,7 +143,7 @@ public class MagicSystemTests
     public async Task SpendMana_Fails_WhenInsufficientMana()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -156,7 +164,7 @@ public class MagicSystemTests
     public async Task SpendMana_Fails_WhenNoPool()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
 
@@ -176,7 +184,7 @@ public class MagicSystemTests
     public async Task AttemptManaRecovery_RecoversMana_OnSuccess()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         // Roll +4 on 4dF+ for a good success (AS 3 + Roll 4 = 7, TV 6, SV = 1)
         var diceRoller = DeterministicDiceRoller.WithFixed4dFPlus(4);
         var manager = new ManaManager(dal, diceRoller);
@@ -201,7 +209,7 @@ public class MagicSystemTests
     public async Task AttemptManaRecovery_Fails_WhenPoolFull()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -222,7 +230,7 @@ public class MagicSystemTests
     public async Task AttemptManaRecovery_UsesTV6_ByDefault()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -244,7 +252,7 @@ public class MagicSystemTests
     public async Task AttemptManaRecovery_RespectsMaxMana()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         // High roll for lots of recovery potential
         var diceRoller = DeterministicDiceRoller.WithFixed4dFPlus(8);
         var manager = new ManaManager(dal, diceRoller);
@@ -273,7 +281,7 @@ public class MagicSystemTests
     public async Task MultipleSchools_HaveSeparatePools()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;
@@ -296,7 +304,7 @@ public class MagicSystemTests
     public async Task GetAllManaPools_ReturnsAllSchools()
     {
         // Arrange
-        var dal = new ManaDal();
+        var dal = _dal;
         var diceRoller = new DeterministicDiceRoller();
         var manager = new ManaManager(dal, diceRoller);
         int characterId = 1;

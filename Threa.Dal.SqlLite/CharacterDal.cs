@@ -164,31 +164,46 @@ namespace Threa.Dal.Sqlite
             try
             {
                 string sql;
-                if (character.Id == 0)
-                {
-                    sql = "INSERT INTO Characters (PlayerId, Json) VALUES (@PlayerId, @Json)";
-                }
-                else
-                {
-                    sql = "UPDATE Characters SET PlayerId = @PlayerId, Json = @Json WHERE Id = @Id";
-                }
                 using var command = Connection.CreateCommand();
-                command.CommandText = sql;
-                command.Parameters.AddWithValue("@Id", character.Id);
-                command.Parameters.AddWithValue("@PlayerId", character.PlayerId);
-                command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(character));
-                await command.ExecuteNonQueryAsync();
 
-                if (character.Id == 0)
+                if (character.Id <= 0)
                 {
-                    sql = "SELECT last_insert_rowid()";
+                    // New character - insert
+                    sql = "INSERT INTO Characters (PlayerId, Json) VALUES (@PlayerId, @Json)";
+                    command.CommandText = sql;
+                    command.Parameters.AddWithValue("@PlayerId", character.PlayerId);
+                    command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(character));
+                    await command.ExecuteNonQueryAsync();
+
                     using var idCommand = Connection.CreateCommand();
-                    idCommand.CommandText = sql;
+                    idCommand.CommandText = "SELECT last_insert_rowid()";
                     long? lastInsertId = (long?)await idCommand.ExecuteScalarAsync();
                     if (lastInsertId.HasValue)
                     {
                         character.Id = (int)lastInsertId.Value;
                     }
+                }
+                else
+                {
+                    // Check if exists
+                    using var checkCommand = Connection.CreateCommand();
+                    checkCommand.CommandText = "SELECT COUNT(*) FROM Characters WHERE Id = @Id";
+                    checkCommand.Parameters.AddWithValue("@Id", character.Id);
+                    var exists = (long)(await checkCommand.ExecuteScalarAsync() ?? 0) > 0;
+
+                    if (exists)
+                    {
+                        sql = "UPDATE Characters SET PlayerId = @PlayerId, Json = @Json WHERE Id = @Id";
+                    }
+                    else
+                    {
+                        sql = "INSERT INTO Characters (Id, PlayerId, Json) VALUES (@Id, @PlayerId, @Json)";
+                    }
+                    command.CommandText = sql;
+                    command.Parameters.AddWithValue("@Id", character.Id);
+                    command.Parameters.AddWithValue("@PlayerId", character.PlayerId);
+                    command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(character));
+                    await command.ExecuteNonQueryAsync();
                 }
                 return character;
             }

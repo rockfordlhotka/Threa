@@ -12,15 +12,8 @@ using Threa.Dal.Dto;
 namespace GameMechanics.Test;
 
 [TestClass]
-public class ConcentrationBehaviorCastingTimeTests
+public class ConcentrationBehaviorCastingTimeTests : TestBase
 {
-    private ServiceProvider InitServices()
-    {
-        IServiceCollection services = new ServiceCollection();
-        services.AddCsla();
-        services.AddMockDb();
-        return services.BuildServiceProvider();
-    }
 
     #region OnTick Progress Tests
 
