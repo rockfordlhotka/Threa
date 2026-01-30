@@ -95,6 +95,17 @@ public class InMemoryTimeEventPublisher : ITimeEventPublisher
         return Task.CompletedTask;
     }
 
+    public Task PublishCharactersUpdatedAsync(CharactersUpdatedMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishCharactersUpdated(message);
+        _logger.LogDebug("Published CharactersUpdatedMessage: TableId={TableId}, CharacterCount={Count}, EventType={EventType}",
+            message.TableId, message.CharacterIds.Count, message.EventType);
+
+        return Task.CompletedTask;
+    }
+
     private void EnsureConnected()
     {
         if (_disposed)

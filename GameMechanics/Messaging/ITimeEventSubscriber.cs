@@ -41,6 +41,12 @@ public interface ITimeEventSubscriber : IAsyncDisposable
     event EventHandler<JoinRequestMessage>? JoinRequestReceived;
 
     /// <summary>
+    /// Event raised when characters have been updated after time processing.
+    /// Player clients should refresh their character state from the database.
+    /// </summary>
+    event EventHandler<CharactersUpdatedMessage>? CharactersUpdatedReceived;
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

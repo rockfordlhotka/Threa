@@ -656,11 +656,51 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.CombatStateReceived += OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived += OnTableUpdateReceived;
+        TimeEventSubscriber.CharactersUpdatedReceived += OnCharactersUpdatedReceived;
         timeEventSubscribed = true;
+    }
+
+    /// <summary>
+    /// Handles the authoritative notification that characters have been updated server-side.
+    /// Time processing is now done by TimeAdvancementService on the server.
+    /// Player clients just need to refresh their character state from the database.
+    /// </summary>
+    private void OnCharactersUpdatedReceived(object? sender, CharactersUpdatedMessage e)
+    {
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.TableId != table.Id) return;
+
+        // Check if our character is in the updated list
+        if (character == null || !e.CharacterIds.Contains(character.Id)) return;
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                // Reload character from database to get the updated state
+                int characterId = character.Id;
+                character = await characterPortal.FetchAsync(characterId);
+                await LoadEquippedItemsAsync();
+
+                // Also refresh table state
+                table = await tablePortal.FetchAsync(table.Id);
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error refreshing character: {ex.Message}";
+                StateHasChanged();
+            }
+        });
     }
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
     {
+        // NOTE: Time processing is now done server-side by TimeAdvancementService.
+        // This handler is kept for backward compatibility but the main updates
+        // come through CharactersUpdatedReceived.
+
         // Ignore events if component is disposed or not our table
         if (_disposed || table == null || e.CampaignId != table.Id.ToString()) return;
 
@@ -668,46 +708,10 @@ private async Task SelectCharacterAsync(int characterId)
         {
             try
             {
-                // ALWAYS refresh table state first to show updated time/rounds
+                // Just refresh the table state to show updated time/rounds
                 if (table != null)
                 {
                     table = await tablePortal.FetchAsync(table.Id);
-                }
-
-                // Process end-of-round effects on the character
-                if (character != null && e.EventType == GameMechanics.Time.TimeEventType.EndOfRound)
-                {
-                    // Reload character from database to get clean state
-                    // This prevents CSLA dirty state conflicts when character has unsaved changes
-                    int characterId = character.Id;
-                    character = await characterPortal.FetchAsync(characterId);
-                    await LoadEquippedItemsAsync();
-
-                    // Sync character's game time with table
-                    if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
-                    {
-                        character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
-                    }
-
-                    for (int i = 0; i < e.Count; i++)
-                    {
-                        character.EndOfRound(effectPortal);
-                    }
-
-                    // Save the updated character
-                    await characterPortal.UpdateAsync(character);
-
-                    // Notify other clients (GM page) that this character was updated
-                    await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-                    {
-                        CharacterId = character.Id,
-                        CampaignId = table?.Id.ToString() ?? "",
-                        UpdateType = CharacterUpdateType.Healing,
-                        Description = "End of round effects processed"
-                    });
-
-                    // Process any concentration results after effects tick/expire
-                    await ProcessConcentrationResult(character);
                 }
 
                 StateHasChanged();
@@ -722,90 +726,24 @@ private async Task SelectCharacterAsync(int characterId)
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
+        // NOTE: Time processing is now done server-side by TimeAdvancementService.
+        // This handler is kept for backward compatibility but the main updates
+        // come through CharactersUpdatedReceived.
+
+        // Ignore events if component is disposed or not our table
+        if (_disposed || table == null || e.CampaignId != table.Id.ToString())
+        {
+            return;
+        }
+
         _ = InvokeAsync(async () =>
         {
-            // Ignore events if component is disposed or not our table
-            if (_disposed || table == null || e.CampaignId != table.Id.ToString())
-            {
-                return;
-            }
-
-            // Check if another time skip is currently being processed - skip to prevent race conditions
-            if (_timeSkipSemaphore.CurrentCount == 0)
-            {
-                return;
-            }
-
-            // Wait for semaphore to ensure only one time skip is processed at a time
-            await _timeSkipSemaphore.WaitAsync();
             try
             {
-                // ALWAYS refresh table state first to show updated time
+                // Just refresh table state to show updated time
                 if (table != null)
                 {
                     table = await tablePortal.FetchAsync(table.Id);
-                }
-
-                // Process time skip effects on the character
-                if (character != null)
-                {
-                    // Reload character from database to get clean state
-                    // This prevents CSLA dirty state conflicts when character has unsaved changes
-                    int characterId = character.Id;
-                    character = await characterPortal.FetchAsync(characterId);
-                    await LoadEquippedItemsAsync();
-
-                    // Safety check: If pending values are corrupted (> 10000), reset them to prevent further corruption
-                    // This can happen from race conditions when multiple time skips were processed concurrently
-                    bool corrupted = false;
-                    if (character.Fatigue.PendingDamage > 10000 || character.Fatigue.PendingHealing > 10000)
-                    {
-                        character.Fatigue.PendingDamage = 0;
-                        character.Fatigue.PendingHealing = 0;
-                        corrupted = true;
-                    }
-                    if (character.Vitality.PendingDamage > 10000 || character.Vitality.PendingHealing > 10000)
-                    {
-                        character.Vitality.PendingDamage = 0;
-                        character.Vitality.PendingHealing = 0;
-                        corrupted = true;
-                    }
-
-                    // If corruption was detected, save the reset state immediately and skip further processing
-                    if (corrupted)
-                    {
-                        await characterPortal.UpdateAsync(character);
-                        StateHasChanged();
-                        return;
-                    }
-
-                    // Sync character's game time with table
-                    if (table != null && (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < table.CurrentTimeSeconds))
-                    {
-                        character.CurrentGameTimeSeconds = table.CurrentTimeSeconds;
-                    }
-
-                    // Use the new ProcessTimeSkip method which handles:
-                    // - Hourly VIT recovery (1 per hour if VIT > 0)
-                    // - VIT-level-dependent FAT recovery
-                    // - Epoch-based effect expiration (O(1) performance!)
-                    // - Pending pool flow
-                    character.ProcessTimeSkip(e.SkipUnit, e.Count, effectPortal);
-
-                    // Save the updated character
-                    await characterPortal.UpdateAsync(character);
-
-                    // Notify other clients (GM page) that this character was updated
-                    await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
-                    {
-                        CharacterId = character.Id,
-                        CampaignId = table?.Id.ToString() ?? "",
-                        UpdateType = CharacterUpdateType.Healing,
-                        Description = "Time skip effects processed"
-                    });
-
-                    // Process any concentration results after effects expire
-                    await ProcessConcentrationResult(character);
                 }
 
                 StateHasChanged();
@@ -814,10 +752,6 @@ private async Task SelectCharacterAsync(int characterId)
             {
                 errorMessage = $"Error processing time skip: {ex.Message}";
                 StateHasChanged();
-            }
-            finally
-            {
-                _timeSkipSemaphore.Release();
             }
         });
     }
@@ -907,6 +841,7 @@ private async Task SelectCharacterAsync(int characterId)
         TimeEventSubscriber.CombatStateReceived -= OnCombatStateReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
         TimeEventSubscriber.TableUpdateReceived -= OnTableUpdateReceived;
+        TimeEventSubscriber.CharactersUpdatedReceived -= OnCharactersUpdatedReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
     }

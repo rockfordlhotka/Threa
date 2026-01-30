@@ -30,6 +30,7 @@
 @inject ApplicationContext applicationContext
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject DialogService DialogService
+@inject TimeAdvancementService TimeAdvancementService
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -355,31 +356,25 @@ else
 
     private void OnTimeEventReceived(object? sender, TimeEventMessage e)
     {
+        // NOTE: Time processing is now done server-side by TimeAdvancementService.
+        // This handler is kept for any additional time event notifications but 
+        // character updates are handled via CharactersUpdatedReceived.
         Console.WriteLine($"[GmTable] OnTimeEventReceived: EventType={e.EventType}, CampaignId={e.CampaignId}, TableId={table?.Id}");
 
         // Ignore events if component is disposed or not our table
         if (_disposed || table == null || e.CampaignId != table.Id.ToString())
         {
-            Console.WriteLine($"[GmTable] OnTimeEventReceived: skipping (disposed={_disposed}, tableNull={table == null}, idMatch={e.CampaignId == table?.Id.ToString()})");
             return;
         }
 
-        Console.WriteLine("[GmTable] OnTimeEventReceived: scheduling delayed refresh");
-        // When time advances, schedule a refresh of character data after a delay
-        // to allow player clients to process their end-of-round effects first
-        // Players will also publish CharacterUpdateMessage which triggers a faster refresh
+        // Just update the table state (no delayed character refresh needed)
         _ = InvokeAsync(async () =>
         {
             try
             {
-                // Wait for players to process and save their character updates
-                Console.WriteLine("[GmTable] OnTimeEventReceived: waiting 1.5s for player updates");
-                await Task.Delay(1500);
-                Console.WriteLine("[GmTable] OnTimeEventReceived: delay complete, refreshing");
-                await RefreshCharacterListAsync();
-                Console.WriteLine("[GmTable] OnTimeEventReceived: calling StateHasChanged");
+                // Refresh table to show updated round/time
+                table = await tablePortal.FetchAsync(table.Id);
                 StateHasChanged();
-                Console.WriteLine("[GmTable] OnTimeEventReceived: StateHasChanged complete");
             }
             catch (Exception ex)
             {
@@ -390,29 +385,25 @@ else
 
     private void OnTimeSkipReceived(object? sender, TimeSkipMessage e)
     {
+        // NOTE: Time processing is now done server-side by TimeAdvancementService.
+        // This handler is kept for any additional time skip notifications but
+        // character updates are handled via CharactersUpdatedReceived.
         Console.WriteLine($"[GmTable] OnTimeSkipReceived: CampaignId={e.CampaignId}, TableId={table?.Id}, SkipUnit={e.SkipUnit}");
 
         // Ignore events if component is disposed or not our table
         if (_disposed || table == null || e.CampaignId != table.Id.ToString())
         {
-            Console.WriteLine("[GmTable] OnTimeSkipReceived: skipping (disposed or campaign mismatch)");
             return;
         }
 
-        Console.WriteLine("[GmTable] OnTimeSkipReceived: scheduling delayed refresh");
-        // When calendar time advances, schedule a refresh of character data after a delay
-        // to allow player clients to process their time skip effects first
-        // Players will also publish CharacterUpdateMessage which triggers a faster refresh
+        // Just update the table state (no delayed character refresh needed)
         _ = InvokeAsync(async () =>
         {
             try
             {
-                // Wait for players to process and save their character updates
-                Console.WriteLine("[GmTable] OnTimeSkipReceived: waiting 1.5s for player updates");
-                await Task.Delay(1500);
-                await RefreshCharacterListAsync();
+                // Refresh table to show updated time
+                table = await tablePortal.FetchAsync(table.Id);
                 StateHasChanged();
-                Console.WriteLine("[GmTable] OnTimeSkipReceived: refresh complete");
             }
             catch (Exception ex)
             {
@@ -656,19 +647,28 @@ else
         await SaveTable();
         AddLogEntry($"Advanced to round {table.CurrentRound}", ActivityCategory.Time);
 
-        // Publish time event so players can process end-of-round effects
-        await TimeEventPublisher.PublishTimeEventAsync(new TimeEventMessage
-        {
-            EventType = GameMechanics.Time.TimeEventType.EndOfRound,
-            Count = 1,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            Reason = $"Advanced to round {table.CurrentRound}"
-        });
+        // Process time advancement for all characters at the table
+        // The TimeAdvancementService handles:
+        // 1. Loading all characters attached to the table
+        // 2. Processing end-of-round effects on each character
+        // 3. Saving each character
+        // 4. Publishing a notification so player clients can refresh their displays
+        var result = await TimeAdvancementService.AdvanceRoundsAsync(
+            table.Id, 
+            roundCount: 1, 
+            currentTableTimeSeconds: table.CurrentTimeSeconds);
 
-        // Schedule multiple refreshes to catch player updates as they process end-of-round
-        // This ensures GM dashboard stays updated even if message-based notifications are missed
-        _ = ScheduleDelayedRefreshesAsync();
+        if (!result.Success)
+        {
+            foreach (var error in result.Errors)
+            {
+                AddLogEntry($"Error: {error}", ActivityCategory.General);
+            }
+        }
+
+        // Refresh character list to show updated state
+        await RefreshCharacterListAsync();
+        StateHasChanged();
     }
 
     private async Task EnterCombat()
@@ -724,42 +724,41 @@ else
 
         AddLogEntry($"Advanced time by {timeDescription}", ActivityCategory.Time);
 
-        // Publish time skip event so players can process time-based effects
-        await TimeEventPublisher.PublishTimeSkipAsync(new TimeSkipMessage
-        {
-            SkipUnit = timeEventType,
-            Count = count,
-            CampaignId = table.Id.ToString(),
-            SourceId = "GM",
-            NarrativeDescription = $"GM advanced time by {timeDescription}"
-        });
+        // Process time advancement for all characters at the table
+        // The TimeAdvancementService handles:
+        // 1. Loading all characters attached to the table
+        // 2. Processing time skip effects on each character (recovery, effect expiration)
+        // 3. Saving each character
+        // 4. Publishing a notification so player clients can refresh their displays
+        var result = await TimeAdvancementService.ProcessTimeSkipAsync(
+            table.Id,
+            timeEventType,
+            count,
+            currentTableTimeSeconds: table.CurrentTimeSeconds);
 
-        // Schedule multiple refreshes to catch player updates as they process the time skip
-        // This ensures GM dashboard stays updated even if message-based notifications are missed
-        _ = ScheduleDelayedRefreshesAsync();
+        if (!result.Success)
+        {
+            foreach (var error in result.Errors)
+            {
+                AddLogEntry($"Error: {error}", ActivityCategory.General);
+            }
+        }
+
+        // Refresh character list to show updated state
+        await RefreshCharacterListAsync();
+        StateHasChanged();
     }
 
     /// <summary>
     /// Schedules multiple delayed refreshes to catch character updates from players.
     /// This is a fallback mechanism in case CharacterUpdateReceived messages are missed.
+    /// NOTE: This method is deprecated - time processing is now server-side in TimeAdvancementService.
     /// </summary>
+    [Obsolete("Time processing is now server-side. This method is no longer needed.")]
     private async Task ScheduleDelayedRefreshesAsync()
     {
-        try
-        {
-            // Refresh multiple times over 5 seconds to catch player updates
-            for (int i = 0; i < 3; i++)
-            {
-                await Task.Delay(1500);
-                if (_disposed) return;
-                await RefreshCharacterListAsync();
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[GmTable] ScheduleDelayedRefreshesAsync error: {ex.Message}");
-        }
+        // No-op: time processing is now done server-side by TimeAdvancementService
+        await Task.CompletedTask;
     }
 
     private void SendAnnouncement()

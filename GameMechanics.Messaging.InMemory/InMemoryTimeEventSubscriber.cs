@@ -16,6 +16,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     private IDisposable? _characterUpdateSubscription;
     private IDisposable? _tableUpdateSubscription;
     private IDisposable? _joinRequestSubscription;
+    private IDisposable? _charactersUpdatedSubscription;
 
     private bool _connected;
     private bool _subscribed;
@@ -35,6 +36,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     public event EventHandler<CharacterUpdateMessage>? CharacterUpdateReceived;
     public event EventHandler<TableUpdateMessage>? TableUpdateReceived;
     public event EventHandler<JoinRequestMessage>? JoinRequestReceived;
+    public event EventHandler<CharactersUpdatedMessage>? CharactersUpdatedReceived;
 
     public bool IsConnected => _connected && !_disposed;
     public bool IsSubscribed => _subscribed && !_disposed;
@@ -98,6 +100,13 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
             JoinRequestReceived?.Invoke(this, msg);
         });
 
+        _charactersUpdatedSubscription = _bus.CharactersUpdated.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received CharactersUpdatedMessage: TableId={TableId}, CharacterCount={Count}, EventType={EventType}",
+                msg.TableId, msg.CharacterIds.Count, msg.EventType);
+            CharactersUpdatedReceived?.Invoke(this, msg);
+        });
+
         _subscribed = true;
         _logger.LogInformation("Subscribed to in-memory time events");
 
@@ -114,6 +123,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
         _characterUpdateSubscription?.Dispose();
         _tableUpdateSubscription?.Dispose();
         _joinRequestSubscription?.Dispose();
+        _charactersUpdatedSubscription?.Dispose();
 
         _timeEventSubscription = null;
         _timeSkipSubscription = null;
@@ -121,6 +131,7 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
         _characterUpdateSubscription = null;
         _tableUpdateSubscription = null;
         _joinRequestSubscription = null;
+        _charactersUpdatedSubscription = null;
 
         _subscribed = false;
         _logger.LogInformation("Unsubscribed from in-memory time events");
