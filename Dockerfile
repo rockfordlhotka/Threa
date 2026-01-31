@@ -7,8 +7,8 @@ COPY Threa.sln ./
 COPY GameMechanics/GameMechanics.csproj GameMechanics/
 COPY GameMechanics.Messaging.InMemory/GameMechanics.Messaging.InMemory.csproj GameMechanics.Messaging.InMemory/
 COPY Threa.Dal/Threa.Dal.csproj Threa.Dal/
-COPY Threa.Dal.MockDb/Threa.Dal.MockDb.csproj Threa.Dal.MockDb/
-COPY Threa.Dal.Sqlite/Threa.Dal.Sqlite.csproj Threa.Dal.Sqlite/
+COPY Threa.Dal.SqlLite/Threa.Dal.Sqlite.csproj Threa.Dal.SqlLite/
+COPY Threa.Admin/Threa.Admin.csproj Threa.Admin/
 COPY Threa/Threa/Threa.csproj Threa/Threa/
 COPY Threa/Threa.Client/Threa.Client.csproj Threa/Threa.Client/
 
