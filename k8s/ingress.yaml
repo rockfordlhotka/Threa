@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: threa
+  namespace: threa
+  annotations:
+    tailscale.com/hostname: threa
+    tailscale.com/funnel: "true"
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: threa
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - threa

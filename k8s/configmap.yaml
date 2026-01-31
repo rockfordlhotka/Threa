@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: threa-config
+  namespace: threa
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: threa
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8080
+  CONNECTIONSTRINGS__SQLITE: /app/data/threa.db
