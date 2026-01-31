@@ -11,9 +11,6 @@
 @using Threa.Services
 @using Threa.Client.Components.Shared
 
-@* Suppress warnings for using legacy round-based properties for UI display *@
-#pragma warning disable CS0618
-
 @inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
@@ -386,7 +383,7 @@ else if (character == null)
         }
         else if (activeTab == "Combat")
         {
-            <TabCombat Character="character" Table="table" />
+            <TabCombat Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
         else if (activeTab == "Skills")
         {

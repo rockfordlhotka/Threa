@@ -319,6 +319,14 @@ public class TimeAdvancementService
                         return result.Message;
                     }
                     break;
+
+                case "MedicalHealing":
+                    if (result.Success)
+                    {
+                        await ExecuteMedicalHealingAsync(result.Payload);
+                        return result.Message;
+                    }
+                    break;
             }
 
             // Clear the result after processing
@@ -501,5 +509,54 @@ public class TimeAdvancementService
             // If no matching template found, the rounds are lost - this shouldn't happen
             // if the ammo type is properly set up
         }
+    }
+
+    /// <summary>
+    /// Executes the medical healing by applying FAT/VIT healing to the target character.
+    /// Healing amount is determined by the SV stored in the payload.
+    /// </summary>
+    private async Task ExecuteMedicalHealingAsync(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = MedicalHealingPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        // Get healing amount from result tables based on stored SV
+        var healingResult = GameMechanics.Actions.ResultTables.GetResult(
+            payload.SuccessValue,
+            ResultTableType.Healing);
+
+        if (!healingResult.IsSuccess || healingResult.EffectValue <= 0)
+        {
+            // Failed check - no healing to apply
+            return;
+        }
+
+        int healingAmount = healingResult.EffectValue;
+
+        // Load the target character
+        var targetCharacter = await _characterPortal.FetchAsync(payload.TargetCharacterId);
+        if (targetCharacter == null) return;
+
+        // Apply healing to both FAT and VIT pools (player chooses how to distribute later,
+        // but for now we apply evenly - prioritize FAT first since it's typically depleted first)
+        int fatHealing = Math.Min(healingAmount,
+            targetCharacter.Fatigue.BaseValue - targetCharacter.Fatigue.Value);
+        int vitHealing = Math.Min(healingAmount,
+            targetCharacter.Vitality.BaseValue - targetCharacter.Vitality.Value);
+
+        // Add to pending healing - will be applied at end of round
+        if (fatHealing > 0)
+        {
+            targetCharacter.Fatigue.PendingHealing += fatHealing;
+        }
+        if (vitHealing > 0)
+        {
+            targetCharacter.Vitality.PendingHealing += vitHealing;
+        }
+
+        // Save the target character
+        await _characterPortal.UpdateAsync(targetCharacter);
     }
 }

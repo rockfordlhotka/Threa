@@ -106,6 +106,15 @@
                         <small class="opacity-75">Passive always available</small>
                     </button>
 
+                    <!-- Medical Button -->
+                    <button class="btn btn-lg btn-outline-success py-3"
+                            @onclick="StartMedical"
+                            disabled="@(!CanAct())">
+                        <i class="bi bi-heart-pulse fs-4"></i>
+                        <div class="fw-bold">MEDICAL</div>
+                        <small class="opacity-75">First-Aid, Nursing, Doctor</small>
+                    </button>
+
                     <!-- Rest Card -->
                     <div class="card">
                         <div class="card-body text-center">
@@ -226,6 +235,14 @@
                     OnCancel="ReturnToDefault"
                     OnReloadComplete="OnReloadComplete" />
     }
+    else if (combatMode == CombatMode.Medical)
+    {
+        <MedicalMode Character="Character"
+                     Table="Table"
+                     OnCancel="ReturnToDefault"
+                     OnMedicalComplete="OnMedicalComplete"
+                     OnCharacterChanged="OnCharacterChanged" />
+    }
 </div>
 
 @code {
@@ -235,7 +252,10 @@
     [Parameter]
     public GameMechanics.GamePlay.TableEdit? Table { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload }
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Medical }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -569,6 +589,16 @@
         combatMode = CombatMode.Reload;
     }
 
+    private void StartMedical()
+    {
+        // Medical treatment ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        combatMode = CombatMode.Medical;
+    }
+
     private async Task LoadAvailableAmmoSources()
     {
         availableAmmoSources = new List<AmmoSourceInfo>();
@@ -793,6 +823,20 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnMedicalComplete(MedicalCompleteData data)
+    {
+        LogActivity(data.Message, ActivityCategory.Health);
+        combatMode = CombatMode.Default;
+
+        // Notify parent to refresh character display (AP, FAT changes)
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
     private void StartTakeDamage()
     {
         // For non-combat damage (falls, spells, etc.)
@@ -830,6 +874,13 @@
         {
             await savable.SaveAsync();
         }
+
+        // Notify parent to refresh character display
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+
         StateHasChanged();
     }
 

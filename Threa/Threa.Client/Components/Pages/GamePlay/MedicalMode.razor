@@ -1,0 +1,646 @@
+@using GameMechanics.Actions
+@using GameMechanics.Effects.Behaviors
+@using Threa.Dal.Dto
+@using Threa.Client.Components.Shared
+
+@inject Radzen.DialogService DialogService
+@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
+
+<div class="medical-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-heart-pulse text-success"></i> Medical Treatment</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (!hasRolled)
+    {
+        <!-- Medical Setup -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Skill Selection -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Select Medical Skill</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            @foreach (var skillOption in GetAvailableMedicalSkills())
+                            {
+                                <button class="list-group-item list-group-item-action @(selectedSkillType == skillOption.Type ? "active" : "")"
+                                        @onclick="() => SelectSkill(skillOption.Type)"
+                                        disabled="@(!skillOption.IsAvailable)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@skillOption.Name</strong>
+                                            <div class="small @(selectedSkillType == skillOption.Type ? "" : "text-muted")">
+                                                @skillOption.Attribute skill - @skillOption.ConcentrationRounds round@(skillOption.ConcentrationRounds > 1 ? "s" : "") to complete
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge @(skillOption.IsAvailable ? "bg-primary" : "bg-secondary")">
+                                                AS @skillOption.AbilityScore
+                                            </span>
+                                            @if (!skillOption.IsAvailable)
+                                            {
+                                                <div class="small text-danger">@skillOption.DisabledReason</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (selectedSkillType.HasValue)
+                {
+                    <!-- Target Selection -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>2. Select Target</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                @* Self target *@
+                                <button class="list-group-item list-group-item-action @(targetType == TargetType.Self ? "active" : "")"
+                                        @onclick="() => SelectTarget(TargetType.Self)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@Character?.Name (Self)</strong>
+                                            <div class="small @(targetType == TargetType.Self ? "" : "text-muted")">
+                                                FAT: @Character?.Fatigue.Value/@Character?.Fatigue.BaseValue |
+                                                VIT: @Character?.Vitality.Value/@Character?.Vitality.BaseValue
+                                            </div>
+                                        </div>
+                                        @if (targetType == TargetType.Self)
+                                        {
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        }
+                                    </div>
+                                </button>
+                                @* No target (NPC/Other) - just rolls and reports SV *@
+                                <button class="list-group-item list-group-item-action @(targetType == TargetType.Other ? "active" : "")"
+                                        @onclick="() => SelectTarget(TargetType.Other)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>Other (NPC/External)</strong>
+                                            <div class="small @(targetType == TargetType.Other ? "" : "text-muted")">
+                                                Roll only - GM applies healing result
+                                            </div>
+                                        </div>
+                                        @if (targetType == TargetType.Other)
+                                        {
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        }
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Cost -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>3. Action Cost</strong>
+                        </div>
+                        <div class="card-body">
+                            <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                                Fat="@(Character?.Fatigue.Value ?? 0)"
+                                                OnCostTypeSelected="OnCostTypeChanged" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-md-6">
+                <!-- Medical Summary -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <strong><i class="bi bi-info-circle"></i> Treatment Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (selectedSkillType.HasValue && targetType != TargetType.None)
+                        {
+                            var skillInfo = GetSkillInfo(selectedSkillType.Value);
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td>Skill:</td>
+                                        <td class="fw-bold">@skillInfo.Name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ability Score:</td>
+                                        <td class="fw-bold">@skillInfo.AbilityScore</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target Value:</td>
+                                        <td class="fw-bold">@MedicalResolver.MedicalTV</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Patient:</td>
+                                        <td class="fw-bold">@(targetType == TargetType.Self ? Character?.Name : "Other (NPC/External)")</td>
+                                    </tr>
+                                    @if (targetType == TargetType.Self)
+                                    {
+                                        <tr>
+                                            <td>Concentration:</td>
+                                            <td class="fw-bold">@skillInfo.ConcentrationRounds round@(skillInfo.ConcentrationRounds > 1 ? "s" : "")</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cost:</td>
+                                        <td>@GetCostDisplay()</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            @if (targetType == TargetType.Self)
+                            {
+                                <div class="alert alert-info mt-3 mb-0 py-2">
+                                    <small>
+                                        <i class="bi bi-lightbulb"></i>
+                                        Roll the skill check now. If successful, concentration begins.
+                                        Healing applies when concentration completes.
+                                        If interrupted, treatment fails.
+                                    </small>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mt-3 mb-0 py-2">
+                                    <small>
+                                        <i class="bi bi-info-circle"></i>
+                                        Roll the skill check to determine healing amount.
+                                        The GM will apply healing to the target.
+                                    </small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Select a skill and target to see treatment details.</p>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-success btn-lg w-100"
+                                @onclick="RollCheck"
+                                disabled="@(!CanRoll())">
+                            <i class="bi bi-dice-5"></i> Roll Check
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resource Summary -->
+                <div class="card mt-3">
+                    <div class="card-body py-2">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted">AP</small>
+                                <div class="fw-bold @(Character?.ActionPoints.Available <= 0 ? "text-danger" : "")">
+                                    @Character?.ActionPoints.Available / @Character?.ActionPoints.Max
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">FAT</small>
+                                <div class="fw-bold @(Character?.Fatigue.Value <= 0 ? "text-danger" : "")">
+                                    @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">VIT</small>
+                                <div class="fw-bold">
+                                    @Character?.Vitality.Value / @Character?.Vitality.BaseValue
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Roll Result -->
+        <div class="card">
+            <div class="card-header @(checkResult?.Success == true ? "bg-success" : "bg-danger") text-white">
+                <strong><i class="bi @(checkResult?.Success == true ? "bi-check-circle" : "bi-x-circle")"></i>
+                    @if (checkResult?.Success == true)
+                    {
+                        @(targetType == TargetType.Self ? "Treatment Started!" : "Roll Complete!")
+                    }
+                    else
+                    {
+                        <text>Treatment Failed</text>
+                    }
+                </strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Skill:</td>
+                            <td class="fw-bold">@MedicalResolver.GetSkillDisplayName(selectedSkillType!.Value)</td>
+                        </tr>
+                        <tr>
+                            <td>Ability Score:</td>
+                            <td class="fw-bold">@checkResult?.AbilityScore</td>
+                        </tr>
+                        <tr>
+                            <td>Dice Roll:</td>
+                            <td class="fw-bold @(checkResult?.DiceRoll >= 0 ? "text-success" : "text-danger")">
+                                @(checkResult?.DiceRoll >= 0 ? "+" : "")@checkResult?.DiceRoll
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total Roll:</td>
+                            <td class="fw-bold">@checkResult?.TotalRoll</td>
+                        </tr>
+                        <tr>
+                            <td>Target Value:</td>
+                            <td class="fw-bold">@MedicalResolver.MedicalTV</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr class="my-1" /></td>
+                        </tr>
+                        <tr>
+                            <td>Success Value:</td>
+                            <td class="fw-bold @(checkResult?.Success == true ? "text-success" : "text-danger")">
+                                @checkResult?.SuccessValue
+                            </td>
+                        </tr>
+                        @if (checkResult?.Success == true)
+                        {
+                            <tr>
+                                <td>Healing Amount:</td>
+                                <td class="fw-bold text-success">@checkResult?.HealingAmount FAT/VIT</td>
+                            </tr>
+                            <tr>
+                                <td>Treatment Time:</td>
+                                <td class="fw-bold">@checkResult?.ConcentrationRounds rounds</td>
+                            </tr>
+                            @if (targetType == TargetType.Other)
+                            {
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="alert alert-info py-2 mb-0 mt-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            GM: Apply @checkResult?.HealingAmount healing to target after @checkResult?.ConcentrationRounds rounds
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="2">
+                                    <div class="alert alert-danger py-2 mb-0 mt-2">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        @checkResult?.ResultDescription
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                @if (checkResult?.Success == true)
+                {
+                    <button class="btn btn-success" @onclick="StartConcentration">
+                        @if (targetType == TargetType.Self)
+                        {
+                            <i class="bi bi-play-circle"></i> <text>Begin Treatment</text>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-lg"></i> <text>Done</text>
+                        }
+                    </button>
+                }
+                <button class="btn btn-outline-secondary" @onclick="Reset">
+                    <i class="bi bi-arrow-counterclockwise"></i> @(checkResult?.Success == true ? "Cancel" : "Try Again")
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<MedicalCompleteData> OnMedicalComplete { get; set; }
+
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
+    // Target type enum
+    private enum TargetType { None, Self, Other }
+
+    // Selection state
+    private MedicalSkillType? selectedSkillType;
+    private TargetType targetType = TargetType.None;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+
+    // Roll state
+    private bool hasRolled;
+    private MedicalCheckResult? checkResult;
+
+    private void SelectSkill(MedicalSkillType type)
+    {
+        selectedSkillType = type;
+    }
+
+    private void SelectTarget(TargetType type)
+    {
+        targetType = type;
+    }
+
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+    }
+
+    private record MedicalSkillOption(
+        MedicalSkillType Type,
+        string Name,
+        string Attribute,
+        int AbilityScore,
+        int ConcentrationRounds,
+        bool IsAvailable,
+        string? DisabledReason);
+
+    private IEnumerable<MedicalSkillOption> GetAvailableMedicalSkills()
+    {
+        if (Character == null)
+            yield break;
+
+        // First-Aid uses WIL
+        var wilAttr = Character.AttributeList.FirstOrDefault(a => a.Name == "WIL");
+        var firstAidSkill = FindSkill("First-Aid", "First Aid", "FirstAid");
+        int firstAidAS = CalculateAS(wilAttr?.Value ?? 10, firstAidSkill?.Level ?? 0);
+
+        yield return new MedicalSkillOption(
+            MedicalSkillType.FirstAid,
+            "First-Aid",
+            "WIL",
+            firstAidAS,
+            2,
+            true,
+            null);
+
+        // Nursing uses INT
+        var intAttr = Character.AttributeList.FirstOrDefault(a => a.Name == "INT");
+        var nursingSkill = FindSkill("Nursing");
+        int nursingAS = CalculateAS(intAttr?.Value ?? 10, nursingSkill?.Level ?? 0);
+        bool hasNursing = nursingSkill != null && nursingSkill.Level > 0;
+
+        yield return new MedicalSkillOption(
+            MedicalSkillType.Nursing,
+            "Nursing",
+            "INT",
+            nursingAS,
+            3,
+            hasNursing,
+            hasNursing ? null : "Requires Nursing skill");
+
+        // Doctor uses INT
+        var doctorSkill = FindSkill("Doctor");
+        int doctorAS = CalculateAS(intAttr?.Value ?? 10, doctorSkill?.Level ?? 0);
+        bool hasDoctor = doctorSkill != null && doctorSkill.Level > 0;
+
+        yield return new MedicalSkillOption(
+            MedicalSkillType.Doctor,
+            "Doctor",
+            "INT",
+            doctorAS,
+            4,
+            hasDoctor,
+            hasDoctor ? null : "Requires Doctor skill");
+    }
+
+    /// <summary>
+    /// Find a skill by checking multiple possible name variations.
+    /// </summary>
+    private GameMechanics.SkillEdit? FindSkill(params string[] possibleNames)
+    {
+        if (Character == null) return null;
+
+        foreach (var name in possibleNames)
+        {
+            var skill = Character.Skills.FirstOrDefault(s =>
+                s.Name.Equals(name, StringComparison.OrdinalIgnoreCase) ||
+                s.Id.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (skill != null)
+                return skill;
+        }
+        return null;
+    }
+
+    private int CalculateAS(int attributeValue, int skillLevel)
+    {
+        // AS = Attribute + Skill Level - 5
+        return attributeValue + skillLevel - 5;
+    }
+
+    private MedicalSkillOption GetSkillInfo(MedicalSkillType type)
+    {
+        return GetAvailableMedicalSkills().FirstOrDefault(s => s.Type == type)
+            ?? new MedicalSkillOption(type, "Unknown", "?", 0, 2, false, null);
+    }
+
+    private string GetCostDisplay()
+    {
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private bool CanRoll()
+    {
+        if (Character == null || !selectedSkillType.HasValue || targetType == TargetType.None) return false;
+        if (Character.IsPassedOut) return false;
+
+        // Only check concentration for Self target (Other target doesn't start concentration)
+        if (targetType == TargetType.Self && ConcentrationBehavior.IsConcentrating(Character)) return false;
+
+        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded;
+    }
+
+    private async Task RollCheck()
+    {
+        if (!CanRoll() || Character == null || !selectedSkillType.HasValue) return;
+
+        // Check if character is concentrating - only need to break for Self target (which starts new concentration)
+        if (targetType == TargetType.Self)
+        {
+            var concentrationEffect = Character.GetConcentrationEffect();
+            if (concentrationEffect != null)
+            {
+                var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+                if (state != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService,
+                        state,
+                        concentrationEffect.Name);
+                    if (!confirmed)
+                        return;
+
+                    ConcentrationBehavior.BreakConcentration(Character, "Started medical treatment");
+                }
+            }
+        }
+
+        // Deduct costs
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= apCost;
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if (fatCost > 0)
+            Character.Fatigue.Value -= fatCost;
+
+        // Get skill info
+        var skillInfo = GetSkillInfo(selectedSkillType.Value);
+
+        // Count wounds
+        int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
+
+        // Create request and resolve
+        var request = new MedicalRequest
+        {
+            SkillType = selectedSkillType.Value,
+            SkillLevel = GetSkillLevel(selectedSkillType.Value),
+            AttributeValue = GetAttributeValue(selectedSkillType.Value),
+            AttributeName = skillInfo.Attribute,
+            WoundCount = woundCount,
+            IsMultipleAction = Character.ActionPoints.ActionsTakenThisRound > 1
+        };
+
+        var resolver = new MedicalResolver();
+        checkResult = resolver.ResolveCheck(request);
+        hasRolled = true;
+
+        // Save character state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+
+        // Notify parent to refresh character display (AP, FAT changes)
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+    }
+
+    private int GetSkillLevel(MedicalSkillType type)
+    {
+        if (Character == null) return 0;
+
+        var skill = type switch
+        {
+            MedicalSkillType.FirstAid => FindSkill("First-Aid", "First Aid", "FirstAid"),
+            MedicalSkillType.Nursing => FindSkill("Nursing"),
+            MedicalSkillType.Doctor => FindSkill("Doctor"),
+            _ => null
+        };
+
+        return skill?.Level ?? 0;
+    }
+
+    private int GetAttributeValue(MedicalSkillType type)
+    {
+        if (Character == null) return 10;
+
+        var attrName = MedicalResolver.GetAttributeName(type);
+        var attr = Character.AttributeList.FirstOrDefault(a => a.Name == attrName);
+        return attr?.Value ?? 10;
+    }
+
+    private async Task StartConcentration()
+    {
+        if (Character == null || checkResult == null || !selectedSkillType.HasValue) return;
+
+        var skillName = MedicalResolver.GetSkillDisplayName(selectedSkillType.Value);
+        string message;
+
+        if (targetType == TargetType.Self)
+        {
+            // Create concentration state for self-treatment
+            var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+                targetCharacterId: Character.Id,
+                targetName: Character.Name,
+                healerCharacterId: Character.Id,
+                healerName: Character.Name,
+                skillName: skillName,
+                successValue: checkResult.SuccessValue,
+                concentrationRounds: checkResult.ConcentrationRounds);
+
+            // Create the concentration effect
+            // Signature: (EffectType, name, location, durationRounds, behaviorState)
+            // Pass null for durationRounds - concentration tracks its own progress, not epoch-based expiry
+            var effect = effectPortal.CreateChild(
+                EffectType.Concentration,
+                $"Treating: {Character.Name}",
+                null,  // location - not applicable for concentration
+                (int?)null,  // durationRounds - null for progress-based concentration
+                stateJson);
+
+            Character.Effects.AddEffect(effect);
+            message = $"{Character.Name} begins {skillName} treatment " +
+                     $"(SV {checkResult.SuccessValue}, {checkResult.HealingAmount} healing in {checkResult.ConcentrationRounds} rounds)";
+        }
+        else
+        {
+            // Other target - just report the result, no concentration on this character
+            message = $"{Character.Name} performs {skillName} check: " +
+                     $"SV {checkResult.SuccessValue} = {checkResult.HealingAmount} FAT/VIT healing " +
+                     $"(apply to target after {checkResult.ConcentrationRounds} rounds)";
+        }
+
+        // Save and complete
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+
+        await OnMedicalComplete.InvokeAsync(new MedicalCompleteData
+        {
+            Message = message,
+            Success = true,
+            HealingAmount = checkResult.HealingAmount,
+            ConcentrationRounds = checkResult.ConcentrationRounds
+        });
+    }
+
+    private void Reset()
+    {
+        hasRolled = false;
+        checkResult = null;
+    }
+}

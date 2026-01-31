@@ -15,6 +15,7 @@ public class NoProfanityRule : BusinessRule
     public NoProfanityRule(IPropertyInfo primaryProperty)
         : base(primaryProperty)
     {
+        InputProperties.Add(primaryProperty);
         _filter = new ProfanityFilter.ProfanityFilter();
     }
 

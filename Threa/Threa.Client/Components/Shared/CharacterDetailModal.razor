@@ -130,6 +130,7 @@
                 <CharacterDetailSheet Character="character"
                                        CharacterId="selectedCharacterId"
                                        TableId="TableId"
+                                       TableTheme="@tableTheme"
                                        IsEditMode="@isEditMode"
                                        IsEditModeChanged="@((bool val) => { isEditMode = val; StateHasChanged(); })"
                                        OnCharacterUpdated="OnCharacterUpdated" />
@@ -184,10 +185,23 @@
     private string? currentGmNotes;
     private bool subscribed;
     private bool isEditMode;
+    private string tableTheme = "fantasy";
 
     protected override async Task OnInitializedAsync()
     {
         selectedCharacterId = CharacterId;
+
+        // Fetch table theme
+        try
+        {
+            var table = await tableDal.GetTableAsync(TableId);
+            tableTheme = table?.Theme ?? "fantasy";
+        }
+        catch
+        {
+            tableTheme = "fantasy";
+        }
+
         await LoadCharacterAsync();
         await SubscribeToUpdatesAsync();
     }

@@ -65,7 +65,8 @@ public class ConcentrationBehavior : IEffectBehavior
             || concentrationType == "SpellCasting"
             || concentrationType == "RitualPreparation"
             || concentrationType == "AmmoContainerReload"
-            || concentrationType == "AmmoContainerUnload";
+            || concentrationType == "AmmoContainerUnload"
+            || concentrationType == "MedicalHealing";
     }
 
     /// <summary>
@@ -201,6 +202,7 @@ public class ConcentrationBehavior : IEffectBehavior
             "RitualPreparation" => $"Preparing ritual: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "AmmoContainerReload" => $"Loading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "AmmoContainerUnload" => $"Unloading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "MedicalHealing" => $"Treating patient: {state.CurrentProgress}/{state.TotalRequired} rounds",
             _ => $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds"
         };
     }
@@ -238,7 +240,9 @@ public class ConcentrationBehavior : IEffectBehavior
             case "AmmoContainerUnload":
                 ExecuteAmmoContainerUnload(character, state);
                 break;
-            // Future action types can be added here
+            case "MedicalHealing":
+                ExecuteMedicalHealing(character, state);
+                break;
         }
     }
 
@@ -319,6 +323,26 @@ public class ConcentrationBehavior : IEffectBehavior
             ActionType = "AmmoContainerUnload",
             Payload = state.DeferredActionPayload,
             Message = state.CompletionMessage ?? "Ammo container unloaded!",
+            Success = true
+        };
+    }
+
+    /// <summary>
+    /// Handles medical healing completion.
+    /// Stores result in character.LastConcentrationResult for TimeAdvancementService to apply healing.
+    /// </summary>
+    private void ExecuteMedicalHealing(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = MedicalHealingPayload.FromJson(state.DeferredActionPayload);
+        if (payload == null)
+            return;
+
+        // Store result for TimeAdvancementService to process
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "MedicalHealing",
+            Payload = state.DeferredActionPayload,
+            Message = state.CompletionMessage ?? "Treatment complete!",
             Success = true
         };
     }
@@ -630,6 +654,58 @@ public class ConcentrationBehavior : IEffectBehavior
             DeferredActionPayload = payload.Serialize(),
             CompletionMessage = $"{containerName} unloaded - {roundsToUnload} rounds returned to inventory!",
             InterruptionMessage = "Unload interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for medical healing concentration.
+    /// The skill check has already been rolled; this stores the result for when treatment completes.
+    /// </summary>
+    /// <param name="targetCharacterId">The character ID receiving healing</param>
+    /// <param name="targetName">Display name of the target</param>
+    /// <param name="healerCharacterId">The character ID performing the healing</param>
+    /// <param name="healerName">Display name of the healer</param>
+    /// <param name="skillName">Name of the medical skill (First-Aid, Nursing, Doctor)</param>
+    /// <param name="successValue">The SV from the skill check (determines healing amount)</param>
+    /// <param name="concentrationRounds">Number of rounds to complete treatment</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateMedicalHealingState(
+        int targetCharacterId,
+        string targetName,
+        int healerCharacterId,
+        string healerName,
+        string skillName,
+        int successValue,
+        int concentrationRounds)
+    {
+        var payload = new MedicalHealingPayload
+        {
+            TargetCharacterId = targetCharacterId,
+            TargetName = targetName,
+            HealerCharacterId = healerCharacterId,
+            HealerName = healerName,
+            SkillName = skillName,
+            SuccessValue = successValue
+        };
+
+        // Get healing amount from result tables for display in completion message
+        var healingResult = GameMechanics.Actions.ResultTables.GetResult(successValue, Threa.Dal.Dto.ResultTableType.Healing);
+        int healingAmount = healingResult.IsSuccess ? healingResult.EffectValue : 0;
+
+        string completionMessage = healingAmount > 0
+            ? $"{healerName} completes {skillName} treatment on {targetName} - heals {healingAmount} FAT/VIT!"
+            : $"{healerName} completes {skillName} treatment on {targetName} - no healing (failed check)";
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "MedicalHealing",
+            TotalRequired = concentrationRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            DeferredActionType = "MedicalHealing",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = completionMessage,
+            InterruptionMessage = $"{skillName} treatment interrupted!"
         }.Serialize();
     }
 }
