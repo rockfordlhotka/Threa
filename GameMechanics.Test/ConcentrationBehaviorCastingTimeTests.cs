@@ -465,4 +465,214 @@ public class ConcentrationBehaviorCastingTimeTests : TestBase
     }
 
     #endregion
+
+    #region Medical Healing Tests
+
+    [TestMethod]
+    public void CreateMedicalHealingState_CreatesValidState()
+    {
+        // Arrange & Act
+        var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+            targetCharacterId: 1,
+            targetName: "TestPatient",
+            healerCharacterId: 2,
+            healerName: "TestHealer",
+            skillName: "First-Aid",
+            successValue: 3,
+            concentrationRounds: 2);
+
+        var state = ConcentrationState.FromJson(stateJson);
+
+        // Assert
+        Assert.IsNotNull(state);
+        Assert.AreEqual("MedicalHealing", state.ConcentrationType);
+        Assert.AreEqual(2, state.TotalRequired);
+        Assert.AreEqual(0, state.CurrentProgress);
+        Assert.AreEqual(1, state.RoundsPerTick);
+        Assert.AreEqual("MedicalHealing", state.DeferredActionType);
+        Assert.IsNotNull(state.DeferredActionPayload);
+        Assert.IsTrue(state.CompletionMessage?.Contains("TestHealer"));
+        Assert.IsTrue(state.CompletionMessage?.Contains("First-Aid"));
+        Assert.IsTrue(state.InterruptionMessage?.Contains("First-Aid"));
+
+        // Verify nested payload
+        var payload = MedicalHealingPayload.FromJson(state.DeferredActionPayload);
+        Assert.IsNotNull(payload);
+        Assert.AreEqual(1, payload.TargetCharacterId);
+        Assert.AreEqual("TestPatient", payload.TargetName);
+        Assert.AreEqual(2, payload.HealerCharacterId);
+        Assert.AreEqual("TestHealer", payload.HealerName);
+        Assert.AreEqual("First-Aid", payload.SkillName);
+        Assert.AreEqual(3, payload.SuccessValue);
+    }
+
+    [TestMethod]
+    public void OnTick_MedicalHealing_TracksProgress()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+            targetCharacterId: c.Id,
+            targetName: c.Name,
+            healerCharacterId: c.Id,
+            healerName: c.Name,
+            skillName: "First-Aid",
+            successValue: 3,
+            concentrationRounds: 2);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Treating: Test",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+
+        // Act - first tick
+        c.Effects.EndOfRound(0);
+
+        // Assert - should still be concentrating with progress = 1
+        var concentrationEffect = c.Effects.FirstOrDefault(e => e.EffectType == EffectType.Concentration);
+        Assert.IsNotNull(concentrationEffect);
+
+        var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+        Assert.IsNotNull(state);
+        Assert.AreEqual(1, state.CurrentProgress);
+
+        // Description should show medical progress
+        Assert.IsTrue(concentrationEffect.Description?.Contains("Treating patient"));
+        Assert.IsTrue(concentrationEffect.Description?.Contains("1/2"));
+    }
+
+    [TestMethod]
+    public void OnExpire_MedicalHealing_SetsCompletionResult()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+            targetCharacterId: c.Id,
+            targetName: c.Name,
+            healerCharacterId: c.Id,
+            healerName: c.Name,
+            skillName: "First-Aid",
+            successValue: 3,  // SV 3 = 2 healing
+            concentrationRounds: 2);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Treating: Test",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+
+        // Act - run to completion
+        c.Effects.EndOfRound(0);
+        c.Effects.EndOfRound(0);
+
+        // Assert
+        Assert.AreEqual(0, c.Effects.Count, "Effect should be removed after completion");
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("MedicalHealing", c.LastConcentrationResult.ActionType);
+        Assert.IsTrue(c.LastConcentrationResult.Success);
+        Assert.IsNotNull(c.LastConcentrationResult.Payload);
+        Assert.IsTrue(c.LastConcentrationResult.Message.Contains("heals"));
+
+        // Verify payload can be deserialized
+        var payload = MedicalHealingPayload.FromJson(c.LastConcentrationResult.Payload);
+        Assert.IsNotNull(payload);
+        Assert.AreEqual(3, payload.SuccessValue);
+    }
+
+    [TestMethod]
+    public void OnRemove_MedicalHealing_SetsInterruptionResult()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+            targetCharacterId: c.Id,
+            targetName: c.Name,
+            healerCharacterId: c.Id,
+            healerName: c.Name,
+            skillName: "Doctor",
+            successValue: 5,
+            concentrationRounds: 4);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Treating: Test",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+
+        // Run one tick then interrupt
+        c.Effects.EndOfRound(0);
+
+        // Act - manually remove (simulating interruption)
+        ConcentrationBehavior.BreakConcentration(c);
+
+        // Assert
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("MedicalHealing", c.LastConcentrationResult.ActionType);
+        Assert.IsFalse(c.LastConcentrationResult.Success, "Success should be false for interruption");
+        Assert.IsTrue(c.LastConcentrationResult.Message.Contains("interrupted"));
+    }
+
+    [TestMethod]
+    public void MedicalHealing_FailedCheck_CompletesWithNoHealing()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        // Negative SV = failed check, but concentration still happens
+        var stateJson = ConcentrationBehavior.CreateMedicalHealingState(
+            targetCharacterId: c.Id,
+            targetName: c.Name,
+            healerCharacterId: c.Id,
+            healerName: c.Name,
+            skillName: "First-Aid",
+            successValue: -2,  // Failed check
+            concentrationRounds: 2);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Treating: Test",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+
+        // Act - run to completion
+        c.Effects.EndOfRound(0);
+        c.Effects.EndOfRound(0);
+
+        // Assert - concentration completes but message indicates no healing
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.IsTrue(c.LastConcentrationResult.Success, "Concentration completes regardless of check result");
+        Assert.IsTrue(c.LastConcentrationResult.Message.Contains("no healing") ||
+                      c.LastConcentrationResult.Message.Contains("failed"),
+            $"Message should indicate no healing. Actual: {c.LastConcentrationResult.Message}");
+    }
+
+    #endregion
 }

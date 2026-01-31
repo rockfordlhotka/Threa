@@ -768,6 +768,33 @@ body::before {
   );
 }
 
+/* Radzen Dialog Styles */
+.rz-dialog {
+  background: var(--color-card-bg) !important;
+  color: var(--color-text-primary) !important;
+  border: var(--border-style) !important;
+}
+
+.rz-dialog-titlebar {
+  background: var(--color-card-header-bg) !important;
+  color: var(--color-card-header-text) !important;
+  border-bottom: 2px solid var(--color-accent-gold) !important;
+}
+
+.rz-dialog-content {
+  background: var(--color-card-bg) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="scifi"] .rz-dialog {
+  border: 1px solid var(--color-accent-primary) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3) !important;
+}
+
+[data-theme="scifi"] .rz-dialog-titlebar {
+  border-bottom: 1px solid var(--color-accent-primary) !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    TEXT UTILITIES
    ═══════════════════════════════════════════════════════════════════ */

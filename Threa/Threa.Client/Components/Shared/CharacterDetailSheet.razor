@@ -1,11 +1,16 @@
 @* Character Detail Sheet - View and edit character stats for GM modal *@
 
 @using GameMechanics
+@using GameMechanics.Reference
 @using GameMechanics.Messaging
+@using Radzen
 @using Threa.Client.Components.Shared
 
 @inject IDataPortal<CharacterEdit> characterPortal
+@inject IDataPortal<SkillList> skillListPortal
+@inject IChildDataPortal<SkillEdit> skillChildPortal
 @inject ITimeEventPublisher TimeEventPublisher
+@inject DialogService DialogService
 
 <div class="row">
     <!-- Left Column: Portrait and Basic Info -->
@@ -192,49 +197,47 @@
                         <span class="text-muted">(Total Levels: @editingCharacter.Skills.TotalSkillLevels)</span>
                     </div>
 
-                    @foreach (var skillGroup in editingCharacter.Skills.GroupBy(s => s.PrimaryAttribute).OrderBy(g => g.Key))
+                    @foreach (var skill in editingCharacter.Skills.OrderBy(s => s.Name))
                     {
-                        <h6 class="text-muted small mt-2 mb-1">@skillGroup.Key</h6>
-                        @foreach (var skill in skillGroup.OrderBy(s => s.Name))
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="small flex-grow-1 text-truncate" title="@skill.Name">@skill.Name</span>
+                            <span class="text-muted small" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@skill.PrimaryAttribute</span>
+                            <input type="number"
+                                   class="form-control form-control-sm @GetSkillValidationClass(skill.Level)"
+                                   style="width: 50px; text-align: center;"
+                                   @bind="skill.Level"
+                                   @bind:event="onchange"
+                                   min="0"
+                                   max="99" />
+                        </div>
+                        @if (skill.Level < 0)
                         {
-                            <div class="row mb-1 align-items-center">
-                                <div class="col-7">
-                                    <span class="small">@skill.Name</span>
-                                </div>
-                                <div class="col-5">
-                                    <input type="number"
-                                           class="form-control form-control-sm @GetSkillValidationClass(skill.Level)"
-                                           @bind="skill.Level"
-                                           @bind:event="onchange"
-                                           min="0" />
-                                </div>
-                            </div>
-                            @if (skill.Level < 0)
-                            {
-                                <div class="text-danger small mb-1"><i class="bi bi-x-circle me-1"></i>Minimum level is 0</div>
-                            }
-                            else if (skill.Level > 10)
-                            {
-                                <div class="text-warning small mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Above typical max (10)</div>
-                            }
+                            <div class="text-danger small mb-1"><i class="bi bi-x-circle me-1"></i>Min 0</div>
+                        }
+                        else if (skill.Level > 10)
+                        {
+                            <div class="text-warning small mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Above typical max</div>
                         }
                     }
+
+                    <!-- Add Skill button -->
+                    <div class="mt-3">
+                        <button class="btn btn-outline-success btn-sm w-100"
+                                @onclick="OpenSkillPicker"
+                                disabled="@isProcessing">
+                            <i class="bi bi-plus-circle me-1"></i>Add Skill
+                        </button>
+                    </div>
                 }
                 else
                 {
-                    @foreach (var skillGroup in (Character?.Skills ?? Enumerable.Empty<SkillEdit>()).GroupBy(s => s.PrimaryAttribute).OrderBy(g => g.Key))
+                    @foreach (var skill in (Character?.Skills ?? Enumerable.Empty<SkillEdit>()).OrderBy(s => s.Name))
                     {
-                        <h6 class="text-muted small mt-2">@skillGroup.Key</h6>
-                        @foreach (var skill in skillGroup.OrderBy(s => s.Name))
-                        {
-                            @if (skill.Level > 0)
-                            {
-                                <div class="d-flex justify-content-between small">
-                                    <span>@skill.Name</span>
-                                    <span>@skill.Level</span>
-                                </div>
-                            }
-                        }
+                        <div class="d-flex align-items-center gap-1 small @(skill.Level == 0 ? "text-muted" : "")">
+                            <span class="flex-grow-1 text-truncate" title="@skill.Name">@skill.Name</span>
+                            <span class="text-muted" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@skill.PrimaryAttribute</span>
+                            <span style="width: 24px; text-align: right;">@skill.Level</span>
+                        </div>
                     }
                 }
             </div>
@@ -260,6 +263,12 @@
 
     [Parameter]
     public EventCallback OnCharacterUpdated { get; set; }
+
+    /// <summary>
+    /// The table theme. If "scifi", magic skills are filtered from the skill picker.
+    /// </summary>
+    [Parameter]
+    public string TableTheme { get; set; } = "fantasy";
 
     // Edit state
     private CharacterEdit? editingCharacter;
@@ -402,5 +411,59 @@
     {
         if (Character?.ActionPoints.Max <= 0) return 0;
         return Character!.ActionPoints.Available * 100 / Character.ActionPoints.Max;
+    }
+
+    private async Task OpenSkillPicker()
+    {
+        if (editingCharacter == null) return;
+
+        // Get existing skill IDs to exclude from picker
+        var existingSkillIds = editingCharacter.Skills.Select(s => s.Id).ToHashSet();
+
+        var result = await DialogService.OpenAsync<SkillPickerModal>(
+            "Add Skill",
+            new Dictionary<string, object>
+            {
+                { "ExistingSkillIds", existingSkillIds },
+                { "TableTheme", TableTheme }
+            },
+            new DialogOptions
+            {
+                Width = "450px",
+                CloseDialogOnOverlayClick = true
+            });
+
+        if (result is string skillId && !string.IsNullOrEmpty(skillId))
+        {
+            await AddSkillToCharacter(skillId);
+        }
+    }
+
+    private async Task AddSkillToCharacter(string skillId)
+    {
+        if (editingCharacter == null) return;
+
+        try
+        {
+            isProcessing = true;
+            errorMessage = null;
+
+            // Add the skill using the SkillEditList's AddSkillAsync method
+            var newSkill = await editingCharacter.Skills.AddSkillAsync(skillId, skillListPortal, skillChildPortal);
+
+            // Set initial level to 1
+            newSkill.Level = 1;
+
+            successMessage = $"Added skill: {newSkill.Name}";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to add skill: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
     }
 }
