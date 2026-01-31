@@ -394,18 +394,24 @@ namespace GameMechanics
     /// Dictionary tracking the original skill levels when the character was loaded or created.
     /// Used to determine which skill levels can be decreased during character creation.
     /// Key is skill name, value is the original level.
+    /// Note: CSLA business objects are not thread-safe by design. This field should only be
+    /// accessed from a single thread.
     /// </summary>
     private Dictionary<string, int> _originalSkillLevels = new Dictionary<string, int>();
 
     /// <summary>
     /// Gets the original skill levels when the character was loaded or created.
     /// Skills can be decreased to their original level during character creation (before activation).
+    /// Note: CSLA business objects are not thread-safe. This property returns the internal dictionary
+    /// as IReadOnlyDictionary for single-threaded use only.
     /// </summary>
     public IReadOnlyDictionary<string, int> OriginalSkillLevels => _originalSkillLevels;
 
     /// <summary>
     /// Captures the current skill levels as the baseline for future modifications.
-    /// Called when a character is first loaded or created.
+    /// This method is private and called only during character initialization (Create/Fetch operations).
+    /// Re-capturing after initialization would break the contract that original levels represent
+    /// the state when the character was first loaded/created.
     /// </summary>
     private void CaptureOriginalSkillLevels()
     {
