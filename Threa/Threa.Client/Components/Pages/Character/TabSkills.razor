@@ -132,7 +132,6 @@ else
     private string? selectedSkillId;
     private string? errorMessage;
     private string? initError;
-    private Dictionary<string, int> originalSkillLevels = new Dictionary<string, int>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,16 +141,6 @@ else
             {
                 // Load all skills
                 allSkills = await skillListPortal.FetchAsync();
-                
-                // Track original skill levels to know which are "new"
-                // Use Name as the key since Id may be empty for standard skills
-                foreach (var skill in vm.Model.Skills)
-                {
-                    if (!originalSkillLevels.ContainsKey(skill.Name))
-                    {
-                        originalSkillLevels[skill.Name] = skill.Level;
-                    }
-                }
                 
                 UpdateAvailableSkills();
             }
@@ -198,11 +187,11 @@ else
     private bool IsNewSkill(GameMechanics.SkillEdit skill)
     {
         // A skill is "new" if it wasn't in the original list or its level has increased
-        if (!originalSkillLevels.ContainsKey(skill.Name))
+        if (!vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name))
         {
             return true;
         }
-        return skill.Level > originalSkillLevels[skill.Name];
+        return skill.Level > vm.Model.OriginalSkillLevels[skill.Name];
     }
 
     private void IncreaseSkillLevel(GameMechanics.SkillEdit skill)
@@ -235,7 +224,7 @@ else
         errorMessage = null;
         
         // Check if this is a new level increase
-        var originalLevel = originalSkillLevels.ContainsKey(skill.Name) ? originalSkillLevels[skill.Name] : 0;
+        var originalLevel = vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name) ? vm.Model.OriginalSkillLevels[skill.Name] : 0;
         
         if (skill.Level <= originalLevel)
         {
@@ -292,7 +281,7 @@ else
         errorMessage = null;
         
         // Check if this is a new skill (not in original list)
-        var originalLevel = originalSkillLevels.ContainsKey(skill.Name) ? originalSkillLevels[skill.Name] : -1;
+        var originalLevel = vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name) ? vm.Model.OriginalSkillLevels[skill.Name] : -1;
         
         if (originalLevel >= 0)
         {

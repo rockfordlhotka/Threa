@@ -390,6 +390,32 @@ namespace GameMechanics
       set => SetProperty(SkillsProperty, value);
     }
 
+    /// <summary>
+    /// Dictionary tracking the original skill levels when the character was loaded or created.
+    /// Used to determine which skill levels can be decreased during character creation.
+    /// Key is skill name, value is the original level.
+    /// </summary>
+    private Dictionary<string, int> _originalSkillLevels = new Dictionary<string, int>();
+
+    /// <summary>
+    /// Gets the original skill levels when the character was loaded or created.
+    /// Skills can be decreased to their original level during character creation (before activation).
+    /// </summary>
+    public IReadOnlyDictionary<string, int> OriginalSkillLevels => _originalSkillLevels;
+
+    /// <summary>
+    /// Captures the current skill levels as the baseline for future modifications.
+    /// Called when a character is first loaded or created.
+    /// </summary>
+    private void CaptureOriginalSkillLevels()
+    {
+      _originalSkillLevels.Clear();
+      foreach (var skill in Skills)
+      {
+        _originalSkillLevels[skill.Name] = skill.Level;
+      }
+    }
+
     public static readonly PropertyInfo<int> XPTotalProperty = RegisterProperty<int>(nameof(XPTotal));
     [Display(Name = "Total XP")]
     public int XPTotal
@@ -791,6 +817,9 @@ namespace GameMechanics
         ActionPoints = actionPointsPortal.CreateChild(this);
       }
       BusinessRules.CheckRules();
+      
+      // Capture the baseline skill levels for this new character
+      CaptureOriginalSkillLevels();
     }
 
     private static readonly string[] mapIgnore =
@@ -804,6 +833,7 @@ namespace GameMechanics
         nameof(IsPassedOut),
         nameof(IsBeingSaved),
         nameof(LastConcentrationResult),
+        nameof(OriginalSkillLevels),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
         nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
@@ -848,6 +878,9 @@ namespace GameMechanics
         Skills = skillPortal.FetchChild(existing.Skills);
       }
       BusinessRules.CheckRules();
+      
+      // Capture the baseline skill levels when loading an existing character
+      CaptureOriginalSkillLevels();
     }
 
     [Insert]
