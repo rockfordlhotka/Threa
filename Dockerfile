@@ -23,18 +23,14 @@ RUN dotnet publish Threa/Threa/Threa.csproj -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -g 1000 appgroup && \
-    useradd -u 1000 -g appgroup -m appuser
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
+# Create data directory for SQLite (writable by app user)
+RUN mkdir -p /app/data && chown -R app:app /app/data
 
 # Copy published app
 COPY --from=build /app/publish .
 
-# Switch to non-root user
-USER appuser
+# Switch to non-root user (built-in 'app' user in .NET images)
+USER app
 
 EXPOSE 8080
 

@@ -20,9 +20,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
       containers:
         - name: threa
           image: rockylhotka/threa:latest
