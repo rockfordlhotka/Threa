@@ -13,7 +13,7 @@ namespace GameMechanics
   {
     /// <summary>
     /// Gets the sum of all individual skill levels.
-    /// Used for calculating Max AP = TotalSkillLevels / 10.
+    /// Used for calculating Max AP (0-10 levels = 1 AP, 11-20 = 2 AP, etc.).
     /// </summary>
     public int TotalSkillLevels => this.Sum(s => s.Level);
 
