@@ -612,6 +612,9 @@ These actions do NOT break concentration:
 | **Passive Defense** | Taking hits without dodging | Requires concentration check |
 | **Drop Item** | Releasing an object | Free action |
 | **Perception** | Passive awareness | No active searching |
+| **Drive (VIT to FAT)** | Converting Vitality to Fatigue | Character taxes themselves to maintain focus |
+
+**Note on Drive Skill**: A character may use the Drive skill to convert VIT to FAT while concentrating. This is an intentional exception to the "no skill use" rule, as it represents the character pushing through exhaustion to maintain their focus. Sometimes a caster will truly tax themselves to keep a spell active.
 
 ### Blocked Actions While Concentrating
 
