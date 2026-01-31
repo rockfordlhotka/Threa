@@ -18,17 +18,33 @@ Internet --> Tailscale Funnel --> Ingress --> Service --> Deployment --> Pod
                                                         (SQLite database)
 ```
 
-## Build and Push Docker Image
+## Quick Start
+
+```bash
+# Build and push Docker image
+./k8s/build.sh
+
+# Deploy to cluster (or update existing deployment)
+./k8s/deploy.sh
+
+# Just restart to pull latest image
+./k8s/deploy.sh --restart
+```
+
+## Manual Commands
+
+### Build and Push Docker Image
 
 ```bash
 # From repository root
 docker build -t rockylhotka/threa:latest .
 docker push rockylhotka/threa:latest
+
+# Or with a specific tag
+./k8s/build.sh v1.0.0
 ```
 
-## Deploy to Cluster
-
-### Initial Deployment
+### Deploy to Cluster
 
 ```bash
 # Apply all manifests in order
@@ -40,23 +56,12 @@ kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-Or apply all at once:
-
-```bash
-kubectl apply -f k8s/
-```
-
 ### Update Deployment (Rolling Update)
 
 After pushing a new image:
 
 ```bash
 kubectl rollout restart deployment/threa -n threa
-```
-
-Watch the rollout:
-
-```bash
 kubectl rollout status deployment/threa -n threa
 ```
 
