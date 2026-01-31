@@ -1,5 +1,8 @@
 @* Skills Tab for gameplay - Using skills during play *@
 
+@using GameMechanics.Effects.Behaviors
+@inject Radzen.DialogService DialogService
+
 <div class="row">
     <div class="col-md-8">
         <div class="card">
@@ -77,6 +80,14 @@
                         <div class="alert alert-warning py-2 small">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
                             <strong>Cannot use:</strong> @selectedSkill.CannotUseReason
+                        </div>
+                    }
+
+                    @if (Character != null && ConcentrationBehavior.IsConcentrating(Character) && selectedSkill.Name != "Drive")
+                    {
+                        <div class="alert alert-info py-2 small">
+                            <i class="bi bi-hourglass-split me-1"></i>
+                            <strong>Concentrating:</strong> Cannot use skills while concentrating (except Drive to convert VIT to FAT)
                         </div>
                     }
 
@@ -185,6 +196,11 @@
 
         // Drive skill requires AS >= 8 to use
         if (selectedSkill.Name == "Drive" && selectedSkill.AbilityScore < 8)
+            return false;
+
+        // Check concentration - Drive skill is allowed while concentrating (VIT to FAT conversion)
+        // Other skills block while concentrating (user must confirm break via dialog)
+        if (selectedSkill.Name != "Drive" && ConcentrationBehavior.IsConcentrating(Character))
             return false;
 
         if (actionType == "standard")

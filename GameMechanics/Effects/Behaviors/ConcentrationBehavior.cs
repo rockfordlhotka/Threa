@@ -411,6 +411,12 @@ public class ConcentrationBehavior : IEffectBehavior
     /// <summary>
     /// Checks if the character is concentrating.
     /// </summary>
+    /// <remarks>
+    /// While concentrating, a character cannot use most skills without breaking concentration.
+    /// Exception: The Drive skill (VIT to FAT conversion) is allowed while concentrating,
+    /// as this represents the character pushing through exhaustion to maintain focus.
+    /// The UI layer (TabPlaySkills.razor) enforces this exception.
+    /// </remarks>
     public static bool IsConcentrating(CharacterEdit character)
     {
         foreach (var effect in character.Effects)
