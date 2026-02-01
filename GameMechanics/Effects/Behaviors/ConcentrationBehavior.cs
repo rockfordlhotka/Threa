@@ -689,8 +689,8 @@ public class ConcentrationBehavior : IEffectBehavior
         string containerName,
         string? ammoType = null)
     {
-        // Rate: 3 rounds per game round (1 round per second)
-        int totalRounds = (int)Math.Ceiling(roundsToUnload / 3.0);
+        // Unload rate: 6 rounds per game round (2 rounds per second) - half the time of loading
+        int totalRounds = (int)Math.Ceiling(roundsToUnload / 6.0);
 
         var payload = new AmmoContainerUnloadPayload
         {
@@ -718,7 +718,7 @@ public class ConcentrationBehavior : IEffectBehavior
     /// <summary>
     /// Creates state for weapon unload concentration.
     /// Used when unloading individual rounds from a weapon back to loose ammo in inventory.
-    /// Rate: 3 rounds per game round (1 round per second).
+    /// Unload rate: 6 rounds per game round (2 rounds per second) - half the time of loading.
     /// </summary>
     /// <param name="weaponItemId">The weapon CharacterItem ID being unloaded</param>
     /// <param name="characterId">The character ID who owns the weapon</param>
@@ -733,8 +733,8 @@ public class ConcentrationBehavior : IEffectBehavior
         string weaponName,
         string? ammoType = null)
     {
-        // Rate: 3 rounds per game round (1 round per second)
-        int totalRounds = (int)Math.Ceiling(roundsToUnload / 3.0);
+        // Unload rate: 6 rounds per game round (2 rounds per second) - half the time of loading
+        int totalRounds = (int)Math.Ceiling(roundsToUnload / 6.0);
 
         var payload = new WeaponUnloadPayload
         {

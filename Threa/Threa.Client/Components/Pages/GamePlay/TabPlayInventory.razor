@@ -372,6 +372,20 @@
                     <i class="bi bi-box-arrow-up"></i> Unload
                 </button>
             }
+            @if (IsReloadableWeapon(selectedItem) && GetCompatibleAmmoForWeapon(selectedItem!).Any())
+            {
+                <button class="btn btn-outline-primary ms-2"
+                        @onclick="OpenReloadWeaponModal">
+                    <i class="bi bi-box-arrow-in-down"></i> Reload
+                </button>
+            }
+            @if (IsUnloadableWeapon(selectedItem))
+            {
+                <button class="btn btn-outline-warning ms-2"
+                        @onclick="OpenUnloadWeaponModal">
+                    <i class="bi bi-box-arrow-up"></i> Unload
+                </button>
+            }
             @if (selectedItem != null)
             {
                 <span class="ms-3 text-muted">
@@ -1843,6 +1857,355 @@
             // Build cost description
             var costDesc = fatCost > 0 ? $"{apCost} AP, {fatCost} FAT" : $"{apCost} AP";
             successMessage = $"Started unloading {result.ContainerName} ({result.RoundsToUnload} rounds, {result.DurationRounds} round(s)). Cost: {costDesc}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error starting unload: {ex.Message}";
+        }
+    }
+
+    // ==========================================
+    // Weapon Reload/Unload Methods
+    // ==========================================
+
+    /// <summary>
+    /// Checks if the selected item is a ranged weapon with space for ammo.
+    /// Weapon doesn't need to be equipped to reload from inventory.
+    /// </summary>
+    private bool IsReloadableWeapon(CharacterItem? item)
+    {
+        if (item == null) return false;
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null) return false;
+
+        // Check if it's a ranged weapon
+        var weaponProps = RangedWeaponProperties.FromJson(template.CustomProperties);
+        if (weaponProps == null || !weaponProps.IsRangedWeapon)
+            return false;
+
+        // Thrown weapons don't reload (they are consumed)
+        if (weaponProps.IsThrown)
+            return false;
+
+        // Check if weapon has capacity
+        if (weaponProps.TotalCapacity <= 0)
+            return false;
+
+        // Check current ammo state
+        var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+        return ammoState.TotalAvailable < weaponProps.TotalCapacity;
+    }
+
+    /// <summary>
+    /// Checks if the selected item is a ranged weapon with ammo that can be unloaded.
+    /// Weapon doesn't need to be equipped to unload from inventory.
+    /// </summary>
+    private bool IsUnloadableWeapon(CharacterItem? item)
+    {
+        if (item == null) return false;
+        var template = GetTemplate(item.ItemTemplateId);
+        if (template == null) return false;
+
+        // Check if it's a ranged weapon
+        var weaponProps = RangedWeaponProperties.FromJson(template.CustomProperties);
+        if (weaponProps == null || !weaponProps.IsRangedWeapon)
+            return false;
+
+        // Thrown weapons don't unload
+        if (weaponProps.IsThrown)
+            return false;
+
+        // Check if weapon has ammo loaded
+        var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+        return ammoState.TotalAvailable > 0;
+    }
+
+    /// <summary>
+    /// Gets compatible ammo for a weapon from inventory.
+    /// Includes both loose ammo and loaded magazines.
+    /// </summary>
+    private List<CharacterItem> GetCompatibleAmmoForWeapon(CharacterItem weapon)
+    {
+        if (inventoryItems == null) return new List<CharacterItem>();
+
+        var template = GetTemplate(weapon.ItemTemplateId);
+        if (template == null) return new List<CharacterItem>();
+
+        var weaponProps = RangedWeaponProperties.FromJson(template.CustomProperties);
+        if (weaponProps == null) return new List<CharacterItem>();
+
+        var compatibleAmmo = new List<CharacterItem>();
+
+        foreach (var item in inventoryItems)
+        {
+            // Skip items in containers
+            if (item.ContainerItemId != null) continue;
+
+            // Skip the weapon itself
+            if (item.Id == weapon.Id) continue;
+
+            var itemTemplate = GetTemplate(item.ItemTemplateId);
+            if (itemTemplate == null) continue;
+
+            // Check if it's loose ammo
+            if (itemTemplate.ItemType == ItemType.Ammunition)
+            {
+                // Only if weapon accepts loose ammo
+                if (!weaponProps.AcceptsLooseAmmo)
+                    continue;
+
+                var ammoProps = AmmunitionProperties.FromJson(itemTemplate.CustomProperties);
+                if (ammoProps?.IsContainer == true)
+                    continue; // Skip ammo containers
+
+                // Check ammo type compatibility
+                if (!string.IsNullOrEmpty(weaponProps.AmmoType) &&
+                    !string.IsNullOrEmpty(ammoProps?.AmmoType) &&
+                    !weaponProps.AmmoType.Equals(ammoProps.AmmoType, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                compatibleAmmo.Add(item);
+            }
+            // Check if it's a loaded magazine
+            else if (itemTemplate.ItemType == ItemType.AmmoContainer)
+            {
+                var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+                if (containerState.LoadedAmmo <= 0)
+                    continue; // Empty magazine
+
+                var containerProps = AmmoContainerProperties.FromJson(itemTemplate.CustomProperties);
+
+                // Check ammo type compatibility
+                var containerAmmoType = containerState.AmmoType ?? containerProps?.AllowedAmmoTypes;
+                if (!string.IsNullOrEmpty(weaponProps.AmmoType) &&
+                    !string.IsNullOrEmpty(containerAmmoType) &&
+                    !weaponProps.AmmoType.Equals(containerAmmoType, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                compatibleAmmo.Add(item);
+            }
+        }
+
+        return compatibleAmmo;
+    }
+
+    /// <summary>
+    /// Opens the reload weapon modal.
+    /// </summary>
+    private async Task OpenReloadWeaponModal()
+    {
+        if (selectedItem == null) return;
+
+        var availableAmmo = GetCompatibleAmmoForWeapon(selectedItem);
+        if (!availableAmmo.Any())
+        {
+            errorMessage = "No compatible ammo available.";
+            return;
+        }
+
+        var weaponName = GetItemName(selectedItem);
+
+        var result = await DialogService.OpenAsync<ReloadWeaponModal>(
+            "Reload Weapon",
+            new Dictionary<string, object>
+            {
+                { "Weapon", selectedItem },
+                { "WeaponName", weaponName },
+                { "AvailableAmmo", availableAmmo },
+                { "AvailableAp", Character?.ActionPoints?.Available ?? 0 },
+                { "AvailableFat", Character?.Fatigue?.Value ?? 0 }
+            },
+            new DialogOptions
+            {
+                Width = "400px",
+                CloseDialogOnOverlayClick = true,
+                ShowClose = true
+            });
+
+        if (result is ReloadWeaponResult reloadResult)
+        {
+            await OnReloadWeaponConfirm(reloadResult);
+        }
+    }
+
+    /// <summary>
+    /// Handles the reload weapon confirmation.
+    /// Costs 1 AP + 1 FAT (standard) or 2 AP (speed reload).
+    /// </summary>
+    private async Task OnReloadWeaponConfirm(ReloadWeaponResult result)
+    {
+        if (Character == null) return;
+
+        ClearMessages();
+
+        try
+        {
+            // Check AP cost based on reload type
+            var apCost = result.ApCost;
+            var fatCost = result.FatCost;
+
+            if (Character.ActionPoints.Available < apCost)
+            {
+                errorMessage = $"Not enough AP to start reloading. Requires {apCost} AP.";
+                return;
+            }
+
+            // Check for existing concentration effect
+            var concentrationEffect = Character.GetConcentrationEffect();
+            if (concentrationEffect != null)
+            {
+                var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+                if (state != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService, state, concentrationEffect.Name);
+                    if (!confirmed)
+                        return;
+                    ConcentrationBehavior.BreakConcentration(Character, "Started weapon reload");
+                }
+            }
+
+            // Spend AP and FAT based on reload type
+            Character.ActionPoints.Available -= apCost;
+            if (fatCost > 0)
+            {
+                Character.Fatigue.PendingDamage += fatCost;
+            }
+
+            // Create concentration effect for the reload
+            var behaviorState = ConcentrationBehavior.CreateWeaponReloadState(
+                result.WeaponItemId,
+                result.SourceItemId,
+                result.RoundsToLoad,
+                result.IsLooseAmmo,
+                result.AmmoType,
+                result.WeaponName);
+
+            // Create the effect using CSLA child portal pattern
+            var effect = await EffectPortal.CreateChildAsync(
+                Threa.Dal.Dto.EffectType.Concentration,
+                $"Reloading {result.WeaponName}",
+                (string?)null, // location
+                (int?)null,    // duration (handled by concentration system)
+                behaviorState);
+
+            effect.Source = "Player";
+            effect.Description = $"Loading {result.RoundsToLoad} rounds ({result.DurationRounds} rounds)";
+
+            Character.Effects.AddEffect(effect);
+            await NotifyCharacterChanged();
+
+            // Build cost description
+            var costDesc = fatCost > 0 ? $"{apCost} AP, {fatCost} FAT" : $"{apCost} AP";
+            successMessage = $"Started reloading {result.WeaponName} ({result.RoundsToLoad} rounds, {result.DurationRounds} round(s)). Cost: {costDesc}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error starting reload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Opens the unload weapon modal.
+    /// </summary>
+    private async Task OpenUnloadWeaponModal()
+    {
+        if (selectedItem == null) return;
+
+        var weaponName = GetItemName(selectedItem);
+
+        var result = await DialogService.OpenAsync<UnloadWeaponModal>(
+            "Unload Weapon",
+            new Dictionary<string, object>
+            {
+                { "Weapon", selectedItem },
+                { "WeaponName", weaponName },
+                { "AvailableAp", Character?.ActionPoints?.Available ?? 0 },
+                { "AvailableFat", Character?.Fatigue?.Value ?? 0 }
+            },
+            new DialogOptions
+            {
+                Width = "400px",
+                CloseDialogOnOverlayClick = true,
+                ShowClose = true
+            });
+
+        if (result is UnloadWeaponResult unloadResult)
+        {
+            await OnUnloadWeaponConfirm(unloadResult);
+        }
+    }
+
+    /// <summary>
+    /// Handles the unload weapon confirmation.
+    /// Costs 1 AP + 1 FAT (standard) or 2 AP (no fatigue).
+    /// Unload takes half the time of reload.
+    /// </summary>
+    private async Task OnUnloadWeaponConfirm(UnloadWeaponResult result)
+    {
+        if (Character == null) return;
+
+        ClearMessages();
+
+        try
+        {
+            // Check AP cost based on unload type
+            var apCost = result.ApCost;
+            var fatCost = result.FatCost;
+
+            if (Character.ActionPoints.Available < apCost)
+            {
+                errorMessage = $"Not enough AP to start unloading. Requires {apCost} AP.";
+                return;
+            }
+
+            // Check for existing concentration effect
+            var concentrationEffect = Character.GetConcentrationEffect();
+            if (concentrationEffect != null)
+            {
+                var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+                if (state != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService, state, concentrationEffect.Name);
+                    if (!confirmed)
+                        return;
+                    ConcentrationBehavior.BreakConcentration(Character, "Started weapon unload");
+                }
+            }
+
+            // Spend AP and FAT based on unload type
+            Character.ActionPoints.Available -= apCost;
+            if (fatCost > 0)
+            {
+                Character.Fatigue.PendingDamage += fatCost;
+            }
+
+            // Create concentration effect for the unload
+            var behaviorState = ConcentrationBehavior.CreateWeaponUnloadState(
+                result.WeaponItemId,
+                Character.Id,
+                result.RoundsToUnload,
+                result.WeaponName ?? "Weapon",
+                result.AmmoType);
+
+            // Create the effect using CSLA child portal pattern
+            var effect = await EffectPortal.CreateChildAsync(
+                Threa.Dal.Dto.EffectType.Concentration,
+                $"Unloading {result.WeaponName}",
+                (string?)null, // location
+                (int?)null,    // duration (handled by concentration system)
+                behaviorState);
+
+            effect.Source = "Player";
+            effect.Description = $"Unloading {result.RoundsToUnload} rounds ({result.DurationRounds} rounds)";
+
+            Character.Effects.AddEffect(effect);
+            await NotifyCharacterChanged();
+
+            // Build cost description
+            var costDesc = fatCost > 0 ? $"{apCost} AP, {fatCost} FAT" : $"{apCost} AP";
+            successMessage = $"Started unloading {result.WeaponName} ({result.RoundsToUnload} rounds, {result.DurationRounds} round(s)). Cost: {costDesc}";
         }
         catch (Exception ex)
         {

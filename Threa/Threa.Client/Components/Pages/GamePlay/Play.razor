@@ -22,6 +22,7 @@
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 @inject IJSRuntime JS
 @inject ICharacterItemDal CharacterItemDal
+@inject IItemTemplateDal ItemTemplateDal
 @inject IGameTimeFormatService TimeFormat
 
 @using GameMechanics.Time
@@ -765,6 +766,30 @@ private async Task LoadEquippedItemsAsync()
                         AddLogEntry(result.Message, ActivityCategory.Effect);
                     }
                     break;
+
+                case "AmmoContainerUnload":
+                    if (result.Success)
+                    {
+                        await ExecuteAmmoContainerUnload(targetCharacter, result.Payload);
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    else
+                    {
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
+
+                case "WeaponUnload":
+                    if (result.Success)
+                    {
+                        await ExecuteWeaponUnload(targetCharacter, result.Payload);
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    else
+                    {
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
             }
         }
         finally
@@ -852,6 +877,164 @@ private async Task LoadEquippedItemsAsync()
         catch (Exception ex)
         {
             errorMessage = $"Failed to complete ammo container reload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Executes the ammo container unload by returning rounds to loose ammo inventory.
+    /// </summary>
+    private async Task ExecuteAmmoContainerUnload(GameMechanics.CharacterEdit targetCharacter, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = GameMechanics.Effects.Behaviors.AmmoContainerUnloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        try
+        {
+            // Update container - remove ammo
+            var container = await CharacterItemDal.GetItemAsync(payload.ContainerId);
+            if (container != null)
+            {
+                var containerState = GameMechanics.Combat.AmmoContainerState.FromJson(container.CustomProperties);
+                containerState.LoadedAmmo = Math.Max(0, containerState.LoadedAmmo - payload.RoundsToUnload);
+                container.CustomProperties = GameMechanics.Combat.AmmoContainerState.MergeIntoCustomProperties(
+                    container.CustomProperties, containerState);
+                await CharacterItemDal.UpdateItemAsync(container);
+            }
+
+            // Add loose ammo to inventory (find existing stack or create new)
+            await AddLooseAmmoToInventory(payload.CharacterId, payload.RoundsToUnload, payload.AmmoType);
+
+            // Reload equipped items to reflect the change
+            await LoadEquippedItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to complete ammo container unload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Executes the weapon unload by returning rounds to loose ammo inventory.
+    /// </summary>
+    private async Task ExecuteWeaponUnload(GameMechanics.CharacterEdit targetCharacter, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = GameMechanics.Effects.Behaviors.WeaponUnloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        try
+        {
+            // Update weapon - remove ammo
+            var weapon = await CharacterItemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null)
+            {
+                var ammoState = GameMechanics.Combat.WeaponAmmoState.FromJson(weapon.CustomProperties);
+
+                // Remove rounds (from chamber first, then magazine)
+                int toRemove = payload.RoundsToUnload;
+                if (ammoState.ChamberLoaded && toRemove > 0)
+                {
+                    ammoState.ChamberLoaded = false;
+                    toRemove--;
+                }
+                ammoState.LoadedAmmo = Math.Max(0, ammoState.LoadedAmmo - toRemove);
+
+                weapon.CustomProperties = GameMechanics.Combat.WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, ammoState);
+                await CharacterItemDal.UpdateItemAsync(weapon);
+            }
+
+            // Add loose ammo to inventory (find existing stack or create new)
+            await AddLooseAmmoToInventory(payload.CharacterId, payload.RoundsToUnload, payload.AmmoType);
+
+            // Reload equipped items to reflect the change
+            await LoadEquippedItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to complete weapon unload: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Adds loose ammo to inventory. Finds existing stack of same type or creates new item.
+    /// </summary>
+    private async Task AddLooseAmmoToInventory(int characterId, int roundCount, string? ammoType)
+    {
+        if (roundCount <= 0) return;
+
+        // Try to find existing loose ammo stack of the same type
+        var items = await CharacterItemDal.GetCharacterItemsAsync(characterId);
+        Threa.Dal.Dto.CharacterItem? existingStack = null;
+
+        foreach (var item in items)
+        {
+            // Skip items in containers
+            if (item.ContainerItemId != null) continue;
+
+            var template = await ItemTemplateDal.GetTemplateAsync(item.ItemTemplateId);
+            if (template?.ItemType != Threa.Dal.Dto.ItemType.Ammunition) continue;
+
+            var ammoProps = GameMechanics.Combat.AmmunitionProperties.FromJson(template.CustomProperties);
+            if (ammoProps?.IsContainer == true) continue; // Skip magazines
+
+            // Check ammo type match
+            if (string.IsNullOrEmpty(ammoType) ||
+                string.IsNullOrEmpty(ammoProps?.AmmoType) ||
+                ammoType.Equals(ammoProps.AmmoType, StringComparison.OrdinalIgnoreCase))
+            {
+                existingStack = item;
+                break;
+            }
+        }
+
+        if (existingStack != null)
+        {
+            // Add to existing stack
+            existingStack.StackSize += roundCount;
+            await CharacterItemDal.UpdateItemAsync(existingStack);
+        }
+        else
+        {
+            // Need to create a new ammo item - find a template for loose ammo of this type
+            var templates = await ItemTemplateDal.GetAllTemplatesAsync();
+            Threa.Dal.Dto.ItemTemplate? ammoTemplate = null;
+
+            foreach (var t in templates)
+            {
+                if (t.ItemType != Threa.Dal.Dto.ItemType.Ammunition) continue;
+                var props = GameMechanics.Combat.AmmunitionProperties.FromJson(t.CustomProperties);
+                if (props?.IsContainer == true) continue;
+
+                if (string.IsNullOrEmpty(ammoType) ||
+                    string.IsNullOrEmpty(props?.AmmoType) ||
+                    ammoType.Equals(props.AmmoType, StringComparison.OrdinalIgnoreCase))
+                {
+                    ammoTemplate = t;
+                    break;
+                }
+            }
+
+            if (ammoTemplate != null)
+            {
+                var newItem = new Threa.Dal.Dto.CharacterItem
+                {
+                    Id = Guid.NewGuid(),
+                    OwnerCharacterId = characterId,
+                    ItemTemplateId = ammoTemplate.Id,
+                    StackSize = roundCount,
+                    IsEquipped = false
+                };
+                await CharacterItemDal.AddItemAsync(newItem);
+            }
+            else
+            {
+                // Couldn't find a template - log warning but don't fail
+                Console.WriteLine($"Warning: Could not find ammo template for type '{ammoType}' - rounds lost");
+            }
         }
     }
 
