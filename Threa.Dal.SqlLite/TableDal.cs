@@ -21,6 +21,18 @@ public class TableDal : ITableDal
     {
         try
         {
+            // Create schema version table if it doesn't exist
+            var versionTableSql = @"
+                CREATE TABLE IF NOT EXISTS SchemaVersion (
+                    Version INTEGER NOT NULL PRIMARY KEY,
+                    AppliedAt TEXT NOT NULL
+                );
+            ";
+            using var versionCommand = Connection.CreateCommand();
+            versionCommand.CommandText = versionTableSql;
+            versionCommand.ExecuteNonQuery();
+
+            // Create base tables
             var sql = @"
                 CREATE TABLE IF NOT EXISTS GameTables (
                     Id TEXT NOT NULL PRIMARY KEY,
@@ -44,11 +56,75 @@ public class TableDal : ITableDal
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             command.ExecuteNonQuery();
+
+            // Run migrations
+            RunMigrations();
         }
         catch (Exception ex)
         {
             throw new OperationFailedException("Error creating game table tables", ex);
         }
+    }
+
+    private void RunMigrations()
+    {
+        var currentVersion = GetCurrentSchemaVersion();
+
+        // Migration 1: Add PlayerId to TableCharacters
+        if (currentVersion < 1)
+        {
+            try
+            {
+                // Check if PlayerId column already exists
+                var checkColumnSql = "SELECT COUNT(*) FROM pragma_table_info('TableCharacters') WHERE name='PlayerId'";
+                using var checkCommand = Connection.CreateCommand();
+                checkCommand.CommandText = checkColumnSql;
+                var columnExists = Convert.ToInt32(checkCommand.ExecuteScalar()) > 0;
+
+                if (!columnExists)
+                {
+                    var migrationSql = "ALTER TABLE TableCharacters ADD COLUMN PlayerId INTEGER NOT NULL DEFAULT 0";
+                    using var migrationCommand = Connection.CreateCommand();
+                    migrationCommand.CommandText = migrationSql;
+                    migrationCommand.ExecuteNonQuery();
+                }
+
+                SetSchemaVersion(1);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error running migration 1", ex);
+            }
+        }
+
+        // Future migrations go here
+        // if (currentVersion < 2) { ... }
+    }
+
+    private int GetCurrentSchemaVersion()
+    {
+        try
+        {
+            var sql = "SELECT COALESCE(MAX(Version), 0) FROM SchemaVersion";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            var result = command.ExecuteScalar();
+            return Convert.ToInt32(result);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private void SetSchemaVersion(int version)
+    {
+        var sql = "INSERT OR REPLACE INTO SchemaVersion (Version, AppliedAt) VALUES (@Version, @AppliedAt)";
+        using var command = Connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("@Version", version);
+        command.Parameters.AddWithValue("@AppliedAt", DateTime.UtcNow.ToString("o"));
+        command.ExecuteNonQuery();
     }
 
     public GameTable GetBlank()

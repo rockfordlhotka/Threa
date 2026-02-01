@@ -207,7 +207,10 @@ else
                     {
                         <div class="mb-3">
                             <label class="form-label">Start Time (in seconds from epoch 0)</label>
-                            <input type="number" class="form-control" @bind="table.StartTimeSeconds"
+                            <input type="number" class="form-control" 
+                                   @bind="table.StartTimeSeconds"
+                                   @bind:event="oninput"
+                                   @onblur="SaveStartTime"
                                    min="0" placeholder="e.g., 0 for beginning of time" />
                             <small class="text-muted">
                                 Preview: @TimeFormat.FormatCompact(table.StartTimeSeconds)
@@ -780,6 +783,12 @@ else
         {
             errorMessage = $"Failed to save: {ex.Message}";
         }
+    }
+
+    private async Task SaveStartTime()
+    {
+        if (table == null) return;
+        await SaveTable();
     }
 
     private void SelectCharacter(GameMechanics.GamePlay.TableCharacterInfo character)
