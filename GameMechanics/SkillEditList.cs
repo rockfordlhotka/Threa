@@ -26,7 +26,10 @@ namespace GameMechanics
       }
       else
       {
-        return skill.SkillCheck();
+        // Calculate SV = (AS + roll) - TV to properly compare against target value
+        var baseResult = skill.SkillCheck();
+        var sv = baseResult.RV - targetValue;
+        return ResultValues.GetResult(sv);
       }
     }
 
