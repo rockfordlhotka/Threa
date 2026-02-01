@@ -166,9 +166,11 @@
                             <strong>3. Boost (Optional)</strong>
                         </div>
                         <div class="card-body">
-                            <BoostSelector MaxAP="@GetMaxBoostAP()"
-                                           MaxFAT="@GetMaxBoostFAT()"
-                                           OnBoostChanged="OnBoostChanged" />
+                            <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                           AvailableFAT="@GetAvailableFATForBoost()"
+                                           CostType="@costType"
+                                           OnBoostChanged="OnBoostChanged"
+                                           OnBoostCostChanged="OnBoostCostChanged" />
                         </div>
                     </div>
                 }
@@ -279,6 +281,13 @@
                                     <td>Cost:</td>
                                     <td>@GetCostDisplayText()</td>
                                 </tr>
+                                @if (boostValue > 0 && RequiresCost())
+                                {
+                                    <tr>
+                                        <td>Boost Cost:</td>
+                                        <td>@GetBoostCostDisplay()</td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     </div>
@@ -316,21 +325,64 @@
                     </div>
                 </div>
 
-                <!-- Attacker's AV Input -->
+                <!-- Attacker Input -->
                 <div class="card mt-3">
                     <div class="card-header">
-                        <strong><i class="bi bi-input-cursor-text"></i> Attacker's AV (Optional)</strong>
+                        <strong><i class="bi bi-input-cursor-text"></i> Attack Info (Optional)</strong>
                     </div>
                     <div class="card-body">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">AV</span>
-                            <input type="number" class="form-control" @bind="attackerAV" placeholder="Enter attacker's AV">
+                        <!-- Attack Type Toggle -->
+                        <div class="btn-group w-100 mb-3" role="group">
+                            <input type="radio" class="btn-check" name="attackType" id="attackTypeMelee"
+                                   checked="@(!isRangedDamage)" @onchange="() => SetAttackType(false)">
+                            <label class="btn btn-outline-secondary" for="attackTypeMelee">
+                                <i class="bi bi-sword"></i> Melee (Enter AV)
+                            </label>
+                            <input type="radio" class="btn-check" name="attackType" id="attackTypeRanged"
+                                   checked="@isRangedDamage" @onchange="() => SetAttackType(true)">
+                            <label class="btn btn-outline-secondary" for="attackTypeRanged">
+                                <i class="bi bi-crosshair"></i> Ranged (Enter SV)
+                            </label>
                         </div>
-                        <small class="text-muted d-block mb-3">Enter the attacker's AV to see if you're hit after rolling.</small>
-                        
+
+                        @if (!isRangedDamage)
+                        {
+                            <!-- Melee: Enter AV -->
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">AV</span>
+                                <input type="number" class="form-control" @bind="attackerAV" placeholder="Enter attacker's AV">
+                            </div>
+                            <small class="text-muted d-block mb-3">Enter the attacker's AV to see if you're hit after rolling.</small>
+                        }
+                        else
+                        {
+                            <!-- Ranged: Enter SV directly -->
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">SV</span>
+                                <input type="number" class="form-control" @bind="rangedSV" placeholder="Enter attack's SV">
+                            </div>
+                            <small class="text-muted d-block mb-3">For ranged attacks, enter the SV directly from the attacker's result.</small>
+                            @if (rangedSV.HasValue && rangedSV.Value >= 0)
+                            {
+                                <div class="alert alert-danger py-2">
+                                    <strong><i class="bi bi-exclamation-triangle"></i> You were hit!</strong>
+                                    <br />
+                                    <small>SV @rangedSV determines damage. Click "Take Ranged Damage" to proceed.</small>
+                                </div>
+                            }
+                            else if (rangedSV.HasValue)
+                            {
+                                <div class="alert alert-success py-2">
+                                    <strong><i class="bi bi-shield-check"></i> Attack missed!</strong>
+                                    <br />
+                                    <small>Negative SV means the attack did not hit.</small>
+                                </div>
+                            }
+                        }
+
                         <!-- Called Shot -->
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="calledShotCheck" 
+                            <input class="form-check-input" type="checkbox" id="calledShotCheck"
                                    @bind="isCalledShot">
                             <label class="form-check-label" for="calledShotCheck">
                                 <strong>Called Shot</strong>
@@ -350,6 +402,14 @@
                             <small class="text-info d-block mt-1">
                                 <i class="bi bi-info-circle"></i> Called shots bypass random hit location roll.
                             </small>
+                        }
+
+                        @if (isRangedDamage && rangedSV.HasValue && rangedSV.Value >= 0)
+                        {
+                            <hr />
+                            <button class="btn btn-danger w-100" @onclick="TakeRangedDamage">
+                                <i class="bi bi-lightning-charge"></i> Take Ranged Damage (SV @rangedSV)
+                            </button>
                         }
                     </div>
                 </div>
@@ -524,6 +584,8 @@
     private DefenseTypeOption defenseType = DefenseTypeOption.Passive;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
     private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
     private int? attackerAV;
     private bool hasRolled;
     private DefenseResultData? defenseResult;
@@ -532,6 +594,9 @@
     private bool isCalledShot;
     private HitLocation calledShotLocation = HitLocation.Torso;
 
+    // Ranged damage state
+    private bool isRangedDamage;
+    private int? rangedSV;
 
     // Parry mode state
     private bool isInParryMode;
@@ -553,9 +618,23 @@
 
     private void SetDefenseType(DefenseTypeOption type) => defenseType = type;
 
-    private void OnCostTypeChanged(ActionCostType type) => costType = type;
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+        // Reset boost when cost type changes
+        boostValue = 0;
+        boostAPCost = 0;
+        boostFATCost = 0;
+    }
 
     private void OnBoostChanged(int totalBoost) => boostValue = totalBoost;
+
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
+    }
 
     private bool RequiresCost() => defenseType switch
     {
@@ -611,14 +690,14 @@
     private int GetEffectiveAS() => GetBaseAS() + boostValue + GetMultiActionPenalty() + GetEffectModifier();
     private int GetPassiveTV() => GetDodgeAS() - 1;
 
-    private int GetMaxBoostAP()
+    private int GetAvailableAPForBoost()
     {
         if (!RequiresCost()) return Character?.ActionPoints.Available ?? 0;
         var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
         return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
     }
 
-    private int GetMaxBoostFAT()
+    private int GetAvailableFATForBoost()
     {
         if (!RequiresCost()) return Character?.Fatigue.Value ?? 0;
         var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
@@ -636,13 +715,23 @@
         };
     }
 
+    private string GetBoostCostDisplay()
+    {
+        if (boostValue == 0) return "None";
+        if (boostFATCost > 0)
+            return $"{boostAPCost} AP + {boostFATCost} FAT (+{boostValue} AS)";
+        return $"{boostAPCost} AP (+{boostValue} AS)";
+    }
+
     private bool CanAct()
     {
         if (Character == null) return false;
-        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
-        return Character.ActionPoints.Available >= apNeeded &&
-               Character.Fatigue.Value >= fatNeeded &&
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var totalAPNeeded = baseAPCost + boostAPCost;
+        var totalFATNeeded = baseFATCost + boostFATCost;
+        return Character.ActionPoints.Available >= totalAPNeeded &&
+               Character.Fatigue.Value >= totalFATNeeded &&
                !Character.IsPassedOut;
     }
 
@@ -800,19 +889,59 @@
     {
         if (Character == null) return;
 
-        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
-        Character.ActionPoints.Available -= apCost;
+        var totalAPCost = baseAPCost + boostAPCost;
+        var totalFATCost = baseFATCost + boostFATCost;
+
+        Character.ActionPoints.Available -= totalAPCost;
         Character.ActionPoints.ActionsTakenThisRound += 1;
-        if (fatCost > 0)
-            Character.Fatigue.Value -= fatCost;
+        if (totalFATCost > 0)
+            Character.Fatigue.Value -= totalFATCost;
     }
 
     private void ResetDefense()
     {
         hasRolled = false;
         defenseResult = null;
+    }
+
+    private void SetAttackType(bool isRanged)
+    {
+        isRangedDamage = isRanged;
+        // Clear the other value when switching
+        if (isRanged)
+            attackerAV = null;
+        else
+            rangedSV = null;
+    }
+
+    private async Task TakeRangedDamage()
+    {
+        if (!rangedSV.HasValue || rangedSV.Value < 0) return;
+
+        // Log the ranged hit
+        var message = $"{Character?.Name} takes ranged damage: SV {rangedSV}";
+        if (isCalledShot)
+        {
+            message += $" [Called Shot: {calledShotLocation}]";
+        }
+
+        await OnDefenseComplete.InvokeAsync(message);
+
+        // Transition to damage resolution with the ranged SV
+        var hitData = new DefenseHitData
+        {
+            SV = rangedSV.Value,
+            DamageType = null, // Will be set in DamageResolution
+            DamageClass = null, // Will be set in DamageResolution
+            ShieldBlockSuccess = null,
+            ShieldBlockRV = null,
+            CalledShotLocation = isCalledShot ? calledShotLocation : null
+        };
+
+        await OnHit.InvokeAsync(hitData);
     }
 
     private string GetResultHeaderClass()

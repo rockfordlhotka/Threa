@@ -1,6 +1,7 @@
 @* Skills Tab for gameplay - Using skills during play *@
 
 @using GameMechanics.Effects.Behaviors
+@using Threa.Client.Components.Shared
 @inject Radzen.DialogService DialogService
 
 <div class="row">
@@ -98,10 +99,19 @@
 
                     <div class="mb-3">
                         <label class="form-label">Action Type</label>
-                        <select class="form-select" @bind="actionType">
+                        <select class="form-select" @bind="actionType" @bind:after="OnActionTypeChanged">
                             <option value="standard">Standard (1 AP, 1 FAT)</option>
                             <option value="fatiguefree">Fatigue-Free (2 AP, 0 FAT)</option>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Boost (Optional)</label>
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@GetCostType()"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
                     </div>
 
                     <button class="btn btn-primary w-100"
@@ -158,6 +168,9 @@
     private GameMechanics.SkillEdit? selectedSkill;
     private int targetValue = 8;
     private string actionType = "standard";
+    private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
     private CheckResult? lastCheckResult;
 
     private record CheckResult(bool Success, int AbilityScore, int TargetValue, int SuccessValue, string Outcome, string? SpecialEffect);
@@ -185,6 +198,42 @@
         return Character.ActionPoints.Available >= 1;
     }
 
+    private ActionCostType GetCostType() => actionType == "standard"
+        ? ActionCostType.OneAPOneFat
+        : ActionCostType.TwoAP;
+
+    private void OnActionTypeChanged()
+    {
+        // Reset boost when action type changes
+        boostValue = 0;
+        boostAPCost = 0;
+        boostFATCost = 0;
+    }
+
+    private void OnBoostChanged(int totalBoost)
+    {
+        boostValue = totalBoost;
+    }
+
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = actionType == "fatiguefree" ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = actionType == "standard" ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
+    }
+
     private bool CanPerformCheck()
     {
         if (selectedSkill == null || Character == null) return false;
@@ -203,10 +252,14 @@
         if (selectedSkill.Name != "Drive" && ConcentrationBehavior.IsConcentrating(Character))
             return false;
 
-        if (actionType == "standard")
-            return Character.ActionPoints.Available >= 1 && Character.Fatigue.Value >= 1;
-        else
-            return Character.ActionPoints.Available >= 2;
+        var baseAPCost = actionType == "fatiguefree" ? 2 : 1;
+        var baseFATCost = actionType == "standard" ? 1 : 0;
+
+        var totalAPNeeded = baseAPCost + boostAPCost;
+        var totalFATNeeded = baseFATCost + boostFATCost;
+
+        return Character.ActionPoints.Available >= totalAPNeeded &&
+               Character.Fatigue.Value >= totalFATNeeded;
     }
 
     private void UseSkill(GameMechanics.SkillEdit skill)
@@ -222,7 +275,7 @@
     {
         if (selectedSkill == null || Character == null) return;
 
-        // Deduct AP and FAT costs using the ActionPoints methods
+        // Deduct base action costs
         if (actionType == "standard")
         {
             Character.ActionPoints.TakeActionWithFatigue();
@@ -232,9 +285,16 @@
             Character.ActionPoints.TakeActionNoFatigue();
         }
 
-        // Perform the actual roll using 4dF+
+        // Deduct boost costs
+        if (boostAPCost > 0)
+            Character.ActionPoints.Available -= boostAPCost;
+        if (boostFATCost > 0)
+            Character.Fatigue.Value -= boostFATCost;
+
+        // Perform the actual roll using 4dF+ with boost applied
         int roll = GameMechanics.Dice.Roll4dFPlus();
-        int totalRoll = roll + selectedSkill.AbilityScore;
+        int effectiveAS = selectedSkill.AbilityScore + boostValue;
+        int totalRoll = roll + effectiveAS;
         int successValue = totalRoll - targetValue;
         bool success = successValue >= 0;
 
@@ -244,14 +304,14 @@
         if (selectedSkill.Name == "Drive" && success)
         {
             // Queue 1 VIT damage and FAT healing = AS - TV + 2
-            int fatHealing = selectedSkill.AbilityScore - targetValue + 2;
+            int fatHealing = effectiveAS - targetValue + 2;
             Character.Vitality.PendingDamage += 1;
             Character.Fatigue.PendingHealing += fatHealing;
             specialEffect = $"Queued 1 VIT damage and {fatHealing} FAT healing";
         }
 
         string outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
-        lastCheckResult = new CheckResult(success, selectedSkill.AbilityScore, targetValue, successValue, outcome, specialEffect);
+        lastCheckResult = new CheckResult(success, effectiveAS, targetValue, successValue, outcome, specialEffect);
 
         // Notify parent that character changed (for saving)
         await OnCharacterChanged.InvokeAsync();

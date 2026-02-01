@@ -57,9 +57,11 @@
                         <strong>3. Boost (Optional)</strong>
                     </div>
                     <div class="card-body">
-                        <BoostSelector MaxAP="@GetMaxBoostAP()"
-                                       MaxFAT="@GetMaxBoostFAT()"
-                                       OnBoostChanged="OnBoostChanged" />
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@costType"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
                     </div>
                 </div>
 
@@ -286,6 +288,8 @@
     private int selectedSkillIndex;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
     private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
     private bool includePhysicality = true;
     private bool hasRolled;
     private AttackResultData? attackResult;
@@ -309,11 +313,22 @@
     private void OnCostTypeChanged(ActionCostType type)
     {
         costType = type;
+        // Reset boost when cost type changes (BoostSelector will recalculate max)
+        boostValue = 0;
+        boostAPCost = 0;
+        boostFATCost = 0;
     }
 
     private void OnBoostChanged(int totalBoost)
     {
         boostValue = totalBoost;
+    }
+
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
     }
 
     private int GetMultiActionPenalty()
@@ -336,13 +351,13 @@
         return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier() + WeaponAVModifier;
     }
 
-    private int GetMaxBoostAP()
+    private int GetAvailableAPForBoost()
     {
         var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
         return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
     }
 
-    private int GetMaxBoostFAT()
+    private int GetAvailableFATForBoost()
     {
         var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
         return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
@@ -361,19 +376,23 @@
     private string GetBoostCostDisplay()
     {
         if (boostValue == 0) return "None";
-        // This is simplified - the actual boost tracker would need more detail
-        return $"+{boostValue} AS";
+        if (boostFATCost > 0)
+            return $"{boostAPCost} AP + {boostFATCost} FAT (+{boostValue} AS)";
+        return $"{boostAPCost} AP (+{boostValue} AS)";
     }
 
     private bool CanAttack()
     {
         if (Character == null || GetSelectedSkill() == null) return false;
 
-        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
-        return Character.ActionPoints.Available >= apNeeded &&
-               Character.Fatigue.Value >= fatNeeded &&
+        var totalAPNeeded = baseAPCost + boostAPCost;
+        var totalFATNeeded = baseFATCost + boostFATCost;
+
+        return Character.ActionPoints.Available >= totalAPNeeded &&
+               Character.Fatigue.Value >= totalFATNeeded &&
                !Character.IsPassedOut;
     }
 
@@ -403,14 +422,17 @@
         var skill = GetSelectedSkill();
         if (skill == null) return;
 
-        // Deduct costs and track action for multi-action penalty
-        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        // Deduct base action costs and boost costs
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
-        Character.ActionPoints.Available -= apCost;
+        var totalAPCost = baseAPCost + boostAPCost;
+        var totalFATCost = baseFATCost + boostFATCost;
+
+        Character.ActionPoints.Available -= totalAPCost;
         Character.ActionPoints.ActionsTakenThisRound += 1;
-        if (fatCost > 0)
-            Character.Fatigue.Value -= fatCost;
+        if (totalFATCost > 0)
+            Character.Fatigue.Value -= totalFATCost;
 
         // Roll attack
         int effectiveAS = GetEffectiveAS();
