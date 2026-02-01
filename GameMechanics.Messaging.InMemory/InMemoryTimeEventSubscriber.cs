@@ -17,6 +17,11 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     private IDisposable? _tableUpdateSubscription;
     private IDisposable? _joinRequestSubscription;
     private IDisposable? _charactersUpdatedSubscription;
+    private IDisposable? _targetingRequestSubscription;
+    private IDisposable? _targetingResponseSubscription;
+    private IDisposable? _targetingUpdateSubscription;
+    private IDisposable? _targetingResultSubscription;
+    private IDisposable? _targetingCancelledSubscription;
 
     private bool _connected;
     private bool _subscribed;
@@ -37,6 +42,11 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
     public event EventHandler<TableUpdateMessage>? TableUpdateReceived;
     public event EventHandler<JoinRequestMessage>? JoinRequestReceived;
     public event EventHandler<CharactersUpdatedMessage>? CharactersUpdatedReceived;
+    public event EventHandler<TargetingRequestMessage>? TargetingRequestReceived;
+    public event EventHandler<TargetingResponseMessage>? TargetingResponseReceived;
+    public event EventHandler<TargetingUpdateMessage>? TargetingUpdateReceived;
+    public event EventHandler<TargetingResultMessage>? TargetingResultReceived;
+    public event EventHandler<TargetingCancelledMessage>? TargetingCancelledReceived;
 
     public bool IsConnected => _connected && !_disposed;
     public bool IsSubscribed => _subscribed && !_disposed;
@@ -107,6 +117,41 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
             CharactersUpdatedReceived?.Invoke(this, msg);
         });
 
+        _targetingRequestSubscription = _bus.TargetingRequests.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received TargetingRequestMessage: InteractionId={InteractionId}, Attacker={AttackerId}, Defender={DefenderId}",
+                msg.InteractionId, msg.AttackerId, msg.DefenderId);
+            TargetingRequestReceived?.Invoke(this, msg);
+        });
+
+        _targetingResponseSubscription = _bus.TargetingResponses.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received TargetingResponseMessage: InteractionId={InteractionId}, Acknowledged={Acknowledged}",
+                msg.InteractionId, msg.Acknowledged);
+            TargetingResponseReceived?.Invoke(this, msg);
+        });
+
+        _targetingUpdateSubscription = _bus.TargetingUpdates.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received TargetingUpdateMessage: InteractionId={InteractionId}, FromAttacker={IsFromAttacker}",
+                msg.InteractionId, msg.IsFromAttacker);
+            TargetingUpdateReceived?.Invoke(this, msg);
+        });
+
+        _targetingResultSubscription = _bus.TargetingResults.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received TargetingResultMessage: InteractionId={InteractionId}, IsHit={IsHit}",
+                msg.InteractionId, msg.Resolution.IsHit);
+            TargetingResultReceived?.Invoke(this, msg);
+        });
+
+        _targetingCancelledSubscription = _bus.TargetingCancelled.Subscribe(msg =>
+        {
+            _logger.LogDebug("Received TargetingCancelledMessage: InteractionId={InteractionId}, AttackerId={AttackerId}",
+                msg.InteractionId, msg.AttackerId);
+            TargetingCancelledReceived?.Invoke(this, msg);
+        });
+
         _subscribed = true;
         _logger.LogInformation("Subscribed to in-memory time events");
 
@@ -124,6 +169,11 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
         _tableUpdateSubscription?.Dispose();
         _joinRequestSubscription?.Dispose();
         _charactersUpdatedSubscription?.Dispose();
+        _targetingRequestSubscription?.Dispose();
+        _targetingResponseSubscription?.Dispose();
+        _targetingUpdateSubscription?.Dispose();
+        _targetingResultSubscription?.Dispose();
+        _targetingCancelledSubscription?.Dispose();
 
         _timeEventSubscription = null;
         _timeSkipSubscription = null;
@@ -132,6 +182,11 @@ public class InMemoryTimeEventSubscriber : ITimeEventSubscriber
         _tableUpdateSubscription = null;
         _joinRequestSubscription = null;
         _charactersUpdatedSubscription = null;
+        _targetingRequestSubscription = null;
+        _targetingResponseSubscription = null;
+        _targetingUpdateSubscription = null;
+        _targetingResultSubscription = null;
+        _targetingCancelledSubscription = null;
 
         _subscribed = false;
         _logger.LogInformation("Unsubscribed from in-memory time events");

@@ -47,6 +47,31 @@ public interface ITimeEventSubscriber : IAsyncDisposable
     event EventHandler<CharactersUpdatedMessage>? CharactersUpdatedReceived;
 
     /// <summary>
+    /// Event raised when a targeting request is received (attacker initiates).
+    /// </summary>
+    event EventHandler<TargetingRequestMessage>? TargetingRequestReceived;
+
+    /// <summary>
+    /// Event raised when a targeting response is received (defender acknowledges).
+    /// </summary>
+    event EventHandler<TargetingResponseMessage>? TargetingResponseReceived;
+
+    /// <summary>
+    /// Event raised when a targeting update is received (either party updates data).
+    /// </summary>
+    event EventHandler<TargetingUpdateMessage>? TargetingUpdateReceived;
+
+    /// <summary>
+    /// Event raised when a targeting result is received (attack resolved).
+    /// </summary>
+    event EventHandler<TargetingResultMessage>? TargetingResultReceived;
+
+    /// <summary>
+    /// Event raised when targeting is cancelled.
+    /// </summary>
+    event EventHandler<TargetingCancelledMessage>? TargetingCancelledReceived;
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);

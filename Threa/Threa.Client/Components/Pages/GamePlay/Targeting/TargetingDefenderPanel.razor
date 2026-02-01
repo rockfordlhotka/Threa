@@ -1,0 +1,276 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Combat
+@using GameMechanics.Messaging
+
+<div class="targeting-defender-panel">
+    <div class="card h-100">
+        <div class="card-header bg-info text-white">
+            <strong><i class="bi bi-shield-shaded"></i> Your Defense</strong>
+            <small class="d-block">@DefenderName</small>
+        </div>
+        <div class="card-body overflow-auto" style="max-height: 400px;">
+            @if (ActionType == TargetingActionType.Medical)
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-heart-pulse"></i> This is a medical action. No defense needed.
+                    <br /><small>Click "Acknowledge" when ready.</small>
+                </div>
+            }
+            else
+            {
+                <!-- Defense Type -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Defense Type</label>
+                    <div class="d-grid gap-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="defenseType" id="defPassive"
+                                   checked="@(defenseType == DefenseType.Passive)"
+                                   @onchange="() => SetDefenseType(DefenseType.Passive)">
+                            <label class="form-check-label" for="defPassive">
+                                <strong>Passive</strong>
+                                <small class="text-muted d-block">TV = Dodge AS - 1 (no cost)</small>
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="defenseType" id="defDodge"
+                                   checked="@(defenseType == DefenseType.Dodge)"
+                                   disabled="@(!CanActiveDefense)"
+                                   @onchange="() => SetDefenseType(DefenseType.Dodge)">
+                            <label class="form-check-label @(!CanActiveDefense ? "text-muted" : "")" for="defDodge">
+                                <strong>Dodge</strong>
+                                <small class="@(!CanActiveDefense ? "text-danger" : "text-muted") d-block">
+                                    @(CanActiveDefense ? "TV = Dodge AS + roll (1 AP + 1 FAT)" : "Not enough resources")
+                                </small>
+                            </label>
+                        </div>
+
+                        @if (!IsRangedAttack)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="defenseType" id="defParry"
+                                       checked="@(defenseType == DefenseType.Parry)"
+                                       disabled="@(!CanParry)"
+                                       @onchange="() => SetDefenseType(DefenseType.Parry)">
+                                <label class="form-check-label @(!CanParry ? "text-muted" : "")" for="defParry">
+                                    <strong>Parry</strong>
+                                    <small class="@(!CanParry ? "text-danger" : "text-muted") d-block">
+                                        @(IsInParryMode ? "FREE while in Parry Mode" : !CanActiveDefense ? "Not enough resources" : "TV = Weapon AS + roll (1 AP + 1 FAT)")
+                                    </small>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (IsRangedAttack)
+                {
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Conditions (affect attacker's TV)</label>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="defenderMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                            <label class="form-check-label" for="defenderMoving">
+                                Moving (+2 TV)
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="defenderProne" @bind="isProne" @bind:after="OnDataChanged">
+                            <label class="form-check-label" for="defenderProne">
+                                Prone (+2 TV)
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="defenderCrouching" @bind="isCrouching" @bind:after="OnDataChanged">
+                            <label class="form-check-label" for="defenderCrouching">
+                                Crouching (+2 TV)
+                            </label>
+                        </div>
+
+                        <div class="mt-2">
+                            <label class="form-label">Cover</label>
+                            <select class="form-select form-select-sm" @bind="cover" @bind:after="OnDataChanged">
+                                <option value="@CoverType.None">None</option>
+                                <option value="@CoverType.Half">Half Cover (+1 TV)</option>
+                                <option value="@CoverType.ThreeQuarters">3/4 Cover (+2 TV)</option>
+                            </select>
+                        </div>
+                    </div>
+                }
+
+                @if (defenseType != DefenseType.Passive)
+                {
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Defense Boost</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">AP</span>
+                                    <input type="number" class="form-control" min="0" max="@MaxAPBoost" @bind="apBoost" @bind:after="OnDataChanged">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">FAT</span>
+                                    <input type="number" class="form-control" min="0" max="@MaxFATBoost" @bind="fatBoost" @bind:after="OnDataChanged">
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted">+1 TV per boost point spent</small>
+                    </div>
+                }
+            }
+        </div>
+        <div class="card-footer">
+            @if (ActionType != TargetingActionType.Medical && IsRangedAttack)
+            {
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Total TV Modifier:</span>
+                    <strong class="text-success">+@GetTotalTVModifier()</strong>
+                </div>
+            }
+            <button class="btn @(IsConfirmed ? "btn-success" : "btn-info") w-100"
+                    @onclick="ToggleConfirm"
+                    disabled="@IsReadOnly">
+                @if (IsConfirmed)
+                {
+                    <i class="bi bi-check-circle"></i> <text>Confirmed - Click to Edit</text>
+                }
+                else if (ActionType == TargetingActionType.Medical)
+                {
+                    <i class="bi bi-hand-thumbs-up"></i> <text>Acknowledge</text>
+                }
+                else
+                {
+                    <i class="bi bi-shield-check"></i> <text>Confirm Defense Settings</text>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string DefenderName { get; set; } = string.Empty;
+
+    [Parameter]
+    public TargetingActionType ActionType { get; set; }
+
+    [Parameter]
+    public bool IsRangedAttack { get; set; }
+
+    [Parameter]
+    public int DodgeAS { get; set; }
+
+    [Parameter]
+    public int ParryAS { get; set; }
+
+    [Parameter]
+    public bool IsInParryMode { get; set; }
+
+    [Parameter]
+    public bool CanActiveDefense { get; set; }
+
+    [Parameter]
+    public bool CanParry { get; set; }
+
+    [Parameter]
+    public int MaxAPBoost { get; set; }
+
+    [Parameter]
+    public int MaxFATBoost { get; set; }
+
+    [Parameter]
+    public bool IsConfirmed { get; set; }
+
+    [Parameter]
+    public bool IsReadOnly { get; set; }
+
+    [Parameter]
+    public TargetingDefenderData? InitialData { get; set; }
+
+    [Parameter]
+    public EventCallback<TargetingDefenderData> OnDataUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnConfirmChanged { get; set; }
+
+    // Local state
+    private DefenseType defenseType = DefenseType.Passive;
+    private bool isMoving;
+    private bool isProne;
+    private bool isCrouching;
+    private CoverType cover = CoverType.None;
+    private int apBoost;
+    private int fatBoost;
+
+    protected override void OnParametersSet()
+    {
+        if (InitialData != null)
+        {
+            defenseType = InitialData.DefenseType;
+            isMoving = InitialData.IsMoving;
+            isProne = InitialData.IsProne;
+            isCrouching = InitialData.IsCrouching;
+            cover = InitialData.Cover;
+            apBoost = InitialData.APBoost;
+            fatBoost = InitialData.FATBoost;
+        }
+    }
+
+    private async Task SetDefenseType(DefenseType type)
+    {
+        defenseType = type;
+        await OnDataChanged();
+    }
+
+    private int GetTotalTVModifier()
+    {
+        int modifier = apBoost + fatBoost;
+        if (isMoving) modifier += 2;
+        if (isProne) modifier += 2;
+        if (isCrouching) modifier += 2;
+        modifier += cover switch
+        {
+            CoverType.Half => 1,
+            CoverType.ThreeQuarters => 2,
+            _ => 0
+        };
+        return modifier;
+    }
+
+    private async Task OnDataChanged()
+    {
+        if (IsReadOnly) return;
+
+        var data = BuildDefenderData();
+        await OnDataUpdated.InvokeAsync(data);
+    }
+
+    private async Task ToggleConfirm()
+    {
+        if (IsReadOnly) return;
+        await OnConfirmChanged.InvokeAsync(!IsConfirmed);
+    }
+
+    private TargetingDefenderData BuildDefenderData()
+    {
+        return new TargetingDefenderData
+        {
+            DefenseType = defenseType,
+            IsMoving = isMoving,
+            IsProne = isProne,
+            IsCrouching = isCrouching,
+            Cover = cover,
+            APBoost = apBoost,
+            FATBoost = fatBoost,
+            DodgeAS = DodgeAS,
+            ParryAS = ParryAS,
+            IsInParryMode = IsInParryMode
+        };
+    }
+}

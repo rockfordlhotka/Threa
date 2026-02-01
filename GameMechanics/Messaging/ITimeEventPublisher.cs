@@ -61,6 +61,41 @@ public interface ITimeEventPublisher : IAsyncDisposable
     Task PublishCharactersUpdatedAsync(CharactersUpdatedMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Publishes a targeting request (attacker initiates targeting).
+    /// </summary>
+    /// <param name="message">The targeting request message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishTargetingRequestAsync(TargetingRequestMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publishes a targeting response (defender acknowledges or indicates busy).
+    /// </summary>
+    /// <param name="message">The targeting response message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishTargetingResponseAsync(TargetingResponseMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publishes a targeting update (either party updates their data).
+    /// </summary>
+    /// <param name="message">The targeting update message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishTargetingUpdateAsync(TargetingUpdateMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publishes a targeting result (attack resolved with results).
+    /// </summary>
+    /// <param name="message">The targeting result message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishTargetingResultAsync(TargetingResultMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publishes a targeting cancelled message (attacker cancels).
+    /// </summary>
+    /// <param name="message">The targeting cancelled message.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task PublishTargetingCancelledAsync(TargetingCancelledMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Establishes connection to the message broker.
     /// </summary>
     Task ConnectAsync(CancellationToken cancellationToken = default);
