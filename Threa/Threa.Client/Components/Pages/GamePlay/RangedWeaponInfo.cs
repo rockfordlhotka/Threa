@@ -60,6 +60,22 @@ public class RangedWeaponInfo
     public string? AcceptedAmmoType { get; set; }
 
     /// <summary>
+    /// How the weapon is reloaded (Magazine, SingleRound, Cylinder, etc.).
+    /// Used to filter compatible ammo sources.
+    /// </summary>
+    public string ReloadType { get; set; } = "Magazine";
+
+    /// <summary>
+    /// Whether the weapon can accept loose ammo directly (arrows, individual rounds).
+    /// </summary>
+    public bool AcceptsLooseAmmo { get; set; }
+
+    /// <summary>
+    /// ID of the currently loaded magazine (if any).
+    /// </summary>
+    public Guid? LoadedMagazineId { get; set; }
+
+    /// <summary>
     /// Damage modifier from special ammo.
     /// </summary>
     public int AmmoDamageModifier { get; set; }

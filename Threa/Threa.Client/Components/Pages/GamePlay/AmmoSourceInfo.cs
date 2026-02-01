@@ -82,6 +82,11 @@ public class ReloadCompleteData
     /// Remaining ammo in the source after reload.
     /// </summary>
     public int AmmoSourceRemaining { get; set; }
+
+    /// <summary>
+    /// Whether the ammo source was loose ammo (vs a magazine).
+    /// </summary>
+    public bool IsLooseAmmo { get; set; }
 }
 
 /// <summary>

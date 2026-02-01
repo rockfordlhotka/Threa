@@ -464,6 +464,9 @@
                     Capacity = rangedProps?.Capacity ?? 0,
                     LoadedAmmoType = ammoState.LoadedAmmoType,
                     AcceptedAmmoType = rangedProps?.AmmoType,
+                    ReloadType = rangedProps?.ReloadType ?? "Magazine",
+                    AcceptsLooseAmmo = rangedProps?.AcceptsLooseAmmo ?? false,
+                    LoadedMagazineId = ammoState.LoadedMagazineId,
                     AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
                     IsDodgeable = rangedProps?.IsDodgeable ?? true,
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
@@ -859,9 +862,32 @@
                 if (item != null)
                 {
                     var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+                    var previousAmmo = ammoState.LoadedAmmo;
                     ammoState.LoadedAmmo = data.AmmoRemaining;
                     item.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(item.CustomProperties, ammoState);
                     await CharacterItemDal.UpdateItemAsync(item);
+
+                    // If weapon has a loaded magazine, update its state too
+                    if (ammoState.LoadedMagazineId.HasValue)
+                    {
+                        var magazineItem = await CharacterItemDal.GetItemAsync(ammoState.LoadedMagazineId.Value);
+                        if (magazineItem != null)
+                        {
+                            var magazineState = AmmoContainerState.FromJson(magazineItem.CustomProperties);
+                            // Deduct the same amount of ammo consumed from the magazine
+                            var ammoConsumed = previousAmmo - data.AmmoRemaining;
+                            magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - ammoConsumed);
+                            magazineItem.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(magazineItem.CustomProperties, magazineState);
+                            await CharacterItemDal.UpdateItemAsync(magazineItem);
+
+                            // Update local cache if present
+                            var cachedMag = availableAmmoSources.FirstOrDefault(a => a.ItemId == ammoState.LoadedMagazineId.Value);
+                            if (cachedMag != null)
+                            {
+                                cachedMag.CurrentAmmo = magazineState.LoadedAmmo;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -881,6 +907,8 @@
             if (weapon != null)
             {
                 weapon.LoadedAmmo = data.NewWeaponAmmoCount;
+                // Track if a magazine is loaded (not loose ammo)
+                weapon.LoadedMagazineId = data.IsLooseAmmo ? null : data.AmmoSourceItemId;
 
                 // Update the weapon item in the database
                 var weaponItem = equippedItems.FirstOrDefault(i => i.Id == data.WeaponItemId);
@@ -888,6 +916,8 @@
                 {
                     var ammoState = WeaponAmmoState.FromJson(weaponItem.CustomProperties);
                     ammoState.LoadedAmmo = data.NewWeaponAmmoCount;
+                    // Set LoadedMagazineId when loading from a magazine, clear it when loading loose ammo
+                    ammoState.LoadedMagazineId = data.IsLooseAmmo ? null : data.AmmoSourceItemId;
                     weaponItem.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(weaponItem.CustomProperties, ammoState);
                     await CharacterItemDal.UpdateItemAsync(weaponItem);
                 }
