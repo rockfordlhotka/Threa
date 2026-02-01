@@ -1,0 +1,542 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
+@using Threa.Dal.Dto
+
+@inject Radzen.DialogService DialogService
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
+
+<div class="unload-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-box-arrow-up text-warning"></i> Unload Weapon</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (!hasUnloaded)
+    {
+        <!-- Unload Setup -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Weapon Selection -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Select Weapon to Unload</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (weaponsWithAmmo == null || !weaponsWithAmmo.Any())
+                        {
+                            <p class="text-muted">No weapons with loaded ammo.</p>
+                        }
+                        else
+                        {
+                            <div class="list-group">
+                                @foreach (var weapon in weaponsWithAmmo)
+                                {
+                                    <button class="list-group-item list-group-item-action @(selectedWeapon?.ItemId == weapon.ItemId ? "active" : "")"
+                                            @onclick="() => SelectWeapon(weapon)">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>@weapon.Name</strong>
+                                                <div class="small @(selectedWeapon?.ItemId == weapon.ItemId ? "" : "text-muted")">
+                                                    @weapon.LoadedAmmoType ammo
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-success">
+                                                    @weapon.LoadedAmmo rounds
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (selectedWeapon != null)
+                {
+                    <!-- Rounds to Unload -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>2. Rounds to Unload</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn @(unloadAll ? "btn-warning" : "btn-outline-warning")"
+                                        @onclick="() => SetUnloadAll(true)">
+                                    All (@selectedWeapon.LoadedAmmo)
+                                </button>
+                                <button class="btn @(!unloadAll ? "btn-warning" : "btn-outline-warning")"
+                                        @onclick="() => SetUnloadAll(false)">
+                                    Partial
+                                </button>
+                            </div>
+                            @if (!unloadAll)
+                            {
+                                <div class="mt-3">
+                                    <label class="form-label">Rounds: @roundsToUnload</label>
+                                    <input type="range" class="form-range" min="1" max="@selectedWeapon.LoadedAmmo"
+                                           @bind="roundsToUnload" @bind:event="oninput" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Action Cost -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>3. Action Cost</strong>
+                        </div>
+                        <div class="card-body">
+                            <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                                Fat="@(Character?.Fatigue.Value ?? 0)"
+                                                OnCostTypeSelected="OnCostTypeChanged" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-md-6">
+                <!-- Unload Summary -->
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <strong><i class="bi bi-info-circle"></i> Unload Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (selectedWeapon != null)
+                        {
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td>Weapon:</td>
+                                        <td class="fw-bold">@selectedWeapon.Name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Current Ammo:</td>
+                                        <td class="fw-bold">@selectedWeapon.LoadedAmmo rounds</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ammo Type:</td>
+                                        <td class="fw-bold">@selectedWeapon.LoadedAmmoType</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Rounds to Unload:</td>
+                                        <td class="fw-bold text-warning">@GetRoundsToUnload()</td>
+                                    </tr>
+                                    <tr>
+                                        <td>After Unload:</td>
+                                        <td class="fw-bold">@GetAmmoAfterUnload() rounds</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cost:</td>
+                                        <td>@GetCostDisplay()</td>
+                                    </tr>
+                                    @if (RequiresConcentration())
+                                    {
+                                        <tr>
+                                            <td colspan="2"><hr class="my-1" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Duration:</td>
+                                            <td class="fw-bold text-warning">
+                                                <i class="bi bi-hourglass-split"></i> @GetConcentrationDuration() round(s)
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <small class="text-muted">
+                                                    Unloading multiple rounds requires concentration.
+                                                    Action completes when GM advances time.
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Select a weapon to see unload details.</p>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-warning btn-lg w-100"
+                                @onclick="ExecuteUnload"
+                                disabled="@(!CanUnload())">
+                            @if (RequiresConcentration())
+                            {
+                                <i class="bi bi-hourglass-split"></i> <text>Begin Unloading</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-box-arrow-up"></i> <text>Unload</text>
+                            }
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Equipment Status -->
+                <div class="card mt-3">
+                    <div class="card-body py-2">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted">AP</small>
+                                <div class="fw-bold @(Character?.ActionPoints.Available <= 0 ? "text-danger" : "")">
+                                    @Character?.ActionPoints.Available / @Character?.ActionPoints.Max
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">FAT</small>
+                                <div class="fw-bold @(Character?.Fatigue.Value <= 0 ? "text-danger" : "")">
+                                    @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">VIT</small>
+                                <div class="fw-bold">
+                                    @Character?.Vitality.Value / @Character?.Vitality.BaseValue
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (concentrationUnloadPending)
+    {
+        <!-- Concentration Unload Started -->
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <strong><i class="bi bi-hourglass-split"></i> Unloading in Progress...</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Weapon:</td>
+                            <td class="fw-bold">@unloadResult?.WeaponName</td>
+                        </tr>
+                        <tr>
+                            <td>Rounds Unloading:</td>
+                            <td class="fw-bold text-warning">@unloadResult?.RoundsUnloaded</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-info mb-0 mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Concentrating</strong> - Unload will complete when GM advances time.
+                    Taking any action will interrupt the unload.
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary" @onclick="CompleteConcentrationUnload">
+                    <i class="bi bi-check"></i> Done
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Immediate Unload Result -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <strong><i class="bi bi-check-circle"></i> Weapon Unloaded!</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Weapon:</td>
+                            <td class="fw-bold">@unloadResult?.WeaponName</td>
+                        </tr>
+                        <tr>
+                            <td>Rounds Unloaded:</td>
+                            <td class="fw-bold text-success">@unloadResult?.RoundsUnloaded</td>
+                        </tr>
+                        <tr>
+                            <td>Remaining in Weapon:</td>
+                            <td class="fw-bold">@unloadResult?.RemainingAmmo</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <button class="btn btn-primary" @onclick="CompleteUnload">
+                    <i class="bi bi-check"></i> Done
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ResetUnload">
+                    <i class="bi bi-arrow-repeat"></i> Unload Another
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    [Parameter]
+    public List<RangedWeaponInfo>? AvailableWeapons { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<UnloadCompleteData> OnUnloadComplete { get; set; }
+
+    // Selection state
+    private RangedWeaponInfo? selectedWeapon;
+    private bool unloadAll = true;
+    private int roundsToUnload = 1;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+
+    // Result state
+    private bool hasUnloaded;
+    private bool concentrationUnloadPending;
+    private UnloadResultData? unloadResult;
+
+    // Computed: weapons that have ammo loaded
+    private IEnumerable<RangedWeaponInfo>? weaponsWithAmmo =>
+        AvailableWeapons?.Where(w => w.LoadedAmmo > 0);
+
+    private void SelectWeapon(RangedWeaponInfo weapon)
+    {
+        selectedWeapon = weapon;
+        roundsToUnload = weapon.LoadedAmmo; // Default to all
+        unloadAll = true;
+    }
+
+    private void SetUnloadAll(bool all)
+    {
+        unloadAll = all;
+        if (all && selectedWeapon != null)
+        {
+            roundsToUnload = selectedWeapon.LoadedAmmo;
+        }
+        else if (selectedWeapon != null)
+        {
+            roundsToUnload = Math.Min(roundsToUnload, selectedWeapon.LoadedAmmo);
+            if (roundsToUnload < 1) roundsToUnload = 1;
+        }
+    }
+
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+    }
+
+    private int GetRoundsToUnload()
+    {
+        if (selectedWeapon == null) return 0;
+        return unloadAll ? selectedWeapon.LoadedAmmo : roundsToUnload;
+    }
+
+    private int GetAmmoAfterUnload()
+    {
+        if (selectedWeapon == null) return 0;
+        return selectedWeapon.LoadedAmmo - GetRoundsToUnload();
+    }
+
+    private string GetCostDisplay()
+    {
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private bool CanUnload()
+    {
+        if (Character == null || selectedWeapon == null) return false;
+        if (GetRoundsToUnload() <= 0) return false;
+
+        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded &&
+               !Character.IsPassedOut;
+    }
+
+    /// <summary>
+    /// Checks if this unload requires concentration (takes multiple rounds).
+    /// Unloads with more than 1 round require concentration.
+    /// </summary>
+    private bool RequiresConcentration()
+    {
+        return GetRoundsToUnload() > 1;
+    }
+
+    /// <summary>
+    /// Gets the number of concentration rounds required.
+    /// Rate: 3 rounds per game round (1 round per second).
+    /// </summary>
+    private int GetConcentrationDuration()
+    {
+        int rounds = GetRoundsToUnload();
+        return (int)Math.Ceiling(rounds / 3.0);
+    }
+
+    private async Task ExecuteUnload()
+    {
+        if (!CanUnload() || Character == null || selectedWeapon == null) return;
+
+        // Check if character is concentrating - prompt before breaking
+        var concentrationEffect = Character.GetConcentrationEffect();
+        if (concentrationEffect != null)
+        {
+            var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+            if (state != null)
+            {
+                var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                    DialogService,
+                    state,
+                    concentrationEffect.Name);
+                if (!confirmed)
+                    return; // User cancelled - don't execute action
+
+                // User confirmed - break concentration before proceeding
+                ConcentrationBehavior.BreakConcentration(Character, "Took unload action");
+            }
+        }
+
+        // Deduct costs
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= apCost;
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if (fatCost > 0)
+            Character.Fatigue.Value -= fatCost;
+
+        // Calculate unload amounts
+        int rounds = GetRoundsToUnload();
+
+        // Check if this unload requires concentration
+        if (RequiresConcentration())
+        {
+            // Create concentration effect for multi-round unload
+            var behaviorState = ConcentrationBehavior.CreateWeaponUnloadState(
+                selectedWeapon.ItemId,
+                Character.Id,
+                rounds,
+                selectedWeapon.Name,
+                ammoType: selectedWeapon.LoadedAmmoType);
+
+            // Create concentration effect using the portal
+            var effect = EffectPortal.CreateChild(
+                EffectType.Concentration,
+                $"Unloading {selectedWeapon.Name}",
+                null,  // location - not applicable for concentration
+                (int?)null,  // durationRounds - concentration tracks its own progress
+                behaviorState);
+            effect.Description = $"Unloading {rounds} rounds ({GetConcentrationDuration()} round(s) remaining)";
+            effect.Source = "Combat";
+
+            Character.Effects.AddEffect(effect);
+
+            // Store result for concentration display
+            concentrationUnloadPending = true;
+            unloadResult = new UnloadResultData
+            {
+                WeaponName = selectedWeapon.Name,
+                RoundsUnloaded = rounds,
+                RemainingAmmo = selectedWeapon.LoadedAmmo - rounds
+            };
+        }
+        else
+        {
+            // Immediate unload (single round)
+            concentrationUnloadPending = false;
+            unloadResult = new UnloadResultData
+            {
+                WeaponName = selectedWeapon.Name,
+                RoundsUnloaded = rounds,
+                RemainingAmmo = selectedWeapon.LoadedAmmo - rounds
+            };
+        }
+
+        hasUnloaded = true;
+
+        // Save character state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private void ResetUnload()
+    {
+        hasUnloaded = false;
+        concentrationUnloadPending = false;
+        unloadResult = null;
+        selectedWeapon = null;
+        unloadAll = true;
+        roundsToUnload = 1;
+    }
+
+    private async Task CompleteUnload()
+    {
+        if (unloadResult == null || selectedWeapon == null) return;
+
+        var message = $"{Character?.Name} unloads {unloadResult.RoundsUnloaded} rounds from {unloadResult.WeaponName}";
+
+        var completeData = new UnloadCompleteData
+        {
+            Message = message,
+            WeaponItemId = selectedWeapon.ItemId,
+            RoundsUnloaded = unloadResult.RoundsUnloaded,
+            RemainingAmmo = unloadResult.RemainingAmmo,
+            AmmoType = selectedWeapon.LoadedAmmoType
+        };
+
+        await OnUnloadComplete.InvokeAsync(completeData);
+    }
+
+    /// <summary>
+    /// Completes a concentration-based unload. Item updates will happen when
+    /// the concentration effect completes (GM advances time).
+    /// </summary>
+    private async Task CompleteConcentrationUnload()
+    {
+        if (unloadResult == null || selectedWeapon == null) return;
+
+        var message = $"{Character?.Name} begins unloading {unloadResult.RoundsUnloaded} rounds from {unloadResult.WeaponName}";
+
+        // For concentration unloads, we don't update items immediately.
+        // Just log the action start and return to default mode.
+        var completeData = new UnloadCompleteData
+        {
+            Message = message,
+            WeaponItemId = Guid.Empty, // Don't update weapon yet
+            RoundsUnloaded = 0, // No immediate change
+            RemainingAmmo = selectedWeapon.LoadedAmmo, // Current (unchanged)
+            AmmoType = selectedWeapon.LoadedAmmoType
+        };
+
+        await OnUnloadComplete.InvokeAsync(completeData);
+    }
+
+    private class UnloadResultData
+    {
+        public string WeaponName { get; set; } = "";
+        public int RoundsUnloaded { get; set; }
+        public int RemainingAmmo { get; set; }
+    }
+}

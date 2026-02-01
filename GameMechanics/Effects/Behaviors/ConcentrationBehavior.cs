@@ -66,6 +66,7 @@ public class ConcentrationBehavior : IEffectBehavior
             || concentrationType == "RitualPreparation"
             || concentrationType == "AmmoContainerReload"
             || concentrationType == "AmmoContainerUnload"
+            || concentrationType == "WeaponUnload"
             || concentrationType == "MedicalHealing";
     }
 
@@ -476,6 +477,55 @@ public class ConcentrationBehavior : IEffectBehavior
     }
 
     /// <summary>
+    /// Creates state for weapon reload concentration.
+    /// Used when loading individual rounds from loose ammo or magazines.
+    /// </summary>
+    /// <param name="weaponItemId">The weapon CharacterItem ID being reloaded</param>
+    /// <param name="ammoSourceItemId">The magazine/ammo source CharacterItem ID</param>
+    /// <param name="roundsToLoad">Number of rounds to load when complete</param>
+    /// <param name="isLooseAmmo">True if source is loose ammo stack, false if magazine</param>
+    /// <param name="ammoType">The type of ammo being loaded (optional)</param>
+    /// <param name="weaponName">Display name of the weapon (optional)</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateWeaponReloadState(
+        Guid weaponItemId,
+        Guid ammoSourceItemId,
+        int roundsToLoad,
+        bool isLooseAmmo,
+        string? ammoType = null,
+        string? weaponName = null)
+    {
+        // Rate: 3 rounds per game round (1 round per second)
+        int totalRounds = (int)Math.Ceiling(roundsToLoad / 3.0);
+
+        var payload = new MagazineReloadPayload
+        {
+            WeaponItemId = weaponItemId,
+            MagazineItemId = ammoSourceItemId,
+            RoundsToLoad = roundsToLoad,
+            IsLooseAmmo = isLooseAmmo,
+            AmmoType = ammoType
+        };
+
+        string displayName = weaponName ?? "weapon";
+        string sourceDesc = isLooseAmmo ? "rounds" : "magazine";
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "MagazineReload",
+            TotalRequired = totalRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            TargetItemId = ammoSourceItemId,
+            SourceItemId = weaponItemId,
+            DeferredActionType = "MagazineReload",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"{displayName} loaded with {roundsToLoad} {sourceDesc}!",
+            InterruptionMessage = "Reload interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
     /// Creates state for magazine reload concentration.
     /// </summary>
     /// <param name="weaponItemId">The weapon CharacterItem ID being reloaded</param>
@@ -483,6 +533,7 @@ public class ConcentrationBehavior : IEffectBehavior
     /// <param name="roundsToLoad">Number of rounds to load when complete</param>
     /// <param name="totalRounds">Number of concentration rounds required (default 3)</param>
     /// <returns>Serialized ConcentrationState JSON</returns>
+    [Obsolete("Use CreateWeaponReloadState instead")]
     public static string CreateMagazineReloadState(
         Guid weaponItemId,
         Guid magazineItemId,
@@ -493,7 +544,8 @@ public class ConcentrationBehavior : IEffectBehavior
         {
             WeaponItemId = weaponItemId,
             MagazineItemId = magazineItemId,
-            RoundsToLoad = roundsToLoad
+            RoundsToLoad = roundsToLoad,
+            IsLooseAmmo = false
         };
 
         return new ConcentrationState
@@ -659,6 +711,50 @@ public class ConcentrationBehavior : IEffectBehavior
             DeferredActionType = "AmmoContainerUnload",
             DeferredActionPayload = payload.Serialize(),
             CompletionMessage = $"{containerName} unloaded - {roundsToUnload} rounds returned to inventory!",
+            InterruptionMessage = "Unload interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for weapon unload concentration.
+    /// Used when unloading individual rounds from a weapon back to loose ammo in inventory.
+    /// Rate: 3 rounds per game round (1 round per second).
+    /// </summary>
+    /// <param name="weaponItemId">The weapon CharacterItem ID being unloaded</param>
+    /// <param name="characterId">The character ID who owns the weapon</param>
+    /// <param name="roundsToUnload">Number of rounds to unload when complete</param>
+    /// <param name="weaponName">Display name of the weapon</param>
+    /// <param name="ammoType">Type of ammo being unloaded (optional)</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreateWeaponUnloadState(
+        Guid weaponItemId,
+        int characterId,
+        int roundsToUnload,
+        string weaponName,
+        string? ammoType = null)
+    {
+        // Rate: 3 rounds per game round (1 round per second)
+        int totalRounds = (int)Math.Ceiling(roundsToUnload / 3.0);
+
+        var payload = new WeaponUnloadPayload
+        {
+            WeaponItemId = weaponItemId,
+            CharacterId = characterId,
+            RoundsToUnload = roundsToUnload,
+            AmmoType = ammoType,
+            WeaponName = weaponName
+        };
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "WeaponUnload",
+            TotalRequired = totalRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            TargetItemId = weaponItemId,
+            DeferredActionType = "WeaponUnload",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"{weaponName} unloaded - {roundsToUnload} rounds returned to inventory!",
             InterruptionMessage = "Unload interrupted!"
         }.Serialize();
     }

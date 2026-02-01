@@ -4,6 +4,7 @@
 @using Threa.Dal.Dto
 
 @inject Radzen.DialogService DialogService
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
 
 <div class="reload-mode">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -164,6 +165,26 @@
                                         <td>Cost:</td>
                                         <td>@GetCostDisplay()</td>
                                     </tr>
+                                    @if (RequiresConcentration())
+                                    {
+                                        <tr>
+                                            <td colspan="2"><hr class="my-1" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Duration:</td>
+                                            <td class="fw-bold text-warning">
+                                                <i class="bi bi-hourglass-split"></i> @GetConcentrationDuration() round(s)
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <small class="text-muted">
+                                                    Reloading from loose ammo requires concentration.
+                                                    Action completes when GM advances time.
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    }
                                 </tbody>
                             </table>
                         }
@@ -176,7 +197,14 @@
                         <button class="btn btn-success btn-lg w-100"
                                 @onclick="ExecuteReload"
                                 disabled="@(!CanReload())">
-                            <i class="bi bi-box-arrow-in-down"></i> Reload
+                            @if (RequiresConcentration())
+                            {
+                                <i class="bi bi-hourglass-split"></i> <text>Begin Reloading</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-box-arrow-in-down"></i> <text>Reload</text>
+                            }
                         </button>
                     </div>
                 </div>
@@ -209,9 +237,46 @@
             </div>
         </div>
     }
+    else if (concentrationReloadPending)
+    {
+        <!-- Concentration Reload Started -->
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <strong><i class="bi bi-hourglass-split"></i> Reloading in Progress...</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Weapon:</td>
+                            <td class="fw-bold">@reloadResult?.WeaponName</td>
+                        </tr>
+                        <tr>
+                            <td>Rounds Loading:</td>
+                            <td class="fw-bold text-warning">@reloadResult?.RoundsLoaded</td>
+                        </tr>
+                        <tr>
+                            <td>From:</td>
+                            <td class="fw-bold">@reloadResult?.AmmoSourceName</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-info mb-0 mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Concentrating</strong> - Reload will complete when GM advances time.
+                    Taking any action will interrupt the reload.
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary" @onclick="CompleteConcentrationReload">
+                    <i class="bi bi-check"></i> Done
+                </button>
+            </div>
+        </div>
+    }
     else
     {
-        <!-- Reload Result -->
+        <!-- Immediate Reload Result -->
         <div class="card">
             <div class="card-header bg-success text-white">
                 <strong><i class="bi bi-check-circle"></i> Weapon Reloaded!</strong>
@@ -280,6 +345,7 @@
 
     // Result state
     private bool hasReloaded;
+    private bool concentrationReloadPending;
     private ReloadResultData? reloadResult;
 
     private void SelectWeapon(RangedWeaponInfo weapon)
@@ -355,9 +421,38 @@
         var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
         var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
+        // Can't start concentration if already concentrating (unless user confirms break)
+        // But we check this in ExecuteReload, not here
+
         return Character.ActionPoints.Available >= apNeeded &&
                Character.Fatigue.Value >= fatNeeded &&
                !Character.IsPassedOut;
+    }
+
+    /// <summary>
+    /// Checks if this reload requires concentration (takes multiple rounds).
+    /// Loose ammo reloads with more than 1 round require concentration.
+    /// </summary>
+    private bool RequiresConcentration()
+    {
+        if (selectedMagazine == null) return false;
+
+        // Magazine swaps are instant
+        if (!selectedMagazine.IsLooseAmmo) return false;
+
+        // Loose ammo: 1 round is instant, more requires concentration
+        int roundsToLoad = GetRoundsToLoad();
+        return roundsToLoad > 1;
+    }
+
+    /// <summary>
+    /// Gets the number of concentration rounds required.
+    /// Rate: 3 rounds per game round (1 round per second).
+    /// </summary>
+    private int GetConcentrationDuration()
+    {
+        int roundsToLoad = GetRoundsToLoad();
+        return (int)Math.Ceiling(roundsToLoad / 3.0);
     }
 
     private async Task ExecuteReload()
@@ -395,16 +490,56 @@
         // Calculate reload amounts
         int roundsToLoad = GetRoundsToLoad();
 
-        // Store result
-        reloadResult = new ReloadResultData
+        // Check if this reload requires concentration
+        if (RequiresConcentration())
         {
-            WeaponName = selectedWeapon.Name,
-            RoundsLoaded = roundsToLoad,
-            NewAmmoCount = selectedWeapon.LoadedAmmo + roundsToLoad,
-            Capacity = selectedWeapon.Capacity,
-            AmmoSourceName = selectedMagazine.Name,
-            AmmoSourceRemaining = selectedMagazine.CurrentAmmo - roundsToLoad
-        };
+            // Create concentration effect for multi-round reload from loose ammo
+            var behaviorState = ConcentrationBehavior.CreateWeaponReloadState(
+                selectedWeapon.ItemId,
+                selectedMagazine.ItemId,
+                roundsToLoad,
+                isLooseAmmo: true,
+                ammoType: selectedMagazine.AmmoType,
+                weaponName: selectedWeapon.Name);
+
+            // Create concentration effect using the portal
+            var effect = EffectPortal.CreateChild(
+                EffectType.Concentration,
+                $"Reloading {selectedWeapon.Name}",
+                null,  // location - not applicable for concentration
+                (int?)null,  // durationRounds - concentration tracks its own progress
+                behaviorState);
+            effect.Description = $"Loading {roundsToLoad} rounds ({GetConcentrationDuration()} round(s) remaining)";
+            effect.Source = "Combat";
+
+            Character.Effects.AddEffect(effect);
+
+            // Store result for concentration display
+            concentrationReloadPending = true;
+            reloadResult = new ReloadResultData
+            {
+                WeaponName = selectedWeapon.Name,
+                RoundsLoaded = roundsToLoad,
+                NewAmmoCount = selectedWeapon.LoadedAmmo + roundsToLoad,
+                Capacity = selectedWeapon.Capacity,
+                AmmoSourceName = selectedMagazine.Name,
+                AmmoSourceRemaining = selectedMagazine.CurrentAmmo - roundsToLoad
+            };
+        }
+        else
+        {
+            // Immediate reload (magazine swap or single round from loose ammo)
+            concentrationReloadPending = false;
+            reloadResult = new ReloadResultData
+            {
+                WeaponName = selectedWeapon.Name,
+                RoundsLoaded = roundsToLoad,
+                NewAmmoCount = selectedWeapon.LoadedAmmo + roundsToLoad,
+                Capacity = selectedWeapon.Capacity,
+                AmmoSourceName = selectedMagazine.Name,
+                AmmoSourceRemaining = selectedMagazine.CurrentAmmo - roundsToLoad
+            };
+        }
 
         hasReloaded = true;
 
@@ -418,6 +553,7 @@
     private void ResetReload()
     {
         hasReloaded = false;
+        concentrationReloadPending = false;
         reloadResult = null;
         selectedWeapon = null;
         selectedMagazine = null;
@@ -437,6 +573,31 @@
             RoundsLoaded = reloadResult.RoundsLoaded,
             NewWeaponAmmoCount = reloadResult.NewAmmoCount,
             AmmoSourceRemaining = reloadResult.AmmoSourceRemaining
+        };
+
+        await OnReloadComplete.InvokeAsync(completeData);
+    }
+
+    /// <summary>
+    /// Completes a concentration-based reload. Item updates will happen when
+    /// the concentration effect completes (GM advances time).
+    /// </summary>
+    private async Task CompleteConcentrationReload()
+    {
+        if (reloadResult == null || selectedWeapon == null || selectedMagazine == null) return;
+
+        var message = $"{Character?.Name} begins reloading {reloadResult.WeaponName} with {reloadResult.RoundsLoaded} rounds from {reloadResult.AmmoSourceName}";
+
+        // For concentration reloads, we don't update items immediately.
+        // Just log the action start and return to default mode.
+        var completeData = new ReloadCompleteData
+        {
+            Message = message,
+            WeaponItemId = Guid.Empty, // Don't update weapon yet
+            AmmoSourceItemId = Guid.Empty, // Don't update ammo source yet
+            RoundsLoaded = 0, // No immediate change
+            NewWeaponAmmoCount = selectedWeapon.LoadedAmmo, // Current (unchanged)
+            AmmoSourceRemaining = selectedMagazine.CurrentAmmo // Current (unchanged)
         };
 
         await OnReloadComplete.InvokeAsync(completeData);

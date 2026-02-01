@@ -320,6 +320,14 @@ public class TimeAdvancementService
                     }
                     break;
 
+                case "WeaponUnload":
+                    if (result.Success)
+                    {
+                        await ExecuteWeaponUnloadAsync(result.Payload);
+                        return result.Message;
+                    }
+                    break;
+
                 case "MedicalHealing":
                     if (result.Success)
                     {
@@ -360,15 +368,28 @@ public class TimeAdvancementService
             await _itemDal.UpdateItemAsync(weapon);
         }
 
-        // Reduce magazine ammo
-        var magazine = await _itemDal.GetItemAsync(payload.MagazineItemId);
-        if (magazine != null)
+        // Reduce ammo source
+        var ammoSource = await _itemDal.GetItemAsync(payload.MagazineItemId);
+        if (ammoSource != null)
         {
-            var magazineState = AmmoContainerState.FromJson(magazine.CustomProperties);
-            magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - payload.RoundsToLoad);
-            magazine.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
-                magazine.CustomProperties, magazineState);
-            await _itemDal.UpdateItemAsync(magazine);
+            if (payload.IsLooseAmmo)
+            {
+                // Loose ammo: reduce stack size
+                ammoSource.StackSize -= payload.RoundsToLoad;
+                if (ammoSource.StackSize <= 0)
+                    await _itemDal.DeleteItemAsync(payload.MagazineItemId);
+                else
+                    await _itemDal.UpdateItemAsync(ammoSource);
+            }
+            else
+            {
+                // Magazine: reduce container state
+                var magazineState = AmmoContainerState.FromJson(ammoSource.CustomProperties);
+                magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - payload.RoundsToLoad);
+                ammoSource.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
+                    ammoSource.CustomProperties, magazineState);
+                await _itemDal.UpdateItemAsync(ammoSource);
+            }
         }
     }
 
@@ -488,6 +509,102 @@ public class TimeAdvancementService
                 if (ammoProps.IsContainer) continue; // Not loose ammo
 
                 if (string.Equals(ammoProps.AmmoType, payload.AmmoType, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchingTemplate = template;
+                    break;
+                }
+            }
+
+            if (matchingTemplate != null)
+            {
+                var newAmmo = new CharacterItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemTemplateId = matchingTemplate.Id,
+                    OwnerCharacterId = payload.CharacterId,
+                    StackSize = roundsToUnload,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _itemDal.AddItemAsync(newAmmo);
+            }
+            // If no matching template found, the rounds are lost - this shouldn't happen
+            // if the ammo type is properly set up
+        }
+    }
+
+    /// <summary>
+    /// Executes the weapon unload by reducing the weapon's ammo
+    /// and returning rounds to the character's inventory as loose ammo.
+    /// </summary>
+    private async Task ExecuteWeaponUnloadAsync(string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = WeaponUnloadPayload.FromJson(payloadJson);
+        if (payload == null) return;
+
+        // Update weapon ammo state
+        var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+        if (weapon == null) return;
+
+        var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+        var roundsToUnload = Math.Min(payload.RoundsToUnload, weaponState.LoadedAmmo);
+        if (roundsToUnload <= 0) return;
+
+        // Get ammo type from weapon state if not specified
+        var ammoType = payload.AmmoType ?? weaponState.LoadedAmmoType;
+
+        // Reduce weapon ammo
+        weaponState.LoadedAmmo -= roundsToUnload;
+        weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+            weapon.CustomProperties, weaponState);
+        await _itemDal.UpdateItemAsync(weapon);
+
+        // Get all character's items to find a matching loose ammo stack
+        var characterItems = await _itemDal.GetCharacterItemsAsync(payload.CharacterId);
+
+        // Find existing loose ammo of the same type
+        CharacterItem? existingLooseAmmo = null;
+        foreach (var item in characterItems)
+        {
+            // Must not be in a container
+            if (item.ContainerItemId != null) continue;
+
+            // Get template to check if it's ammunition of the right type
+            var template = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
+            if (template?.ItemType != ItemType.Ammunition) continue;
+
+            var ammoProps = AmmunitionProperties.FromJson(template.CustomProperties);
+            if (ammoProps == null) continue;
+            if (ammoProps.IsContainer) continue; // Not loose ammo
+
+            // Check if same ammo type
+            if (string.Equals(ammoProps.AmmoType, ammoType, StringComparison.OrdinalIgnoreCase))
+            {
+                existingLooseAmmo = item;
+                break;
+            }
+        }
+
+        if (existingLooseAmmo != null)
+        {
+            // Add to existing stack
+            existingLooseAmmo.StackSize += roundsToUnload;
+            await _itemDal.UpdateItemAsync(existingLooseAmmo);
+        }
+        else
+        {
+            // Need to create a new loose ammo item - find the template
+            var ammoTemplates = await _templateDal.GetTemplatesByTypeAsync(ItemType.Ammunition);
+            ItemTemplate? matchingTemplate = null;
+
+            foreach (var template in ammoTemplates)
+            {
+                var ammoProps = AmmunitionProperties.FromJson(template.CustomProperties);
+                if (ammoProps == null) continue;
+                if (ammoProps.IsContainer) continue; // Not loose ammo
+
+                if (string.Equals(ammoProps.AmmoType, ammoType, StringComparison.OrdinalIgnoreCase))
                 {
                     matchingTemplate = template;
                     break;

@@ -8,6 +8,7 @@
 @using Threa.Client.Components.Shared
 
 @inject ICharacterItemDal CharacterItemDal
+@inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
 
 <div class="combat-tab-container">
@@ -94,6 +95,18 @@
                             <i class="bi bi-box-arrow-in-down fs-4"></i>
                             <div class="fw-bold">RELOAD</div>
                             <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                        </button>
+                    }
+
+                    <!-- Unload Button -->
+                    @if (HasWeaponWithAmmo())
+                    {
+                        <button class="btn btn-lg btn-outline-warning py-3"
+                                @onclick="StartUnload"
+                                disabled="@(!CanAct())">
+                            <i class="bi bi-box-arrow-up fs-4"></i>
+                            <div class="fw-bold">UNLOAD</div>
+                            <small class="opacity-75">Remove ammo from weapon</small>
                         </button>
                     }
 
@@ -235,6 +248,14 @@
                     OnCancel="ReturnToDefault"
                     OnReloadComplete="OnReloadComplete" />
     }
+    else if (combatMode == CombatMode.Unload)
+    {
+        <UnloadMode Character="Character"
+                    Table="Table"
+                    AvailableWeapons="rangedWeapons"
+                    OnCancel="ReturnToDefault"
+                    OnUnloadComplete="OnUnloadComplete" />
+    }
     else if (combatMode == CombatMode.Medical)
     {
         <MedicalMode Character="Character"
@@ -255,7 +276,7 @@
     [Parameter]
     public EventCallback OnCharacterChanged { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Medical }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -599,6 +620,21 @@
         combatMode = CombatMode.Medical;
     }
 
+    private void StartUnload()
+    {
+        // Unloading ends parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        combatMode = CombatMode.Unload;
+    }
+
+    private bool HasWeaponWithAmmo()
+    {
+        return rangedWeapons.Any(w => w.LoadedAmmo > 0);
+    }
+
     private async Task LoadAvailableAmmoSources()
     {
         availableAmmoSources = new List<AmmoSourceInfo>();
@@ -821,6 +857,101 @@
 
         combatMode = CombatMode.Default;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnUnloadComplete(UnloadCompleteData data)
+    {
+        LogActivity(data.Message, ActivityCategory.Combat);
+
+        // Update the weapon's ammo state (for immediate unloads, not concentration)
+        if (data.WeaponItemId != Guid.Empty && data.RoundsUnloaded > 0)
+        {
+            var weapon = rangedWeapons.FirstOrDefault(w => w.ItemId == data.WeaponItemId);
+            if (weapon != null)
+            {
+                weapon.LoadedAmmo = data.RemainingAmmo;
+
+                // Update the weapon item in the database
+                var weaponItem = equippedItems.FirstOrDefault(i => i.Id == data.WeaponItemId);
+                if (weaponItem != null)
+                {
+                    var ammoState = WeaponAmmoState.FromJson(weaponItem.CustomProperties);
+                    ammoState.LoadedAmmo = data.RemainingAmmo;
+                    weaponItem.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(weaponItem.CustomProperties, ammoState);
+                    await CharacterItemDal.UpdateItemAsync(weaponItem);
+                }
+
+                // For immediate unloads, create loose ammo in inventory
+                // (For concentration unloads, this is handled by TimeAdvancementService)
+                await CreateLooseAmmoFromUnload(data);
+            }
+        }
+
+        combatMode = CombatMode.Default;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CreateLooseAmmoFromUnload(UnloadCompleteData data)
+    {
+        if (Character == null || data.RoundsUnloaded <= 0 || string.IsNullOrEmpty(data.AmmoType)) return;
+
+        // Get all character's items to find a matching loose ammo stack
+        var allItems = await CharacterItemDal.GetCharacterItemsAsync(Character.Id);
+
+        // Find existing loose ammo of the same type
+        CharacterItem? existingLooseAmmo = null;
+        foreach (var item in allItems)
+        {
+            if (item.ContainerItemId != null) continue;
+            if (item.Template?.ItemType != ItemType.Ammunition) continue;
+
+            var ammoProps = AmmunitionProperties.FromJson(item.Template.CustomProperties);
+            if (ammoProps == null || ammoProps.IsContainer) continue;
+
+            if (string.Equals(ammoProps.AmmoType, data.AmmoType, StringComparison.OrdinalIgnoreCase))
+            {
+                existingLooseAmmo = item;
+                break;
+            }
+        }
+
+        if (existingLooseAmmo != null)
+        {
+            // Add to existing stack
+            existingLooseAmmo.StackSize += data.RoundsUnloaded;
+            await CharacterItemDal.UpdateItemAsync(existingLooseAmmo);
+        }
+        else
+        {
+            // Need to create a new loose ammo item - find the template
+            var ammoTemplates = await ItemTemplateDal.GetTemplatesByTypeAsync(ItemType.Ammunition);
+            ItemTemplate? matchingTemplate = null;
+
+            foreach (var template in ammoTemplates)
+            {
+                var ammoProps = AmmunitionProperties.FromJson(template.CustomProperties);
+                if (ammoProps == null || ammoProps.IsContainer) continue;
+
+                if (string.Equals(ammoProps.AmmoType, data.AmmoType, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchingTemplate = template;
+                    break;
+                }
+            }
+
+            if (matchingTemplate != null)
+            {
+                var newAmmo = new CharacterItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemTemplateId = matchingTemplate.Id,
+                    OwnerCharacterId = Character.Id,
+                    StackSize = data.RoundsUnloaded,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await CharacterItemDal.AddItemAsync(newAmmo);
+            }
+        }
     }
 
     private async Task OnMedicalComplete(MedicalCompleteData data)
