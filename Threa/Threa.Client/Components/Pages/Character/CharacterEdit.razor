@@ -12,6 +12,9 @@
 @inject ViewModel<GameMechanics.CharacterEdit> vm
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+@implements IDisposable
 
 <h3>Character Details</h3>
 
@@ -87,6 +90,7 @@ else
 
     private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills", "Magic", "Items" };
     private string activeTab = tabNames[0];
+    private bool _warningEnabled = false;
 
     private void SelectTab(string tabName)
     {
@@ -98,9 +102,9 @@ else
         // Every page _must_ initialize the state manager
         await StateManager.InitializeAsync();
 
-        vm.Saved += () => NavigationManager.NavigateTo("/player/characters");
-        vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
-        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+        vm.Saved += OnSaved;
+        vm.ModelChanged += OnModelChanged;
+        vm.ModelPropertyChanged += OnModelPropertyChanged;
 
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {
@@ -113,6 +117,59 @@ else
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateUnsavedChangesWarning();
+        }
+    }
+
+    private void OnSaved()
+    {
+        _ = DisableUnsavedChangesWarning();
+        NavigationManager.NavigateTo("/player/characters");
+    }
+
+    private async void OnModelChanged()
+    {
+        await InvokeAsync(() => StateHasChanged());
+        await UpdateUnsavedChangesWarning();
+    }
+
+    private async void OnModelPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs a)
+    {
+        await InvokeAsync(() => StateHasChanged());
+        await UpdateUnsavedChangesWarning();
+    }
+
+    private async Task UpdateUnsavedChangesWarning()
+    {
+        if (vm.Model == null) return;
+
+        // Enable warning if there are unsaved changes (new unsaved character or modified existing character)
+        bool hasUnsavedChanges = (vm.Model.IsNew || vm.Model.IsDirty) && !vm.Model.IsBeingSaved;
+
+        if (hasUnsavedChanges && !_warningEnabled)
+        {
+            await JSRuntime.InvokeVoidAsync("unsavedChangesWarning.enable");
+            _warningEnabled = true;
+        }
+        else if (!hasUnsavedChanges && _warningEnabled)
+        {
+            await DisableUnsavedChangesWarning();
+        }
+    }
+
+    private async Task DisableUnsavedChangesWarning()
+    {
+        if (_warningEnabled)
+        {
+            await JSRuntime.InvokeVoidAsync("unsavedChangesWarning.disable");
+            _warningEnabled = false;
+        }
+    }
+
     private async void SaveAsync()
     {
         vm.Model.IsBeingSaved = true;
@@ -121,5 +178,13 @@ else
         await vm.SaveAsync();
         vm.Model.IsBeingSaved = false;
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        vm.Saved -= OnSaved;
+        vm.ModelChanged -= OnModelChanged;
+        vm.ModelPropertyChanged -= OnModelPropertyChanged;
+        _ = DisableUnsavedChangesWarning();
     }
 }
