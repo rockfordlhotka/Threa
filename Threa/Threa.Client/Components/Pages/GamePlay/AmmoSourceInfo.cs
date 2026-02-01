@@ -83,3 +83,34 @@ public class ReloadCompleteData
     /// </summary>
     public int AmmoSourceRemaining { get; set; }
 }
+
+/// <summary>
+/// Data returned when a weapon unload is completed.
+/// </summary>
+public class UnloadCompleteData
+{
+    /// <summary>
+    /// Message to log.
+    /// </summary>
+    public string Message { get; set; } = "";
+
+    /// <summary>
+    /// The weapon item that was unloaded.
+    /// </summary>
+    public Guid WeaponItemId { get; set; }
+
+    /// <summary>
+    /// Number of rounds unloaded.
+    /// </summary>
+    public int RoundsUnloaded { get; set; }
+
+    /// <summary>
+    /// Remaining ammo in the weapon after unload.
+    /// </summary>
+    public int RemainingAmmo { get; set; }
+
+    /// <summary>
+    /// Type of ammo that was unloaded.
+    /// </summary>
+    public string? AmmoType { get; set; }
+}

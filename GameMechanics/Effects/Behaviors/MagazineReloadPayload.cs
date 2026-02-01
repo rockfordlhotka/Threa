@@ -29,6 +29,19 @@ public class MagazineReloadPayload
     public int RoundsToLoad { get; set; }
 
     /// <summary>
+    /// Whether the ammo source is loose ammo (stack) rather than a magazine (container).
+    /// When true, StackSize is reduced instead of AmmoContainerState.
+    /// </summary>
+    [JsonPropertyName("isLooseAmmo")]
+    public bool IsLooseAmmo { get; set; }
+
+    /// <summary>
+    /// The ammo type being loaded (e.g., "9mm").
+    /// </summary>
+    [JsonPropertyName("ammoType")]
+    public string? AmmoType { get; set; }
+
+    /// <summary>
     /// Serializes this payload to JSON for storage in ConcentrationState.
     /// </summary>
     public string Serialize()
