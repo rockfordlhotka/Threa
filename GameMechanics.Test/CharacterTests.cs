@@ -18,8 +18,10 @@ namespace GameMechanics.Test
     private static IEnumerable<Csla.Rules.BrokenRule> GetCurrencyBrokenRules(CharacterEdit character)
     {
       return character.BrokenRulesCollection.Where(r =>
-        r.Property == "CopperCoins" || r.Property == "SilverCoins" ||
-        r.Property == "GoldCoins" || r.Property == "PlatinumCoins");
+        r.Property == nameof(CharacterEdit.CopperCoins) || 
+        r.Property == nameof(CharacterEdit.SilverCoins) ||
+        r.Property == nameof(CharacterEdit.GoldCoins) || 
+        r.Property == nameof(CharacterEdit.PlatinumCoins));
     }
 
     [TestMethod]
