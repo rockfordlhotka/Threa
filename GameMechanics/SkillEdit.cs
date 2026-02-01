@@ -232,6 +232,7 @@ namespace GameMechanics
     /// <summary>
     /// Whether this skill can be used based on attribute requirements.
     /// Returns false if secondary attribute is below 8 or tertiary is below 6.
+    /// Handles compound attributes (e.g., "STR/ITT") by averaging them.
     /// </summary>
     public bool CanUse
     {
@@ -243,7 +244,7 @@ namespace GameMechanics
         // Check secondary attribute requirement (>= 8)
         if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
         {
-          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          var secondaryValue = GetEffectiveAttributeValue(character, SecondaryAttribute);
           if (secondaryValue < SecondaryAttributeMinimum)
             return false;
         }
@@ -251,7 +252,7 @@ namespace GameMechanics
         // Check tertiary attribute requirement (>= 6)
         if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
         {
-          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          var tertiaryValue = GetEffectiveAttributeValue(character, TertiaryAttribute);
           if (tertiaryValue < TertiaryAttributeMinimum)
             return false;
         }
@@ -262,6 +263,7 @@ namespace GameMechanics
 
     /// <summary>
     /// Explanation of why this skill cannot be used, or null if it can be used.
+    /// Handles compound attributes (e.g., "STR/ITT") by averaging them.
     /// </summary>
     public string? CannotUseReason
     {
@@ -275,7 +277,7 @@ namespace GameMechanics
         // Check secondary attribute requirement (>= 8)
         if (!string.IsNullOrWhiteSpace(SecondaryAttribute))
         {
-          var secondaryValue = character.GetEffectiveAttribute(SecondaryAttribute);
+          var secondaryValue = GetEffectiveAttributeValue(character, SecondaryAttribute);
           if (secondaryValue < SecondaryAttributeMinimum)
             reasons.Add($"Requires {SecondaryAttribute} >= {SecondaryAttributeMinimum}, current: {secondaryValue}");
         }
@@ -283,7 +285,7 @@ namespace GameMechanics
         // Check tertiary attribute requirement (>= 6)
         if (!string.IsNullOrWhiteSpace(TertiaryAttribute))
         {
-          var tertiaryValue = character.GetEffectiveAttribute(TertiaryAttribute);
+          var tertiaryValue = GetEffectiveAttributeValue(character, TertiaryAttribute);
           if (tertiaryValue < TertiaryAttributeMinimum)
             reasons.Add($"Requires {TertiaryAttribute} >= {TertiaryAttributeMinimum}, current: {tertiaryValue}");
         }
@@ -305,6 +307,24 @@ namespace GameMechanics
       {
         return null;
       }
+    }
+
+    /// <summary>
+    /// Gets the effective attribute value, handling compound attributes (e.g., "STR/ITT").
+    /// For compound attributes, returns the average of the constituent attributes.
+    /// </summary>
+    /// <param name="character">The character to get the attribute from.</param>
+    /// <param name="attributeName">The attribute name, which may be a compound attribute like "STR/ITT".</param>
+    /// <returns>The effective attribute value, or the average if compound.</returns>
+    private static int GetEffectiveAttributeValue(CharacterEdit character, string attributeName)
+    {
+      var attributes = attributeName.Split('/');
+      int sum = 0;
+      foreach (var attr in attributes)
+      {
+        sum += character.GetEffectiveAttribute(attr);
+      }
+      return sum / attributes.Length;
     }
 
     // === Existing Skill Check Logic ===
