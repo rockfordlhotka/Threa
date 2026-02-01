@@ -12,6 +12,15 @@ namespace GameMechanics.Test
   [TestClass]
   public class CharacterTests : TestBase
   {
+    /// <summary>
+    /// Helper method to get currency-related broken rules from a character.
+    /// </summary>
+    private static IEnumerable<Csla.Rules.BrokenRule> GetCurrencyBrokenRules(CharacterEdit character)
+    {
+      return character.BrokenRulesCollection.Where(r =>
+        r.Property == "CopperCoins" || r.Property == "SilverCoins" ||
+        r.Property == "GoldCoins" || r.Property == "PlatinumCoins");
+    }
 
     [TestMethod]
     public void CheckHealth()
@@ -416,9 +425,7 @@ namespace GameMechanics.Test
       c.PlatinumCoins = 0;
 
       // Should be valid - no currency-related broken rules
-      var currencyRules = c.BrokenRulesCollection.Where(r => 
-        r.Property == "CopperCoins" || r.Property == "SilverCoins" || 
-        r.Property == "GoldCoins" || r.Property == "PlatinumCoins");
+      var currencyRules = GetCurrencyBrokenRules(c);
       Assert.IsFalse(currencyRules.Any(), 
                     "Character should be valid with zero currency values");
     }
@@ -437,9 +444,7 @@ namespace GameMechanics.Test
       c.PlatinumCoins = 5;
 
       // Should be valid - no currency-related broken rules
-      var currencyRules = c.BrokenRulesCollection.Where(r => 
-        r.Property == "CopperCoins" || r.Property == "SilverCoins" || 
-        r.Property == "GoldCoins" || r.Property == "PlatinumCoins");
+      var currencyRules = GetCurrencyBrokenRules(c);
       Assert.IsFalse(currencyRules.Any(), 
                     "Character should be valid with positive currency values");
     }
