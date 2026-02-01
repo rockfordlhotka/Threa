@@ -826,7 +826,7 @@ else
     }
 
     private string GetPlayerJoinLink() =>
-        NavigationManager.ToAbsoluteUri($"/play/{TableId}").ToString();
+        NavigationManager.ToAbsoluteUri($"/play/join/{TableId}").ToString();
 
     private string GetStatusBadgeClass() =>
         table?.Status switch
