@@ -53,6 +53,20 @@ namespace GameMechanics.Player
             set => SetProperty(UseGravatarProperty, value);
         }
 
+        public static readonly PropertyInfo<string> SecretQuestionProperty = RegisterProperty<string>(nameof(SecretQuestion));
+        public string SecretQuestion
+        {
+            get => GetProperty(SecretQuestionProperty);
+            set => SetProperty(SecretQuestionProperty, value);
+        }
+
+        public static readonly PropertyInfo<string> SecretAnswerProperty = RegisterProperty<string>(nameof(SecretAnswer));
+        public string SecretAnswer
+        {
+            get => GetProperty(SecretAnswerProperty);
+            set => SetProperty(SecretAnswerProperty, value);
+        }
+
         protected override void AddBusinessRules()
         {
             base.AddBusinessRules();
@@ -65,6 +79,12 @@ namespace GameMechanics.Player
             BusinessRules.AddRule(new MaxLength(NameProperty, 50)
                 { MessageText = "Display name cannot exceed 50 characters" });
             BusinessRules.AddRule(new NoProfanityRule(NameProperty));
+
+            // Secret question validation
+            BusinessRules.AddRule(new MaxLength(SecretQuestionProperty, 200)
+                { MessageText = "Secret question cannot exceed 200 characters" });
+            BusinessRules.AddRule(new MaxLength(SecretAnswerProperty, 100)
+                { MessageText = "Secret answer cannot exceed 100 characters" });
         }
 
         [Fetch]
@@ -85,6 +105,8 @@ namespace GameMechanics.Player
                 ImageUrl = data.ImageUrl;
                 ContactEmail = data.ContactEmail;
                 UseGravatar = data.UseGravatar;
+                SecretQuestion = data.SecretQuestion;
+                SecretAnswer = data.SecretAnswer;
             }
             BusinessRules.CheckRules();
         }
@@ -100,7 +122,9 @@ namespace GameMechanics.Player
                 Email = Email,
                 ImageUrl = ImageUrl,
                 ContactEmail = ContactEmail,
-                UseGravatar = UseGravatar
+                UseGravatar = UseGravatar,
+                SecretQuestion = SecretQuestion,
+                SecretAnswer = SecretAnswer
             };
             var result = await dal.SavePlayerAsync(player);
             LoadProperty(IdProperty, result.Id);
