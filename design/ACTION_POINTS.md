@@ -10,19 +10,15 @@ Action Points (AP) represent a character's capacity to perform actions during co
 
 A character's maximum AP is calculated from their total accumulated skill levels across all skills:
 
-| Total Skill Levels | Max AP |
-|--------------------|--------|
-| 0-10 | 1 |
-| 11-20 | 2 |
-| 21-30 | 3 |
-| 31-40 | 4 |
-| etc. | +1 per 10 levels |
+```
+Max AP = TotalSkillLevels / 20 (minimum 1)
+```
 
 **Examples**:
-- New character with 10 total skill levels: Max AP = 1
-- Developing character with 15 total skill levels: Max AP = 2
-- Experienced character with 47 total skill levels: Max AP = 5
-- Veteran character with 120 total skill levels: Max AP = 12
+- New character with 10 total skill levels: Max AP = 1 (minimum)
+- Developing character with 25 total skill levels: Max AP = 1 (25/20 = 1.25 → 1)
+- Experienced character with 47 total skill levels: Max AP = 2 (47/20 = 2.35 → 2)
+- Veteran character with 120 total skill levels: Max AP = 6 (120/20 = 6)
 
 **Note**: Total Skill Levels is the sum of all individual skill levels the character has, not the count of skills. A character with Swords 3, Dodge 2, and Focus 4 has 9 total skill levels.
 
@@ -185,8 +181,7 @@ Characters can choose to rest instead of taking combat actions:
 ### Calculation Summary
 
 ```
-Max AP = ceiling(TotalSkillLevels / 10), minimum 1
-         (0-10 levels = 1 AP, 11-20 = 2 AP, 21-30 = 3 AP, etc.)
+Max AP = TotalSkillLevels / 20 (minimum 1)
 Recovery = CurrentFAT / 4 (minimum 1)
 Standard Action = 1 AP + 1 FAT
 Fatigue-Free Action = 2 AP
