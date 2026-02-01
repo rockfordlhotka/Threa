@@ -280,5 +280,61 @@ public class ItemTemplateTests : TestBase
             "Container with capacity should have no IsContainer warnings");
     }
 
+    [TestMethod]
+    public async Task ItemTemplateEdit_Validation_AmmoContainerCannotBeStackable()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<ItemTemplateEdit>>();
+
+        var template = await dp.CreateAsync();
+        template.Name = "Magazine";
+        template.ItemType = ItemType.AmmoContainer;
+        template.IsStackable = true; // Try to make it stackable
+
+        // Assert - Should have validation error
+        Assert.IsFalse(template.IsValid, "AmmoContainer with IsStackable=true should not be valid");
+        Assert.IsFalse(template.IsSavable, "AmmoContainer with IsStackable=true should not be savable");
+        Assert.IsTrue(template.BrokenRulesCollection.Any(r => r.Property == "IsStackable"),
+            "BrokenRulesCollection should contain IsStackable rule violation");
+    }
+
+    [TestMethod]
+    public async Task ItemTemplateEdit_Validation_AmmoContainerNotStackableIsValid()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<ItemTemplateEdit>>();
+
+        var template = await dp.CreateAsync();
+        template.Name = "Magazine";
+        template.ItemType = ItemType.AmmoContainer;
+        template.IsStackable = false; // Not stackable
+
+        // Assert - Should be valid
+        Assert.IsTrue(template.IsValid, "AmmoContainer with IsStackable=false should be valid");
+        Assert.IsTrue(template.IsSavable, "AmmoContainer with IsStackable=false should be savable");
+        Assert.IsFalse(template.BrokenRulesCollection.Any(r => r.Property == "IsStackable"),
+            "AmmoContainer with IsStackable=false should have no IsStackable error");
+    }
+
+    [TestMethod]
+    public async Task ItemTemplateEdit_Validation_OtherItemTypesCanBeStackable()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<ItemTemplateEdit>>();
+
+        // Test that other item types can still be stackable
+        var template = await dp.CreateAsync();
+        template.Name = "Arrows";
+        template.ItemType = ItemType.Ammunition; // Not AmmoContainer
+        template.IsStackable = true;
+
+        // Assert - Should be valid
+        Assert.IsTrue(template.IsValid, "Ammunition with IsStackable=true should be valid");
+        Assert.IsTrue(template.IsSavable, "Ammunition with IsStackable=true should be savable");
+    }
+
     #endregion
 }

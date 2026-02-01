@@ -251,6 +251,9 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
 
         // Container capacity validation - warning when container has no capacity set
         BusinessRules.AddRule(new ContainerCapacityWarningRule(IsContainerProperty, ContainerMaxWeightProperty, ContainerMaxVolumeProperty));
+
+        // Ammo container validation - ammo containers cannot be stackable
+        BusinessRules.AddRule(new AmmoContainerNotStackableRule(ItemTypeProperty, IsStackableProperty));
     }
 
     [Create]
@@ -492,6 +495,38 @@ public class ContainerCapacityWarningRule : BusinessRule
         if ((maxWeight == null || maxWeight <= 0) && (maxVolume == null || maxVolume <= 0))
         {
             context.AddWarningResult("Container has no capacity defined. Consider setting ContainerMaxWeight or ContainerMaxVolume.");
+        }
+    }
+}
+
+/// <summary>
+/// Validation rule that prevents ammo containers from being stackable.
+/// Ammo containers track their current ammunition count and cannot be stacked.
+/// </summary>
+public class AmmoContainerNotStackableRule : BusinessRule
+{
+    private readonly IPropertyInfo _itemTypeProperty;
+
+    public AmmoContainerNotStackableRule(
+        IPropertyInfo itemTypeProperty,
+        IPropertyInfo isStackableProperty)
+        : base(isStackableProperty)  // Primary property is IsStackable so error appears there
+    {
+        _itemTypeProperty = itemTypeProperty;
+        InputProperties.Add(itemTypeProperty);
+        InputProperties.Add(isStackableProperty);
+        // Re-check when either property changes
+        AffectedProperties.Add(isStackableProperty);
+    }
+
+    protected override void Execute(IRuleContext context)
+    {
+        var itemType = (ItemType)context.InputPropertyValues[_itemTypeProperty]!;
+        var isStackable = (bool)context.InputPropertyValues[PrimaryProperty]!;
+
+        if (itemType == ItemType.AmmoContainer && isStackable)
+        {
+            context.AddErrorResult("Ammo containers cannot be stackable because they track their current ammunition count.");
         }
     }
 }

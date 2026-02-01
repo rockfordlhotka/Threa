@@ -56,7 +56,21 @@ else
                             <TextInputRow Property="vm.GetPropertyInfo<decimal>(() => vm.Model.Volume)" />
                             <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.Value)" />
 
-                            <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsStackable)" />
+                            <!-- IsStackable checkbox - disabled for AmmoContainer items -->
+                            <tr>
+                                <td>@(vm.GetPropertyInfo(() => vm.Model.IsStackable).FriendlyName)</td>
+                                <td>
+                                    <RadzenCheckBox @bind-Value="vm.Model.IsStackable" TValue="bool"
+                                                    Disabled="@(vm.Model.ItemType == ItemType.AmmoContainer)" />
+                                    @if (vm.Model.ItemType == ItemType.AmmoContainer && vm.Model.IsStackable)
+                                    {
+                                        <span class="text-danger">Ammo containers cannot be stackable because they track their current ammunition count.</span>
+                                    }
+                                    <span class="text-danger">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).ErrorText)</span>
+                                    <span class="text-warning">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).WarningText)</span>
+                                    <span class="text-info">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).InformationText)</span>
+                                </td>
+                            </tr>
                             @if (vm.Model.IsStackable)
                             {
                                 <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.MaxStackSize)" />
@@ -811,6 +825,13 @@ else
         {
             vm.Model.IsStackable = true;
             vm.Model.MaxStackSize = 100;
+        }
+
+        // Ammo containers cannot be stackable
+        if (vm.Model.ItemType == ItemType.AmmoContainer && vm.Model.IsStackable)
+        {
+            vm.Model.IsStackable = false;
+            vm.Model.MaxStackSize = 1;
         }
 
         StateHasChanged();
