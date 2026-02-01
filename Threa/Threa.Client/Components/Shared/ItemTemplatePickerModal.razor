@@ -1,6 +1,7 @@
 @* Modal for browsing and selecting item templates *@
 
 @using GameMechanics.Items
+@using GameMechanics.Combat
 @using Threa.Dal.Dto
 @using Radzen
 @using System.Timers
@@ -87,6 +88,17 @@
                                         </span>
                                     }
                                 </div>
+                                @* Show capacity for ammo containers *@
+                                @if (template.ItemType == ItemType.AmmoContainer)
+                                {
+                                    var ammoProps = GetAmmoContainerProperties(template);
+                                    @if (ammoProps != null)
+                                    {
+                                        <div class="small text-info mb-1">
+                                            <i class="bi bi-box2 me-1"></i><strong>Capacity:</strong> @ammoProps.Capacity rounds (@ammoProps.AmmoType)
+                                        </div>
+                                    }
+                                }
                                 @if (!string.IsNullOrEmpty(template.ShortDescription))
                                 {
                                     <p class="card-text text-muted small text-truncate mb-1"
@@ -308,6 +320,14 @@
         ItemType.Miscellaneous => "bi-question-circle",
         _ => "bi-question-circle"
     };
+
+    private static AmmoContainerProperties? GetAmmoContainerProperties(ItemTemplateInfo template)
+    {
+        if (template.ItemType != ItemType.AmmoContainer || string.IsNullOrWhiteSpace(template.CustomProperties))
+            return null;
+
+        return AmmoContainerProperties.FromJson(template.CustomProperties);
+    }
 
     public void Dispose()
     {

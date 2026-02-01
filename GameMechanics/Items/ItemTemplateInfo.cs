@@ -77,6 +77,13 @@ public class ItemTemplateInfo : ReadOnlyBase<ItemTemplateInfo>
         private set => LoadProperty(TagsProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> CustomPropertiesProperty = RegisterProperty<string?>(nameof(CustomProperties));
+    public string? CustomProperties
+    {
+        get => GetProperty(CustomPropertiesProperty);
+        private set => LoadProperty(CustomPropertiesProperty, value);
+    }
+
     [FetchChild]
     private void Fetch(ItemTemplate dto)
     {
@@ -90,6 +97,7 @@ public class ItemTemplateInfo : ReadOnlyBase<ItemTemplateInfo>
         LoadProperty(RarityProperty, dto.Rarity);
         LoadProperty(IsActiveProperty, dto.IsActive);
         LoadProperty(TagsProperty, dto.Tags);
+        LoadProperty(CustomPropertiesProperty, dto.CustomProperties);
     }
 
     public void LoadFromDto(ItemTemplate dto)
@@ -104,5 +112,6 @@ public class ItemTemplateInfo : ReadOnlyBase<ItemTemplateInfo>
         LoadProperty(RarityProperty, dto.Rarity);
         LoadProperty(IsActiveProperty, dto.IsActive);
         LoadProperty(TagsProperty, dto.Tags);
+        LoadProperty(CustomPropertiesProperty, dto.CustomProperties);
     }
 }
