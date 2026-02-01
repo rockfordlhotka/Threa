@@ -42,7 +42,7 @@
                                     : (skill.CanUse ? "" : skill.CannotUseReason);
                                 <tr class="@(skill.CanUse ? "" : "text-muted")"
                                     title="@tooltipText">
-                                    <td title="@skillDescription">
+                                    <td>
                                         @skill.Name
                                         @if (!skill.CanUse)
                                         {
@@ -187,9 +187,11 @@
         {
             allSkills = await skillListPortal.FetchAsync();
         }
-        catch
+        catch (Exception)
         {
-            // Silently fail if we can't load skill list - tooltips will just be empty
+            // If we can't load skill list, descriptions will just be empty in tooltips
+            // The page will still work without descriptions
+            allSkills = null;
         }
     }
 
