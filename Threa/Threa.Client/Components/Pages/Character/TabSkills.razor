@@ -67,8 +67,9 @@ else
         {
             var xpCostToNextLevel = skill.Level < 10 ? GetXPCostToNextLevel(skill) : 0;
             var isNewSkill = IsNewSkill(skill);
+            var skillDescription = GetSkillDescription(skill);
             <tr>
-                <td>@skill.Name</td>
+                <td title="@skillDescription">@skill.Name</td>
                 <td>@skill.PrimaryAttribute</td>
                 <td>@skill.Level</td>
                 <td>@skill.Bonus</td>
@@ -185,6 +186,13 @@ else
         // Check if this skill is a magic skill by looking it up in allSkills
         var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
         return skillInfo?.IsMagic ?? false;
+    }
+
+    private string? GetSkillDescription(GameMechanics.SkillEdit skill)
+    {
+        // Look up the skill description from allSkills
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        return skillInfo?.Description;
     }
 
     private int GetXPCostToNextLevel(GameMechanics.SkillEdit skill)

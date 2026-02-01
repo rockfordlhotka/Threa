@@ -22,6 +22,11 @@ public class Skill
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Description of what the skill does.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Whether this is a specialized skill requiring training.
     /// </summary>
     public bool IsSpecialized { get; set; }

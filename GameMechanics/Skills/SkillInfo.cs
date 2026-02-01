@@ -21,6 +21,13 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
         private set => LoadProperty(NameProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> DescriptionProperty = RegisterProperty<string?>(nameof(Description));
+    public string? Description
+    {
+        get => GetProperty(DescriptionProperty);
+        private set => LoadProperty(DescriptionProperty, value);
+    }
+
     public static readonly PropertyInfo<SkillCategory> CategoryProperty = RegisterProperty<SkillCategory>(nameof(Category));
     public SkillCategory Category
     {
@@ -74,6 +81,7 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
     {
         LoadProperty(IdProperty, dto.Id);
         LoadProperty(NameProperty, dto.Name);
+        LoadProperty(DescriptionProperty, dto.Description);
         LoadProperty(CategoryProperty, dto.Category);
         LoadProperty(IsSpecializedProperty, dto.IsSpecialized);
         LoadProperty(IsMagicProperty, dto.IsMagic);
