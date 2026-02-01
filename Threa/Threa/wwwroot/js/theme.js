@@ -71,3 +71,39 @@ window.reinitializeTooltipsAfterDelay = function(delayMs) {
         window.initializeTooltips();
     }, delayMs || 100);
 };
+
+// Unsaved Changes Warning
+// Prevents user from navigating away when there are unsaved changes
+
+window.unsavedChangesWarning = {
+    _handler: null,
+    _isEnabled: false,
+
+    // Enable the warning (shows browser dialog when trying to leave)
+    enable: function() {
+        if (this._isEnabled) return;
+
+        this._handler = function(e) {
+            e.preventDefault();
+            // Modern browsers ignore custom messages, but we still need to set returnValue
+            e.returnValue = '';
+            return '';
+        };
+
+        window.addEventListener('beforeunload', this._handler);
+        this._isEnabled = true;
+        console.log('[Threa] Unsaved changes warning enabled');
+    },
+
+    // Disable the warning
+    disable: function() {
+        if (!this._isEnabled) return;
+
+        if (this._handler) {
+            window.removeEventListener('beforeunload', this._handler);
+            this._handler = null;
+        }
+        this._isEnabled = false;
+        console.log('[Threa] Unsaved changes warning disabled');
+    }
+};
