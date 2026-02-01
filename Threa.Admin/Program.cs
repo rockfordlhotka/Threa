@@ -217,7 +217,7 @@ public class CreateCommand : AsyncCommand<CreateSettings>
             Salt = salt,
             HashedPassword = hashedPassword,
             IsEnabled = true,
-            Roles = settings.Admin ? Roles.Administrator : null
+            Roles = settings.Admin ? Roles.Administrator : Roles.Player
         };
 
         await _dal.SavePlayerAsync(player);

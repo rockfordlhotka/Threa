@@ -5,8 +5,13 @@ set -e
 # Usage: ./db-pull.sh [local-db-path]
 #   local-db-path: Path to save database (default: ../threa.db)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+# Use pwd -W for Windows-compatible paths in Git Bash, fall back to pwd
+get_path() {
+    pwd -W 2>/dev/null || pwd
+}
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && get_path)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && get_path)"
 LOCAL_DB="${1:-$REPO_ROOT/threa.db}"
 REMOTE_PATH="/app/data/threa.db"
 NAMESPACE="threa"
@@ -31,10 +36,15 @@ if [[ -f "$LOCAL_DB" ]]; then
         echo "Aborted."
         exit 1
     fi
+    # Remove SQLite auxiliary files (journal, WAL, shared memory)
+    rm -f "$LOCAL_DB-journal" "$LOCAL_DB-wal" "$LOCAL_DB-shm"
 fi
 
 echo "Copying database from pod..."
-kubectl cp "$NAMESPACE/$POD:$REMOTE_PATH" "$LOCAL_DB"
+# Use relative path and MSYS_NO_PATHCONV to avoid Windows/Git Bash path mangling
+TEMP_DB="threa-temp-$$.db"
+MSYS_NO_PATHCONV=1 kubectl cp -n "$NAMESPACE" "$POD:$REMOTE_PATH" "$TEMP_DB"
+mv "$TEMP_DB" "$LOCAL_DB"
 
 echo ""
 echo "Done! Database saved to $LOCAL_DB"

@@ -5,8 +5,13 @@ set -e
 # Usage: ./db-push.sh [local-db-path]
 #   local-db-path: Path to local database (default: ../threa.db)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+# Use pwd -W for Windows-compatible paths in Git Bash, fall back to pwd
+get_path() {
+    pwd -W 2>/dev/null || pwd
+}
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && get_path)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && get_path)"
 LOCAL_DB="${1:-$REPO_ROOT/threa.db}"
 REMOTE_PATH="/app/data/threa.db"
 NAMESPACE="threa"
@@ -37,8 +42,11 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
+echo "Removing SQLite auxiliary files on pod..."
+MSYS_NO_PATHCONV=1 kubectl exec -n "$NAMESPACE" "$POD" -- rm -f "$REMOTE_PATH-journal" "$REMOTE_PATH-wal" "$REMOTE_PATH-shm"
+
 echo "Copying database to pod..."
-kubectl cp "$LOCAL_DB" "$NAMESPACE/$POD:$REMOTE_PATH"
+MSYS_NO_PATHCONV=1 kubectl cp "$LOCAL_DB" "$NAMESPACE/$POD:$REMOTE_PATH"
 
 echo ""
 echo "Done! Database pushed to $POD"

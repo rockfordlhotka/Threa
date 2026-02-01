@@ -213,16 +213,15 @@ public class PlayerDal : IPlayerDal
             ?? throw new NotFoundException($"{nameof(Player)} {id}");
         try
         {
-            if (string.IsNullOrWhiteSpace(existingPlayer.Salt))
-                existingPlayer.Salt = BCrypt.Net.BCrypt.GenerateSalt(12);
-
+            // Verify old password using BCrypt.Verify (extracts salt from hash)
             if (!string.IsNullOrWhiteSpace(existingPlayer.HashedPassword))
             {
-                var oldHashedPassword = BCrypt.Net.BCrypt.HashPassword(oldPassword, existingPlayer.Salt);
-                if (existingPlayer.HashedPassword != oldHashedPassword)
+                if (!BCrypt.Net.BCrypt.Verify(oldPassword, existingPlayer.HashedPassword))
                     throw new OperationFailedException($"Old password doesn't match for {nameof(Player)} {id}");
             }
 
+            // Hash new password with fresh salt (salt is embedded in the hash)
+            existingPlayer.Salt = BCrypt.Net.BCrypt.GenerateSalt(12);
             existingPlayer.HashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, existingPlayer.Salt);
 
             var sql = "UPDATE Players SET Json = @Json WHERE Id = @Id";
@@ -231,6 +230,10 @@ public class PlayerDal : IPlayerDal
             command.Parameters.AddWithValue("@Id", existingPlayer.Id);
             command.Parameters.AddWithValue("@Json", System.Text.Json.JsonSerializer.Serialize(existingPlayer));
             await command.ExecuteNonQueryAsync();
+        }
+        catch (OperationFailedException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
