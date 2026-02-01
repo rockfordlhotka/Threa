@@ -127,15 +127,15 @@ namespace GameMechanics
 
     /// <summary>
     /// Calculates maximum AP based on total skill levels.
-    /// 0-10 levels = 1 AP, 11-20 = 2 AP, 21-30 = 3 AP, etc.
+    /// Max AP = TotalSkillLevels / 20 (minimum 1)
     /// </summary>
     /// <param name="totalSkillLevels">Sum of all individual skill levels the character has.</param>
     public static int CalculateMax(int totalSkillLevels)
     {
       if (totalSkillLevels <= 0)
         return 1;
-      // Ceiling division: (n + 9) / 10 gives 1 for 1-10, 2 for 11-20, etc.
-      return (totalSkillLevels + 9) / 10;
+      var result = totalSkillLevels / 20;
+      return result < 1 ? 1 : result;
     }
 
     /// <summary>
