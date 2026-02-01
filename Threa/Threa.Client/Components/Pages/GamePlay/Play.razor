@@ -27,6 +27,8 @@
 @using GameMechanics.Time
 @using Threa.Dal
 
+@inject ITableDal TableDal
+
 <PageTitle>Threa - Play</PageTitle>
 
 @if (errorMessage != null)
@@ -34,6 +36,17 @@
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
         <strong>Error:</strong> @errorMessage
+        @if (errorMessage.Contains("not attached to this table"))
+        {
+            <div class="mt-2">
+                <a href="/player/browse-campaigns" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-search me-1"></i>Browse Campaigns
+                </a>
+                <a href="/play" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left me-1"></i>Select Character
+                </a>
+            </div>
+        }
         <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
     </div>
 }
@@ -322,11 +335,20 @@ protected override async Task OnInitializedAsync()
             character = await characterPortal.FetchAsync(CharacterId);
             await LoadEquippedItemsAsync();
 
-            // If TableId is provided, load the table
+            // If TableId is provided, load the table and verify character attachment
             if (TableId != Guid.Empty)
             {
                 try
                 {
+                    // First verify the character is actually attached to this table
+                    var attachedTable = await TableDal.GetTableForCharacterAsync(CharacterId);
+                    if (attachedTable == null || attachedTable.Id != TableId)
+                    {
+                        errorMessage = "This character is not attached to this table. You must request to join the table and be approved by the Game Master before you can play.";
+                        isLoading = false;
+                        return;
+                    }
+
                     table = await tablePortal.FetchAsync(TableId);
                     SubscribeToActivityLog(TableId);
                     await SubscribeToTimeEvents(TableId);
