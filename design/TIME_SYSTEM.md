@@ -53,32 +53,35 @@ During their turn, a character may:
 
 At the end of each round, the following occur in order:
 
-1. **Pending Damage/Healing Application**
-   - Apply half of each pending pool (FAT and VIT)
-   - Round to ensure pools eventually reach zero
+1. **Effect Processing**
+   - Process all active effects (wounds, DoTs, buffs, debuffs)
+   - Effects add damage/healing to pending pools
+   - This happens BEFORE natural recovery so recovery can offset the damage
 
-2. **Fatigue Recovery** (if no pending FAT damage)
-   - Recover 1 FAT (baseline recovery)
+2. **Fatigue Recovery**
+   - Recover 1 FAT to pending healing pool (baseline recovery)
    - Modified by VIT level (see [GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md))
+   - This recovery is added to the pending healing pool AFTER effects add damage
+   - This allows natural recovery to offset damage from effects and actions in the same round
 
-3. **Action Point Recovery**
+3. **Pending Damage/Healing Application**
+   - Apply half of each pending pool (FAT and VIT)
+   - Round up to ensure pools eventually reach zero
+   - Cascades FAT overflow to VIT, VIT overflow to wounds
+
+4. **Action Point Recovery**
    - Recover FAT / 4 AP (minimum 1)
    - Return Locked AP to Available
    - Reset Spent AP to 0
    - Cap at Max AP
-
-4. **Wound Damage** (every 2 rounds)
-   - Each wound deals 1 FAT damage
-   - Tracked separately per wound
 
 5. **Cooldown Advancement**
    - Active cooldowns progress by 1 round (3 seconds)
    - Completed cooldowns make their actions available
 
 6. **Duration Tracking**
-   - Decrement active spell durations
-   - Process environmental effects
    - Check for minute/turn/hour boundaries
+   - Process time-based events
 
 ---
 
