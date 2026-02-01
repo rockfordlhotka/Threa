@@ -99,7 +99,8 @@ public class FirearmAttackResolver
         int av = avBase + diceRoll;
 
         int baseTV = request.CalculateBaseTV();
-        int baseFinalTV = baseTV + request.TVAdjustment;
+        // Burst fire adds +1 TV base modifier
+        int baseFinalTV = baseTV + request.TVAdjustment + 1;
 
         // First shot at base TV
         int rv = av - baseFinalTV;
@@ -121,7 +122,6 @@ public class FirearmAttackResolver
         };
 
         // Resolve each shot in burst
-        int totalSV = 0;
         int hitsCount = 0;
 
         for (int shot = 1; shot <= request.BurstSize; shot++)
@@ -144,7 +144,6 @@ public class FirearmAttackResolver
                 // SV = base + (RV / 2) + ammo modifier
                 int sv = request.BaseSVModifier + (rvForShot / 2) + request.AmmoDamageModifier;
                 shotResult.SV = sv;
-                totalSV += sv;
                 hitsCount++;
             }
 
@@ -153,7 +152,7 @@ public class FirearmAttackResolver
 
         if (hitsCount > 0)
         {
-            result.Description = $"{hitsCount} hit(s)! Target should apply total SV {totalSV} via Damage Resolution";
+            result.Description = $"{hitsCount} hit(s)! Each hit applies its individual SV via Damage Resolution";
         }
         else
         {
@@ -170,7 +169,8 @@ public class FirearmAttackResolver
         int av = avBase + diceRoll;
 
         int baseTV = request.CalculateBaseTV();
-        int finalTV = baseTV + request.TVAdjustment;
+        // Suppression fire adds +3 TV base modifier
+        int finalTV = baseTV + request.TVAdjustment + 3;
 
         int rv = av - finalTV;
         bool hit = rv >= 0;

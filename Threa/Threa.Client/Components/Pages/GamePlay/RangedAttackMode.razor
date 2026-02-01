@@ -81,7 +81,7 @@
                                     <button class="btn @(selectedFireMode == FireMode.Burst ? "btn-warning" : "btn-outline-secondary")"
                                             @onclick="() => selectedFireMode = FireMode.Burst">
                                         <i class="bi bi-three-dots"></i> Burst
-                                        <span class="badge bg-dark">@burstSize rounds</span>
+                                        <span class="badge bg-dark">@weapon.BurstSize rounds</span>
                                     </button>
                                 }
                                 @if (weapon.SupportsSuppression)
@@ -89,7 +89,7 @@
                                     <button class="btn @(selectedFireMode == FireMode.Suppression ? "btn-warning" : "btn-outline-secondary")"
                                             @onclick="() => selectedFireMode = FireMode.Suppression">
                                         <i class="bi bi-arrows-angle-expand"></i> Suppression
-                                        <span class="badge bg-dark">@suppressiveRounds rounds</span>
+                                        <span class="badge bg-dark">@weapon.SuppressiveRounds rounds</span>
                                     </button>
                                 }
                             </div>
@@ -112,17 +112,6 @@
                                 </div>
                             }
 
-                            @if (selectedFireMode == FireMode.Burst)
-                            {
-                                <div class="mt-2">
-                                    <label class="form-label small">Burst Size:</label>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <button class="btn btn-sm btn-secondary" @onclick="() => burstSize = Math.Max(2, burstSize - 1)">-</button>
-                                        <span class="fw-bold">@burstSize</span>
-                                        <button class="btn btn-sm btn-secondary" @onclick="() => burstSize = Math.Min(weapon.LoadedAmmo, burstSize + 1)">+</button>
-                                    </div>
-                                </div>
-                            }
                         }
                     </div>
                 </div>
@@ -380,6 +369,20 @@
                                         <td class="fw-bold">+@tvAdjustment</td>
                                     </tr>
                                 }
+                                @if (selectedFireMode == FireMode.Burst)
+                                {
+                                    <tr>
+                                        <td>Burst Fire:</td>
+                                        <td class="fw-bold">+1</td>
+                                    </tr>
+                                }
+                                @if (selectedFireMode == FireMode.Suppression)
+                                {
+                                    <tr>
+                                        <td>Suppression Fire:</td>
+                                        <td class="fw-bold">+3</td>
+                                    </tr>
+                                }
                                 <tr class="table-active">
                                     <td><strong>Target Value (TV):</strong></td>
                                     <td><strong class="fs-5">@GetTV()</strong></td>
@@ -577,9 +580,7 @@
                                     <div class="alert alert-success">
                                         <strong>@attackResult.Hits.Count(h => h.Hit) hit(s)!</strong>
                                         <br />
-                                        <span class="fs-4">Total SV: @attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV)</span>
-                                        <br />
-                                        <small>Target should apply total SV @attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV) via Damage Resolution.</small>
+                                        <small>Each hit applies its individual SV via Damage Resolution.</small>
                                     </div>
                                 }
                                 else
@@ -691,8 +692,6 @@
     private TargetSize targetSize = TargetSize.Normal;
     private bool attackerIsMoving;
     private int tvAdjustment;
-    private int burstSize = 3;
-    private int suppressiveRounds = 10;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
     private int boostValue;
     private int boostAPCost;
@@ -712,10 +711,6 @@
             if (weapon.SupportsSingle) selectedFireMode = FireMode.Single;
             else if (weapon.SupportsBurst) selectedFireMode = FireMode.Burst;
             else if (weapon.SupportsSuppression) selectedFireMode = FireMode.Suppression;
-
-            // Clamp burst size to available ammo
-            if (burstSize > weapon.LoadedAmmo)
-                burstSize = Math.Max(2, weapon.LoadedAmmo);
         }
     }
 
@@ -794,6 +789,11 @@
         tv += RangeModifiers.GetCoverModifier(targetCover);
         tv += RangeModifiers.GetSizeModifier(targetSize);
         tv += tvAdjustment;
+        // Fire mode modifiers
+        if (selectedFireMode == FireMode.Burst)
+            tv += 1;
+        else if (selectedFireMode == FireMode.Suppression)
+            tv += 3;
         return tv;
     }
 
@@ -808,8 +808,8 @@
         return selectedFireMode switch
         {
             FireMode.Single => 1,
-            FireMode.Burst => burstSize,
-            FireMode.Suppression => suppressiveRounds,
+            FireMode.Burst => weapon?.BurstSize ?? 3,
+            FireMode.Suppression => weapon?.SuppressiveRounds ?? 10,
             _ => 1
         };
     }
@@ -906,8 +906,8 @@
             TargetSize = targetSize,
             TVAdjustment = tvAdjustment,
             FireMode = selectedFireMode,
-            BurstSize = burstSize,
-            SuppressiveRounds = suppressiveRounds,
+            BurstSize = weapon.BurstSize,
+            SuppressiveRounds = weapon.SuppressiveRounds,
             BaseSVModifier = weapon.BaseSV,
             CurrentLoadedAmmo = weapon.LoadedAmmo,
             AmmoDamageModifier = weapon.AmmoDamageModifier,
@@ -963,9 +963,7 @@
         else if (attackResult.FireMode == FireMode.Burst)
         {
             var hits = attackResult.Hits.Count(h => h.Hit);
-            var totalSV = attackResult.Hits.Where(h => h.Hit).Sum(h => h.SV);
             message += $": {hits}/{attackResult.Hits.Count} hits";
-            if (hits > 0) message += $", total SV {totalSV}";
         }
         else if (attackResult.FireMode == FireMode.Suppression)
         {

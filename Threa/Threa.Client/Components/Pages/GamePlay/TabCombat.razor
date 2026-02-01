@@ -397,6 +397,8 @@
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
                     SupportsBurst = rangedProps?.HasFireMode(FireMode.Burst) ?? false,
                     SupportsSuppression = rangedProps?.HasFireMode(FireMode.Suppression) ?? false,
+                    BurstSize = rangedProps?.BurstSize ?? 3,
+                    SuppressiveRounds = rangedProps?.SuppressiveRounds ?? 10,
                     IsAOECapable = isAOECapable,
                     BlastRadius = blastRadius,
                     BlastFalloff = blastFalloff,

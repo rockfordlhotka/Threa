@@ -911,5 +911,155 @@ namespace GameMechanics.Test
     }
 
     #endregion
+
+    #region FirearmAttackResolver Tests
+
+    [TestMethod]
+    public void FirearmAttack_SingleFire_NoTVModifier()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(2); // Attack roll
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 10,
+        Range = RangeCategory.Short, // TV 6
+        FireMode = FireMode.Single,
+        CurrentLoadedAmmo = 10,
+        BaseSVModifier = 0
+      };
+
+      var result = resolver.Resolve(request);
+
+      // Single fire should have no TV modifier
+      Assert.AreEqual(6, result.TV);
+      Assert.AreEqual(FireMode.Single, result.FireMode);
+    }
+
+    [TestMethod]
+    public void FirearmAttack_BurstFire_AddsPlusTVModifier()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(2); // Attack roll
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 10,
+        Range = RangeCategory.Short, // Base TV 6
+        FireMode = FireMode.Burst,
+        BurstSize = 3,
+        CurrentLoadedAmmo = 10,
+        BaseSVModifier = 0
+      };
+
+      var result = resolver.Resolve(request);
+
+      // Burst fire adds +1 TV to base TV
+      Assert.AreEqual(7, result.TV); // 6 base + 1 burst modifier
+      Assert.AreEqual(FireMode.Burst, result.FireMode);
+    }
+
+    [TestMethod]
+    public void FirearmAttack_SuppressionFire_AddsPlusThreeTVModifier()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(2); // Attack roll
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 10,
+        Range = RangeCategory.Short, // Base TV 6
+        FireMode = FireMode.Suppression,
+        SuppressiveRounds = 10,
+        CurrentLoadedAmmo = 20,
+        BaseSVModifier = 0
+      };
+
+      var result = resolver.Resolve(request);
+
+      // Suppression fire adds +3 TV to base TV
+      Assert.AreEqual(9, result.TV); // 6 base + 3 suppression modifier
+      Assert.AreEqual(FireMode.Suppression, result.FireMode);
+    }
+
+    [TestMethod]
+    public void FirearmAttack_BurstFire_UsesWeaponBurstSize()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(5); // Good roll to ensure hits
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 12,
+        Range = RangeCategory.Short,
+        FireMode = FireMode.Burst,
+        BurstSize = 5, // Weapon specifies 5-round burst
+        CurrentLoadedAmmo = 10,
+        BaseSVModifier = 0
+      };
+
+      var result = resolver.Resolve(request);
+
+      // Should have 5 shots in the burst
+      Assert.AreEqual(5, result.Hits.Count);
+      Assert.AreEqual(5, result.AmmoConsumed);
+    }
+
+    [TestMethod]
+    public void FirearmAttack_SuppressionFire_UsesWeaponSuppressiveRounds()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(2);
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 12,
+        Range = RangeCategory.Short,
+        FireMode = FireMode.Suppression,
+        SuppressiveRounds = 15, // Weapon specifies 15 rounds for suppression
+        CurrentLoadedAmmo = 20,
+        BaseSVModifier = 0
+      };
+
+      var result = resolver.Resolve(request);
+
+      Assert.AreEqual(15, result.AmmoConsumed);
+    }
+
+    [TestMethod]
+    public void FirearmAttack_BurstFire_EachShotHasIndividualSV()
+    {
+      var roller = new DeterministicDiceRoller();
+      roller.Queue4dFPlusResults(5); // Good roll
+      var resolver = new FirearmAttackResolver(roller);
+
+      var request = new FirearmAttackRequest
+      {
+        AttackerSkillAS = 12,
+        Range = RangeCategory.Short, // TV 6 + 1 burst = 7
+        FireMode = FireMode.Burst,
+        BurstSize = 3,
+        CurrentLoadedAmmo = 10,
+        BaseSVModifier = 2 // +2 damage from weapon
+      };
+
+      var result = resolver.Resolve(request);
+
+      // Each hit should have its own SV calculated individually
+      foreach (var hit in result.Hits.Where(h => h.Hit))
+      {
+        Assert.IsTrue(hit.SV > 0);
+      }
+
+      // Description should mention individual SV, not total
+      Assert.IsTrue(result.Description.Contains("individual SV"));
+    }
+
+    #endregion
   }
 }
