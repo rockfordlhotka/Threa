@@ -5,10 +5,39 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
+    <!-- Version is set dynamically from BuildNumber.txt -->
+    <MajorVersion>0</MajorVersion>
+    <MinorVersion>1</MinorVersion>
   </PropertyGroup>
+
+  <!-- Read build number from file and set version properties -->
+  <Target Name="SetVersionFromBuildNumber" BeforeTargets="BeforeBuild;GenerateNuspec">
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\BuildNumber.txt">
+      <Output TaskParameter="Lines" PropertyName="BuildNumber" />
+    </ReadLinesFromFile>
+    <CreateProperty Value="$(MajorVersion).$(MinorVersion).$(BuildNumber)">
+      <Output TaskParameter="Value" PropertyName="Version" />
+    </CreateProperty>
+    <CreateProperty Value="$(MajorVersion).$(MinorVersion).$(BuildNumber).0">
+      <Output TaskParameter="Value" PropertyName="AssemblyVersion" />
+    </CreateProperty>
+    <CreateProperty Value="$(MajorVersion).$(MinorVersion).$(BuildNumber).0">
+      <Output TaskParameter="Value" PropertyName="FileVersion" />
+    </CreateProperty>
+    <Message Importance="High" Text="Building version $(Version)" />
+  </Target>
+
+  <!-- Increment build number after successful build -->
+  <Target Name="IncrementBuildNumber" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\BuildNumber.txt">
+      <Output TaskParameter="Lines" PropertyName="CurrentBuildNumber" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <NextBuildNumber>$([MSBuild]::Add($(CurrentBuildNumber), 1))</NextBuildNumber>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)\BuildNumber.txt" Lines="$(NextBuildNumber)" Overwrite="true" />
+    <Message Importance="High" Text="Build number incremented to $(NextBuildNumber)" />
+  </Target>
 
   <ItemGroup>
     <ProjectReference Include="..\..\GameMechanics\GameMechanics.csproj" />
