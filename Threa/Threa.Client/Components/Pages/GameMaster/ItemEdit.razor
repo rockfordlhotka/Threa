@@ -62,10 +62,6 @@ else
                                 <td>
                                     <RadzenCheckBox @bind-Value="vm.Model.IsStackable" TValue="bool"
                                                     Disabled="@(vm.Model.ItemType == ItemType.AmmoContainer)" />
-                                    @if (vm.Model.ItemType == ItemType.AmmoContainer && vm.Model.IsStackable)
-                                    {
-                                        <span class="text-danger">Ammo containers cannot be stackable because they track their current ammunition count.</span>
-                                    }
                                     <span class="text-danger">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).ErrorText)</span>
                                     <span class="text-warning">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).WarningText)</span>
                                     <span class="text-info">@(vm.GetPropertyInfo(() => vm.Model.IsStackable).InformationText)</span>
