@@ -312,17 +312,22 @@ namespace GameMechanics
     /// <summary>
     /// Gets the effective attribute value, handling compound attributes (e.g., "STR/ITT").
     /// For compound attributes, returns the average of the constituent attributes.
+    /// Integer division is used for averaging, consistent with GetAttributeBase behavior.
     /// </summary>
     /// <param name="character">The character to get the attribute from.</param>
     /// <param name="attributeName">The attribute name, which may be a compound attribute like "STR/ITT".</param>
     /// <returns>The effective attribute value, or the average if compound.</returns>
     private static int GetEffectiveAttributeValue(CharacterEdit character, string attributeName)
     {
+      if (string.IsNullOrWhiteSpace(attributeName))
+        return 0;
+
       var attributes = attributeName.Split('/');
       int sum = 0;
       foreach (var attr in attributes)
       {
-        sum += character.GetEffectiveAttribute(attr);
+        // Trim whitespace to handle formats like "INT / STR"
+        sum += character.GetEffectiveAttribute(attr.Trim());
       }
       return sum / attributes.Length;
     }

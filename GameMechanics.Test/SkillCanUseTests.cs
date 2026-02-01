@@ -250,5 +250,38 @@ namespace GameMechanics.Test
       Assert.IsTrue(s.CanUse, "Heavy gun skill should be usable with INT=10, STR=8, ITT=7");
       Assert.IsNull(s.CannotUseReason, "Should not have a reason for not being usable");
     }
+
+    /// <summary>
+    /// Test that compound attributes with spaces (e.g., "INT / STR") are handled correctly.
+    /// </summary>
+    [TestMethod]
+    public void CanUse_CompoundSecondaryAttribute_WithSpaces_HandlesCorrectly()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var skillp = provider.GetRequiredService<IChildDataPortal<SkillEdit>>();
+      var c = dp.Create(42);
+      
+      // Set INT to 10 and STR to 6
+      // Average = (10 + 6) / 2 = 8, which meets the minimum requirement of 8
+      c.AttributeList.Where(r => r.Name == "INT").First().Value = 10;
+      c.AttributeList.Where(r => r.Name == "STR").First().Value = 6;
+      c.Vitality.Value = 10;
+      c.Fatigue.Value = 10;
+      
+      var cs = new CharacterSkill
+      {
+        Id = "test-skill",
+        Name = "Test Skill with Spaces",
+        PrimaryAttribute = "DEX",
+        SecondaryAttribute = "INT / STR",  // With spaces - should still work
+        Level = 3
+      };
+      var s = skillp.FetchChild(cs);
+      c.Skills.Add(s);
+      
+      Assert.IsTrue(s.CanUse, "Skill should be usable when average of 'INT / STR' = 8");
+      Assert.IsNull(s.CannotUseReason, "Should not have a reason for not being usable");
+    }
   }
 }
