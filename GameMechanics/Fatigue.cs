@@ -83,14 +83,20 @@ namespace GameMechanics
 
     private void CheckFocusRolls()
     {
+      // Low FAT effects per GAME_RULES_SPECIFICATION.md:
+      // - FAT = 0: Character passes out
+      // - FAT = 1: Focus check TV 12 required to stay conscious
+      // - FAT = 2: Focus check TV 7 required to stay conscious
+      // - FAT = 3: Focus check TV 5 required to stay conscious
+      // - FAT >= 4: No check required
       var passedOut = false;
-      if (Value < 1)
+      if (Value <= 0)
         passedOut = true;
-      else if (Value < 2 && Character.Skills.SkillCheck("Focus", 12).Success)
+      else if (Value == 1 && !Character.Skills.SkillCheck("Focus", 12).Success)
         passedOut = true;
-      else if (Value < 4 && Character.Skills.SkillCheck("Focus", 7).Success)
+      else if (Value == 2 && !Character.Skills.SkillCheck("Focus", 7).Success)
         passedOut = true;
-      else if (Value < 6 && Character.Skills.SkillCheck("Focus", 5).Success)
+      else if (Value == 3 && !Character.Skills.SkillCheck("Focus", 5).Success)
         passedOut = true;
 
       if (passedOut)

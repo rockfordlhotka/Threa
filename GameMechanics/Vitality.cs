@@ -77,6 +77,28 @@ namespace GameMechanics
           }
         }
       }
+
+      CheckFocusRolls();
+    }
+
+    private void CheckFocusRolls()
+    {
+      // Low VIT effects per GAME_RULES_SPECIFICATION.md:
+      // - VIT = 0: Character dies (handled elsewhere)
+      // - VIT = 1: Character cannot perform actions (passes out)
+      // - VIT = 2: Focus check TV 12 required to stay conscious
+      // - VIT = 3: Focus check TV 7 required to stay conscious
+      // - VIT >= 4: No check required
+      var passedOut = false;
+      if (Value <= 1)
+        passedOut = true;
+      else if (Value == 2 && !Character.Skills.SkillCheck("Focus", 12).Success)
+        passedOut = true;
+      else if (Value == 3 && !Character.Skills.SkillCheck("Focus", 7).Success)
+        passedOut = true;
+
+      if (passedOut)
+        Character.IsPassedOut = true;
     }
 
     internal void TakeDamage(DamageValue damageValue)

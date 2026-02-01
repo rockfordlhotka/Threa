@@ -134,14 +134,20 @@ namespace GameMechanics
 
     private void CheckFatFocusRolls()
     {
+      // Low FAT effects per GAME_RULES_SPECIFICATION.md:
+      // - FAT = 0: Character passes out
+      // - FAT = 1: Focus check TV 12 required to stay conscious
+      // - FAT = 2: Focus check TV 7 required to stay conscious
+      // - FAT = 3: Focus check TV 5 required to stay conscious
+      // - FAT >= 4: No check required
       var passedOut = false;
-      if (Value < 1)
+      if (Value <= 0)
         passedOut = true;
-      else if (Value < 2 && Character.Skills.SkillCheck("Focus", 12).Success)
+      else if (Value == 1 && !Character.Skills.SkillCheck("Focus", 12).Success)
         passedOut = true;
-      else if (Value < 4 && Character.Skills.SkillCheck("Focus", 7).Success)
+      else if (Value == 2 && !Character.Skills.SkillCheck("Focus", 7).Success)
         passedOut = true;
-      else if (Value < 6 && Character.Skills.SkillCheck("Focus", 5).Success)
+      else if (Value == 3 && !Character.Skills.SkillCheck("Focus", 5).Success)
         passedOut = true;
 
       if (passedOut)
@@ -150,12 +156,18 @@ namespace GameMechanics
 
     private void CheckVitFocusRolls()
     {
+      // Low VIT effects per GAME_RULES_SPECIFICATION.md:
+      // - VIT = 0: Character dies (handled elsewhere)
+      // - VIT = 1: Character cannot perform actions (passes out)
+      // - VIT = 2: Focus check TV 12 required to stay conscious
+      // - VIT = 3: Focus check TV 7 required to stay conscious
+      // - VIT >= 4: No check required
       var passedOut = false;
-      if (Value < 2)
+      if (Value <= 1)
         passedOut = true;
-      else if (Value < 4 && Character.Skills.SkillCheck("Focus", 12).Success)
+      else if (Value == 2 && !Character.Skills.SkillCheck("Focus", 12).Success)
         passedOut = true;
-      else if (Value < 6 && Character.Skills.SkillCheck("Focus", 7).Success)
+      else if (Value == 3 && !Character.Skills.SkillCheck("Focus", 7).Success)
         passedOut = true;
 
       if (passedOut)
