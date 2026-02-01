@@ -76,6 +76,16 @@ public class RangedWeaponInfo
     public bool SupportsBurst { get; set; }
     public bool SupportsSuppression { get; set; }
 
+    /// <summary>
+    /// Number of rounds fired in burst mode (weapon-defined).
+    /// </summary>
+    public int BurstSize { get; set; } = 3;
+
+    /// <summary>
+    /// Number of rounds fired in suppression mode (weapon-defined).
+    /// </summary>
+    public int SuppressiveRounds { get; set; } = 10;
+
     // ========== AOE Properties (from weapon or loaded ammo) ==========
 
     /// <summary>

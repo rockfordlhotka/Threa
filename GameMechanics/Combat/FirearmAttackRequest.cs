@@ -105,6 +105,20 @@ public class FirearmAttackRequest
     }
 
     /// <summary>
+    /// Gets the TV penalty for the selected fire mode.
+    /// Burst: +1 TV, Suppression: +3 TV, Single: 0
+    /// </summary>
+    public int GetFireModeTVPenalty()
+    {
+        return FireMode switch
+        {
+            FireMode.Burst => 1,
+            FireMode.Suppression => 3,
+            _ => 0
+        };
+    }
+
+    /// <summary>
     /// Calculates the base TV from range and conditions.
     /// </summary>
     public int CalculateBaseTV()
@@ -113,6 +127,7 @@ public class FirearmAttackRequest
         tv += RangeModifiers.GetTargetMovementModifier(TargetIsMoving, TargetIsProne, TargetIsCrouching);
         tv += RangeModifiers.GetCoverModifier(TargetCover);
         tv += RangeModifiers.GetSizeModifier(TargetSize);
+        tv += GetFireModeTVPenalty();
         return tv;
     }
 
