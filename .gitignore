@@ -357,3 +357,4 @@ MigrationBackup/
 *.db-shm
 *.db-wal
 *.db-shm
+Threa/Threa/BuildNumber.txt
