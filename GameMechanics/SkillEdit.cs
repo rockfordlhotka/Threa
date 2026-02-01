@@ -401,6 +401,11 @@ namespace GameMechanics
         Level = skill.Level;
         XPBanked = skill.XPBanked;
         XPSpent = skill.XPSpent;
+        
+        // Note: For backwards compatibility with existing characters that don't have XPSpent set,
+        // we would need access to the skill's difficulty (Trained value) which isn't available here.
+        // The UI will need to calculate and update XPSpent when the character is next saved.
+        
         PrimaryAttribute = skill.PrimaryAttribute;
         SecondaryAttribute = skill.SecondaryAttribute;
         TertiaryAttribute = skill.TertiaryAttribute;
