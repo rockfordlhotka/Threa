@@ -7,7 +7,8 @@ CREATE TABLE [dbo].[CharacterSkill]
   [CharacterId] INT NOT NULL, 
   [SkillId] INT NOT NULL,
   [Level] INT NOT NULL,
-  [XPBanked] FLOAT NOT NULL
+  [XPBanked] FLOAT NOT NULL,
+  [XPSpent] INT NOT NULL DEFAULT 0
 )
 GO
 

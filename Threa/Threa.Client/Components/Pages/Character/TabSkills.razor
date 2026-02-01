@@ -20,6 +20,7 @@
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
     <span style="margin-left: 2rem;"><strong>Total XP:</strong> @vm.Model.XPTotal</span>
     <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span style="font-weight: bold; color: @(vm.Model.XPBanked > 0 ? "green" : "red")">@vm.Model.XPBanked</span></span>
+    <span style="margin-left: 2rem;"><strong>XP Spent on Skills:</strong> <span style="font-weight: bold; color: #0066cc;">@GetTotalXPSpentOnSkills()</span></span>
 </div>
 
 @if (!vm.Model.IsPlayable)
@@ -35,6 +36,7 @@ else
     <div class="alert alert-secondary">
         <p>Your character is <strong>active</strong>. Spend XP from your bank to improve your skills.</p>
         <p>You have <strong>@vm.Model.XPBanked XP</strong> available to spend.</p>
+        <p>Total XP spent on skills: <strong>@GetTotalXPSpentOnSkills()</strong></p>
     </div>
 }
 
@@ -52,6 +54,10 @@ else
             <th>Level</th>
             <th>Bonus</th>
             <th>Ability Score</th>
+            @if (!vm.Model.IsPlayable)
+            {
+                <th>XP Spent</th>
+            }
             <th>XP Cost to Next Level</th>
             <th>Actions</th>
         </tr>
@@ -67,6 +73,12 @@ else
                 <td>@skill.Level</td>
                 <td>@skill.Bonus</td>
                 <td>@skill.AbilityScore</td>
+                @if (!vm.Model.IsPlayable)
+                {
+                    <td>
+                        <span style="font-weight: bold; color: #0066cc;">@skill.XPSpent</span>
+                    </td>
+                }
                 <td>
                     @if (skill.Level < 10)
                     {
@@ -151,6 +163,12 @@ else
         }
     }
 
+    private int GetTotalXPSpentOnSkills()
+    {
+        if (vm?.Model?.Skills == null) return 0;
+        return vm.Model.Skills.Sum(s => s.XPSpent);
+    }
+
     private void UpdateAvailableSkills()
     {
         if (allSkills == null) return;
@@ -215,6 +233,7 @@ else
         // Spend XP and increase level
         vm.Model.SpendXP(xpCost);
         skill.Level++;
+        skill.XPSpent += xpCost;
         
         StateHasChanged();
     }
@@ -236,6 +255,7 @@ else
         skill.Level--;
         var xpRefund = GetXPCostToNextLevel(skill);
         vm!.Model!.RefundXP(xpRefund);
+        skill.XPSpent -= xpRefund;
         
         StateHasChanged();
     }
