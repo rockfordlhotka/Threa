@@ -12,6 +12,17 @@ namespace GameMechanics.Test
   [TestClass]
   public class CharacterTests : TestBase
   {
+    /// <summary>
+    /// Helper method to get currency-related broken rules from a character.
+    /// </summary>
+    private static IEnumerable<Csla.Rules.BrokenRule> GetCurrencyBrokenRules(CharacterEdit character)
+    {
+      return character.BrokenRulesCollection.Where(r =>
+        r.Property == nameof(CharacterEdit.CopperCoins) || 
+        r.Property == nameof(CharacterEdit.SilverCoins) ||
+        r.Property == nameof(CharacterEdit.GoldCoins) || 
+        r.Property == nameof(CharacterEdit.PlatinumCoins));
+    }
 
     [TestMethod]
     public void CheckHealth()
@@ -340,6 +351,104 @@ namespace GameMechanics.Test
       // Verify species modifiers are correct
       Assert.AreEqual(-1, fetched.AttributeList.First(a => a.Name == "STR").SpeciesModifier, "Fetched STR modifier");
       Assert.AreEqual(1, fetched.AttributeList.First(a => a.Name == "INT").SpeciesModifier, "Fetched INT modifier");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_CopperCoins_CannotBeNegative()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Attempt to set negative copper coins
+      c.CopperCoins = -1;
+
+      // Validation should fail
+      Assert.IsFalse(c.IsValid, "Character should be invalid with negative copper coins");
+      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_SilverCoins_CannotBeNegative()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Attempt to set negative silver coins
+      c.SilverCoins = -5;
+
+      // Validation should fail
+      Assert.IsFalse(c.IsValid, "Character should be invalid with negative silver coins");
+      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_GoldCoins_CannotBeNegative()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Attempt to set negative gold coins
+      c.GoldCoins = -10;
+
+      // Validation should fail
+      Assert.IsFalse(c.IsValid, "Character should be invalid with negative gold coins");
+      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_PlatinumCoins_CannotBeNegative()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Attempt to set negative platinum coins
+      c.PlatinumCoins = -2;
+
+      // Validation should fail
+      Assert.IsFalse(c.IsValid, "Character should be invalid with negative platinum coins");
+      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_ZeroValues_AreValid()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Set all currency to zero (should be valid)
+      c.CopperCoins = 0;
+      c.SilverCoins = 0;
+      c.GoldCoins = 0;
+      c.PlatinumCoins = 0;
+
+      // Should be valid - no currency-related broken rules
+      var currencyRules = GetCurrencyBrokenRules(c);
+      Assert.IsFalse(currencyRules.Any(), 
+                    "Character should be valid with zero currency values");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_PositiveValues_AreValid()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Set positive currency values
+      c.CopperCoins = 100;
+      c.SilverCoins = 50;
+      c.GoldCoins = 10;
+      c.PlatinumCoins = 5;
+
+      // Should be valid - no currency-related broken rules
+      var currencyRules = GetCurrencyBrokenRules(c);
+      Assert.IsFalse(currencyRules.Any(), 
+                    "Character should be valid with positive currency values");
     }
   }
 }
