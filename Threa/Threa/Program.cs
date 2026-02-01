@@ -1,5 +1,6 @@
 using Csla.Configuration;
 using GameMechanics;
+using GameMechanics.Messaging;
 using GameMechanics.Messaging.InMemory;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -34,6 +35,10 @@ builder.Services.AddCsla(o => o
 builder.Services.AddSqlite();
 builder.Services.AddGameMechanics();
 builder.Services.AddInMemoryMessaging();
+
+// Targeting system
+builder.Services.AddSingleton<TargetingInteractionManager>();
+builder.Services.AddSingleton<ITargetingInteractionManager>(sp => sp.GetRequiredService<TargetingInteractionManager>());
 
 // Radzen services
 builder.Services.AddScoped<DialogService>();

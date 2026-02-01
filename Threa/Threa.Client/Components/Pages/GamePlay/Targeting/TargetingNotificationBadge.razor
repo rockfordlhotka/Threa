@@ -1,0 +1,56 @@
+@using GameMechanics.Messaging
+
+<div class="targeting-notification-badge">
+    @if (PendingRequests.Any())
+    {
+        <button class="btn btn-warning position-relative" @onclick="OpenTargeting">
+            <i class="bi bi-crosshair"></i>
+            <span>Incoming Attack!</span>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                @PendingRequests.Count
+                <span class="visually-hidden">pending attacks</span>
+            </span>
+        </button>
+
+        <div class="mt-2">
+            @foreach (var request in PendingRequests.Take(3))
+            {
+                <div class="alert alert-warning py-1 px-2 mb-1 small">
+                    <strong>@request.AttackerName</strong> is attacking you
+                    @if (request.AttackerData.ActionType == TargetingActionType.Medical)
+                    {
+                        <text> with medical aid</text>
+                    }
+                    <button class="btn btn-sm btn-outline-warning ms-2" @onclick="() => ViewRequest(request)">
+                        <i class="bi bi-eye"></i> View
+                    </button>
+                </div>
+            }
+            @if (PendingRequests.Count > 3)
+            {
+                <small class="text-muted">...and @(PendingRequests.Count - 3) more</small>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<TargetingRequestMessage> PendingRequests { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnOpenTargeting { get; set; }
+
+    [Parameter]
+    public EventCallback<TargetingRequestMessage> OnViewRequest { get; set; }
+
+    private async Task OpenTargeting()
+    {
+        await OnOpenTargeting.InvokeAsync();
+    }
+
+    private async Task ViewRequest(TargetingRequestMessage request)
+    {
+        await OnViewRequest.InvokeAsync(request);
+    }
+}

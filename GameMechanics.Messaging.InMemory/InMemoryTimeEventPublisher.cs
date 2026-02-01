@@ -106,6 +106,61 @@ public class InMemoryTimeEventPublisher : ITimeEventPublisher
         return Task.CompletedTask;
     }
 
+    public Task PublishTargetingRequestAsync(TargetingRequestMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTargetingRequest(message);
+        _logger.LogDebug("Published TargetingRequestMessage: InteractionId={InteractionId}, Attacker={AttackerId}, Defender={DefenderId}",
+            message.InteractionId, message.AttackerId, message.DefenderId);
+
+        return Task.CompletedTask;
+    }
+
+    public Task PublishTargetingResponseAsync(TargetingResponseMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTargetingResponse(message);
+        _logger.LogDebug("Published TargetingResponseMessage: InteractionId={InteractionId}, Acknowledged={Acknowledged}",
+            message.InteractionId, message.Acknowledged);
+
+        return Task.CompletedTask;
+    }
+
+    public Task PublishTargetingUpdateAsync(TargetingUpdateMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTargetingUpdate(message);
+        _logger.LogDebug("Published TargetingUpdateMessage: InteractionId={InteractionId}, FromAttacker={IsFromAttacker}",
+            message.InteractionId, message.IsFromAttacker);
+
+        return Task.CompletedTask;
+    }
+
+    public Task PublishTargetingResultAsync(TargetingResultMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTargetingResult(message);
+        _logger.LogDebug("Published TargetingResultMessage: InteractionId={InteractionId}, IsHit={IsHit}",
+            message.InteractionId, message.Resolution.IsHit);
+
+        return Task.CompletedTask;
+    }
+
+    public Task PublishTargetingCancelledAsync(TargetingCancelledMessage message, CancellationToken cancellationToken = default)
+    {
+        EnsureConnected();
+
+        _bus.PublishTargetingCancelled(message);
+        _logger.LogDebug("Published TargetingCancelledMessage: InteractionId={InteractionId}, AttackerId={AttackerId}",
+            message.InteractionId, message.AttackerId);
+
+        return Task.CompletedTask;
+    }
+
     private void EnsureConnected()
     {
         if (_disposed)
