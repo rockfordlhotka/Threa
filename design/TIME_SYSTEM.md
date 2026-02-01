@@ -53,13 +53,15 @@ During their turn, a character may:
 
 At the end of each round, the following occur in order:
 
-1. **Pending Damage/Healing Application**
-   - Apply half of each pending pool (FAT and VIT)
-   - Round to ensure pools eventually reach zero
-
-2. **Fatigue Recovery** (if no pending FAT damage)
-   - Recover 1 FAT (baseline recovery)
+1. **Fatigue Recovery**
+   - Recover 1 FAT to pending healing pool (baseline recovery)
    - Modified by VIT level (see [GAME_RULES_SPECIFICATION.md](GAME_RULES_SPECIFICATION.md))
+   - This recovery is added to the pending healing pool BEFORE applying pools
+   - This allows natural recovery to offset pending damage in the same round
+
+2. **Pending Damage/Healing Application**
+   - Apply half of each pending pool (FAT and VIT)
+   - Round up to ensure pools eventually reach zero
 
 3. **Action Point Recovery**
    - Recover FAT / 4 AP (minimum 1)
