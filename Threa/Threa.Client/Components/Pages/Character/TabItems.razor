@@ -12,7 +12,7 @@
     return;
 }
 
-<div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
+<div class="info-box">
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
 </div>
@@ -103,11 +103,11 @@
                 </td>
                 <td>@vm.Model.CopperCoins</td>
             </tr>
-            <tr style="font-weight: bold; background-color: #f8f9fa;">
+            <tr class="table-summary-row">
                 <td colspan="2">Total Value</td>
                 <td>@vm.Model.TotalCopperValue cp</td>
             </tr>
-            <tr style="font-style: italic; color: #6c757d;">
+            <tr class="hint-text">
                 <td colspan="3">
                     Exchange rates: 1 pp = 8,000 cp | 1 gp = 400 cp | 1 sp = 20 cp
                 </td>
@@ -126,25 +126,25 @@ else
     <div class="equipped-items" style="margin-bottom: 2rem;">
         @foreach (var item in equippedItems.OrderBy(i => i.EquippedSlot))
         {
-            <div style="margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #dee2e6; border-radius: 4px;">
+            <div class="item-card">
                 <div style="font-weight: bold;">
                     @GetEquippedSlotName(item.EquippedSlot): @(item.Template?.Name ?? "Unknown Item")
                     @if (item.CustomName != null)
                     {
-                        <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                        <span class="custom-name"> "@item.CustomName"</span>
                     }
                 </div>
-                
+
                 @if (item.Template != null)
                 {
-                    <div style="font-size: 0.9em; color: #6c757d; margin-top: 0.25rem;">
+                    <div class="item-description">
                         @item.Template.ShortDescription
                     </div>
-                    
+
                     @* Show weapon combat stats *@
                     @if (item.Template.ItemType == ItemType.Weapon)
                     {
-                        <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
+                        <div class="item-stats" style="margin-top: 0.5rem;">
                             <strong>Weapon Stats:</strong>
                             Damage Class: @item.Template.DamageClass
                             | Type: @item.Template.DamageType
@@ -166,11 +166,11 @@ else
                             }
                         </div>
                     }
-                    
+
                     @* Show armor combat stats *@
                     @if (item.Template.ItemType == ItemType.Armor)
                     {
-                        <div style="font-size: 0.85em; margin-top: 0.5rem; color: #495057;">
+                        <div class="item-stats" style="margin-top: 0.5rem;">
                             <strong>Armor Stats:</strong>
                             @if (!string.IsNullOrEmpty(item.Template.ArmorAbsorption))
                             {
@@ -182,20 +182,20 @@ else
                             }
                         </div>
                     }
-                    
+
                     @* Show durability if applicable *@
                     @if (item.Template.HasDurability && item.CurrentDurability.HasValue)
                     {
-                        var durabilityPercent = item.Template.MaxDurability > 0 
-                            ? (int)((double)item.CurrentDurability.Value / item.Template.MaxDurability.Value * 100) 
+                        var durabilityPercent = item.Template.MaxDurability > 0
+                            ? (int)((double)item.CurrentDurability.Value / item.Template.MaxDurability.Value * 100)
                             : 100;
-                        var durabilityColor = durabilityPercent > 75 ? "green" : durabilityPercent > 25 ? "orange" : "red";
-                        <div style="font-size: 0.85em; margin-top: 0.25rem; color: @durabilityColor;">
+                        var durabilityClass = durabilityPercent > 75 ? "text-positive" : durabilityPercent > 25 ? "text-spell" : "text-negative";
+                        <div class="item-stats @durabilityClass">
                             Durability: @item.CurrentDurability/@item.Template.MaxDurability (@durabilityPercent%)
                         </div>
                     }
-                    
-                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+
+                    <div class="item-meta">
                         Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
                     </div>
                 }
@@ -295,7 +295,7 @@ else
                 <div class="inventory-items" style="max-height: 400px; overflow-y: auto;">
                     @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
                     {
-                        <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
+                        <div class="item-card">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="font-weight: bold;">
                                     @(item.Template?.Name ?? "Unknown Item")
@@ -313,7 +313,7 @@ else
                                     }
                                     else if (item.StackSize > 1)
                                     {
-                                        <span style="color: #6c757d;"> @($"x{item.StackSize}")</span>
+                                        <span class="stack-count"> @($"x{item.StackSize}")</span>
                                     }
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItemAsync(item.Id)" disabled="@isRemovingItem" title="Remove">
@@ -322,13 +322,13 @@ else
                             </div>
                             @if (item.Template != null)
                             {
-                                <div style="font-size: 0.85em; color: #6c757d;">
+                                <div class="item-stats">
                                     @item.Template.ShortDescription
                                 </div>
                                 @* Show ammo count for ammo containers *@
                                 @if (GetAmmoContainerInfo(item) is var ammoInfo && ammoInfo.HasValue)
                                 {
-                                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #0d6efd;">
+                                    <div class="item-stats text-info-accent">
                                         <i class="bi bi-box2"></i> <strong>Ammo:</strong> @ammoInfo.Value.LoadedAmmo / @ammoInfo.Value.MaxCapacity
                                         @if (!string.IsNullOrEmpty(ammoInfo.Value.AmmoType))
                                         {
@@ -336,7 +336,7 @@ else
                                         }
                                     </div>
                                 }
-                                <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                                <div class="item-meta">
                                     Weight: @((item.Template.Weight * item.StackSize).ToString("F1")) lbs @if(item.StackSize > 1){ <span>(@item.Template.Weight ea)</span> } | Value: @FormatCurrency(item.Template.Value)
                                 </div>
                             }
@@ -360,29 +360,29 @@ else
         <div class="inventory-items">
             @foreach (var item in inventoryItems.OrderBy(i => i.Template?.ItemType).ThenBy(i => i.Template?.Name))
             {
-                <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 4px; background-color: #f8f9fa;">
+                <div class="item-card">
                     <div style="font-weight: bold;">
                         @(item.Template?.Name ?? "Unknown Item")
                         @if (item.StackSize > 1)
                         {
-                            <span style="color: #6c757d;"> @($"x{item.StackSize}")</span>
+                            <span class="stack-count"> @($"x{item.StackSize}")</span>
                         }
                         @if (item.CustomName != null)
                         {
-                            <span style="font-style: italic; color: #6c757d;"> "@item.CustomName"</span>
+                            <span class="custom-name"> "@item.CustomName"</span>
                         }
                     </div>
 
                     @if (item.Template != null)
                     {
-                        <div style="font-size: 0.9em; color: #6c757d;">
+                        <div class="item-description">
                             @item.Template.ShortDescription
                         </div>
 
                         @* Show ammo count for ammo containers *@
                         @if (GetAmmoContainerInfo(item) is var ammoInfo && ammoInfo.HasValue)
                         {
-                            <div style="font-size: 0.85em; margin-top: 0.25rem; color: #0d6efd;">
+                            <div class="item-stats text-info-accent">
                                 <i class="bi bi-box2"></i> <strong>Ammo:</strong> @ammoInfo.Value.LoadedAmmo / @ammoInfo.Value.MaxCapacity
                                 @if (!string.IsNullOrEmpty(ammoInfo.Value.AmmoType))
                                 {
@@ -397,7 +397,7 @@ else
                             var containerContents = GetContainerContents(item.Id);
                             if (containerContents.Any())
                             {
-                                <div style="margin-top: 0.5rem; margin-left: 1rem; padding: 0.5rem; background-color: #fff; border-left: 3px solid #dee2e6;">
+                                <div class="container-contents">
                                     <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 0.25rem;">Contents:</div>
                                     @foreach (var containerItem in containerContents)
                                     {
@@ -413,7 +413,7 @@ else
                             }
                         }
 
-                        <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
+                        <div class="item-meta">
                             Weight: @item.Template.Weight lbs | Value: @FormatCurrency(item.Template.Value)
                         </div>
                     }

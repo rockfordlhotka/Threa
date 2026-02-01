@@ -4,7 +4,7 @@
     return;
 }
 
-<div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
+<div class="info-box">
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
 </div>
@@ -57,7 +57,7 @@ else
                 <td style="text-align: center;">
                     @if (item.SpeciesModifier != 0)
                     {
-                        <span style="color: @(item.SpeciesModifier > 0 ? "green" : "red");">
+                        <span class="@(item.SpeciesModifier > 0 ? "text-positive" : "text-negative")">
                             @(item.SpeciesModifier > 0 ? "+" : "")@item.SpeciesModifier
                         </span>
                     }
@@ -74,7 +74,7 @@ else
         <tr style="font-weight: bold; border-top: 2px solid #000;">
             <td>Total</td>
             <td>
-                <span style="@(GetSumValidationStyle())">
+                <span class="@GetSumValidationClass()">
                     @vm.Model.AttributeList.CurrentSum
                     @if (!vm.Model.IsPlayable && vm.Model.AttributeList.CurrentSum != vm.Model.AttributeList.InitialSum)
                     {
@@ -115,13 +115,13 @@ else
         };
     }
 
-    private string GetSumValidationStyle()
+    private string GetSumValidationClass()
     {
         if (vm?.Model == null || vm.Model.IsPlayable)
             return "";
 
         var isValid = vm.Model.AttributeList.CurrentSum == vm.Model.AttributeList.InitialSum;
-        return isValid ? "color: green;" : "color: red; font-weight: bold;";
+        return isValid ? "text-positive" : "text-negative fw-bold";
     }
 
     private void RerollAttributes()

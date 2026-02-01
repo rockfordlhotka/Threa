@@ -19,7 +19,7 @@
   --color-bg-tertiary: #d4c089;
   --color-text-primary: #2d1810;
   --color-text-secondary: #5c4033;
-  --color-text-muted: #8b7355;
+  --color-text-muted: #6b5a45;          /* Improved contrast ~5.5:1 on parchment */
 
   /* Accent Colors */
   --color-accent-primary: #8b4513;      /* Saddle brown - leather */
@@ -28,6 +28,8 @@
   --color-accent-red: #8b0000;          /* Dark red - blood/danger */
   --color-accent-green: #355e3b;        /* Hunter green - success */
   --color-accent-blue: #191970;         /* Midnight blue - info */
+  --color-accent-purple: #5e2a84;       /* Deep purple - meta-magic */
+  --color-accent-cyan: #1a6b6b;         /* Teal - info highlights */
 
   /* UI Elements */
   --color-card-bg: rgba(244, 228, 193, 0.95);
@@ -114,6 +116,8 @@
   --color-accent-red: #ff3355;          /* Red alert */
   --color-accent-green: #00ff88;        /* Green success */
   --color-accent-blue: #4488ff;         /* Blue info */
+  --color-accent-purple: #cc44ff;       /* Bright purple neon - meta-magic */
+  --color-accent-cyan: #00f0ff;         /* Matches primary accent */
 
   /* UI Elements */
   --color-card-bg: rgba(18, 18, 26, 0.95);
@@ -1778,4 +1782,109 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="fantasy"] .btn-outline-light:hover {
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITY CLASSES - Theme-aware reusable styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Character sheet info box - replaces inline bg #f0f0f0 */
+.info-box {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  color: var(--color-text-primary);
+}
+
+/* Inventory/item card styling */
+.item-card {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  background-color: var(--color-card-bg);
+}
+
+/* Container contents nested box */
+.container-contents {
+  margin-top: 0.5rem;
+  margin-left: 1rem;
+  padding: 0.5rem;
+  background-color: var(--color-bg-tertiary);
+  border-left: 3px solid var(--color-card-border);
+}
+
+/* Semantic status colors */
+.text-positive { color: var(--color-accent-green) !important; }
+.text-negative { color: var(--color-accent-red) !important; }
+.text-neutral { color: var(--color-text-muted) !important; }
+.text-info-accent { color: var(--color-accent-blue) !important; }
+.text-mana { color: var(--color-accent-blue) !important; }
+.text-spell { color: var(--color-accent-secondary) !important; }
+.text-metamagic { color: var(--color-accent-purple) !important; }
+
+/* Table summary row */
+.table-summary-row {
+  font-weight: bold;
+  background-color: var(--color-bg-secondary) !important;
+}
+
+/* Activity log container */
+.activity-log-container {
+  background-color: var(--color-bg-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Item description text (secondary color for descriptions) */
+.item-description {
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Item stats text (slightly smaller, secondary color) */
+.item-stats {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Item meta info (weight, value, etc.) */
+.item-meta {
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Custom name display (italic, muted) */
+.custom-name {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Stack count display */
+.stack-count {
+  color: var(--color-text-muted);
+}
+
+/* Exchange rate/hint text */
+.hint-text {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Purple header for magic-related cards */
+.card-header-purple {
+  background-color: var(--color-accent-purple) !important;
+  color: #fff !important;
+}
+
+/* Badge for magic/special skills */
+.badge-purple {
+  background-color: var(--color-accent-purple) !important;
+  color: #fff !important;
 }

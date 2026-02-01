@@ -15,12 +15,12 @@
     return;
 }
 
-<div style="margin-bottom: 1rem; padding: 0.5rem; background-color: #f0f0f0; border-radius: 4px;">
+<div class="info-box">
     <strong>Character:</strong> @vm.Model.Name
     <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
     <span style="margin-left: 2rem;"><strong>Total XP:</strong> @vm.Model.XPTotal</span>
-    <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span style="font-weight: bold; color: @(vm.Model.XPBanked > 0 ? "green" : "red")">@vm.Model.XPBanked</span></span>
-    <span style="margin-left: 2rem;"><strong>XP Spent on Skills:</strong> <span style="font-weight: bold; color: #0066cc;">@GetTotalXPSpentOnSkills()</span></span>
+    <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span class="@(vm.Model.XPBanked > 0 ? "text-positive" : "text-negative")" style="font-weight: bold;">@vm.Model.XPBanked</span></span>
+    <span style="margin-left: 2rem;"><strong>XP Spent on Skills:</strong> <span class="text-info-accent" style="font-weight: bold;">@GetTotalXPSpentOnSkills()</span></span>
 </div>
 
 @if (!vm.Model.IsPlayable)
@@ -69,7 +69,7 @@ else
 
 @if (manaSkills.Any())
 {
-    <h5 style="margin-top: 1.5rem; color: #0066cc;">Mana Skills</h5>
+    <h5 class="text-mana" style="margin-top: 1.5rem;">Mana Skills</h5>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -102,7 +102,7 @@ else
                     @if (!vm.Model.IsPlayable)
                     {
                         <td>
-                            <span style="font-weight: bold; color: #0066cc;">@skill.XPSpent</span>
+                            <span class="text-info-accent" style="font-weight: bold;">@skill.XPSpent</span>
                         </td>
                     }
                     <td>
@@ -112,7 +112,7 @@ else
                         }
                         else
                         {
-                            <span style="color: gray;">MAX</span>
+                            <span class="text-neutral">MAX</span>
                         }
                     </td>
                     <td>
@@ -143,7 +143,7 @@ else
 
 @if (spellSkills.Any())
 {
-    <h5 style="margin-top: 1.5rem; color: #cc6600;">Spell Skills</h5>
+    <h5 class="text-spell" style="margin-top: 1.5rem;">Spell Skills</h5>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -174,7 +174,7 @@ else
                     @if (!vm.Model.IsPlayable)
                     {
                         <td>
-                            <span style="font-weight: bold; color: #0066cc;">@skill.XPSpent</span>
+                            <span class="text-info-accent" style="font-weight: bold;">@skill.XPSpent</span>
                         </td>
                     }
                     <td>
@@ -184,7 +184,7 @@ else
                         }
                         else
                         {
-                            <span style="color: gray;">MAX</span>
+                            <span class="text-neutral">MAX</span>
                         }
                     </td>
                     <td>
@@ -215,7 +215,7 @@ else
 
 @if (metaMagicSkills.Any())
 {
-    <h5 style="margin-top: 1.5rem; color: #9900cc;">Meta-Magic Skills</h5>
+    <h5 class="text-metamagic" style="margin-top: 1.5rem;">Meta-Magic Skills</h5>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -246,7 +246,7 @@ else
                     @if (!vm.Model.IsPlayable)
                     {
                         <td>
-                            <span style="font-weight: bold; color: #0066cc;">@skill.XPSpent</span>
+                            <span class="text-info-accent" style="font-weight: bold;">@skill.XPSpent</span>
                         </td>
                     }
                     <td>
@@ -256,7 +256,7 @@ else
                         }
                         else
                         {
-                            <span style="color: gray;">MAX</span>
+                            <span class="text-neutral">MAX</span>
                         }
                     </td>
                     <td>
@@ -287,7 +287,7 @@ else
 
 @if (!manaSkills.Any() && !spellSkills.Any() && !metaMagicSkills.Any())
 {
-    <p style="color: gray; font-style: italic;">No magic skills yet. Add magic skills below to get started.</p>
+    <p class="text-neutral" style="font-style: italic;">No magic skills yet. Add magic skills below to get started.</p>
 }
 
 <h4 style="margin-top: 2rem;">Add New Magic Skill</h4>

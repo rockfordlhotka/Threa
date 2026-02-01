@@ -61,7 +61,7 @@
                     @if (skill.IsMagic || skill.IsTheology || skill.IsPsionic)
                     {
                         var magicType = skill.IsMagic ? "Magic" : skill.IsTheology ? "Theology" : "Psionic";
-                        <span class="badge bg-purple" style="font-size: 0.65rem;" title="@magicType skill">@magicType</span>
+                        <span class="badge badge-purple" style="font-size: 0.65rem;" title="@magicType skill">@magicType</span>
                     }
                 </div>
             }
@@ -91,10 +91,6 @@
 <style>
     .skill-picker-row:hover {
         background-color: var(--bs-tertiary-bg);
-    }
-    .bg-purple {
-        background-color: #9b59b6 !important;
-        color: white !important;
     }
 </style>
 
