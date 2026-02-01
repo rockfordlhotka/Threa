@@ -49,6 +49,13 @@ namespace GameMechanics.Reference
       private set => LoadProperty(NameProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> DescriptionProperty = RegisterProperty<string?>(nameof(Description));
+    public string? Description
+    {
+      get => GetProperty(DescriptionProperty);
+      private set => LoadProperty(DescriptionProperty, value);
+    }
+
     public static readonly PropertyInfo<bool> IsStandardProperty = RegisterProperty<bool>(nameof(IsStandard));
     public bool IsStandard
     {
@@ -124,6 +131,7 @@ namespace GameMechanics.Reference
     {
       Id = skill.Id;
       Name = skill.Name;
+      Description = skill.Description;
       Category = skill.Category;
       IsStandard = skill.Category == SkillCategory.Standard;
       IsSpecialized = skill.IsSpecialized;

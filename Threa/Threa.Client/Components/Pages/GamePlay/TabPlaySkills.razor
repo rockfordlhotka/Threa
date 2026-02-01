@@ -3,6 +3,7 @@
 @using GameMechanics.Effects.Behaviors
 @using Threa.Client.Components.Shared
 @inject Radzen.DialogService DialogService
+@inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
 
 <div class="row">
     <div class="col-md-8">
@@ -35,9 +36,13 @@
                         <tbody>
                             @foreach (var skill in FilteredSkills())
                             {
+                                var skillDescription = GetSkillDescription(skill);
+                                var tooltipText = !string.IsNullOrEmpty(skillDescription) 
+                                    ? skillDescription 
+                                    : (skill.CanUse ? "" : skill.CannotUseReason);
                                 <tr class="@(skill.CanUse ? "" : "text-muted")"
-                                    title="@(skill.CanUse ? "" : skill.CannotUseReason)">
-                                    <td>
+                                    title="@tooltipText">
+                                    <td title="@skillDescription">
                                         @skill.Name
                                         @if (!skill.CanUse)
                                         {
@@ -172,8 +177,27 @@
     private int boostAPCost;
     private int boostFATCost;
     private CheckResult? lastCheckResult;
+    private GameMechanics.Reference.SkillList? allSkills;
 
     private record CheckResult(bool Success, int AbilityScore, int TargetValue, int SuccessValue, string Outcome, string? SpecialEffect);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            allSkills = await skillListPortal.FetchAsync();
+        }
+        catch
+        {
+            // Silently fail if we can't load skill list - tooltips will just be empty
+        }
+    }
+
+    private string? GetSkillDescription(GameMechanics.SkillEdit skill)
+    {
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        return skillInfo?.Description;
+    }
 
     private IEnumerable<GameMechanics.SkillEdit> FilteredSkills()
     {

@@ -25,6 +25,13 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         set => SetProperty(NameProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> DescriptionProperty = RegisterProperty<string?>(nameof(Description));
+    public string? Description
+    {
+        get => GetProperty(DescriptionProperty);
+        set => SetProperty(DescriptionProperty, value);
+    }
+
     public static readonly PropertyInfo<SkillCategory> CategoryProperty = RegisterProperty<SkillCategory>(nameof(Category));
     public SkillCategory Category
     {
@@ -219,6 +226,7 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         {
             Id = string.Empty;
             Name = string.Empty;
+            Description = null;
             Category = SkillCategory.Other;
             IsSpecialized = false;
             IsMagic = false;
@@ -262,6 +270,7 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         {
             Id = data.Id;
             Name = data.Name;
+            Description = data.Description;
             Category = data.Category;
             IsSpecialized = data.IsSpecialized;
             IsMagic = data.IsMagic;
@@ -298,6 +307,7 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         {
             Id = Id,
             Name = Name,
+            Description = Description,
             Category = Category,
             IsSpecialized = IsSpecialized,
             IsMagic = IsMagic,
