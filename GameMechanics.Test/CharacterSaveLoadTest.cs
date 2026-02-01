@@ -116,6 +116,87 @@ namespace GameMechanics.Test
       Assert.IsNotNull(reloadedSkill, "Physicality skill should still exist");
       Assert.AreEqual(7, reloadedSkill.Level, "Updated skill level should persist");
     }
+
+    [TestMethod]
+    public async Task Character_XPBanked_GMAdditionMergedWithPlayerSave()
+    {
+      // This tests the concurrency fix for issue #26:
+      // When a player is editing a character and the GM adds XP to their bank,
+      // the player's save should not overwrite the GM's addition.
+
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var dal = provider.GetRequiredService<ICharacterDal>();
+
+      // Create and save a character with initial XPBanked
+      var character = dp.Create(42);
+      character.Name = "XP Concurrency Test";
+      character.XPBanked = 100;
+
+      character = await character.SaveAsync();
+      var characterId = character.Id;
+
+      // Player fetches the character (simulating player loading the character sheet)
+      var playerCopy = await dp.FetchAsync(characterId);
+      Assert.AreEqual(100, playerCopy.XPBanked, "Player should see initial XPBanked");
+
+      // GM adds XP directly to the database (simulating GM's XP grant)
+      var dbCharacter = await dal.GetCharacterAsync(characterId);
+      dbCharacter.XPBanked = 150;  // GM added 50 XP
+      await dal.SaveCharacterAsync(dbCharacter);
+
+      // Player makes an unrelated change and saves
+      playerCopy.Name = "Updated Name";
+
+      // Save should merge GM's XP addition with player's (unchanged) XPBanked
+      playerCopy = await playerCopy.SaveAsync();
+
+      // Verify the XPBanked includes GM's addition
+      var reloaded = await dp.FetchAsync(characterId);
+      Assert.AreEqual(150, reloaded.XPBanked, "XPBanked should include GM's 50 XP addition");
+      Assert.AreEqual("Updated Name", reloaded.Name, "Player's name change should persist");
+    }
+
+    [TestMethod]
+    public async Task Character_XPBanked_PlayerSpendingPreservedWithGMAddition()
+    {
+      // Tests that when both player spends XP AND GM adds XP, both changes are preserved
+
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var dal = provider.GetRequiredService<ICharacterDal>();
+
+      // Create and save a character with initial XPBanked
+      var character = dp.Create(42);
+      character.Name = "XP Merge Test";
+      character.XPBanked = 100;
+
+      character = await character.SaveAsync();
+      var characterId = character.Id;
+
+      // Player fetches the character
+      var playerCopy = await dp.FetchAsync(characterId);
+
+      // Player spends 30 XP (reduces XPBanked from 100 to 70)
+      playerCopy.SpendXP(30);
+      Assert.AreEqual(70, playerCopy.XPBanked, "Player should have 70 XP after spending 30");
+
+      // GM adds XP directly to the database (simulating GM's XP grant)
+      var dbCharacter = await dal.GetCharacterAsync(characterId);
+      dbCharacter.XPBanked = 150;  // GM added 50 XP
+      await dal.SaveCharacterAsync(dbCharacter);
+
+      // Player saves their character
+      playerCopy = await playerCopy.SaveAsync();
+
+      // Verify both changes are merged:
+      // - Original: 100
+      // - Player spent: -30 (local copy becomes 70)
+      // - GM added: +50 (database becomes 150)
+      // - Final: 70 + (150 - 100) = 120
+      var reloaded = await dp.FetchAsync(characterId);
+      Assert.AreEqual(120, reloaded.XPBanked, "XPBanked should be 120 (player spent 30, GM added 50)");
+    }
   }
 }
 
