@@ -1,6 +1,7 @@
 @inject ICharacterItemDal itemDal
 @inject IItemTemplateDal itemTemplateDal
 
+@using GameMechanics.Combat
 @using Threa.Dal.Dto
 
 @implements IDisposable
@@ -244,6 +245,20 @@ else
                             }
                         </Template>
                     </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ItemTemplate" Title="Info" Width="120px" Sortable="false">
+                        <Template Context="t">
+                            @if (t.ItemType == ItemType.AmmoContainer)
+                            {
+                                var ammoProps = GetAmmoContainerProperties(t);
+                                if (ammoProps != null)
+                                {
+                                    <span class="small text-info" title="Capacity: @ammoProps.Capacity rounds of @ammoProps.AmmoType">
+                                        <i class="bi bi-box2"></i> @ammoProps.Capacity
+                                    </span>
+                                }
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
         </div>
@@ -310,6 +325,17 @@ else
                                 <div style="font-size: 0.85em; color: #6c757d;">
                                     @item.Template.ShortDescription
                                 </div>
+                                @* Show ammo count for ammo containers *@
+                                @if (GetAmmoContainerInfo(item) is var ammoInfo && ammoInfo.HasValue)
+                                {
+                                    <div style="font-size: 0.85em; margin-top: 0.25rem; color: #0d6efd;">
+                                        <i class="bi bi-box2"></i> <strong>Ammo:</strong> @ammoInfo.Value.LoadedAmmo / @ammoInfo.Value.MaxCapacity
+                                        @if (!string.IsNullOrEmpty(ammoInfo.Value.AmmoType))
+                                        {
+                                            <span>(@ammoInfo.Value.AmmoType)</span>
+                                        }
+                                    </div>
+                                }
                                 <div style="font-size: 0.85em; margin-top: 0.25rem; color: #6c757d;">
                                     Weight: @((item.Template.Weight * item.StackSize).ToString("F1")) lbs @if(item.StackSize > 1){ <span>(@item.Template.Weight ea)</span> } | Value: @FormatCurrency(item.Template.Value)
                                 </div>
@@ -352,6 +378,18 @@ else
                         <div style="font-size: 0.9em; color: #6c757d;">
                             @item.Template.ShortDescription
                         </div>
+
+                        @* Show ammo count for ammo containers *@
+                        @if (GetAmmoContainerInfo(item) is var ammoInfo && ammoInfo.HasValue)
+                        {
+                            <div style="font-size: 0.85em; margin-top: 0.25rem; color: #0d6efd;">
+                                <i class="bi bi-box2"></i> <strong>Ammo:</strong> @ammoInfo.Value.LoadedAmmo / @ammoInfo.Value.MaxCapacity
+                                @if (!string.IsNullOrEmpty(ammoInfo.Value.AmmoType))
+                                {
+                                    <span>(@ammoInfo.Value.AmmoType)</span>
+                                }
+                            </div>
+                        }
 
                         @* Show items inside containers *@
                         @if (item.Template.IsContainer)
@@ -674,5 +712,41 @@ else
             return $"{sp} sp, {FormatCurrency(remainder)}";
         }
         return $"{copperValue} cp";
+    }
+
+    private static AmmoContainerProperties? GetAmmoContainerProperties(ItemTemplate template)
+    {
+        if (template.ItemType != ItemType.AmmoContainer || string.IsNullOrWhiteSpace(template.CustomProperties))
+            return null;
+
+        return AmmoContainerProperties.FromJson(template.CustomProperties);
+    }
+
+    /// <summary>
+    /// Gets ammo container display info (loaded/capacity) for an item.
+    /// Returns null if item is not an ammo container or has no capacity.
+    /// </summary>
+    private (int LoadedAmmo, int MaxCapacity, string? AmmoType)? GetAmmoContainerInfo(CharacterItem item)
+    {
+        if (item.Template?.ItemType != ItemType.AmmoContainer)
+            return null;
+
+        var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+        var containerProps = GetAmmoContainerProperties(item.Template);
+
+        int maxCapacity = containerState?.MaxCapacity ?? 0;
+        if (maxCapacity == 0 && containerProps != null)
+        {
+            maxCapacity = containerProps.Capacity;
+        }
+
+        if (maxCapacity == 0)
+            return null;
+
+        return (
+            containerState?.LoadedAmmo ?? 0,
+            maxCapacity,
+            containerState?.AmmoType ?? containerProps?.AmmoType
+        );
     }
 }
