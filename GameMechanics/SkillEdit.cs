@@ -310,12 +310,21 @@ namespace GameMechanics
 
     public int AbilityScore
     {
-      get => Bonus + GetAttributeBase((CharacterEdit)((IParent)Parent).Parent, PrimaryAttribute);
+      get
+      {
+        var character = (CharacterEdit)((IParent)Parent).Parent;
+        var baseAS = Bonus + GetAttributeBase(character, PrimaryAttribute);
+
+        // Apply ability score modifiers from active effects (wounds, debuffs, etc.)
+        var effectModifier = character.Effects.GetAbilityScoreModifier(Name, PrimaryAttribute, baseAS);
+
+        return baseAS + effectModifier;
+      }
     }
 
     /// <summary>
-    /// Gets the base attribute value for the skill, accounting for 
-    /// low FAT/VIT penalties.
+    /// Gets the base attribute value for the skill, accounting for
+    /// item bonuses, effect attribute modifiers, and low FAT/VIT penalties.
     /// </summary>
     public static int GetAttributeBase(CharacterEdit character, string primaryAttribute)
     {
@@ -323,7 +332,8 @@ namespace GameMechanics
       int sum = 0;
       foreach (var item in attributes)
       {
-        sum += character.GetAttribute(item);
+        // Use GetEffectiveAttribute to include item bonuses and effect attribute modifiers
+        sum += character.GetEffectiveAttribute(item);
       }
       var result = sum / attributes.Length;
       if (character.Fatigue.Value < 1)
@@ -342,7 +352,8 @@ namespace GameMechanics
     }
 
     /// <summary>
-    /// Gets the raw attribute value without FAT/VIT penalties.
+    /// Gets the effective attribute value without FAT/VIT penalties.
+    /// Includes item bonuses and effect attribute modifiers.
     /// Used by the action system which applies penalties separately.
     /// </summary>
     public static int GetRawAttributeValue(CharacterEdit character, string primaryAttribute)
@@ -351,7 +362,8 @@ namespace GameMechanics
       int sum = 0;
       foreach (var item in attributes)
       {
-        sum += character.GetAttribute(item);
+        // Use GetEffectiveAttribute to include item bonuses and effect attribute modifiers
+        sum += character.GetEffectiveAttribute(item);
       }
       return sum / attributes.Length;
     }

@@ -380,6 +380,110 @@ public class EffectsTests : TestBase
   }
 
   [TestMethod]
+  public void Skill_AbilityScore_IncludesWoundModifiers()
+  {
+    // Issue #43: Effects were not being applied to skill ability scores
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Get a skill and its base ability score
+    var skill = c.Skills.FirstOrDefault();
+    Assert.IsNotNull(skill, "Character should have at least one skill");
+    var baseAS = skill.AbilityScore;
+
+    // Apply 2 wounds (should apply -4 AS penalty: -2 per wound)
+    WoundBehavior.TakeWound(c, "LeftArm", effectPortal);
+    WoundBehavior.TakeWound(c, "LeftArm", effectPortal);
+
+    // Verify the wound modifier is being calculated
+    var modifier = c.Effects.GetAbilityScoreModifier(skill.Name, skill.PrimaryAttribute, baseAS);
+    Assert.AreEqual(-4, modifier, "Wounds should apply -4 AS penalty");
+
+    // Verify the skill's AbilityScore now includes the wound modifier
+    Assert.AreEqual(baseAS - 4, skill.AbilityScore, "Skill AbilityScore should include wound AS modifiers");
+  }
+
+  [TestMethod]
+  public void Skill_AbilityScore_IncludesSpellBuffModifiers()
+  {
+    // Issue #43: Effects were not being applied to skill ability scores
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Get a skill and its base ability score
+    var skill = c.Skills.FirstOrDefault();
+    Assert.IsNotNull(skill, "Character should have at least one skill");
+    var baseAS = skill.AbilityScore;
+
+    // Apply a global AS buff (+3 to all ability scores)
+    var buff = SpellBuffState.CreateGlobalASBuff("Heroism", 3, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Verify the buff modifier is being calculated
+    var modifier = c.Effects.GetAbilityScoreModifier(skill.Name, skill.PrimaryAttribute, baseAS);
+    Assert.AreEqual(3, modifier, "Buff should apply +3 AS bonus");
+
+    // Verify the skill's AbilityScore now includes the buff modifier
+    Assert.AreEqual(baseAS + 3, skill.AbilityScore, "Skill AbilityScore should include buff AS modifiers");
+  }
+
+  [TestMethod]
+  public void Skill_AbilityScore_IncludesAttributeModifiersFromEffects()
+  {
+    // Issue #43: Effects with attribute modifiers should cascade to skill ability scores
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Find a STR-based skill
+    var strSkill = c.Skills.FirstOrDefault(s => s.PrimaryAttribute == "STR");
+    Assert.IsNotNull(strSkill, "Character should have a STR-based skill");
+    var baseAS = strSkill.AbilityScore;
+
+    // Apply an attribute buff (+2 STR)
+    var buff = SpellBuffState.CreateAttributeBuff("Bull's Strength", "STR", 2, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Verify the skill's AbilityScore now includes the attribute modifier
+    // Since GetAttributeBase now uses GetEffectiveAttribute, the +2 STR should be reflected
+    Assert.AreEqual(baseAS + 2, strSkill.AbilityScore, "Skill AbilityScore should include attribute modifiers from effects");
+  }
+
+  [TestMethod]
+  public void Skill_AbilityScore_CombinesMultipleEffectModifiers()
+  {
+    // Issue #43: Multiple effects should all contribute to skill ability scores
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+    var c = dp.Create(42);
+
+    // Get a skill
+    var skill = c.Skills.FirstOrDefault();
+    Assert.IsNotNull(skill, "Character should have at least one skill");
+    var baseAS = skill.AbilityScore;
+
+    // Apply a wound (-2 AS)
+    WoundBehavior.TakeWound(c, "LeftArm", effectPortal);
+
+    // Apply a buff (+3 AS)
+    var buff = SpellBuffState.CreateGlobalASBuff("Heroism", 3, 60);
+    c.Effects.ApplySpellBuff(buff, effectPortal);
+
+    // Net modifier should be +1 (-2 + 3)
+    var modifier = c.Effects.GetAbilityScoreModifier(skill.Name, skill.PrimaryAttribute, baseAS);
+    Assert.AreEqual(1, modifier, "Combined modifiers should be +1 (-2 wound + 3 buff)");
+
+    // Verify the skill's AbilityScore reflects the net effect
+    Assert.AreEqual(baseAS + 1, skill.AbilityScore, "Skill AbilityScore should combine all effect modifiers");
+  }
+
+  [TestMethod]
   public void Character_TakeDamage_CreatesWounds()
   {
     var provider = InitServices();
