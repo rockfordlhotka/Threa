@@ -57,6 +57,14 @@ namespace GameMechanics
     }
 
     /// <summary>
+    /// Gets the currently equipped items. Returns null if items haven't been loaded.
+    /// </summary>
+    public IReadOnlyList<EquippedItemInfo>? GetEquippedItems()
+    {
+      return _equippedItems;
+    }
+
+    /// <summary>
     /// Result from the last concentration effect that completed or was interrupted.
     /// The UI/controller layer should read this after processing effect expiration/removal.
     /// </summary>

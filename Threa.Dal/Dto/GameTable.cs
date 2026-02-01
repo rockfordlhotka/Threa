@@ -74,6 +74,16 @@ public class TableCharacter
     /// GM-only notes for this character at this table. Not visible to players.
     /// </summary>
     public string? GmNotes { get; set; }
+
+    /// <summary>
+    /// Character name (populated from character data, not stored in table_characters).
+    /// </summary>
+    public string CharacterName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Player name (populated from player data, not stored in table_characters).
+    /// </summary>
+    public string? PlayerName { get; set; }
 }
 
 /// <summary>

@@ -1,0 +1,227 @@
+@using Threa.Client.Components.Shared
+@using GameMechanics.Combat
+@using GameMechanics.Messaging
+
+<div class="targeting-attacker-panel">
+    <div class="card h-100">
+        <div class="card-header bg-danger text-white">
+            <strong><i class="bi bi-crosshair"></i> Your Attack</strong>
+            <small class="d-block">@AttackerName</small>
+        </div>
+        <div class="card-body overflow-auto" style="max-height: 400px;">
+            @if (ActionType == TargetingActionType.RangedAttack)
+            {
+                <!-- Ranged Attack Options -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Range</label>
+                    <select class="form-select form-select-sm" @bind="range" @bind:after="OnDataChanged">
+                        <option value="@RangeCategory.Short">Short (TV 6)</option>
+                        <option value="@RangeCategory.Medium">Medium (TV 8)</option>
+                        <option value="@RangeCategory.Long">Long (TV 10)</option>
+                        <option value="@RangeCategory.Extreme">Extreme (TV 12)</option>
+                    </select>
+                </div>
+
+                @if (ShowFireMode)
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fire Mode</label>
+                        <select class="form-select form-select-sm" @bind="fireMode" @bind:after="OnDataChanged">
+                            <option value="@FireMode.Single">Single Shot</option>
+                            <option value="@FireMode.Burst">Burst (3 rounds)</option>
+                            <option value="@FireMode.Suppression">Suppression (10 rounds)</option>
+                        </select>
+                    </div>
+                }
+            }
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="attackerMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                    <label class="form-check-label" for="attackerMoving">
+                        Moving (-2 AV)
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="calledShot" @bind="isCalledShot" @bind:after="OnDataChanged">
+                    <label class="form-check-label" for="calledShot">
+                        Called Shot (-2 AV)
+                    </label>
+                </div>
+                @if (isCalledShot)
+                {
+                    <select class="form-select form-select-sm mt-2" @bind="calledShotLocation" @bind:after="OnDataChanged">
+                        <option value="@HitLocation.Head">Head</option>
+                        <option value="@HitLocation.Torso">Torso</option>
+                        <option value="@HitLocation.LeftArm">Left Arm</option>
+                        <option value="@HitLocation.RightArm">Right Arm</option>
+                        <option value="@HitLocation.LeftLeg">Left Leg</option>
+                        <option value="@HitLocation.RightLeg">Right Leg</option>
+                    </select>
+                    <small class="text-info">
+                        <i class="bi bi-info-circle"></i> SV 2+ hits target location; SV 0-1 hits random
+                    </small>
+                }
+            </div>
+
+            @if (ActionType != TargetingActionType.Medical)
+            {
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="usePhysicality" @bind="usePhysicality" @bind:after="OnDataChanged">
+                        <label class="form-check-label" for="usePhysicality">
+                            Use Physicality Bonus
+                        </label>
+                    </div>
+                </div>
+            }
+
+            <hr />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Boost</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">AP</span>
+                            <input type="number" class="form-control" min="0" max="@MaxAPBoost" @bind="apBoost" @bind:after="OnDataChanged">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">FAT</span>
+                            <input type="number" class="form-control" min="0" max="@MaxFATBoost" @bind="fatBoost" @bind:after="OnDataChanged">
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">+1 AV per boost point spent</small>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>Total AV Modifier:</span>
+                <strong class="@(GetTotalAVModifier() >= 0 ? "text-success" : "text-danger")">
+                    @(GetTotalAVModifier() >= 0 ? "+" : "")@GetTotalAVModifier()
+                </strong>
+            </div>
+            <button class="btn @(IsConfirmed ? "btn-success" : "btn-danger") w-100"
+                    @onclick="ToggleConfirm"
+                    disabled="@IsReadOnly">
+                @if (IsConfirmed)
+                {
+                    <i class="bi bi-check-circle"></i> <text>Confirmed - Click to Edit</text>
+                }
+                else
+                {
+                    <i class="bi bi-lock"></i> <text>Confirm Attack Settings</text>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string AttackerName { get; set; } = string.Empty;
+
+    [Parameter]
+    public TargetingActionType ActionType { get; set; }
+
+    [Parameter]
+    public int BaseSkillAS { get; set; }
+
+    [Parameter]
+    public int WeaponAVModifier { get; set; }
+
+    [Parameter]
+    public bool ShowFireMode { get; set; }
+
+    [Parameter]
+    public int MaxAPBoost { get; set; }
+
+    [Parameter]
+    public int MaxFATBoost { get; set; }
+
+    [Parameter]
+    public bool IsConfirmed { get; set; }
+
+    [Parameter]
+    public bool IsReadOnly { get; set; }
+
+    [Parameter]
+    public TargetingAttackerData? InitialData { get; set; }
+
+    [Parameter]
+    public EventCallback<TargetingAttackerData> OnDataUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnConfirmChanged { get; set; }
+
+    // Local state
+    private bool isMoving;
+    private bool isCalledShot;
+    private HitLocation calledShotLocation = HitLocation.Torso;
+    private bool usePhysicality = true;
+    private int apBoost;
+    private int fatBoost;
+    private RangeCategory range = RangeCategory.Medium;
+    private FireMode fireMode = FireMode.Single;
+
+    protected override void OnParametersSet()
+    {
+        if (InitialData != null)
+        {
+            isMoving = InitialData.IsMoving;
+            isCalledShot = InitialData.IsCalledShot;
+            calledShotLocation = InitialData.CalledShotLocation ?? HitLocation.Torso;
+            usePhysicality = InitialData.UsePhysicality;
+            apBoost = InitialData.APBoost;
+            fatBoost = InitialData.FATBoost;
+            range = InitialData.Range ?? RangeCategory.Medium;
+            fireMode = InitialData.FireMode ?? FireMode.Single;
+        }
+    }
+
+    private int GetTotalAVModifier()
+    {
+        int modifier = WeaponAVModifier + apBoost + fatBoost;
+        if (isMoving) modifier -= 2;
+        if (isCalledShot) modifier -= 2;
+        return modifier;
+    }
+
+    private async Task OnDataChanged()
+    {
+        if (IsReadOnly) return;
+
+        var data = BuildAttackerData();
+        await OnDataUpdated.InvokeAsync(data);
+    }
+
+    private async Task ToggleConfirm()
+    {
+        if (IsReadOnly) return;
+        await OnConfirmChanged.InvokeAsync(!IsConfirmed);
+    }
+
+    private TargetingAttackerData BuildAttackerData()
+    {
+        return new TargetingAttackerData
+        {
+            ActionType = ActionType,
+            SkillAS = BaseSkillAS,
+            WeaponAVModifier = WeaponAVModifier,
+            IsMoving = isMoving,
+            APBoost = apBoost,
+            FATBoost = fatBoost,
+            IsCalledShot = isCalledShot,
+            CalledShotLocation = isCalledShot ? calledShotLocation : null,
+            UsePhysicality = usePhysicality,
+            Range = ActionType == TargetingActionType.RangedAttack ? range : null,
+            FireMode = ActionType == TargetingActionType.RangedAttack ? fireMode : null
+        };
+    }
+}

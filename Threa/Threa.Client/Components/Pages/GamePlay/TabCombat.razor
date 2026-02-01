@@ -6,10 +6,12 @@
 @using Threa.Dal.Dto
 @using Threa.Dal
 @using Threa.Client.Components.Shared
+@using Threa.Client.Components.Pages.GamePlay.Targeting
 
 @inject ICharacterItemDal CharacterItemDal
 @inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
+@inject Radzen.DialogService DialogService
 
 <div class="combat-tab-container">
     @if (combatMode == CombatMode.Default)
@@ -66,24 +68,68 @@
             <div class="col-md-5">
                 <div class="d-grid gap-3">
                     <!-- Attack Button -->
-                    <button class="btn btn-lg btn-danger py-3"
-                            @onclick="StartAttack"
-                            disabled="@(!CanAct())">
-                        <i class="bi bi-bullseye fs-4"></i>
-                        <div class="fw-bold">ATTACK</div>
-                        <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
-                    </button>
+                    @if (HasTargetsAvailable())
+                    {
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-lg btn-danger py-3 flex-grow-1"
+                                    @onclick="StartAttack"
+                                    disabled="@(!CanAct())">
+                                <i class="bi bi-bullseye fs-4"></i>
+                                <div class="fw-bold">ATTACK</div>
+                                <small class="opacity-75">Solo (1 AP + 1 FAT)</small>
+                            </button>
+                            <button class="btn btn-lg btn-outline-danger py-3"
+                                    @onclick="() => StartTargetedAttack(TargetingActionType.MeleeAttack)"
+                                    disabled="@(!CanAct())"
+                                    title="Attack a target at your table">
+                                <i class="bi bi-person-plus fs-4"></i>
+                                <div class="small">Target</div>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <button class="btn btn-lg btn-danger py-3"
+                                @onclick="StartAttack"
+                                disabled="@(!CanAct())">
+                            <i class="bi bi-bullseye fs-4"></i>
+                            <div class="fw-bold">ATTACK</div>
+                            <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
+                        </button>
+                    }
 
                     <!-- Ranged Attack Button -->
                     @if (hasRangedWeaponEquipped)
                     {
-                        <button class="btn btn-lg btn-warning py-3"
-                                @onclick="StartRangedAttack"
-                                disabled="@(!CanAct())">
-                            <i class="bi bi-crosshair fs-4"></i>
-                            <div class="fw-bold">RANGED ATTACK</div>
-                            <small class="opacity-75">@GetRangedAmmoDisplay()</small>
-                        </button>
+                        @if (HasTargetsAvailable())
+                        {
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-lg btn-warning py-3 flex-grow-1"
+                                        @onclick="StartRangedAttack"
+                                        disabled="@(!CanAct())">
+                                    <i class="bi bi-crosshair fs-4"></i>
+                                    <div class="fw-bold">RANGED</div>
+                                    <small class="opacity-75">@GetRangedAmmoDisplay()</small>
+                                </button>
+                                <button class="btn btn-lg btn-outline-warning py-3"
+                                        @onclick="() => StartTargetedAttack(TargetingActionType.RangedAttack)"
+                                        disabled="@(!CanAct())"
+                                        title="Ranged attack on a target at your table">
+                                    <i class="bi bi-person-plus fs-4"></i>
+                                    <div class="small">Target</div>
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn btn-lg btn-warning py-3"
+                                    @onclick="StartRangedAttack"
+                                    disabled="@(!CanAct())">
+                                <i class="bi bi-crosshair fs-4"></i>
+                                <div class="fw-bold">RANGED ATTACK</div>
+                                <small class="opacity-75">@GetRangedAmmoDisplay()</small>
+                            </button>
+                        }
                     }
 
                     <!-- Reload Button -->
@@ -264,6 +310,23 @@
                      OnMedicalComplete="OnMedicalComplete"
                      OnCharacterChanged="OnCharacterChanged" />
     }
+    else if (combatMode == CombatMode.SelectTarget)
+    {
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-crosshair"></i> Select Target
+                </h5>
+            </div>
+            <div class="card-body">
+                <TargetSelectionModal ActionType="@pendingTargetingActionType"
+                                      AvailableTargets="@AvailableTargets"
+                                      ExcludeCharacterId="@(Character?.Id ?? 0)"
+                                      OnTargetSelected="OnTargetSelected"
+                                      OnCancel="ReturnToDefault" />
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -276,7 +339,13 @@
     [Parameter]
     public EventCallback OnCharacterChanged { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical }
+    [Parameter]
+    public List<TargetSelectionModal.TargetInfo>? AvailableTargets { get; set; }
+
+    [Parameter]
+    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -307,6 +376,9 @@
     private bool? pendingShieldBlockSuccess;
     private int? pendingShieldBlockRV;
     private HitLocation? pendingCalledShotLocation;
+
+    // Targeting state
+    private TargetingActionType pendingTargetingActionType;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1037,4 +1109,108 @@
 
     private int GetVitPercent() => Character?.Vitality.BaseValue > 0
         ? (int)((double)Character.Vitality.Value / Character.Vitality.BaseValue * 100) : 0;
+
+    // ================================
+    // Targeting Methods
+    // ================================
+
+    private bool HasTargetsAvailable()
+    {
+        return AvailableTargets != null && AvailableTargets.Any();
+    }
+
+    private void StartTargetedAttack(TargetingActionType actionType)
+    {
+        if (!CanAct()) return;
+
+        // End parry mode if active
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+
+        pendingTargetingActionType = actionType;
+        combatMode = CombatMode.SelectTarget;
+    }
+
+    private async Task OnTargetSelected(TargetSelectionModal.TargetInfo target)
+    {
+        if (Character == null) return;
+
+        // Build attacker data based on action type
+        var attackerData = BuildAttackerData(pendingTargetingActionType);
+
+        // Initiate targeting through parent
+        if (OnInitiateTargeting.HasDelegate)
+        {
+            await OnInitiateTargeting.InvokeAsync((pendingTargetingActionType, target.CharacterId, target.CharacterName, attackerData));
+        }
+
+        // Return to default mode - the targeting modal will be shown by Play.razor
+        combatMode = CombatMode.Default;
+    }
+
+    private TargetingAttackerData BuildAttackerData(TargetingActionType actionType)
+    {
+        if (Character == null)
+        {
+            return new TargetingAttackerData { ActionType = actionType };
+        }
+
+        // Find the appropriate skill and weapon info
+        GameMechanics.SkillEdit? skill = null;
+        int weaponAV = 0;
+        int weaponSV = 0;
+        int weaponDC = 1;
+        string? weaponName = null;
+        DamageType damageType = DamageType.Bashing;
+        bool isDodgeable = false;
+        int currentAmmo = 0;
+
+        if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
+        {
+            var weapon = rangedWeapons.First();
+            skill = Character.Skills.FirstOrDefault(s => s.Id.Equals(weapon.SkillName, StringComparison.OrdinalIgnoreCase));
+            weaponAV = weapon.WeaponAVModifier;
+            weaponSV = weapon.BaseSV;
+            weaponDC = 1; // Default damage class for ranged
+            weaponName = weapon.Name;
+            isDodgeable = weapon.IsDodgeable;
+            currentAmmo = weapon.LoadedAmmo;
+        }
+        else if (actionType == TargetingActionType.MeleeAttack)
+        {
+            skill = attackSkills.FirstOrDefault();
+            weaponAV = meleeWeaponAVModifier;
+            weaponSV = meleeWeaponSVModifier;
+            weaponDC = meleeWeaponDamageClass;
+
+            // Get weapon name from equipped items
+            var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
+            weaponName = mainHand?.Template?.Name ?? "Unarmed";
+        }
+        else if (actionType == TargetingActionType.Medical)
+        {
+            // Find medical skills
+            var medicalSkillNames = new[] { "First-Aid", "First Aid", "Nursing", "Doctor", "Medicine" };
+            skill = Character.Skills.FirstOrDefault(s =>
+                medicalSkillNames.Any(name => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return new TargetingAttackerData
+        {
+            ActionType = actionType,
+            SkillId = skill?.Id ?? "",
+            SkillName = skill?.Name ?? "",
+            SkillAS = skill?.AbilityScore ?? 0,
+            WeaponAVModifier = weaponAV,
+            WeaponSVModifier = weaponSV,
+            WeaponDamageClass = weaponDC,
+            WeaponName = weaponName,
+            DamageType = damageType,
+            IsDodgeable = isDodgeable,
+            CurrentLoadedAmmo = currentAmmo,
+            UsePhysicality = actionType == TargetingActionType.MeleeAttack
+        };
+    }
 }

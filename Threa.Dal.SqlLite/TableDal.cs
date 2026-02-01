@@ -263,7 +263,13 @@ public class TableDal : ITableDal
     {
         try
         {
-            var sql = "SELECT Json FROM TableCharacters WHERE TableId = @TableId";
+            // Join with Characters and Players tables to get names
+            var sql = @"
+                SELECT tc.Json, c.Json as CharJson, p.Json as PlayerJson
+                FROM TableCharacters tc
+                LEFT JOIN Characters c ON tc.CharacterId = c.Id
+                LEFT JOIN Players p ON tc.PlayerId = p.Id
+                WHERE tc.TableId = @TableId";
             using var command = Connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddWithValue("@TableId", tableId.ToString());
@@ -274,7 +280,39 @@ public class TableDal : ITableDal
                 string json = reader.GetString(0);
                 var obj = JsonSerializer.Deserialize<TableCharacter>(json);
                 if (obj != null)
+                {
+                    // Extract character name from character JSON
+                    if (!reader.IsDBNull(1))
+                    {
+                        string charJson = reader.GetString(1);
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(charJson);
+                            if (doc.RootElement.TryGetProperty("Name", out var nameProp))
+                            {
+                                obj.CharacterName = nameProp.GetString() ?? string.Empty;
+                            }
+                        }
+                        catch { /* Ignore JSON parse errors */ }
+                    }
+
+                    // Extract player name from player JSON
+                    if (!reader.IsDBNull(2))
+                    {
+                        string playerJson = reader.GetString(2);
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(playerJson);
+                            if (doc.RootElement.TryGetProperty("DisplayName", out var nameProp))
+                            {
+                                obj.PlayerName = nameProp.GetString();
+                            }
+                        }
+                        catch { /* Ignore JSON parse errors */ }
+                    }
+
                     characters.Add(obj);
+                }
             }
             return characters;
         }

@@ -1,0 +1,230 @@
+@using GameMechanics.Combat
+@using GameMechanics.Messaging
+@using Threa.Services
+
+<div class="targeting-modal">
+    <div class="modal-header @GetHeaderClass()">
+        <h5 class="modal-title text-white">
+            @if (Interaction?.State == TargetingState.Resolved)
+            {
+                <i class="bi bi-check-circle"></i> <text>Combat Resolved</text>
+            }
+            else if (Interaction?.State == TargetingState.Cancelled)
+            {
+                <i class="bi bi-x-circle"></i> <text>Cancelled</text>
+            }
+            else
+            {
+                <i class="bi bi-crosshair"></i>
+                <text>@GetTitle()</text>
+            }
+        </h5>
+        @if (IsAttacker && Interaction?.State != TargetingState.Resolved && Interaction?.State != TargetingState.Cancelled)
+        {
+            <button type="button" class="btn btn-outline-light btn-sm" @onclick="Cancel">
+                <i class="bi bi-x-lg"></i> Cancel Attack
+            </button>
+        }
+    </div>
+
+    <div class="modal-body">
+        @if (Interaction == null)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (Interaction.State == TargetingState.Cancelled)
+        {
+            <div class="alert alert-warning text-center">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+                <p class="mb-0 mt-2">This attack has been cancelled.</p>
+            </div>
+            <button class="btn btn-secondary w-100 mt-3" @onclick="Close">
+                <i class="bi bi-x-lg"></i> Close
+            </button>
+        }
+        else if (Interaction.State == TargetingState.Resolved && Interaction.Resolution != null)
+        {
+            <!-- Results Display -->
+            <TargetingResultsPanel Resolution="@Interaction.Resolution"
+                                    AttackerConfirmed="@Interaction.AttackerConfirmed"
+                                    DefenderConfirmed="@Interaction.DefenderConfirmed"
+                                    IsDefender="@(!IsAttacker)"
+                                    DamageAccepted="@damageAccepted"
+                                    OnAcceptDamage="AcceptDamage" />
+            @if (IsAttacker || damageAccepted || !Interaction.Resolution.IsHit)
+            {
+                <button class="btn btn-primary w-100 mt-3" @onclick="Close">
+                    <i class="bi bi-check-lg"></i> Done
+                </button>
+            }
+        }
+        else
+        {
+            <!-- Split View: Attacker and Defender Panels -->
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <TargetingAttackerPanel AttackerName="@Interaction.AttackerName"
+                                            ActionType="@Interaction.AttackerData.ActionType"
+                                            BaseSkillAS="@Interaction.AttackerData.SkillAS"
+                                            WeaponAVModifier="@Interaction.AttackerData.WeaponAVModifier"
+                                            ShowFireMode="@(Interaction.AttackerData.ActionType == TargetingActionType.RangedAttack)"
+                                            MaxAPBoost="@(IsAttacker ? maxAPBoost : 0)"
+                                            MaxFATBoost="@(IsAttacker ? maxFATBoost : 0)"
+                                            IsConfirmed="@Interaction.AttackerConfirmed"
+                                            IsReadOnly="@(!IsAttacker)"
+                                            InitialData="@Interaction.AttackerData"
+                                            OnDataUpdated="UpdateAttackerData"
+                                            OnConfirmChanged="ToggleAttackerConfirm" />
+                </div>
+                <div class="col-md-6">
+                    <TargetingDefenderPanel DefenderName="@Interaction.DefenderName"
+                                            ActionType="@Interaction.AttackerData.ActionType"
+                                            IsRangedAttack="@(Interaction.AttackerData.ActionType == TargetingActionType.RangedAttack)"
+                                            DodgeAS="@defenderDodgeAS"
+                                            ParryAS="@defenderParryAS"
+                                            IsInParryMode="@defenderIsInParryMode"
+                                            CanActiveDefense="@defenderCanActiveDefense"
+                                            CanParry="@defenderCanParry"
+                                            MaxAPBoost="@(!IsAttacker ? maxAPBoost : 0)"
+                                            MaxFATBoost="@(!IsAttacker ? maxFATBoost : 0)"
+                                            IsConfirmed="@Interaction.DefenderConfirmed"
+                                            IsReadOnly="@IsAttacker"
+                                            InitialData="@Interaction.DefenderData"
+                                            OnDataUpdated="UpdateDefenderData"
+                                            OnConfirmChanged="ToggleDefenderConfirm" />
+                </div>
+            </div>
+
+            @if (Interaction.AttackerConfirmed && Interaction.DefenderConfirmed)
+            {
+                <div class="alert alert-info mt-3 text-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Resolving attack...
+                </div>
+            }
+            else
+            {
+                <div class="mt-3">
+                    <TargetingResultsPanel Resolution="@null"
+                                            AttackerConfirmed="@Interaction.AttackerConfirmed"
+                                            DefenderConfirmed="@Interaction.DefenderConfirmed"
+                                            IsDefender="@(!IsAttacker)" />
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public TargetingInteraction? Interaction { get; set; }
+
+    [Parameter]
+    public bool IsAttacker { get; set; }
+
+    [Parameter]
+    public int maxAPBoost { get; set; }
+
+    [Parameter]
+    public int maxFATBoost { get; set; }
+
+    [Parameter]
+    public int defenderDodgeAS { get; set; }
+
+    [Parameter]
+    public int defenderParryAS { get; set; }
+
+    [Parameter]
+    public bool defenderIsInParryMode { get; set; }
+
+    [Parameter]
+    public bool defenderCanActiveDefense { get; set; }
+
+    [Parameter]
+    public bool defenderCanParry { get; set; }
+
+    [Parameter]
+    public EventCallback<TargetingAttackerData> OnAttackerDataUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<TargetingDefenderData> OnDefenderDataUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnAttackerConfirmChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnDefenderConfirmChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnAcceptDamage { get; set; }
+
+    private bool damageAccepted;
+
+    private string GetHeaderClass()
+    {
+        if (Interaction?.State == TargetingState.Resolved)
+        {
+            return Interaction.Resolution?.IsHit == true ? "bg-danger" : "bg-success";
+        }
+        if (Interaction?.State == TargetingState.Cancelled)
+        {
+            return "bg-secondary";
+        }
+        return IsAttacker ? "bg-danger" : "bg-info";
+    }
+
+    private string GetTitle()
+    {
+        if (Interaction == null) return "Loading...";
+
+        return IsAttacker
+            ? $"Attacking {Interaction.DefenderName}"
+            : $"{Interaction.AttackerName} is attacking you";
+    }
+
+    private async Task UpdateAttackerData(TargetingAttackerData data)
+    {
+        await OnAttackerDataUpdated.InvokeAsync(data);
+    }
+
+    private async Task UpdateDefenderData(TargetingDefenderData data)
+    {
+        await OnDefenderDataUpdated.InvokeAsync(data);
+    }
+
+    private async Task ToggleAttackerConfirm(bool confirmed)
+    {
+        await OnAttackerConfirmChanged.InvokeAsync(confirmed);
+    }
+
+    private async Task ToggleDefenderConfirm(bool confirmed)
+    {
+        await OnDefenderConfirmChanged.InvokeAsync(confirmed);
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task AcceptDamage()
+    {
+        damageAccepted = true;
+        await OnAcceptDamage.InvokeAsync();
+    }
+}

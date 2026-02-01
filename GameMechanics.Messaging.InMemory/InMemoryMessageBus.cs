@@ -18,6 +18,11 @@ public class InMemoryMessageBus : IDisposable
     private readonly Subject<TableUpdateMessage> _tableUpdates = new();
     private readonly Subject<JoinRequestMessage> _joinRequests = new();
     private readonly Subject<CharactersUpdatedMessage> _charactersUpdated = new();
+    private readonly Subject<TargetingRequestMessage> _targetingRequests = new();
+    private readonly Subject<TargetingResponseMessage> _targetingResponses = new();
+    private readonly Subject<TargetingUpdateMessage> _targetingUpdates = new();
+    private readonly Subject<TargetingResultMessage> _targetingResults = new();
+    private readonly Subject<TargetingCancelledMessage> _targetingCancelled = new();
     private bool _disposed;
 
     /// <summary>
@@ -64,6 +69,31 @@ public class InMemoryMessageBus : IDisposable
     /// Observable stream of characters updated messages.
     /// </summary>
     public IObservable<CharactersUpdatedMessage> CharactersUpdated => _charactersUpdated.AsObservable();
+
+    /// <summary>
+    /// Observable stream of targeting request messages.
+    /// </summary>
+    public IObservable<TargetingRequestMessage> TargetingRequests => _targetingRequests.AsObservable();
+
+    /// <summary>
+    /// Observable stream of targeting response messages.
+    /// </summary>
+    public IObservable<TargetingResponseMessage> TargetingResponses => _targetingResponses.AsObservable();
+
+    /// <summary>
+    /// Observable stream of targeting update messages.
+    /// </summary>
+    public IObservable<TargetingUpdateMessage> TargetingUpdates => _targetingUpdates.AsObservable();
+
+    /// <summary>
+    /// Observable stream of targeting result messages.
+    /// </summary>
+    public IObservable<TargetingResultMessage> TargetingResults => _targetingResults.AsObservable();
+
+    /// <summary>
+    /// Observable stream of targeting cancelled messages.
+    /// </summary>
+    public IObservable<TargetingCancelledMessage> TargetingCancelled => _targetingCancelled.AsObservable();
 
     /// <summary>
     /// Publishes a time event message to all subscribers.
@@ -137,6 +167,46 @@ public class InMemoryMessageBus : IDisposable
         _charactersUpdated.OnNext(message);
     }
 
+    /// <summary>
+    /// Publishes a targeting request message to all subscribers.
+    /// </summary>
+    public void PublishTargetingRequest(TargetingRequestMessage message)
+    {
+        _targetingRequests.OnNext(message);
+    }
+
+    /// <summary>
+    /// Publishes a targeting response message to all subscribers.
+    /// </summary>
+    public void PublishTargetingResponse(TargetingResponseMessage message)
+    {
+        _targetingResponses.OnNext(message);
+    }
+
+    /// <summary>
+    /// Publishes a targeting update message to all subscribers.
+    /// </summary>
+    public void PublishTargetingUpdate(TargetingUpdateMessage message)
+    {
+        _targetingUpdates.OnNext(message);
+    }
+
+    /// <summary>
+    /// Publishes a targeting result message to all subscribers.
+    /// </summary>
+    public void PublishTargetingResult(TargetingResultMessage message)
+    {
+        _targetingResults.OnNext(message);
+    }
+
+    /// <summary>
+    /// Publishes a targeting cancelled message to all subscribers.
+    /// </summary>
+    public void PublishTargetingCancelled(TargetingCancelledMessage message)
+    {
+        _targetingCancelled.OnNext(message);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -151,5 +221,10 @@ public class InMemoryMessageBus : IDisposable
         _tableUpdates.Dispose();
         _joinRequests.Dispose();
         _charactersUpdated.Dispose();
+        _targetingRequests.Dispose();
+        _targetingResponses.Dispose();
+        _targetingUpdates.Dispose();
+        _targetingResults.Dispose();
+        _targetingCancelled.Dispose();
     }
 }
