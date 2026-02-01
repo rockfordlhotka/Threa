@@ -1,8 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using System.Reflection
+@using System.Security.Claims
+@using Csla
+@using GameMechanics.Player
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
+@inject ApplicationContext ApplicationContext
+@inject IDataPortal<ProfileInfo> ProfilePortal
 
 <div class="page @(IsFullWidthPage() ? "full-width-mode" : "")">
     <div class="sidebar">
@@ -13,7 +18,7 @@
         <div class="top-row px-4">
             <AuthorizeView>
                 <Authorized>
-                    Hello, @context.User?.Identity?.Name
+                    Hello, @GetDisplayName(context.User)
                     <a href="/logout">Logout</a>
                 </Authorized>
                 <NotAuthorized>
@@ -37,10 +42,43 @@
 
 @code {
     private string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+    private ProfileInfo? _currentPlayerProfile;
 
     protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentPlayerProfile();
+    }
+
+    private async Task LoadCurrentPlayerProfile()
+    {
+        try
+        {
+            var idClaim = ApplicationContext.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (idClaim != null && int.TryParse(idClaim.Value, out int playerId))
+            {
+                _currentPlayerProfile = await ProfilePortal.FetchAsync(playerId);
+            }
+        }
+        catch
+        {
+            // If we can't load the profile, fall back to username
+            _currentPlayerProfile = null;
+        }
+    }
+
+    private string GetDisplayName(System.Security.Claims.ClaimsPrincipal? user)
+    {
+        // Prefer the friendly name if available, otherwise use username
+        if (_currentPlayerProfile != null && !string.IsNullOrWhiteSpace(_currentPlayerProfile.Name))
+        {
+            return _currentPlayerProfile.Name;
+        }
+        return user?.Identity?.Name ?? "Unknown";
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
