@@ -1,6 +1,7 @@
 ﻿using Csla;
 using Csla.Core;
 using Csla.Rules;
+using Csla.Rules.CommonRules;
 using GameMechanics.Effects.Behaviors;
 using GameMechanics.Items;
 using GameMechanics.Reference;
@@ -747,6 +748,16 @@ namespace GameMechanics
       BusinessRules.AddRule(new ActionPointsMax());
       BusinessRules.AddRule(new ActionPointsRecovery());
       BusinessRules.AddRule(new AttributeSumValidation());
+
+      // Currency validation - coins cannot be negative
+      BusinessRules.AddRule(new MinValue<int>(CopperCoinsProperty, 0) 
+        { MessageText = "Copper coins cannot be negative." });
+      BusinessRules.AddRule(new MinValue<int>(SilverCoinsProperty, 0) 
+        { MessageText = "Silver coins cannot be negative." });
+      BusinessRules.AddRule(new MinValue<int>(GoldCoinsProperty, 0) 
+        { MessageText = "Gold coins cannot be negative." });
+      BusinessRules.AddRule(new MinValue<int>(PlatinumCoinsProperty, 0) 
+        { MessageText = "Platinum coins cannot be negative." });
     }
 
     [Create]
