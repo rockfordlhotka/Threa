@@ -76,11 +76,13 @@ else
     @if (vm.Model.IsBeingSaved)
     {
         <button disabled>Save</button>
+        <button disabled>Save and Exit</button>
         <img src="images/busy.gif" class="busy-animation" />
     }
     else
     {
         <button @onclick="SaveAsync" disabled="@(!vm.Model.IsSavable)">Save</button>
+        <button @onclick="SaveAndExitAsync" disabled="@(!vm.Model.IsSavable)">Save and Exit</button>
     }
 }
 
@@ -91,6 +93,7 @@ else
     private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills", "Magic", "Items" };
     private string activeTab = tabNames[0];
     private bool _warningEnabled = false;
+    private bool _navigateAfterSave = false;
 
     private void SelectTab(string tabName)
     {
@@ -128,7 +131,16 @@ else
     private void OnSaved()
     {
         _ = DisableUnsavedChangesWarning();
-        NavigationManager.NavigateTo("/player/characters");
+        if (_navigateAfterSave)
+        {
+            NavigationManager.NavigateTo("/player/characters");
+        }
+        else if (id == 0 && vm.Model?.Id > 0)
+        {
+            // Update URL to include the new character ID without triggering a full navigation
+            NavigationManager.NavigateTo($"/player/character/{vm.Model.Id}", replace: true);
+            id = vm.Model.Id;
+        }
     }
 
     private async void OnModelChanged()
@@ -172,6 +184,18 @@ else
 
     private async void SaveAsync()
     {
+        _navigateAfterSave = false;
+        vm.Model.IsBeingSaved = true;
+        StateHasChanged();
+        await Task.Delay(1000);
+        await vm.SaveAsync();
+        vm.Model.IsBeingSaved = false;
+        StateHasChanged();
+    }
+
+    private async void SaveAndExitAsync()
+    {
+        _navigateAfterSave = true;
         vm.Model.IsBeingSaved = true;
         StateHasChanged();
         await Task.Delay(1000);
