@@ -1,4 +1,4 @@
-@* Modal for unloading an ammo container (magazine, speedloader, etc.) back to loose ammo *@
+@* Modal for unloading a weapon from inventory back to loose ammo *@
 
 @using GameMechanics
 @using GameMechanics.Combat
@@ -16,20 +16,20 @@
         </div>
     }
 
-    @* Container Info *@
+    @* Weapon Info *@
     <div class="card mb-3">
         <div class="card-body">
-            <h6 class="card-title">@ContainerName</h6>
+            <h6 class="card-title">@WeaponName</h6>
             <div class="d-flex gap-3">
                 <div>
                     <small class="text-muted">Currently Loaded</small>
-                    <div class="fw-bold">@currentAmmo / @maxCapacity</div>
+                    <div class="fw-bold">@currentAmmo / @totalCapacity</div>
                 </div>
-                @if (!string.IsNullOrEmpty(containerAmmoType))
+                @if (!string.IsNullOrEmpty(loadedAmmoType))
                 {
                     <div>
                         <small class="text-muted">Ammo Type</small>
-                        <div class="fw-bold">@containerAmmoType</div>
+                        <div class="fw-bold">@loadedAmmoType</div>
                     </div>
                 }
             </div>
@@ -40,7 +40,7 @@
     {
         <div class="alert alert-warning">
             <i class="bi bi-exclamation-circle me-1"></i>
-            This container is empty - nothing to unload.
+            This weapon is empty - nothing to unload.
         </div>
     }
     else
@@ -126,8 +126,8 @@
 </div>
 
 @code {
-    [Parameter] public CharacterItem? Container { get; set; }
-    [Parameter] public string ContainerName { get; set; } = "";
+    [Parameter] public CharacterItem? Weapon { get; set; }
+    [Parameter] public string WeaponName { get; set; } = "";
     [Parameter] public int AvailableAp { get; set; }
     [Parameter] public int AvailableFat { get; set; }
 
@@ -143,10 +143,10 @@
     private string? errorMessage;
 #pragma warning restore CS0649
 
-    // Container state
+    // Weapon state
     private int currentAmmo;
-    private int maxCapacity;
-    private string? containerAmmoType;
+    private int totalCapacity;
+    private string? loadedAmmoType;
 
     // Computed values - unload is twice as fast (6 rounds per game round instead of 3)
     private int durationRounds => (int)Math.Ceiling(roundsToUnload / 6.0);
@@ -164,21 +164,22 @@
             useTwoApCost = false;
         }
 
-        if (Container != null)
+        if (Weapon != null)
         {
-            // Load container state
-            var containerState = AmmoContainerState.FromJson(Container.CustomProperties);
-            currentAmmo = containerState.LoadedAmmo;
-            maxCapacity = containerState.MaxCapacity;
-            containerAmmoType = containerState.AmmoType;
+            // Load weapon state
+            var ammoState = WeaponAmmoState.FromJson(Weapon.CustomProperties);
+            currentAmmo = ammoState.TotalAvailable;
+            loadedAmmoType = ammoState.LoadedAmmoType;
 
-            // If max capacity is 0, try to get it from the template
-            if (maxCapacity == 0 && Container.Template != null)
+            // Get weapon properties from template for display
+            if (Weapon.Template != null)
             {
-                var containerProps = AmmoContainerProperties.FromJson(Container.Template.CustomProperties);
-                if (containerProps != null)
+                var weaponProps = RangedWeaponProperties.FromJson(Weapon.Template.CustomProperties);
+                if (weaponProps != null)
                 {
-                    maxCapacity = containerProps.Capacity;
+                    totalCapacity = weaponProps.TotalCapacity;
+                    // If no loaded ammo type, use weapon's ammo type
+                    loadedAmmoType ??= weaponProps.AmmoType;
                 }
             }
 
@@ -196,12 +197,12 @@
     {
         if (!IsFormValid) return;
 
-        var result = new UnloadAmmoContainerResult
+        var result = new UnloadWeaponResult
         {
-            ContainerId = Container!.Id,
+            WeaponItemId = Weapon!.Id,
             RoundsToUnload = roundsToUnload,
-            AmmoType = containerAmmoType,
-            ContainerName = ContainerName,
+            AmmoType = loadedAmmoType,
+            WeaponName = WeaponName,
             DurationRounds = durationRounds,
             UseTwoApCost = useTwoApCost
         };

@@ -1,0 +1,320 @@
+@* Modal for reloading a weapon from inventory with loose ammo or magazine *@
+
+@using GameMechanics
+@using GameMechanics.Combat
+@using GameMechanics.Items
+@using Threa.Dal
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject DialogService DialogService
+@inject IItemTemplateDal templateDal
+
+<div class="p-3">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+        </div>
+    }
+
+    @* Weapon Info *@
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="card-title">@WeaponName</h6>
+            <div class="d-flex gap-3">
+                <div>
+                    <small class="text-muted">Current</small>
+                    <div class="fw-bold">@currentAmmo / @totalCapacity</div>
+                </div>
+                <div>
+                    <small class="text-muted">Space Available</small>
+                    <div class="fw-bold">@spaceAvailable</div>
+                </div>
+                @if (!string.IsNullOrEmpty(weaponAmmoType))
+                {
+                    <div>
+                        <small class="text-muted">Ammo Type</small>
+                        <div class="fw-bold">@weaponAmmoType</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Ammo Source Selection *@
+    <div class="mb-3">
+        <label class="form-label">Ammo Source <span class="text-danger">*</span></label>
+        @if (AvailableAmmo == null || !AvailableAmmo.Any())
+        {
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-circle me-1"></i>
+                No compatible ammo available in inventory.
+            </div>
+        }
+        else
+        {
+            <select class="form-select" @bind="selectedAmmoId">
+                <option value="">-- Select ammo source --</option>
+                @foreach (var ammo in AvailableAmmo)
+                {
+                    var ammoName = ammo.CustomName ?? ammo.Template?.Name ?? "Unknown";
+                    var ammoType = GetAmmoType(ammo);
+                    var isLoose = IsLooseAmmo(ammo);
+                    var typeLabel = isLoose ? "Loose" : "Magazine";
+                    var countLabel = isLoose ? $"x{ammo.StackSize}" : GetMagazineAmmoCount(ammo);
+                    <option value="@ammo.Id">@ammoName (@ammoType, @typeLabel) - @countLabel</option>
+                }
+            </select>
+        }
+    </div>
+
+    @* Quantity Slider (only for loose ammo) *@
+    @if (selectedAmmo != null)
+    {
+        @if (selectedIsLooseAmmo)
+        {
+            <div class="mb-3">
+                <label class="form-label">Rounds to Load: <strong>@roundsToLoad</strong></label>
+                <input type="range" class="form-range"
+                       min="1" max="@maxRoundsToLoad"
+                       @bind="roundsToLoad" @bind:event="oninput" />
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>1</span>
+                    <span>Max: @maxRoundsToLoad</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-secondary">
+                <i class="bi bi-info-circle me-1"></i>
+                Loading full magazine: <strong>@roundsToLoad rounds</strong>
+            </div>
+        }
+
+        @* Reload Cost Selection *@
+        <div class="mb-3">
+            <label class="form-label">Reload Cost</label>
+            @if (!CanAffordAnyCost)
+            {
+                <div class="alert alert-danger py-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Not enough AP or FAT to reload.
+                </div>
+            }
+            else
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reloadCost" id="normalReload"
+                           checked="@(!useTwoApCost)" @onchange="() => useTwoApCost = false"
+                           disabled="@(!CanAffordOneApOneFat)" />
+                    <label class="form-check-label @(!CanAffordOneApOneFat ? "text-muted" : "")" for="normalReload">
+                        <strong>1 AP + 1 FAT</strong>
+                        @if (!CanAffordOneApOneFat)
+                        {
+                            <span class="text-danger ms-2">(not enough)</span>
+                        }
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reloadCost" id="twoApReload"
+                           checked="@useTwoApCost" @onchange="() => useTwoApCost = true"
+                           disabled="@(!CanAffordTwoAp)" />
+                    <label class="form-check-label @(!CanAffordTwoAp ? "text-muted" : "")" for="twoApReload">
+                        <strong>2 AP</strong>
+                        <span class="text-muted ms-2">(no fatigue)</span>
+                        @if (!CanAffordTwoAp)
+                        {
+                            <span class="text-danger ms-2">(not enough)</span>
+                        }
+                    </label>
+                </div>
+            }
+        </div>
+
+        @* Duration Display *@
+        <div class="alert alert-info">
+            <i class="bi bi-clock me-1"></i>
+            <strong>Duration:</strong> @durationRounds round(s) of concentration
+            <br />
+            <small class="text-muted">Rate: 3 rounds per game round (1 per second)</small>
+            <br />
+            <small class="text-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Taking other actions will break concentration and cancel the reload.
+            </small>
+        </div>
+    }
+
+    @* Action Buttons *@
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">
+            Cancel
+        </button>
+        <button type="button" class="btn btn-primary"
+                @onclick="Confirm"
+                disabled="@(!IsFormValid)">
+            <i class="bi bi-box-arrow-in-down me-1"></i>
+            Start Reload
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public CharacterItem? Weapon { get; set; }
+    [Parameter] public string WeaponName { get; set; } = "";
+    [Parameter] public List<CharacterItem>? AvailableAmmo { get; set; }
+    [Parameter] public int AvailableAp { get; set; }
+    [Parameter] public int AvailableFat { get; set; }
+
+    private Guid selectedAmmoId;
+    private CharacterItem? selectedAmmo;
+    private int roundsToLoad = 1;
+    private bool useTwoApCost = false;
+    private bool selectedIsLooseAmmo = true;
+
+    // Cost availability
+    private bool CanAffordOneApOneFat => AvailableAp >= 1 && AvailableFat >= 1;
+    private bool CanAffordTwoAp => AvailableAp >= 2;
+    private bool CanAffordAnyCost => CanAffordOneApOneFat || CanAffordTwoAp;
+#pragma warning disable CS0649 // Field is never assigned - reserved for future validation
+    private string? errorMessage;
+#pragma warning restore CS0649
+
+    // Weapon state
+    private int currentAmmo;
+    private int totalCapacity;
+    private int spaceAvailable;
+    private string? weaponAmmoType;
+    private int magazineCapacity;
+    private int chamberCapacity;
+
+    // Computed values
+    private int maxRoundsToLoad => Math.Min(spaceAvailable, selectedAmmo?.StackSize ?? 0);
+    private int durationRounds => (int)Math.Ceiling(roundsToLoad / 3.0);
+    private bool IsFormValid => selectedAmmo != null && roundsToLoad > 0 && roundsToLoad <= maxRoundsToLoad && CanAffordSelectedCost;
+    private bool CanAffordSelectedCost => useTwoApCost ? CanAffordTwoAp : CanAffordOneApOneFat;
+
+    protected override void OnParametersSet()
+    {
+        // Default to an available cost option
+        if (!CanAffordOneApOneFat && CanAffordTwoAp)
+        {
+            useTwoApCost = true;
+        }
+        else if (CanAffordOneApOneFat)
+        {
+            useTwoApCost = false;
+        }
+
+        if (Weapon != null)
+        {
+            // Load weapon state
+            var ammoState = WeaponAmmoState.FromJson(Weapon.CustomProperties);
+            currentAmmo = ammoState.TotalAvailable;
+
+            // Get weapon properties from template
+            if (Weapon.Template != null)
+            {
+                var weaponProps = RangedWeaponProperties.FromJson(Weapon.Template.CustomProperties);
+                if (weaponProps != null)
+                {
+                    magazineCapacity = weaponProps.Capacity;
+                    chamberCapacity = weaponProps.ChamberCapacity;
+                    totalCapacity = weaponProps.TotalCapacity;
+                    weaponAmmoType = weaponProps.AmmoType;
+                }
+            }
+
+            spaceAvailable = totalCapacity - currentAmmo;
+        }
+    }
+
+    private string? GetAmmoType(CharacterItem ammo)
+    {
+        if (ammo.Template == null) return null;
+
+        // Check if it's an ammo container (magazine)
+        var containerProps = AmmoContainerProperties.FromJson(ammo.Template.CustomProperties);
+        if (containerProps != null)
+        {
+            var containerState = AmmoContainerState.FromJson(ammo.CustomProperties);
+            return containerState.AmmoType ?? containerProps.AllowedAmmoTypes;
+        }
+
+        // Check if it's loose ammo
+        var ammoProps = AmmunitionProperties.FromJson(ammo.Template.CustomProperties);
+        return ammoProps?.AmmoType;
+    }
+
+    private bool IsLooseAmmo(CharacterItem ammo)
+    {
+        if (ammo.Template == null) return false;
+
+        // If it's an ammo container (magazine), it's not loose
+        if (ammo.Template.ItemType == ItemType.AmmoContainer)
+            return false;
+
+        return ammo.Template.ItemType == ItemType.Ammunition;
+    }
+
+    private string GetMagazineAmmoCount(CharacterItem magazine)
+    {
+        var state = AmmoContainerState.FromJson(magazine.CustomProperties);
+        return $"{state.LoadedAmmo}/{state.MaxCapacity}";
+    }
+
+    private Guid _lastSelectedAmmoId;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Update selected ammo when selection changes
+        if (selectedAmmoId != _lastSelectedAmmoId)
+        {
+            _lastSelectedAmmoId = selectedAmmoId;
+            selectedAmmo = AvailableAmmo?.FirstOrDefault(a => a.Id == selectedAmmoId);
+            if (selectedAmmo != null)
+            {
+                selectedIsLooseAmmo = IsLooseAmmo(selectedAmmo);
+
+                if (selectedIsLooseAmmo)
+                {
+                    // Default to loading as much as possible for loose ammo
+                    roundsToLoad = Math.Min(spaceAvailable, selectedAmmo.StackSize);
+                }
+                else
+                {
+                    // For magazines, load the full magazine contents
+                    var magazineState = AmmoContainerState.FromJson(selectedAmmo.CustomProperties);
+                    roundsToLoad = Math.Min(spaceAvailable, magazineState.LoadedAmmo);
+                }
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    private void Confirm()
+    {
+        if (!IsFormValid || selectedAmmo == null) return;
+
+        var result = new ReloadWeaponResult
+        {
+            WeaponItemId = Weapon!.Id,
+            SourceItemId = selectedAmmo.Id,
+            RoundsToLoad = roundsToLoad,
+            IsLooseAmmo = selectedIsLooseAmmo,
+            AmmoType = GetAmmoType(selectedAmmo),
+            WeaponName = WeaponName,
+            DurationRounds = durationRounds,
+            UseTwoApCost = useTwoApCost
+        };
+
+        DialogService.Close(result);
+    }
+}
