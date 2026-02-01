@@ -632,9 +632,15 @@ namespace GameMechanics
       // Advance game time by 1 round (3 seconds)
       CurrentGameTimeSeconds += 3;
 
+      // Process effects FIRST - this allows wounds/DoTs to add damage to pending pools
+      Effects.EndOfRound(CurrentGameTimeSeconds);
+      
+      // Then process fatigue/vitality - natural recovery is added and all pools are applied
+      // This ensures natural FAT recovery offsets damage from effects in the same round
       Fatigue.EndOfRound();
       Vitality.EndOfRound(effectPortal);
-      Effects.EndOfRound(CurrentGameTimeSeconds);
+      
+      // Finally recover AP
       ActionPoints.EndOfRound();
     }
 
