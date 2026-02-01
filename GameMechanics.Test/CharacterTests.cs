@@ -415,10 +415,11 @@ namespace GameMechanics.Test
       c.GoldCoins = 0;
       c.PlatinumCoins = 0;
 
-      // Should still be valid (zero is allowed)
-      Assert.IsTrue(c.IsValid || c.BrokenRulesCollection.ErrorCount == 0 || 
-                    !c.BrokenRulesCollection.Any(r => r.Property == "CopperCoins" || r.Property == "SilverCoins" || 
-                                                       r.Property == "GoldCoins" || r.Property == "PlatinumCoins"), 
+      // Should be valid - no currency-related broken rules
+      var currencyRules = c.BrokenRulesCollection.Where(r => 
+        r.Property == "CopperCoins" || r.Property == "SilverCoins" || 
+        r.Property == "GoldCoins" || r.Property == "PlatinumCoins");
+      Assert.IsFalse(currencyRules.Any(), 
                     "Character should be valid with zero currency values");
     }
 
