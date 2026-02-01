@@ -67,6 +67,17 @@ namespace GameMechanics
       set => SetProperty(XPBankedProperty, value);
     }
 
+    public static readonly PropertyInfo<int> XPSpentProperty = RegisterProperty<int>(nameof(XPSpent));
+    /// <summary>
+    /// Total XP spent to reach current skill level.
+    /// Used to track XP allocation during character creation.
+    /// </summary>
+    public int XPSpent
+    {
+      get => GetProperty(XPSpentProperty);
+      set => SetProperty(XPSpentProperty, value);
+    }
+
     // === Action System Properties ===
 
     public static readonly PropertyInfo<ActionType> ActionTypeProperty = RegisterProperty<ActionType>(nameof(ActionType));
@@ -389,6 +400,7 @@ namespace GameMechanics
         Name = skill.Name;
         Level = skill.Level;
         XPBanked = skill.XPBanked;
+        XPSpent = skill.XPSpent;
         PrimaryAttribute = skill.PrimaryAttribute;
         SecondaryAttribute = skill.SecondaryAttribute;
         TertiaryAttribute = skill.TertiaryAttribute;
@@ -437,6 +449,7 @@ namespace GameMechanics
         skill.Name = Name;
         skill.Level = Level;
         skill.XPBanked = XPBanked;
+        skill.XPSpent = XPSpent;
         skill.PrimaryAttribute = PrimaryAttribute;
         skill.SecondaryAttribute = SecondaryAttribute;
         skill.TertiaryAttribute = TertiaryAttribute;
