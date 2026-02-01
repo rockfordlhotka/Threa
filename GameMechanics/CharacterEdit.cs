@@ -401,6 +401,18 @@ namespace GameMechanics
     private Dictionary<string, int> _originalSkillLevels = new Dictionary<string, int>();
 
     /// <summary>
+    /// Original XPBanked value when the character was fetched.
+    /// Used for concurrency handling - allows merging GM XP additions with player spending.
+    /// This must be a CSLA-managed property to survive data portal serialization.
+    /// </summary>
+    public static readonly PropertyInfo<int> OriginalXPBankedProperty = RegisterProperty<int>(nameof(OriginalXPBanked));
+    private int OriginalXPBanked
+    {
+      get => GetProperty(OriginalXPBankedProperty);
+      set => SetProperty(OriginalXPBankedProperty, value);
+    }
+
+    /// <summary>
     /// Gets the original skill levels when the character was loaded or created.
     /// Skills can be decreased to their original level during character creation (before activation).
     /// Note: CSLA business objects are not thread-safe. This property returns the internal dictionary
@@ -901,9 +913,12 @@ namespace GameMechanics
         Skills = skillPortal.FetchChild(existing.Skills);
       }
       BusinessRules.CheckRules();
-      
+
       // Capture the baseline skill levels when loading an existing character
       CaptureOriginalSkillLevels();
+
+      // Capture original XPBanked for concurrency handling with GM XP additions
+      OriginalXPBanked = XPBanked;
     }
 
     [Insert]
@@ -942,7 +957,21 @@ namespace GameMechanics
       using (BypassPropertyChecks)
       {
         var existing = await dal.GetCharacterAsync(Id);
+
+        // Handle XPBanked concurrency: merge GM additions with player changes
+        // This allows GM to add XP while player is editing without loss
+        int databaseXPBanked = existing.XPBanked;
+        int gmDelta = databaseXPBanked - OriginalXPBanked;
+
         Csla.Data.DataMapper.Map(this, existing, mapIgnore);
+
+        // Apply GM's XP changes after mapping (to the DTO, not business object)
+        // This merges: player's XP spending + GM's XP additions
+        if (gmDelta != 0)
+        {
+          existing.XPBanked += gmDelta;
+        }
+
         fatPortal.UpdateChild(Fatigue, existing);
         vitPortal.UpdateChild(Vitality, existing);
         actionPointsPortal.UpdateChild(ActionPoints, existing);
