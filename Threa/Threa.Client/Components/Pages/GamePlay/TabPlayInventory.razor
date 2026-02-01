@@ -323,7 +323,7 @@
                         @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null))
                         {
                             <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "") @GetContainerFillClass(item)"
-                                 title="@GetItemDisplayName(item)"
+                                 title="@GetItemTooltip(item)"
                                  @onclick="async () => await SelectItem(item)">
                                 @if (item.IsEquipped)
                                 {
@@ -455,6 +455,7 @@
                             @foreach (var item in containerContents)
                             {
                                 <div class="container-item @(selectedContainerItemId == item.Id ? "selected" : "")"
+                                     title="@GetItemTooltip(item)"
                                      @onclick="() => SelectContainerItem(item)">
                                     <span class="item-icon">@GetItemIcon(item)</span>
                                     <span class="item-name">@GetItemDisplayName(item)</span>
@@ -1847,5 +1848,65 @@
         {
             errorMessage = $"Error starting unload: {ex.Message}";
         }
+    }
+
+    private string GetItemTooltip(CharacterItem item)
+    {
+        var name = GetItemDisplayName(item);
+        var template = GetTemplate(item.ItemTemplateId);
+        
+        if (template == null)
+            return name;
+        
+        var parts = new List<string> { name };
+        
+        // Add weight
+        var weight = template.Weight;
+        if (item.StackSize > 1)
+        {
+            var totalWeight = weight * item.StackSize;
+            parts.Add($"Weight: {totalWeight:0.#} lbs (x{item.StackSize})");
+        }
+        else
+        {
+            parts.Add($"Weight: {weight:0.#} lbs");
+        }
+        
+        // Add value
+        if (template.Value > 0)
+        {
+            parts.Add($"Value: {FormatCurrency(template.Value)}");
+        }
+        
+        return string.Join(" | ", parts);
+    }
+
+    private string FormatCurrency(int copperValue)
+    {
+        if (copperValue >= 8000)
+        {
+            var pp = copperValue / 8000;
+            var remainder = copperValue % 8000;
+            if (remainder == 0)
+                return $"{pp} pp";
+            return $"{pp} pp, {FormatCurrency(remainder)}";
+        }
+        if (copperValue >= 400)
+        {
+            var gp = copperValue / 400;
+            var remainder = copperValue % 400;
+            if (remainder == 0)
+                return $"{gp} gp";
+            return $"{gp} gp, {FormatCurrency(remainder)}";
+        }
+        if (copperValue >= 20)
+        {
+            var sp = copperValue / 20;
+            var remainder = copperValue % 20;
+            if (remainder == 0)
+                return $"{sp} sp";
+            return $"{sp} sp, {FormatCurrency(remainder)}";
+        }
+        return $"{copperValue} cp";
     }
 }
