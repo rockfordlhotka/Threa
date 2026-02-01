@@ -127,17 +127,16 @@ public class FirearmAttackResult
         else if (FireMode == FireMode.Burst)
         {
             sb.AppendLine("Burst Results:");
-            int totalSV = 0;
+            int hitCount = 0;
             foreach (var hit in Hits)
             {
                 string status = hit.Hit ? $"HIT (SV {hit.SV})" : "MISS";
                 sb.AppendLine($"  Shot {hit.ShotNumber}: TV {hit.TVForShot}, RV {hit.RVForShot} - {status}");
-                if (hit.Hit) totalSV += hit.SV;
+                if (hit.Hit) hitCount++;
             }
-            if (totalSV > 0)
+            if (hitCount > 0)
             {
-                sb.AppendLine($"Total SV: {totalSV}");
-                sb.AppendLine($"Target should apply SV {totalSV} via Damage Resolution");
+                sb.AppendLine($"{hitCount} hit(s)! Each hit applies its individual SV via Damage Resolution");
             }
         }
         else if (FireMode == FireMode.Suppression)
