@@ -243,6 +243,20 @@
                                             OnCostTypeSelected="OnCostTypeChanged" />
                     </div>
                 </div>
+
+                <!-- Boost -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>@(GetSelectedWeapon()?.IsDodgeable == true ? "8" : "7"). Boost (Optional)</strong>
+                    </div>
+                    <div class="card-body">
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@costType"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
+                    </div>
+                </div>
             </div>
 
             <div class="col-md-6">
@@ -283,6 +297,13 @@
                                     <td>Weapon Modifier:</td>
                                     <td class="fw-bold">+@(GetSelectedWeapon()?.WeaponAVModifier ?? 0)</td>
                                 </tr>
+                                @if (boostValue > 0)
+                                {
+                                    <tr>
+                                        <td>Boost:</td>
+                                        <td class="fw-bold text-success">+@boostValue</td>
+                                    </tr>
+                                }
                                 @if (attackerIsMoving)
                                 {
                                     <tr>
@@ -384,6 +405,13 @@
                                     <td>Cost:</td>
                                     <td>@GetCostDisplay()</td>
                                 </tr>
+                                @if (boostValue > 0)
+                                {
+                                    <tr>
+                                        <td>Boost Cost:</td>
+                                        <td>@GetBoostCostDisplay()</td>
+                                    </tr>
+                                }
                                 <tr>
                                     <td>Loaded Ammo:</td>
                                     <td class="@(HasEnoughAmmo() ? "" : "text-danger fw-bold")">
@@ -666,6 +694,9 @@
     private int burstSize = 3;
     private int suppressiveRounds = 10;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
+    private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
 
     // Result state
     private bool hasRolled;
@@ -698,6 +729,34 @@
     private void OnCostTypeChanged(ActionCostType type)
     {
         costType = type;
+        // Reset boost when cost type changes
+        boostValue = 0;
+        boostAPCost = 0;
+        boostFATCost = 0;
+    }
+
+    private void OnBoostChanged(int totalBoost)
+    {
+        boostValue = totalBoost;
+    }
+
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
     }
 
     private int GetMultiActionPenalty()
@@ -723,7 +782,7 @@
         var weapon = GetSelectedWeapon();
         if (weapon == null) return 0;
 
-        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty() + GetEffectModifier();
+        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty() + GetEffectModifier() + boostValue;
         if (attackerIsMoving) av -= 2;
         return av;
     }
@@ -771,16 +830,27 @@
         };
     }
 
+    private string GetBoostCostDisplay()
+    {
+        if (boostValue == 0) return "None";
+        if (boostFATCost > 0)
+            return $"{boostAPCost} AP + {boostFATCost} FAT (+{boostValue} AS)";
+        return $"{boostAPCost} AP (+{boostValue} AS)";
+    }
+
     private bool CanAttack()
     {
         if (Character == null || GetSelectedWeapon() == null) return false;
         if (!HasEnoughAmmo()) return false;
 
-        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
-        return Character.ActionPoints.Available >= apNeeded &&
-               Character.Fatigue.Value >= fatNeeded &&
+        var totalAPNeeded = baseAPCost + boostAPCost;
+        var totalFATNeeded = baseFATCost + boostFATCost;
+
+        return Character.ActionPoints.Available >= totalAPNeeded &&
+               Character.Fatigue.Value >= totalFATNeeded &&
                !Character.IsPassedOut;
     }
 
@@ -810,19 +880,22 @@
         var weapon = GetSelectedWeapon();
         if (weapon == null) return;
 
-        // Deduct costs
-        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        // Deduct base action costs and boost costs
+        var baseAPCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var baseFATCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
 
-        Character.ActionPoints.Available -= apCost;
+        var totalAPCost = baseAPCost + boostAPCost;
+        var totalFATCost = baseFATCost + boostFATCost;
+
+        Character.ActionPoints.Available -= totalAPCost;
         Character.ActionPoints.ActionsTakenThisRound += 1;
-        if (fatCost > 0)
-            Character.Fatigue.Value -= fatCost;
+        if (totalFATCost > 0)
+            Character.Fatigue.Value -= totalFATCost;
 
         // Build request
         var request = new FirearmAttackRequest
         {
-            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty() + GetEffectModifier(),
+            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty() + GetEffectModifier() + boostValue,
             WeaponAVModifier = weapon.WeaponAVModifier,
             AttackerIsMoving = attackerIsMoving,
             Range = selectedRange,
