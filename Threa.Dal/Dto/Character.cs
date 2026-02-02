@@ -10,6 +10,9 @@ public class Character
     public string TrueName { get; set; } = string.Empty;
     public string Aliases { get; set; } = string.Empty;
     public bool IsPlayable { get; set; }
+    public bool IsNpc { get; set; }
+    public bool IsTemplate { get; set; }
+    public bool VisibleToPlayers { get; set; } = true;
     public string Species { get; set; } = string.Empty;
     public int DamageClass { get; set; }
     public string Height { get; set; } = string.Empty;
