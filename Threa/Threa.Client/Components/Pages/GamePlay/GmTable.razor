@@ -28,6 +28,9 @@
 @inject IDataPortal<GameMechanics.GamePlay.JoinRequestList> joinRequestListPortal
 @inject IDataPortal<GameMechanics.GamePlay.JoinRequestProcessor> processorPortal
 @inject ApplicationContext applicationContext
+@inject IDataPortal<GameMechanics.NpcSpawner> spawnerPortal
+@inject Threa.Services.NpcAutoNamingService NamingService
+@inject IDataPortal<GameMechanics.NpcTemplateList> templateListPortal
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject DialogService DialogService
 @inject TimeAdvancementService TimeAdvancementService
@@ -187,7 +190,12 @@ else
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong><i class="bi bi-people me-1"></i>NPCs</strong>
-                    <span class="badge bg-secondary">@tableNpcs.Count()</span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-secondary">@tableNpcs.Count()</span>
+                        <button class="btn btn-primary btn-sm" @onclick="ShowTemplateSelector">
+                            <i class="bi bi-plus-lg me-1"></i>Spawn NPC
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @if (!tableNpcs.Any())
@@ -261,6 +269,83 @@ else
                     }
                 </div>
             </div>
+
+            @* Template Selector Modal *@
+            @if (showTemplateSelector)
+            {
+                <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-person-badge me-2"></i>Select Template to Spawn
+                                </h5>
+                                <button type="button" class="btn-close" @onclick="CloseTemplateSelector"></button>
+                            </div>
+                            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                                @if (availableTemplates == null)
+                                {
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border text-primary"></div>
+                                        <div class="mt-2">Loading templates...</div>
+                                    </div>
+                                }
+                                else if (!availableTemplates.Any())
+                                {
+                                    <div class="text-center text-muted py-3">
+                                        No active templates available.
+                                        <a href="/gamemaster/templates" class="d-block mt-2">Create templates</a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="list-group">
+                                        @foreach (var template in availableTemplates.Where(t => t.IsActive))
+                                        {
+                                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    @onclick="() => SelectTemplate(template)">
+                                                <div>
+                                                    <strong>@template.Name</strong>
+                                                    <small class="text-muted d-block">@template.Species - @template.Category</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    @{
+                                                        var (badgeClass, label, _) = GetDifficultyDisplay(template.DifficultyRating);
+                                                    }
+                                                    <span class="badge @badgeClass">@label</span>
+                                                    <span class="badge bg-secondary ms-1">
+                                                        @(template.DefaultDisposition switch
+                                                        {
+                                                            NpcDisposition.Hostile => "Hostile",
+                                                            NpcDisposition.Neutral => "Neutral",
+                                                            NpcDisposition.Friendly => "Friendly",
+                                                            _ => "Unknown"
+                                                        })
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseTemplateSelector">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* NPC Spawn Modal *@
+            @if (showNpcSpawnModal && spawnTemplate != null)
+            {
+                <NpcSpawnModal TemplateId="@spawnTemplate.Id"
+                               TemplateName="@spawnTemplate.Name"
+                               DefaultDisposition="@spawnTemplate.DefaultDisposition"
+                               AutoGeneratedName="@spawnAutoName"
+                               OnSpawn="HandleNpcSpawn"
+                               OnCancel="CloseNpcSpawnModal" />
+            }
         </div>
 
         <!-- Right Panel: Time Controls & Activity -->
@@ -420,6 +505,13 @@ else
 
     // Version counter to force re-render of character cards
     private int characterListVersion = 0;
+
+    // NPC spawn modal state
+    private bool showNpcSpawnModal;
+    private GameMechanics.NpcTemplateInfo? spawnTemplate;
+    private string spawnAutoName = "";
+    private IEnumerable<GameMechanics.NpcTemplateInfo>? availableTemplates;
+    private bool showTemplateSelector;
 
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -1089,5 +1181,92 @@ else
     {
         return int.Parse(applicationContext.Principal.Claims
             .First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+    }
+
+    // NPC Spawn Methods
+    private (string badgeClass, string label, string tooltip) GetDifficultyDisplay(int rating)
+    {
+        return rating switch
+        {
+            <= 5 => ("bg-success", "Easy", "Low threat - suitable for inexperienced parties"),
+            <= 10 => ("bg-warning text-dark", "Moderate", "Medium threat - challenging for average parties"),
+            <= 15 => ("bg-danger", "Hard", "High threat - dangerous for experienced parties"),
+            _ => ("bg-dark", "Deadly", "Extreme threat - may result in casualties")
+        };
+    }
+
+    private async Task ShowTemplateSelector()
+    {
+        showTemplateSelector = true;
+        if (availableTemplates == null)
+        {
+            try
+            {
+                var list = await templateListPortal.FetchAsync();
+                availableTemplates = list.AsEnumerable();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to load templates: {ex.Message}";
+                showTemplateSelector = false;
+            }
+        }
+    }
+
+    private void CloseTemplateSelector()
+    {
+        showTemplateSelector = false;
+    }
+
+    private void SelectTemplate(GameMechanics.NpcTemplateInfo template)
+    {
+        spawnTemplate = template;
+        spawnAutoName = NamingService.GenerateName(template.Id, template.Name);
+        showTemplateSelector = false;
+        showNpcSpawnModal = true;
+    }
+
+    private void CloseNpcSpawnModal()
+    {
+        showNpcSpawnModal = false;
+        spawnTemplate = null;
+    }
+
+    private async Task HandleNpcSpawn(NpcSpawnModal.NpcSpawnRequest request)
+    {
+        if (table == null) return;
+
+        try
+        {
+            // Update prefix memory if name was customized
+            NamingService.UpdatePrefixFromName(request.TemplateId, request.Name);
+
+            // Execute spawn
+            var spawner = spawnerPortal.Create();
+            spawner.TemplateId = request.TemplateId;
+            spawner.TableId = table.Id;
+            spawner.Name = request.Name;
+            spawner.Disposition = request.Disposition;
+            spawner.SessionNotes = request.SessionNotes;
+            spawner = await spawnerPortal.ExecuteAsync(spawner);
+
+            if (spawner.Success)
+            {
+                AddLogEntry($"Spawned NPC: {request.Name}", ActivityCategory.Player);
+                CloseNpcSpawnModal();
+
+                // Refresh character list to show new NPC
+                await RefreshCharacterListAsync();
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = spawner.ErrorMessage ?? "Failed to spawn NPC";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error spawning NPC: {ex.Message}";
+        }
     }
 }
