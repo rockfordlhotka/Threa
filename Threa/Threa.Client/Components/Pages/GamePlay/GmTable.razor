@@ -153,10 +153,10 @@ else
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Characters at Table</strong>
-                    <span class="badge bg-primary">@(tableCharacters?.Count() ?? 0)</span>
+                    <span class="badge bg-primary">@playerCharacters.Count()</span>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                    @if (tableCharacters == null || !tableCharacters.Any())
+                    @if (!playerCharacters.Any())
                     {
                         <div class="text-center py-4">
                             <i class="bi bi-people fs-1 text-muted"></i>
@@ -170,7 +170,7 @@ else
                     else
                     {
                         <div class="row row-cols-1 row-cols-lg-2 g-2">
-                            @foreach (var character in tableCharacters)
+                            @foreach (var character in playerCharacters)
                             {
                                 <div class="col" @key="@($"{character.CharacterId}-{characterListVersion}")">
                                     <CharacterStatusCard Character="@character"
@@ -183,8 +183,84 @@ else
                 </div>
             </div>
 
-            <!-- NPC Placeholder -->
-            <NpcPlaceholder />
+            @* NPC Section - Below Characters *@
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="bi bi-people me-1"></i>NPCs</strong>
+                    <span class="badge bg-secondary">@tableNpcs.Count()</span>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    @if (!tableNpcs.Any())
+                    {
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-person-badge fs-3 opacity-50 d-block mb-2"></i>
+                            No NPCs at this table. Spawn from templates to begin.
+                        </div>
+                    }
+                    else
+                    {
+                        @* Hostile Group - Red Header *@
+                        @if (hostileNpcs.Any())
+                        {
+                            <div class="npc-group mb-3">
+                                <h6 class="npc-group-header text-danger mb-2">
+                                    <i class="bi bi-skull-crossbones me-1"></i>Hostile (@hostileNpcs.Count())
+                                </h6>
+                                <div class="row row-cols-1 row-cols-lg-2 g-2">
+                                    @foreach (var npc in hostileNpcs)
+                                    {
+                                        <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
+                                            <NpcStatusCard Character="@npc"
+                                                          IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          OnClick="OpenCharacterDetails" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @* Neutral Group - Gray Header *@
+                        @if (neutralNpcs.Any())
+                        {
+                            <div class="npc-group mb-3">
+                                <h6 class="npc-group-header text-secondary mb-2">
+                                    <i class="bi bi-circle me-1"></i>Neutral (@neutralNpcs.Count())
+                                </h6>
+                                <div class="row row-cols-1 row-cols-lg-2 g-2">
+                                    @foreach (var npc in neutralNpcs)
+                                    {
+                                        <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
+                                            <NpcStatusCard Character="@npc"
+                                                          IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          OnClick="OpenCharacterDetails" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @* Friendly Group - Green Header *@
+                        @if (friendlyNpcs.Any())
+                        {
+                            <div class="npc-group mb-3">
+                                <h6 class="npc-group-header text-success mb-2">
+                                    <i class="bi bi-heart me-1"></i>Friendly (@friendlyNpcs.Count())
+                                </h6>
+                                <div class="row row-cols-1 row-cols-lg-2 g-2">
+                                    @foreach (var npc in friendlyNpcs)
+                                    {
+                                        <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
+                                            <NpcStatusCard Character="@npc"
+                                                          IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          OnClick="OpenCharacterDetails" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
         </div>
 
         <!-- Right Panel: Time Controls & Activity -->
@@ -314,6 +390,22 @@ else
     private string? errorMessage;
     private List<ActivityLogEntry> activityLog = new();
     private IDisposable? activityLogSubscription;
+
+    // NPC filtering - PCs are !IsNpc, NPCs are IsNpc
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> playerCharacters =>
+        tableCharacters?.Where(c => !c.IsNpc) ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>();
+
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> tableNpcs =>
+        tableCharacters?.Where(c => c.IsNpc) ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>();
+
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> hostileNpcs =>
+        tableNpcs.Where(c => c.Disposition == NpcDisposition.Hostile);
+
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> neutralNpcs =>
+        tableNpcs.Where(c => c.Disposition == NpcDisposition.Neutral);
+
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> friendlyNpcs =>
+        tableNpcs.Where(c => c.Disposition == NpcDisposition.Friendly);
 
     // Form fields
     private string announcementText = "";
