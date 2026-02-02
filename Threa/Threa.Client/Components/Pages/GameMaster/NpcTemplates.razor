@@ -1,0 +1,226 @@
+@page "/gamemaster/templates"
+@rendermode InteractiveServer
+
+@using GameMechanics
+@using Microsoft.AspNetCore.Authorization
+
+@implements IDisposable
+
+@inject IDataPortal<NpcTemplateList> templateListPortal
+@inject ViewModel<NpcTemplateList> vm
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>NPC Template Library</strong>
+        @if (filteredTemplates != null)
+        {
+            <span class="item-meta ms-3">Showing @filteredTemplates.Count() of @(allTemplates?.Count() ?? 0) templates</span>
+        }
+    </div>
+    <div>
+        <a href="/gamemaster/templates/new" class="btn btn-primary btn-sm me-2">Create New</a>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ShowCloneModal">Clone From...</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
+
+@if (vm.Model == null)
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading templates...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
+}
+else if (allTemplates != null && !allTemplates.Any())
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta">No NPC templates yet. Create one to get started.</div>
+        </div>
+    </div>
+}
+else if (filteredTemplates != null && !filteredTemplates.Any())
+{
+    <div class="card">
+        <div class="card-header d-flex gap-3 align-items-center flex-wrap">
+            @RenderFilters()
+        </div>
+        <div class="card-body text-center py-4">
+            <div class="item-meta">No templates match your filters.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header d-flex gap-3 align-items-center flex-wrap">
+            @RenderFilters()
+        </div>
+        <div class="card-body p-0">
+            <RadzenDataGrid Data="@filteredTemplates" TItem="NpcTemplateInfo"
+                AllowSorting="true" AllowPaging="true" PageSize="20"
+                RowSelect="@(template => NavigationManager.NavigateTo($"/gamemaster/templates/{template.Id}"))"
+                Style="cursor: pointer">
+                <Columns>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="250px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Species" Title="Species" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Category" Title="Category" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Difficulty" Sortable="true" Width="120px" SortProperty="DifficultyRating">
+                        <Template Context="template">
+                            @{
+                                var (badgeClass, label) = GetDifficultyDisplay(template.DifficultyRating);
+                            }
+                            <span class="badge @badgeClass">@label (@template.DifficultyRating)</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Tags" Width="200px">
+                        <Template Context="template">
+                            @foreach (var tag in template.TagList)
+                            {
+                                <span class="badge bg-secondary me-1">@tag</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Status" Width="100px">
+                        <Template Context="template">
+                            @if (template.IsActive)
+                            {
+                                <span class="text-positive">Active</span>
+                            }
+                            else
+                            {
+                                <span class="text-negative">Inactive</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+}
+
+@code {
+    private IEnumerable<NpcTemplateInfo>? allTemplates;
+    private IEnumerable<NpcTemplateInfo>? filteredTemplates;
+    private string searchText = "";
+    private string? selectedCategory;
+    private string? selectedTag;
+    private bool showInactive = false;
+    private List<string> categories = new();
+    private List<string> availableTags = new();
+    private System.Timers.Timer? debounceTimer;
+    private const int DebounceMs = 300;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => templateListPortal.FetchAsync());
+        allTemplates = vm.Model;
+        ExtractFilters();
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void ExtractFilters()
+    {
+        if (allTemplates == null) return;
+
+        categories = allTemplates
+            .Where(t => !string.IsNullOrEmpty(t.Category))
+            .Select(t => t.Category!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        availableTags = allTemplates
+            .SelectMany(t => t.TagList)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+    }
+
+    private void OnSearchInput(string value)
+    {
+        searchText = value;
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new System.Timers.Timer(DebounceMs);
+        debounceTimer.Elapsed += (s, e) =>
+        {
+            debounceTimer?.Stop();
+            InvokeAsync(() => { ApplyFilters(); StateHasChanged(); });
+        };
+        debounceTimer.Start();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allTemplates?.AsEnumerable() ?? Enumerable.Empty<NpcTemplateInfo>();
+
+        // Filter by active status
+        if (!showInactive)
+            query = query.Where(t => t.IsActive);
+
+        // Filter by category
+        if (!string.IsNullOrEmpty(selectedCategory))
+            query = query.Where(t => t.Category == selectedCategory);
+
+        // Filter by tag
+        if (!string.IsNullOrEmpty(selectedTag))
+            query = query.Where(t => t.TagList.Contains(selectedTag));
+
+        // Filter by search text
+        if (!string.IsNullOrWhiteSpace(searchText))
+            query = query.Where(t =>
+                t.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(t.Species) && t.Species.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(t.Category) && t.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(t.Tags) && t.Tags.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+
+        filteredTemplates = query.ToList();
+    }
+
+    private (string badgeClass, string label) GetDifficultyDisplay(int difficulty)
+    {
+        return difficulty switch
+        {
+            <= 5 => ("bg-success", "Easy"),
+            <= 10 => ("bg-warning", "Moderate"),
+            _ => ("bg-danger", "Hard")
+        };
+    }
+
+    private void ShowCloneModal()
+    {
+        // Placeholder for clone functionality - will be implemented in future plan
+    }
+
+    private RenderFragment RenderFilters() => __builder =>
+    {
+        <RadzenTextBox @bind-Value="@searchText" Placeholder="Search templates..."
+            @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
+            Style="width: 300px" />
+        <RadzenDropDown TValue="string?" Data="@categories"
+            @bind-Value="@selectedCategory" Change="@(_ => ApplyFilters())"
+            Placeholder="All Categories" AllowClear="true" Style="width: 200px" />
+        <RadzenDropDown TValue="string?" Data="@availableTags"
+            @bind-Value="@selectedTag" Change="@(_ => ApplyFilters())"
+            Placeholder="All Tags" AllowClear="true" Style="width: 150px" />
+        <RadzenCheckBox TValue="bool" @bind-Value="@showInactive" Name="showInactive" />
+        <RadzenLabel Text="Show Inactive" Component="showInactive" />
+    };
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+    }
+}
