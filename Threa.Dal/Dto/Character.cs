@@ -72,4 +72,32 @@ public class Character
     /// Used for epoch-based effect expiration.
     /// </summary>
     public long CurrentGameTimeSeconds { get; set; }
+
+    // Template organization properties (for NPC templates)
+
+    /// <summary>
+    /// Folder-like grouping for NPC templates (e.g., "Humanoids", "Beasts", "Undead").
+    /// </summary>
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// Comma-separated tags for filtering NPC templates (e.g., "minion,melee", "boss,caster").
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
+    /// GM notes about template usage (tactics, encounter suggestions, etc.).
+    /// </summary>
+    public string? TemplateNotes { get; set; }
+
+    /// <summary>
+    /// Default attitude when NPC is instantiated from template.
+    /// </summary>
+    public NpcDisposition DefaultDisposition { get; set; } = NpcDisposition.Hostile;
+
+    /// <summary>
+    /// Auto-calculated threat level based on combat AS values.
+    /// Higher values indicate more dangerous NPCs.
+    /// </summary>
+    public int DifficultyRating { get; set; }
 }
