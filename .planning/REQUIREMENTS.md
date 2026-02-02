@@ -17,17 +17,17 @@ Requirements for NPC Management System. Each maps to roadmap phases.
 
 ### NPC Creation
 
-- [ ] **CRTN-01**: GM can quick-create NPC from template (spawn instance to active table)
-- [ ] **CRTN-02**: NPCs have full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
-- [ ] **CRTN-03**: Smart naming auto-generates unique names ("Goblin 1", "Goblin 2")
-- [ ] **CRTN-04**: GM can add session-specific notes to individual NPC instances
+- [x] **CRTN-01**: GM can quick-create NPC from template (spawn instance to active table)
+- [x] **CRTN-02**: NPCs have full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
+- [x] **CRTN-03**: Smart naming auto-generates unique names ("Goblin 1", "Goblin 2")
+- [x] **CRTN-04**: GM can add session-specific notes to individual NPC instances
 
 ### Dashboard Display
 
-- [ ] **DASH-01**: NPCs appear in GM dashboard in separate section from PCs
-- [ ] **DASH-02**: NPC status cards show same info as PC cards (FAT/VIT/wounds, AP, effects)
-- [ ] **DASH-03**: NPC detail modal provides same manipulation powers as PCs (health, wounds, effects, inventory, stats)
-- [ ] **DASH-04**: NPCs display disposition marker (Hostile/Neutral/Friendly) with visual differentiation
+- [x] **DASH-01**: NPCs appear in GM dashboard in separate section from PCs
+- [x] **DASH-02**: NPC status cards show same info as PC cards (FAT/VIT/wounds, AP, effects)
+- [x] **DASH-03**: NPC detail modal provides same manipulation powers as PCs (health, wounds, effects, inventory, stats)
+- [x] **DASH-04**: NPCs display disposition marker (Hostile/Neutral/Friendly) with visual differentiation
 
 ### Visibility & Surprise
 
@@ -90,14 +90,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TMPL-03 | Phase 24 | Complete |
 | TMPL-04 | Phase 24 | Complete |
 | TMPL-05 | Phase 24 | Complete |
-| CRTN-01 | Phase 25 | Pending |
-| CRTN-02 | Phase 23, 25 | Pending |
-| CRTN-03 | Phase 25 | Pending |
-| CRTN-04 | Phase 25 | Pending |
-| DASH-01 | Phase 25 | Pending |
-| DASH-02 | Phase 25 | Pending |
-| DASH-03 | Phase 25 | Pending |
-| DASH-04 | Phase 25 | Pending |
+| CRTN-01 | Phase 25 | Complete |
+| CRTN-02 | Phase 23, 25 | Complete |
+| CRTN-03 | Phase 25 | Complete |
+| CRTN-04 | Phase 25 | Complete |
+| DASH-01 | Phase 25 | Complete |
+| DASH-02 | Phase 25 | Complete |
+| DASH-03 | Phase 25 | Complete |
+| DASH-04 | Phase 25 | Complete |
 | VSBL-01 | Phase 26 | Pending |
 | VSBL-02 | Phase 26 | Pending |
 | VSBL-03 | Phase 26 | Pending |
@@ -116,4 +116,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-02 after Phase 24 completion*
+*Last updated: 2026-02-02 after Phase 25 completion*

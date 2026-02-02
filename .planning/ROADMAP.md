@@ -78,12 +78,12 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] 25-01-PLAN.md — Data model extensions (SourceTemplateId/Name, TableCharacterInfo NPC fields)
-- [ ] 25-02-PLAN.md — NPC auto-naming service with global counter and prefix memory
-- [ ] 25-03-PLAN.md — NPC spawner CSLA command (clone template to new character)
-- [ ] 25-04-PLAN.md — Spawn modal UI with template library integration
-- [ ] 25-05-PLAN.md — Dashboard NPC section with disposition grouping
-- [ ] 25-06-PLAN.md — Integration: dashboard spawn button and end-to-end workflow
+- [x] 25-01-PLAN.md — Data model extensions (SourceTemplateId/Name, TableCharacterInfo NPC fields)
+- [x] 25-02-PLAN.md — NPC auto-naming service with global counter and prefix memory
+- [x] 25-03-PLAN.md — NPC spawner CSLA command (clone template to new character)
+- [x] 25-04-PLAN.md — Spawn modal UI with template library integration
+- [x] 25-05-PLAN.md — Dashboard NPC section with disposition grouping
+- [x] 25-06-PLAN.md — Integration: dashboard spawn button and end-to-end workflow
 
 **Requirements:**
 - CRTN-01: GM can quick-create NPC from template
@@ -164,7 +164,7 @@ Plans:
 |-------|------|--------------|--------|
 | 23 | Data Model Foundation | 1 | Complete |
 | 24 | NPC Template System | 5 | Complete |
-| 25 | NPC Creation & Dashboard | 8 | Pending |
+| 25 | NPC Creation & Dashboard | 8 | Complete |
 | 26 | Visibility & Lifecycle | 7 | Pending |
 | 27 | Time & Combat Integration | 3 | Pending |
 
@@ -205,3 +205,4 @@ Plans:
 *Phase 24 planned: 2026-02-02*
 *Phase 24 complete: 2026-02-02*
 *Phase 25 planned: 2026-02-02*
+*Phase 25 complete: 2026-02-02*
