@@ -85,35 +85,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TMPL-01 | — | Pending |
-| TMPL-02 | — | Pending |
-| TMPL-03 | — | Pending |
-| TMPL-04 | — | Pending |
-| TMPL-05 | — | Pending |
-| CRTN-01 | — | Pending |
-| CRTN-02 | — | Pending |
-| CRTN-03 | — | Pending |
-| CRTN-04 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| VSBL-01 | — | Pending |
-| VSBL-02 | — | Pending |
-| VSBL-03 | — | Pending |
-| LIFE-01 | — | Pending |
-| LIFE-02 | — | Pending |
-| LIFE-03 | — | Pending |
-| LIFE-04 | — | Pending |
-| CMBT-01 | — | Pending |
-| CMBT-02 | — | Pending |
-| CMBT-03 | — | Pending |
+| TMPL-01 | Phase 24 | Pending |
+| TMPL-02 | Phase 24 | Pending |
+| TMPL-03 | Phase 24 | Pending |
+| TMPL-04 | Phase 24 | Pending |
+| TMPL-05 | Phase 24 | Pending |
+| CRTN-01 | Phase 25 | Pending |
+| CRTN-02 | Phase 23, 25 | Pending |
+| CRTN-03 | Phase 25 | Pending |
+| CRTN-04 | Phase 25 | Pending |
+| DASH-01 | Phase 25 | Pending |
+| DASH-02 | Phase 25 | Pending |
+| DASH-03 | Phase 25 | Pending |
+| DASH-04 | Phase 25 | Pending |
+| VSBL-01 | Phase 26 | Pending |
+| VSBL-02 | Phase 26 | Pending |
+| VSBL-03 | Phase 26 | Pending |
+| LIFE-01 | Phase 26 | Pending |
+| LIFE-02 | Phase 26 | Pending |
+| LIFE-03 | Phase 26 | Pending |
+| LIFE-04 | Phase 26 | Pending |
+| CMBT-01 | Phase 27 | Pending |
+| CMBT-02 | Phase 27 | Pending |
+| CMBT-03 | Phase 27 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-01 after initial definition*
+*Last updated: 2026-02-01 after roadmap creation*

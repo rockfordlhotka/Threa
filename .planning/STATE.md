@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Milestone: v1.5 NPC Management System
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-01 — Milestone v1.5 started
+Phase: 23 - Data Model Foundation (pending)
+Plan: --
+Status: Roadmap created, ready for phase planning
+Last activity: 2026-02-01 -- Roadmap created with 5 phases (23-27)
 
 Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 
@@ -39,6 +39,12 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 
 All decisions are logged in PROJECT.md Key Decisions table.
 
+**v1.5 Architecture Decision (from research):**
+- NPCs use existing CharacterEdit model with IsNpc flag (not parallel NPC model)
+- Template pattern follows proven ItemTemplate approach
+- Dashboard reuses CharacterStatusCard and CharacterDetailModal
+- Visibility filtering prevents hidden NPCs from leaking to players
+
 ### Pending Todos
 
 None.
@@ -55,8 +61,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Defining requirements for v1.5
-Resume file: None
+Stopped at: Roadmap created for v1.5
+Resume file: .planning/ROADMAP.md
+Next action: /gsd:plan-phase 23
 
 ---
-*v1.5 Milestone started — Defining requirements*
+*v1.5 Milestone -- Roadmap created with 5 phases (23-27), 23 requirements mapped*
