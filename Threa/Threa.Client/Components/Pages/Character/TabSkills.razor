@@ -1,5 +1,9 @@
-﻿@inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
+﻿@using Threa.Client.Components.Shared
+@using Radzen
+
+@inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
 @inject IChildDataPortal<GameMechanics.SkillEdit> skillPortal
+@inject DialogService DialogService
 
 @if (vm == null || vm.Model == null)
 {
@@ -116,33 +120,17 @@ else
 </table>
 
 <h4>Add New Skill</h4>
-@if (availableSkills != null && availableSkills.Any())
-{
-    <div style="margin-bottom: 1rem;">
-        <select class="form-select" @bind="selectedSkillId" style="width: 300px; display: inline-block;">
-            <option value="">-- Select a skill to add --</option>
-            @foreach (var availableSkill in availableSkills)
-            {
-                <option value="@availableSkill.Name">@availableSkill.Name @(availableSkill.Category != Threa.Dal.Dto.SkillCategory.Other ? $"({availableSkill.Category})" : "")</option>
-            }
-        </select>
-        <button class="btn btn-primary" @onclick="AddNewSkillAsync" disabled="@(string.IsNullOrEmpty(selectedSkillId))">
-            Add Skill
-        </button>
-    </div>
-}
-else
-{
-    <p>Loading available skills...</p>
-}
+<div style="margin-bottom: 1rem;">
+    <button class="btn btn-primary" @onclick="OpenSkillPickerAsync" disabled="@(allSkills == null)">
+        <i class="bi bi-plus-circle me-1"></i> Add Skills...
+    </button>
+</div>
 
 @code {
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
 
     private GameMechanics.Reference.SkillList? allSkills;
-    private IEnumerable<GameMechanics.Reference.SkillInfo>? availableSkills;
-    private string? selectedSkillId;
     private string? errorMessage;
     private string? initError;
 
@@ -154,8 +142,6 @@ else
             {
                 // Load all skills
                 allSkills = await skillListPortal.FetchAsync();
-                
-                UpdateAvailableSkills();
             }
         }
         catch (Exception ex)
@@ -168,17 +154,6 @@ else
     {
         if (vm?.Model?.Skills == null) return 0;
         return vm.Model.Skills.Sum(s => s.XPSpent);
-    }
-
-    private void UpdateAvailableSkills()
-    {
-        if (allSkills == null) return;
-        
-        // Filter out skills that are already in the character's skill list
-        // Use Name instead of Id since standard skills have empty Id
-        // Also filter out magic skills from the regular skills tab
-        var existingSkillNames = vm!.Model!.Skills.Select(s => s.Name).ToHashSet();
-        availableSkills = allSkills.Where(s => !existingSkillNames.Contains(s.Name) && !s.IsStandard && !s.IsMagic);
     }
 
     private bool IsSkillMagic(GameMechanics.SkillEdit skill)
@@ -268,39 +243,36 @@ else
         StateHasChanged();
     }
 
-    private async Task AddNewSkillAsync()
+    private async Task OpenSkillPickerAsync()
     {
         errorMessage = null;
-        
-        if (string.IsNullOrEmpty(selectedSkillId))
-        {
-            errorMessage = "Please select a skill to add.";
-            return;
-        }
 
-        try
-        {
-            // selectedSkillId is actually the skill name
-            // Find the skill by name
-            var skillInfo = allSkills?.FirstOrDefault(s => s.Name == selectedSkillId);
-            if (skillInfo == null)
+        // Get existing skill names to exclude from picker
+        var existingSkillNames = vm!.Model!.Skills.Select(s => s.Name).ToHashSet();
+
+        var result = await DialogService.OpenAsync<SkillMultiPickerModal>(
+            "Add Skills",
+            new Dictionary<string, object>
             {
-                errorMessage = "Selected skill not found.";
-                return;
-            }
+                { "ExistingSkillNames", existingSkillNames },
+                { "ExcludeMagicSkills", true }
+            },
+            new DialogOptions { Width = "600px", Height = "600px", CloseDialogOnOverlayClick = false });
 
-            // Add the skill using the SkillEditList method
-            // Use the Id if available, otherwise use the Name
-            string skillIdentifier = !string.IsNullOrEmpty(skillInfo.Id) ? skillInfo.Id : skillInfo.Name;
-            await vm!.Model!.Skills.AddSkillAsync(skillIdentifier, skillListPortal, skillPortal);
-            
-            UpdateAvailableSkills();
-            selectedSkillId = null;
-            StateHasChanged();
-        }
-        catch (Exception ex)
+        if (result is List<string> selectedSkillIdentifiers && selectedSkillIdentifiers.Count > 0)
         {
-            errorMessage = $"Error adding skill: {ex.Message}";
+            try
+            {
+                foreach (var skillIdentifier in selectedSkillIdentifiers)
+                {
+                    await vm!.Model!.Skills.AddSkillAsync(skillIdentifier, skillListPortal, skillPortal);
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error adding skills: {ex.Message}";
+            }
         }
     }
 
@@ -327,9 +299,7 @@ else
 
         // Remove the skill
         vm!.Model!.Skills.Remove(skill);
-        
-        UpdateAvailableSkills();
-        selectedSkillId = null;
+
         StateHasChanged();
     }
 }
