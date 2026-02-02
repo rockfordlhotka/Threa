@@ -18,6 +18,8 @@
 @inject IDataPortal<CharacterList> characterListPortal
 @inject IDataPortal<TableList> tableListPortal
 @inject IDataPortal<JoinRequestSubmitter> submitterPortal
+@inject IDataPortal<JoinRequestList> joinRequestListPortal
+@inject IDataPortal<JoinRequestCanceller> cancellerPortal
 
 <PageTitle>Browse Campaigns</PageTitle>
 
@@ -137,6 +139,36 @@
                                     <h5 class="card-title mb-0">@campaign.Name</h5>
                                     <ThemeIndicator Theme="@campaign.Theme" />
                                 </div>
+                                @* Status badge - prominent display of campaign state *@
+                                <div class="mb-2">
+                                    @switch (campaign.Status)
+                                    {
+                                        case TableStatus.Lobby:
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-door-open me-1"></i>In Lobby
+                                            </span>
+                                            break;
+                                        case TableStatus.Active:
+                                            @if (campaign.IsInCombat)
+                                            {
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-lightning-fill me-1"></i>In Combat
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-play-fill me-1"></i>In Progress
+                                                </span>
+                                            }
+                                            break;
+                                        case TableStatus.Paused:
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-pause-fill me-1"></i>Paused
+                                            </span>
+                                            break;
+                                    }
+                                </div>
                                 <p class="card-text text-muted small" style="min-height: 60px;">
                                     @(string.IsNullOrEmpty(campaign.Description)
                                         ? "No description provided."
@@ -144,25 +176,49 @@
                                             ? campaign.Description.Substring(0, 117) + "..."
                                             : campaign.Description))
                                 </p>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <small class="text-muted">
-                                        <i class="bi bi-person"></i> GM
-                                    </small>
-                                    <small class="text-muted">
-                                        <i class="bi bi-people"></i> @campaign.StatusDisplay
-                                    </small>
-                                </div>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <button class="btn btn-primary w-100"
-                                        disabled="@isSubmitting"
-                                        @onclick="() => SubmitJoinRequest(campaign.Id)">
-                                    @if (isSubmitting && submittingCampaignId == campaign.Id)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-1"></span>
-                                    }
-                                    Join with @selectedCharacter.Name
-                                </button>
+                                @{
+                                    var request = GetRequestForCampaign(campaign.Id);
+                                }
+                                @if (request?.IsApproved == true)
+                                {
+                                    @* Character is already in this campaign - go to play *@
+                                    <a href="@($"/player/play/{campaign.Id}")" class="btn btn-success w-100">
+                                        <i class="bi bi-controller me-1"></i>Play
+                                    </a>
+                                }
+                                else if (request?.IsPending == true)
+                                {
+                                    @* Character has a pending request for this campaign *@
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-warning">
+                                            <i class="bi bi-hourglass-split me-1"></i>Request Pending
+                                        </span>
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                                disabled="@isCancelling"
+                                                @onclick="() => CancelRequest(request.Id)">
+                                            @if (isCancelling && cancellingRequestId == request.Id)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                            }
+                                            Cancel
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @* No request - show join button *@
+                                    <button class="btn btn-primary w-100"
+                                            disabled="@isSubmitting"
+                                            @onclick="() => SubmitJoinRequest(campaign.Id)">
+                                        @if (isSubmitting && submittingCampaignId == campaign.Id)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        Join with @selectedCharacter.Name
+                                    </button>
+                                }
                             </div>
                         </div>
                     </div>
@@ -176,10 +232,13 @@
     private IEnumerable<CharacterInfo>? availableCharacters;
     private CharacterInfo? selectedCharacter;
     private IEnumerable<TableInfo>? availableCampaigns;
+    private List<JoinRequestInfo>? pendingRequests;
     private string? errorMessage;
     private string? successMessage;
     private bool isSubmitting;
     private Guid? submittingCampaignId;
+    private bool isCancelling;
+    private Guid? cancellingRequestId;
     private int playerId;
 
     protected override async Task OnInitializedAsync()
@@ -226,6 +285,7 @@
     {
         selectedCharacter = null;
         availableCampaigns = null;
+        pendingRequests = null;
     }
 
     private async Task LoadCampaigns()
@@ -234,17 +294,26 @@
         {
             // Get all active tables (not ended)
             var list = await tableListPortal.FetchAsync();
-            // Filter out tables where player is already GM
             availableCampaigns = list
-                .Where(t => t.GameMasterId != playerId)
                 .Where(t => t.Status != TableStatus.Ended)
                 .OrderByDescending(t => t.CreatedAt)
                 .AsEnumerable();
+
+            // Load requests for this player, filtered to selected character
+            var allRequests = await joinRequestListPortal.FetchAsync(playerId);
+            pendingRequests = allRequests
+                .Where(r => r.CharacterId == selectedCharacter!.Id)
+                .ToList();
         }
         catch (Exception ex)
         {
             errorMessage = $"Failed to load campaigns: {ex.Message}";
         }
+    }
+
+    private JoinRequestInfo? GetRequestForCampaign(Guid campaignId)
+    {
+        return pendingRequests?.FirstOrDefault(r => r.TableId == campaignId);
     }
 
     private async Task SubmitJoinRequest(Guid campaignId)
@@ -264,8 +333,9 @@
 
             if (result.Success)
             {
-                // Navigate to pending requests page (per CONTEXT.md)
-                NavigationManager.NavigateTo("/player/join-requests");
+                // Refresh to show pending status
+                await LoadCampaigns();
+                successMessage = "Join request submitted! Waiting for GM approval.";
             }
             else
             {
@@ -280,6 +350,38 @@
         {
             isSubmitting = false;
             submittingCampaignId = null;
+        }
+    }
+
+    private async Task CancelRequest(Guid requestId)
+    {
+        isCancelling = true;
+        cancellingRequestId = requestId;
+        errorMessage = null;
+
+        try
+        {
+            var result = await cancellerPortal.ExecuteAsync(requestId, playerId);
+
+            if (result.Success)
+            {
+                // Refresh to remove the cancelled request
+                await LoadCampaigns();
+                successMessage = "Join request cancelled.";
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to cancel request: {ex.Message}";
+        }
+        finally
+        {
+            isCancelling = false;
+            cancellingRequestId = null;
         }
     }
 }

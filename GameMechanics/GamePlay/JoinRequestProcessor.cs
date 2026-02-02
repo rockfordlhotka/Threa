@@ -74,6 +74,10 @@ public class JoinRequestProcessor : CommandBase<JoinRequestProcessor>
             var character = await characterDal.GetCharacterAsync(request.CharacterId);
             LoadProperty(CharacterNameProperty, character?.Name);
 
+            // Ensure publisher is connected for notifications
+            if (!timeEventPublisher.IsConnected)
+                await timeEventPublisher.ConnectAsync();
+
             if (approve)
             {
                 // 4a. Approve: verify character still valid, then attach to table

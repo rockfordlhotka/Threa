@@ -104,6 +104,8 @@ public class JoinRequestSubmitter : CommandBase<JoinRequestSubmitter>
             var saved = await joinRequestDal.SaveRequestAsync(request);
 
             // Publish join request message for real-time GM notification
+            if (!timeEventPublisher.IsConnected)
+                await timeEventPublisher.ConnectAsync();
             await timeEventPublisher.PublishJoinRequestAsync(new JoinRequestMessage
             {
                 RequestId = saved.Id,
