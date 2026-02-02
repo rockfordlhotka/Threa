@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using GameMechanics
+@using GameMechanics.GameMaster
 @using Microsoft.AspNetCore.Authorization
 @using Radzen
 @using Radzen.Blazor
@@ -9,8 +10,10 @@
 @implements IDisposable
 
 @inject IDataPortal<NpcTemplateList> templateListPortal
+@inject IDataPortal<GmCharacterList> characterListPortal
 @inject ViewModel<NpcTemplateList> vm
 @inject NavigationManager NavigationManager
+@inject DialogService DialogService
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
@@ -84,9 +87,9 @@ else
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Difficulty" Sortable="true" Width="120px" SortProperty="DifficultyRating">
                         <Template Context="template">
                             @{
-                                var (badgeClass, label) = GetDifficultyDisplay(template.DifficultyRating);
+                                var (badgeClass, label, tooltip) = GetDifficultyDisplay(template.DifficultyRating);
                             }
-                            <span class="badge @badgeClass">@label (@template.DifficultyRating)</span>
+                            <span class="badge @badgeClass" title="@tooltip">@label (@template.DifficultyRating)</span>
                         </Template>
                     </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Tags" Width="200px">
@@ -111,6 +114,62 @@ else
                     </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
+        </div>
+    </div>
+}
+
+@* Clone Modal *@
+@if (showCloneModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Clone Template From Character</h5>
+                    <button type="button" class="btn-close" @onclick="HideCloneModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <RadzenTextBox @bind-Value="@cloneSearchText" Placeholder="Search by name or species..."
+                            @oninput="@((e) => OnCloneSearchInput(e.Value?.ToString() ?? ""))"
+                            Style="width: 100%" />
+                    </div>
+                    <div class="clone-source-list" style="max-height: 400px; overflow-y: auto;">
+                        @if (filteredCloneSources != null && filteredCloneSources.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var character in filteredCloneSources)
+                                {
+                                    var isSelected = selectedCloneSourceId == character.Id;
+                                    <button type="button"
+                                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(isSelected ? "active" : "")"
+                                        @onclick="@(() => SelectCloneSource(character.Id))">
+                                        <div>
+                                            <strong>@character.Name</strong>
+                                            @if (!string.IsNullOrEmpty(character.Species))
+                                            {
+                                                <span class="text-muted ms-2">(@character.Species)</span>
+                                            }
+                                        </div>
+                                        <span class="badge @GetTypeBadgeClass(character)">@character.CharacterType</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-3">
+                                No characters match your search.
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCloneModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmClone"
+                        disabled="@(!selectedCloneSourceId.HasValue)">Clone Selected</button>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -195,14 +254,14 @@ else
         filteredTemplates = query.ToList();
     }
 
-    private (string badgeClass, string label) GetDifficultyDisplay(int difficulty)
+    private (string badgeClass, string label, string tooltip) GetDifficultyDisplay(int difficulty)
     {
         return difficulty switch
         {
-            <= 5 => ("bg-success", "Easy"),
-            <= 10 => ("bg-warning", "Moderate"),
-            <= 15 => ("bg-danger", "Hard"),
-            _ => ("bg-dark", "Deadly")
+            <= 5 => ("bg-success", "Easy", "Difficulty 1-5: Suitable for low-level encounters or minions"),
+            <= 10 => ("bg-warning", "Moderate", "Difficulty 6-10: Standard combat encounter"),
+            <= 15 => ("bg-danger", "Hard", "Difficulty 11-15: Challenging encounter, use caution"),
+            _ => ("bg-dark", "Deadly", "Difficulty 16+: Very dangerous, could easily kill party members")
         };
     }
 
@@ -214,9 +273,84 @@ else
         }
     }
 
-    private void ShowCloneModal()
+    // Clone modal state
+    private bool showCloneModal = false;
+    private string cloneSearchText = "";
+    private IEnumerable<GmCharacterInfo>? allCharacters;
+    private IEnumerable<GmCharacterInfo>? filteredCloneSources;
+    private int? selectedCloneSourceId;
+
+    private async Task ShowCloneModal()
     {
-        // Placeholder for clone functionality - will be implemented in future plan
+        showCloneModal = true;
+        cloneSearchText = "";
+        selectedCloneSourceId = null;
+
+        // Load all characters for clone source selection
+        if (allCharacters == null)
+        {
+            try
+            {
+                allCharacters = await characterListPortal.FetchAsync();
+            }
+            catch
+            {
+                allCharacters = Enumerable.Empty<GmCharacterInfo>();
+            }
+        }
+        FilterCloneSources();
+        StateHasChanged();
+    }
+
+    private void HideCloneModal()
+    {
+        showCloneModal = false;
+        selectedCloneSourceId = null;
+    }
+
+    private void FilterCloneSources()
+    {
+        var query = allCharacters?.AsEnumerable() ?? Enumerable.Empty<GmCharacterInfo>();
+
+        if (!string.IsNullOrWhiteSpace(cloneSearchText))
+        {
+            query = query.Where(c =>
+                c.Name.Contains(cloneSearchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(c.Species) && c.Species.Contains(cloneSearchText, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // Sort: Templates first, then NPCs, then PCs
+        filteredCloneSources = query
+            .OrderByDescending(c => c.IsTemplate)
+            .ThenByDescending(c => c.IsNpc)
+            .ThenBy(c => c.Name)
+            .ToList();
+    }
+
+    private void OnCloneSearchInput(string value)
+    {
+        cloneSearchText = value;
+        FilterCloneSources();
+    }
+
+    private void SelectCloneSource(int id)
+    {
+        selectedCloneSourceId = id;
+    }
+
+    private void ConfirmClone()
+    {
+        if (selectedCloneSourceId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/gamemaster/templates/clone/{selectedCloneSourceId.Value}");
+        }
+    }
+
+    private string GetTypeBadgeClass(GmCharacterInfo character)
+    {
+        if (character.IsTemplate) return "bg-info";
+        if (character.IsNpc) return "bg-warning text-dark";
+        return "bg-primary";
     }
 
     private RenderFragment RenderFilters() => __builder =>
