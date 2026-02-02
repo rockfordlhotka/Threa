@@ -12,7 +12,8 @@
                id="imageUrl"
                placeholder="https://example.com/image.jpg"
                @bind="imageUrl" 
-               @bind:event="oninput" />
+               @bind:event="oninput"
+               @bind:after="OnImageUrlChanged" />
         <div class="form-text">Enter a valid URL for your character's image</div>
     </div>
 
@@ -40,7 +41,7 @@
         <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
         <button class="btn btn-primary" 
                 @onclick="Save" 
-                disabled="@(string.IsNullOrWhiteSpace(imageUrl))">
+                disabled="@(string.IsNullOrWhiteSpace(imageUrl) || imageLoadError)">
             Save
         </button>
     </div>
@@ -55,12 +56,19 @@
 
     protected override void OnInitialized()
     {
-        imageUrl = CurrentImageUrl ?? string.Empty;
+        imageUrl = CurrentImageUrl;
+    }
+
+    private void OnImageUrlChanged()
+    {
+        // Reset error flag when URL changes
+        imageLoadError = false;
     }
 
     private void OnImageError()
     {
         imageLoadError = true;
+        StateHasChanged();
     }
 
     private void Save()
