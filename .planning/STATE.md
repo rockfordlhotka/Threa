@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 25 - NPC Creation & Dashboard
-Plan: 05 of 6
-Status: In progress
-Last activity: 2026-02-02 -- Completed 25-05-PLAN.md (GM Dashboard NPC Section)
+Plan: 06 of 6 (complete)
+Status: Phase complete
+Last activity: 2026-02-02 -- Completed 25-06-PLAN.md (Spawn NPC Integration)
 
-Progress: [██████████████░░░░░░] 70%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 70
+- Total plans completed: 71
 - Average duration: 8.3 min
-- Total execution time: 10 hours 53 min
+- Total execution time: 11 hours 1 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [██████████████░░░░░░] 70%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 3 | 12 | 62 min | 5.2 min |
+| v1.5 | 3 | 13 | 70 min | 5.4 min |
 
 ## Accumulated Context
 
@@ -99,6 +99,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Empty disposition groups hidden via @if conditional rendering
 - Disposition icons: skull (Hostile), circle (Neutral), heart (Friendly)
 
+**Plan 25-06 Decision:**
+- Template selector modal loads templates lazily on first open, caches for session
+- Spawn button in NPC section header alongside count badge
+- Auto-generated name shown in spawn modal with customization option
+
 ### Pending Todos
 
 None.
@@ -115,9 +120,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 25-05-PLAN.md (GM Dashboard NPC Section)
+Stopped at: Completed 25-06-PLAN.md (Spawn NPC Integration)
 Resume file: None
-Next action: Execute 25-06-PLAN.md (Spawn NPC Integration)
+Next action: Phase 25 complete. Ready for next milestone planning.
 
 ---
-*v1.5 Milestone -- Phase 25 in progress*
+*v1.5 Milestone -- Phase 25 complete*
