@@ -20,8 +20,8 @@ This roadmap enables GMs to create, manage, and run NPCs in combat encounters al
 **Plans:** 2 plans
 
 Plans:
-- [ ] 23-01-PLAN.md — Add NPC flags to Character DTO and CharacterEdit business object
-- [ ] 23-02-PLAN.md — Add DAL query methods and unit tests for NPC flags
+- [x] 23-01-PLAN.md — Add NPC flags to Character DTO and CharacterEdit business object
+- [x] 23-02-PLAN.md — Add DAL query methods and unit tests for NPC flags
 
 **Requirements:**
 - CRTN-02 (partial): NPCs have full character stats (same model as PCs)
@@ -143,7 +143,7 @@ Plans:
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 23 | Data Model Foundation | 1 | Planned |
+| 23 | Data Model Foundation | 1 | Complete |
 | 24 | NPC Template System | 5 | Pending |
 | 25 | NPC Creation & Dashboard | 8 | Pending |
 | 26 | Visibility & Lifecycle | 7 | Pending |
@@ -182,3 +182,4 @@ Plans:
 ---
 *Roadmap created: 2026-02-01*
 *Phase 23 planned: 2026-02-01*
+*Phase 23 complete: 2026-02-01*
