@@ -127,3 +127,30 @@ h1:focus {
 .template-inactive .template-name {
     text-decoration: line-through;
 }
+
+/* NPC Section Styles */
+.npc-status-card {
+    /* Wrapper for NPC card with disposition overlay */
+}
+
+.npc-disposition-icon {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.npc-template-label {
+    margin-top: -4px;
+    padding-bottom: 4px;
+}
+
+.npc-group-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding-bottom: 4px;
+    border-bottom: 1px solid currentColor;
+    opacity: 0.8;
+}
+
+.npc-group:last-child {
+    margin-bottom: 0 !important;
+}
