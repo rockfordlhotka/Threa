@@ -9,6 +9,7 @@
 
 @using GameMechanics.Messaging
 @using Threa.Services
+@using Threa.Client.Services
 @using Threa.Client.Components.Shared
 @using Threa.Client.Components.Pages.GamePlay.Targeting
 @using Radzen
@@ -33,6 +34,8 @@
 
 @inject ITableDal TableDal
 @inject DialogService DialogService
+@inject PlayerConnectionTracker ConnectionTracker
+@inject CircuitIdProvider CircuitIdProvider
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -410,6 +413,12 @@ protected override async Task OnInitializedAsync()
                     await LoadTableCharactersAsync();
                     SubscribeToActivityLog(TableId);
                     await SubscribeToTimeEvents(TableId);
+
+                    // Register this connection with the tracker
+                    if (!string.IsNullOrEmpty(CircuitIdProvider.CircuitId))
+                    {
+                        await ConnectionTracker.RegisterConnectionAsync(CircuitIdProvider.CircuitId, CharacterId, TableId);
+                    }
 
                     // Apply the table's theme
                     if (table != null)
