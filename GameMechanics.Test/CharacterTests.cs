@@ -447,8 +447,115 @@ namespace GameMechanics.Test
 
       // Should be valid - no currency-related broken rules
       var currencyRules = GetCurrencyBrokenRules(c);
-      Assert.IsFalse(currencyRules.Any(), 
+      Assert.IsFalse(currencyRules.Any(),
                     "Character should be valid with positive currency values");
+    }
+
+    [TestMethod]
+    public async Task Character_NpcFlags_PersistToDatabase()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Set NPC flags (hidden NPC, not a template)
+      c.Name = "Goblin Scout";
+      c.Species = "Goblin";
+      c.IsNpc = true;
+      c.IsTemplate = false;
+      c.VisibleToPlayers = false;  // Hidden for surprise
+
+      c = await c.SaveAsync();
+      var characterId = c.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(characterId);
+      Assert.IsTrue(fetched.IsNpc, "IsNpc should persist as true");
+      Assert.IsFalse(fetched.IsTemplate, "IsTemplate should persist as false");
+      Assert.IsFalse(fetched.VisibleToPlayers, "VisibleToPlayers should persist as false");
+    }
+
+    [TestMethod]
+    public async Task Character_TemplateFlags_PersistToDatabase()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Create NPC template
+      c.Name = "Goblin Warrior Template";
+      c.Species = "Goblin";
+      c.IsNpc = true;
+      c.IsTemplate = true;
+      c.VisibleToPlayers = true;  // Templates visible in library
+
+      c = await c.SaveAsync();
+      var characterId = c.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(characterId);
+      Assert.IsTrue(fetched.IsNpc, "Template IsNpc should persist");
+      Assert.IsTrue(fetched.IsTemplate, "Template IsTemplate should persist");
+      Assert.IsTrue(fetched.VisibleToPlayers, "Template VisibleToPlayers should persist");
+    }
+
+    [TestMethod]
+    public async Task Character_VisibleToPlayers_DefaultsToTrue()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Verify default value before any explicit set
+      Assert.IsTrue(c.VisibleToPlayers, "VisibleToPlayers should default to true");
+
+      // Save and fetch without setting VisibleToPlayers
+      c.Name = "Test Character";
+      c.Species = "Human";
+      c = await c.SaveAsync();
+
+      var fetched = await dp.FetchAsync(c.Id);
+      Assert.IsTrue(fetched.VisibleToPlayers, "VisibleToPlayers should remain true after fetch");
+    }
+
+    [TestMethod]
+    public async Task GetNpcTemplatesAsync_ReturnsOnlyTemplates()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var characterDal = provider.GetRequiredService<ICharacterDal>();
+
+      // Create a regular PC
+      var pc = dp.Create(42);
+      pc.Name = "Player Character";
+      pc.Species = "Human";
+      pc.IsNpc = false;
+      pc.IsTemplate = false;
+      pc = await pc.SaveAsync();
+
+      // Create an NPC (not a template)
+      var npc = dp.Create(42);
+      npc.Name = "Active NPC";
+      npc.Species = "Goblin";
+      npc.IsNpc = true;
+      npc.IsTemplate = false;
+      npc = await npc.SaveAsync();
+
+      // Create an NPC template
+      var template = dp.Create(42);
+      template.Name = "Goblin Template";
+      template.Species = "Goblin";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template = await template.SaveAsync();
+
+      // Query templates
+      var templates = await characterDal.GetNpcTemplatesAsync();
+
+      // Verify only the template is returned
+      Assert.IsTrue(templates.Any(t => t.Name == "Goblin Template"), "Template should be in results");
+      Assert.IsFalse(templates.Any(t => t.Name == "Player Character"), "PC should not be in results");
+      Assert.IsFalse(templates.Any(t => t.Name == "Active NPC"), "Non-template NPC should not be in results");
     }
   }
 }
