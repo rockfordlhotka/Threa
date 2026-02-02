@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Milestone: v1.5 NPC Management System
-Phase: 24 - NPC Template System (COMPLETE)
-Plan: 05 of 5
-Status: Phase complete
-Last activity: 2026-02-02 -- Completed 24-05-PLAN.md (Polish and Integration)
+Phase: 25 - NPC Creation & Dashboard
+Plan: 01 of 5
+Status: In progress
+Last activity: 2026-02-02 -- Completed 25-01-PLAN.md (Data Model Extensions)
 
-Progress: [██████████░░░░░░░░░░] 50%
+Progress: [██████████░░░░░░░░░░] 51%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65
-- Average duration: 8.7 min
-- Total execution time: 10 hours 27 min
+- Total plans completed: 66
+- Average duration: 8.6 min
+- Total execution time: 10 hours 31 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [██████████░░░░░░░░░░] 50%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 2 | 7 | 36 min | 5.1 min |
+| v1.5 | 3 | 8 | 40 min | 5.0 min |
 
 ## Accumulated Context
 
@@ -75,6 +75,10 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - GmCharacterInfo extended with IsNpc/IsTemplate/CharacterType properties
 - Difficulty tooltips use HTML title attribute for simplicity
 
+**Plan 25-01 Decision:**
+- SourceTemplateId/Name on both DTO and CharacterEdit for full round-trip support
+- TableCharacterInfo Fetch populates NPC fields from Character data for dashboard display
+
 ### Pending Todos
 
 None.
@@ -91,9 +95,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 24-05-PLAN.md (Phase 24 complete)
+Stopped at: Completed 25-01-PLAN.md (Data Model Extensions)
 Resume file: None
-Next action: Begin Phase 25 (NPC Dashboard) research and planning
+Next action: Execute 25-02-PLAN.md (NPC Spawner)
 
 ---
-*v1.5 Milestone -- Phase 24 complete, ready for Phase 25*
+*v1.5 Milestone -- Phase 25 in progress*
