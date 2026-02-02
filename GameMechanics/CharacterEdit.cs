@@ -426,6 +426,24 @@ namespace GameMechanics
       private set => LoadProperty(DifficultyRatingProperty, value);
     }
 
+    // Source template tracking (for spawned NPCs)
+
+    public static readonly PropertyInfo<int?> SourceTemplateIdProperty = RegisterProperty<int?>(nameof(SourceTemplateId));
+    [Display(Name = "Source Template ID")]
+    public int? SourceTemplateId
+    {
+      get => GetProperty(SourceTemplateIdProperty);
+      set => SetProperty(SourceTemplateIdProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> SourceTemplateNameProperty = RegisterProperty<string?>(nameof(SourceTemplateName));
+    [Display(Name = "Source Template")]
+    public string? SourceTemplateName
+    {
+      get => GetProperty(SourceTemplateNameProperty);
+      set => SetProperty(SourceTemplateNameProperty, value);
+    }
+
     /// <summary>
     /// Calculates the difficulty rating based on combat-related skills and health pools.
     /// Call this after skills are set to update the DifficultyRating property.

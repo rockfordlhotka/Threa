@@ -100,4 +100,18 @@ public class Character
     /// Higher values indicate more dangerous NPCs.
     /// </summary>
     public int DifficultyRating { get; set; }
+
+    // Source template tracking (for spawned NPCs)
+
+    /// <summary>
+    /// ID of the template this NPC was spawned from.
+    /// Null for player characters and templates themselves.
+    /// </summary>
+    public int? SourceTemplateId { get; set; }
+
+    /// <summary>
+    /// Denormalized name of the source template for display (e.g., "From: Goblin Warrior").
+    /// Null for player characters and templates themselves.
+    /// </summary>
+    public string? SourceTemplateName { get; set; }
 }
