@@ -119,3 +119,11 @@ h1:focus {
     align-items: center;
     gap: 0.25rem;
 }
+
+/* NPC Template inactive styling */
+.template-inactive {
+    opacity: 0.6;
+}
+.template-inactive .template-name {
+    text-decoration: line-through;
+}

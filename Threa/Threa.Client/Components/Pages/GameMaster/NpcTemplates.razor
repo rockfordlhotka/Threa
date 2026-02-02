@@ -3,6 +3,8 @@
 
 @using GameMechanics
 @using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
 
 @implements IDisposable
 
@@ -69,9 +71,14 @@ else
             <RadzenDataGrid Data="@filteredTemplates" TItem="NpcTemplateInfo"
                 AllowSorting="true" AllowPaging="true" PageSize="20"
                 RowSelect="@(template => NavigationManager.NavigateTo($"/gamemaster/templates/{template.Id}"))"
+                RowRender="@OnRowRender"
                 Style="cursor: pointer">
                 <Columns>
-                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="250px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="250px">
+                        <Template Context="template">
+                            <span class="template-name">@template.Name</span>
+                        </Template>
+                    </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Species" Title="Species" Sortable="true" Width="150px" />
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Category" Title="Category" Sortable="true" Width="150px" />
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Difficulty" Sortable="true" Width="120px" SortProperty="DifficultyRating">
@@ -194,8 +201,17 @@ else
         {
             <= 5 => ("bg-success", "Easy"),
             <= 10 => ("bg-warning", "Moderate"),
-            _ => ("bg-danger", "Hard")
+            <= 15 => ("bg-danger", "Hard"),
+            _ => ("bg-dark", "Deadly")
         };
+    }
+
+    private void OnRowRender(RowRenderEventArgs<NpcTemplateInfo> args)
+    {
+        if (!args.Data.IsActive)
+        {
+            args.Attributes.Add("class", "template-inactive");
+        }
     }
 
     private void ShowCloneModal()
