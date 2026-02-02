@@ -4,6 +4,7 @@
 @using Threa.Dal.Dto
 
 @inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
+@inject Threa.Dal.ICharacterItemDal CharacterItemDal
 
 <div class="defend-mode">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -325,6 +326,73 @@
                     </div>
                 </div>
 
+                <!-- Equipped Armor -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <strong><i class="bi bi-shield-fill"></i> Equipped Armor</strong>
+                    </div>
+                    <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                        @if (equippedArmor.Any() || equippedShield != null)
+                        {
+                            @if (equippedShield != null)
+                            {
+                                <div class="mb-2 p-2 border rounded bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong><i class="bi bi-shield-shaded text-primary"></i> @equippedShield.Name</strong>
+                                        <span class="badge bg-secondary">Shield</span>
+                                    </div>
+                                    <small class="text-muted">Class @equippedShield.DamageClass</small>
+                                    <div class="progress mt-1" style="height: 6px;" title="Durability: @equippedShield.CurrentDurability/@equippedShield.MaxDurability">
+                                        <div class="progress-bar @GetDurabilityColor(equippedShield.CurrentDurability, equippedShield.MaxDurability)"
+                                             style="width: @GetDurabilityPercent(equippedShield.CurrentDurability, equippedShield.MaxDurability)%"></div>
+                                    </div>
+                                    @if (equippedShield.Absorption.Any())
+                                    {
+                                        <div class="mt-1">
+                                            <small class="text-muted">Absorbs: </small>
+                                            @foreach (var kvp in equippedShield.Absorption.Where(a => a.Value > 0))
+                                            {
+                                                <span class="badge bg-info me-1" title="@kvp.Key absorption">@GetDamageTypeAbbrev(kvp.Key) @kvp.Value</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @foreach (var armor in equippedArmor.OrderBy(a => a.Slot.ToString()))
+                            {
+                                <div class="mb-2 p-2 border rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong><i class="bi bi-shield"></i> @armor.Name</strong>
+                                        <span class="badge bg-secondary">@armor.Slot</span>
+                                    </div>
+                                    <small class="text-muted">Class @armor.DamageClass</small>
+                                    <div class="progress mt-1" style="height: 6px;" title="Durability: @armor.CurrentDurability/@armor.MaxDurability">
+                                        <div class="progress-bar @GetDurabilityColor(armor.CurrentDurability, armor.MaxDurability)"
+                                             style="width: @GetDurabilityPercent(armor.CurrentDurability, armor.MaxDurability)%"></div>
+                                    </div>
+                                    @if (armor.Absorption.Any())
+                                    {
+                                        <div class="mt-1">
+                                            <small class="text-muted">Absorbs: </small>
+                                            @foreach (var kvp in armor.Absorption.Where(a => a.Value > 0))
+                                            {
+                                                <span class="badge bg-info me-1" title="@kvp.Key absorption">@GetDamageTypeAbbrev(kvp.Key) @kvp.Value</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <div class="alert alert-info py-2 mt-2 mb-0">
+                                <small><i class="bi bi-info-circle"></i> Armor automatically absorbs damage when hit. Higher damage class armor blocks lower class attacks more effectively.</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0"><em>No armor equipped. Damage will apply directly to your health pools.</em></p>
+                        }
+                    </div>
+                </div>
+
                 <!-- Attacker Input -->
                 <div class="card mt-3">
                     <div class="card-header">
@@ -603,7 +671,11 @@
     private string parrySkillName = "";
     private int parrySkillAS;
 
-    protected override void OnParametersSet()
+    // Equipped armor state
+    private List<EquippedArmorInfo> equippedArmor = new();
+    private EquippedArmorInfo? equippedShield;
+
+    protected override async Task OnParametersSetAsync()
     {
         if (Character != null)
         {
@@ -613,7 +685,98 @@
                 parrySkillName = CombatStanceBehavior.GetParrySkillName(Character);
                 parrySkillAS = CombatStanceBehavior.GetParrySkillAS(Character);
             }
+            await LoadEquippedArmor();
         }
+    }
+
+    private async Task LoadEquippedArmor()
+    {
+        equippedArmor.Clear();
+        equippedShield = null;
+
+        if (Character == null) return;
+
+        var equippedItems = await CharacterItemDal.GetEquippedItemsAsync(Character.Id);
+
+        foreach (var item in equippedItems)
+        {
+            if (item.Template == null) continue;
+
+            if (item.Template.ItemType == ItemType.Shield)
+            {
+                equippedShield = new EquippedArmorInfo
+                {
+                    ItemId = item.Id,
+                    Name = item.CustomName ?? item.Template.Name,
+                    Slot = item.EquippedSlot,
+                    DamageClass = item.Template.DamageClass,
+                    CurrentDurability = item.CurrentDurability ?? item.Template.MaxDurability ?? 10,
+                    MaxDurability = item.Template.MaxDurability ?? 10,
+                    Absorption = ParseArmorAbsorption(item.Template.ArmorAbsorption)
+                };
+            }
+            else if (item.Template.ItemType == ItemType.Armor)
+            {
+                equippedArmor.Add(new EquippedArmorInfo
+                {
+                    ItemId = item.Id,
+                    Name = item.CustomName ?? item.Template.Name,
+                    Slot = item.EquippedSlot,
+                    DamageClass = item.Template.DamageClass,
+                    CurrentDurability = item.CurrentDurability ?? item.Template.MaxDurability ?? 10,
+                    MaxDurability = item.Template.MaxDurability ?? 10,
+                    Absorption = ParseArmorAbsorption(item.Template.ArmorAbsorption)
+                });
+            }
+        }
+    }
+
+    private Dictionary<DamageType, int> ParseArmorAbsorption(string? json)
+    {
+        var result = new Dictionary<DamageType, int>();
+        if (string.IsNullOrEmpty(json)) return result;
+
+        try
+        {
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+            if (parsed != null)
+            {
+                foreach (var kvp in parsed)
+                {
+                    if (Enum.TryParse<DamageType>(kvp.Key, true, out var damageType))
+                    {
+                        result[damageType] = kvp.Value;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, return empty dictionary
+        }
+
+        return result;
+    }
+
+    private string GetDamageTypeAbbrev(DamageType type) => type switch
+    {
+        DamageType.Bashing => "B",
+        DamageType.Cutting => "C",
+        DamageType.Piercing => "P",
+        DamageType.Projectile => "Pr",
+        DamageType.Energy => "E",
+        _ => "?"
+    };
+
+    private int GetDurabilityPercent(int current, int max) =>
+        max > 0 ? (int)((double)current / max * 100) : 0;
+
+    private string GetDurabilityColor(int current, int max)
+    {
+        var percent = GetDurabilityPercent(current, max);
+        if (percent > 50) return "bg-success";
+        if (percent > 25) return "bg-warning";
+        return "bg-danger";
     }
 
     private void SetDefenseType(DefenseTypeOption type) => defenseType = type;
@@ -1043,5 +1206,16 @@
         public int EffectiveAS { get; set; }
         public int DiceRoll { get; set; }
         public int TV { get; set; }
+    }
+
+    private class EquippedArmorInfo
+    {
+        public Guid ItemId { get; set; }
+        public string Name { get; set; } = "";
+        public EquipmentSlot Slot { get; set; }
+        public int DamageClass { get; set; }
+        public int CurrentDurability { get; set; }
+        public int MaxDurability { get; set; }
+        public Dictionary<DamageType, int> Absorption { get; set; } = new();
     }
 }
