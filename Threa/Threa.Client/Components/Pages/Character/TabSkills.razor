@@ -31,8 +31,8 @@
 {
     <div class="alert alert-info">
         <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your skills.</p>
-        <p>You can also <strong>decrease</strong> skill levels to return XP to your bank if you change your mind.</p>
-        <p><em>Once the character is activated, you can only advance skills with earned XP (no decreasing).</em></p>
+        <p>You can also <strong>decrease</strong> skill levels or <strong>remove</strong> added skills to return XP to your bank if you change your mind.</p>
+        <p><em>Core attribute skills cannot be removed. Once the character is activated, you can only advance skills with earned XP (no decreasing or removing).</em></p>
     </div>
 }
 else
@@ -107,10 +107,17 @@ else
                             Decrease
                         </button>
                     }
-                    @if (!vm.Model.IsPlayable && isNewSkill && skill.Level == 0)
+                    @if (!vm.Model.IsPlayable && CanRemoveSkill(skill))
                     {
                         <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
-                            Remove
+                            @if (skill.XPSpent > 0)
+                            {
+                                <text>Remove (+@skill.XPSpent XP)</text>
+                            }
+                            else
+                            {
+                                <text>Remove</text>
+                            }
                         </button>
                     }
                 </td>
@@ -193,6 +200,14 @@ else
             return true;
         }
         return skill.Level > vm.Model.OriginalSkillLevels[skill.Name];
+    }
+
+    private bool CanRemoveSkill(GameMechanics.SkillEdit skill)
+    {
+        // A skill can be removed only if it was added during this character creation session
+        // (not in the original skill list). Core attribute skills are always in the original
+        // list and cannot be removed.
+        return !vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name);
     }
 
     private void IncreaseSkillLevel(GameMechanics.SkillEdit skill)
@@ -279,22 +294,18 @@ else
     private void RemoveSkill(GameMechanics.SkillEdit skill)
     {
         errorMessage = null;
-        
+
         // Check if this is a new skill (not in original list)
-        var originalLevel = vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name) ? vm.Model.OriginalSkillLevels[skill.Name] : -1;
-        
-        if (originalLevel >= 0)
+        if (vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name))
         {
-            errorMessage = "Cannot remove existing skills. You can only remove newly added skills.";
+            errorMessage = "Cannot remove core attribute skills. You can only remove skills you added during character creation.";
             return;
         }
 
         // Refund all XP spent on this skill
-        for (int i = 0; i < skill.Level; i++)
+        if (skill.XPSpent > 0)
         {
-            var tempSkillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
-            var difficulty = tempSkillInfo?.Trained ?? 5;
-            vm!.Model!.RefundXP(GameMechanics.SkillCost.GetLevelUpCost(i, difficulty));
+            vm!.Model!.RefundXP(skill.XPSpent);
         }
 
         // Remove the skill
