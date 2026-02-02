@@ -9,11 +9,11 @@ Requirements for NPC Management System. Each maps to roadmap phases.
 
 ### NPC Templates
 
-- [ ] **TMPL-01**: GM can create NPC templates with full character stats (attributes, skills, equipment)
-- [ ] **TMPL-02**: GM can edit existing NPC templates
-- [ ] **TMPL-03**: GM can browse/search NPC templates (filter by category/tags)
-- [ ] **TMPL-04**: GM can delete/deactivate NPC templates
-- [ ] **TMPL-05**: NPC templates support category tags for organization (humanoid, beast, undead, etc.)
+- [x] **TMPL-01**: GM can create NPC templates with full character stats (attributes, skills, equipment)
+- [x] **TMPL-02**: GM can edit existing NPC templates
+- [x] **TMPL-03**: GM can browse/search NPC templates (filter by category/tags)
+- [x] **TMPL-04**: GM can delete/deactivate NPC templates
+- [x] **TMPL-05**: NPC templates support category tags for organization (humanoid, beast, undead, etc.)
 
 ### NPC Creation
 
@@ -85,11 +85,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TMPL-01 | Phase 24 | Pending |
-| TMPL-02 | Phase 24 | Pending |
-| TMPL-03 | Phase 24 | Pending |
-| TMPL-04 | Phase 24 | Pending |
-| TMPL-05 | Phase 24 | Pending |
+| TMPL-01 | Phase 24 | Complete |
+| TMPL-02 | Phase 24 | Complete |
+| TMPL-03 | Phase 24 | Complete |
+| TMPL-04 | Phase 24 | Complete |
+| TMPL-05 | Phase 24 | Complete |
 | CRTN-01 | Phase 25 | Pending |
 | CRTN-02 | Phase 23, 25 | Pending |
 | CRTN-03 | Phase 25 | Pending |
@@ -116,4 +116,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-01 after roadmap creation*
+*Last updated: 2026-02-02 after Phase 24 completion*

@@ -45,11 +45,11 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 24-01-PLAN.md — Data model extensions (NpcDisposition enum, template properties, DAL methods)
-- [ ] 24-02-PLAN.md — Template list business objects (NpcTemplateInfo, NpcTemplateList)
-- [ ] 24-03-PLAN.md — Template library UI page with search/filter
-- [ ] 24-04-PLAN.md — Template editor UI page with clone functionality
-- [ ] 24-05-PLAN.md — Polish: category autocomplete, inactive styling, difficulty badges
+- [x] 24-01-PLAN.md — Data model extensions (NpcDisposition enum, template properties, DAL methods)
+- [x] 24-02-PLAN.md — Template list business objects (NpcTemplateInfo, NpcTemplateList)
+- [x] 24-03-PLAN.md — Template library UI page with search/filter
+- [x] 24-04-PLAN.md — Template editor UI page with clone functionality
+- [x] 24-05-PLAN.md — Polish: category autocomplete, inactive styling, difficulty badges
 
 **Requirements:**
 - TMPL-01: GM can create NPC templates with full character stats
@@ -153,7 +153,7 @@ Plans:
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 23 | Data Model Foundation | 1 | Complete |
-| 24 | NPC Template System | 5 | Planned |
+| 24 | NPC Template System | 5 | Complete |
 | 25 | NPC Creation & Dashboard | 8 | Pending |
 | 26 | Visibility & Lifecycle | 7 | Pending |
 | 27 | Time & Combat Integration | 3 | Pending |
@@ -193,3 +193,4 @@ Plans:
 *Phase 23 planned: 2026-02-01*
 *Phase 23 complete: 2026-02-01*
 *Phase 24 planned: 2026-02-02*
+*Phase 24 complete: 2026-02-02*
