@@ -17,24 +17,46 @@
 @inject Threa.Services.RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 
-<h3>@(IsNewItem ? "Add New Item" : "Edit Item")</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>@(IsNewItem ? "Add New Item" : $"Edit: {vm.Model?.Name ?? "Item"}")</strong>
+        @if (vm.Model != null)
+        {
+            <span class="badge ms-2 @(vm.Model.IsActive ? "bg-success" : "bg-warning")">
+                @(vm.Model.IsActive ? "Active" : "Inactive")
+            </span>
+        }
+    </div>
+    <a href="/gamemaster/items" class="btn btn-outline-secondary btn-sm">Back to Items</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <p>Loading...</p>
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta">Loading item...</div>
+        </div>
+    </div>
 }
 else
 {
-    <div class="item-edit-form">
-        <RadzenTabs @bind-SelectedIndex="@selectedTabIndex" @key="@($"tabs-{vm.Model.ItemType}")">
-            <Tabs>
-                <!-- ========================== -->
-                <!-- BASIC TAB (Always visible) -->
-                <!-- ========================== -->
-                <RadzenTabsItem Text="Basic">
-                    <table class="table table-sm">
+    <div class="item-edit-form card">
+        <div class="card-body">
+            <RadzenTabs @bind-SelectedIndex="@selectedTabIndex" @key="@($"tabs-{vm.Model.ItemType}")">
+                <Tabs>
+                    <!-- ========================== -->
+                    <!-- BASIC TAB (Always visible) -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Basic">
+                        <div class="info-box mt-3">
+                            <strong>Basic Properties</strong>
+                        </div>
+                        <table class="table table-sm">
                         <tbody>
                             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
                             <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
@@ -139,13 +161,16 @@ else
                     </table>
                 </RadzenTabsItem>
 
-                <!-- ========================== -->
-                <!-- WEAPON TAB -->
-                <!-- ========================== -->
-                @if (vm.Model.ItemType == ItemType.Weapon)
-                {
-                    <RadzenTabsItem Text="Weapon">
-                        <table class="table table-sm">
+                    <!-- ========================== -->
+                    <!-- WEAPON TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.Weapon)
+                    {
+                        <RadzenTabsItem Text="Weapon">
+                            <div class="info-box mt-3">
+                                <strong>Weapon Properties</strong>
+                            </div>
+                            <table class="table table-sm">
                             <tbody>
                                 <tr>
                                     <td>Weapon Type</td>
@@ -213,7 +238,9 @@ else
 
                         @if (IsRangedWeaponType)
                         {
-                            <h5 class="mt-4 mb-3">Ranged Weapon Properties</h5>
+                            <div class="info-box mt-4">
+                                <strong>Ranged Weapon Properties</strong>
+                            </div>
                             <table class="table table-sm">
                                 <tbody>
                                     <tr>
@@ -423,13 +450,16 @@ else
                     </RadzenTabsItem>
                 }
 
-                <!-- ========================== -->
-                <!-- ARMOR TAB -->
-                <!-- ========================== -->
-                @if (vm.Model.ItemType == ItemType.Armor || vm.Model.ItemType == ItemType.Shield)
-                {
-                    <RadzenTabsItem Text="Armor">
-                        <table class="table table-sm">
+                    <!-- ========================== -->
+                    <!-- ARMOR TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.Armor || vm.Model.ItemType == ItemType.Shield)
+                    {
+                        <RadzenTabsItem Text="Armor">
+                            <div class="info-box mt-3">
+                                <strong>Armor Properties</strong>
+                            </div>
+                            <table class="table table-sm">
                             <tbody>
                                 <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DodgeModifier)" />
 
@@ -484,13 +514,16 @@ else
                     </RadzenTabsItem>
                 }
 
-                <!-- ========================== -->
-                <!-- CONTAINER TAB -->
-                <!-- ========================== -->
-                @if (vm.Model.ItemType == ItemType.Container)
-                {
-                    <RadzenTabsItem Text="Container">
-                        <table class="table table-sm">
+                    <!-- ========================== -->
+                    <!-- CONTAINER TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.Container)
+                    {
+                        <RadzenTabsItem Text="Container">
+                            <div class="info-box mt-3">
+                                <strong>Container Properties</strong>
+                            </div>
+                            <table class="table table-sm">
                             <tbody>
                                 <tr>
                                     <td>Max Weight (lbs)</td>
@@ -529,13 +562,16 @@ else
                     </RadzenTabsItem>
                 }
 
-                <!-- ========================== -->
-                <!-- AMMUNITION TAB -->
-                <!-- ========================== -->
-                @if (vm.Model.ItemType == ItemType.Ammunition)
-                {
-                    <RadzenTabsItem Text="Ammunition">
-                        <table class="table table-sm">
+                    <!-- ========================== -->
+                    <!-- AMMUNITION TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.Ammunition)
+                    {
+                        <RadzenTabsItem Text="Ammunition">
+                            <div class="info-box mt-3">
+                                <strong>Ammunition Properties</strong>
+                            </div>
+                            <table class="table table-sm">
                             <tbody>
                                 <tr>
                                     <td>Ammo Type</td>
@@ -611,13 +647,16 @@ else
                     </RadzenTabsItem>
                 }
 
-                <!-- ========================== -->
-                <!-- AMMO CONTAINER TAB -->
-                <!-- ========================== -->
-                @if (vm.Model.ItemType == ItemType.AmmoContainer)
-                {
-                    <RadzenTabsItem Text="Ammo Container">
-                        <table class="table table-sm">
+                    <!-- ========================== -->
+                    <!-- AMMO CONTAINER TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.AmmoContainer)
+                    {
+                        <RadzenTabsItem Text="Ammo Container">
+                            <div class="info-box mt-3">
+                                <strong>Ammo Container Properties</strong>
+                            </div>
+                            <table class="table table-sm">
                             <tbody>
                                 <tr>
                                     <td>Ammo Type</td>
@@ -660,8 +699,9 @@ else
                         </table>
                     </RadzenTabsItem>
                 }
-            </Tabs>
-        </RadzenTabs>
+                </Tabs>
+            </RadzenTabs>
+        </div>
 
         <!-- ========================== -->
         <!-- SAVE/CANCEL BUTTONS (Sticky bottom bar) -->
