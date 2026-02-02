@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Milestone: v1.5 NPC Management System
-Phase: 24 - NPC Template System (in progress)
-Plan: 04 of 5
-Status: In progress
-Last activity: 2026-02-02 -- Completed 24-04-PLAN.md (NPC Template Editor)
+Phase: 24 - NPC Template System (COMPLETE)
+Plan: 05 of 5
+Status: Phase complete
+Last activity: 2026-02-02 -- Completed 24-05-PLAN.md (Polish and Integration)
 
-Progress: [████████░░░░░░░░░░░░] 40%
+Progress: [██████████░░░░░░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64
-- Average duration: 8.8 min
-- Total execution time: 10 hours 15 min
+- Total plans completed: 65
+- Average duration: 8.7 min
+- Total execution time: 10 hours 27 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████░░░░░░░░░░░░] 40%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 2 | 6 | 24 min | 4.0 min |
+| v1.5 | 2 | 7 | 36 min | 5.1 min |
 
 ## Accumulated Context
 
@@ -70,6 +70,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Clone route copies attributes and skills but NOT equipment or notes per CONTEXT.md
 - HTML5 datalist used for category autocomplete (simpler than RadzenAutoComplete)
 
+**Plan 24-05 Decision:**
+- Clone modal uses Bootstrap modal with list-group for character selection
+- GmCharacterInfo extended with IsNpc/IsTemplate/CharacterType properties
+- Difficulty tooltips use HTML title attribute for simplicity
+
 ### Pending Todos
 
 None.
@@ -86,9 +91,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 24-04-PLAN.md
+Stopped at: Completed 24-05-PLAN.md (Phase 24 complete)
 Resume file: None
-Next action: Execute 24-05-PLAN.md (Polish and Integration)
+Next action: Begin Phase 25 (NPC Dashboard) research and planning
 
 ---
-*v1.5 Milestone -- Phase 24 plan 04 complete, ready for plan 05*
+*v1.5 Milestone -- Phase 24 complete, ready for Phase 25*
