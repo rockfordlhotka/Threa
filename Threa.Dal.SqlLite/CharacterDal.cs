@@ -180,6 +180,25 @@ namespace Threa.Dal.Sqlite
             throw new NotImplementedException("GetTableNpcsAsync requires Phase 25 table integration");
         }
 
+        public async Task<List<string>> GetNpcCategoriesAsync()
+        {
+            try
+            {
+                // Reuse existing template fetch, extract distinct categories
+                var templates = await GetNpcTemplatesAsync();
+                return templates
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Category))
+                    .Select(c => c.Category!)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting NPC categories", ex);
+            }
+        }
+
         public async Task<Character> SaveCharacterAsync(Character character)
         {
             try
