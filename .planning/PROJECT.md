@@ -8,7 +8,23 @@ A web-based TTRPG assistant for the Threa game system that helps players manage 
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Recent Achievement (v1.4)
+## Current Milestone: v1.5 NPC Management System
+
+**Goal:** Enable GMs to create, manage, and run NPCs in combat encounters alongside player characters.
+
+**Target features:**
+- NPC templates/library for pre-session prep
+- Quick NPC creation during play for improvisation
+- Full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
+- NPCs appear in GM dashboard in separate section from PCs
+- All v1.4 GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
+- GM chooses which NPCs persist vs dismiss after encounter
+- Visibility toggle (hide/reveal NPCs for surprise encounters)
+- Group management with individual tracking + batch actions
+
+**Success criterion:** GM can run a full combat encounter with NPCs alongside PCs.
+
+## Previous Achievements
 
 **v1.4 GM Character Manipulation + Concentration System** (shipped 2026-01-29)
 - Health management with theme-aware color-coded health bars and pending pool damage/healing
@@ -19,10 +35,9 @@ Players and Game Masters can easily access the system, manage their content secu
 - Complete concentration system with casting-time progress, sustained FAT/VIT drain, Focus skill checks, linked effect removal, and UI indicators
 - 52/52 requirements shipped (100%), 6 phases, 21 plans complete
 
-**Previous Achievements:**
-- v1.2 GM Table & Campaign Management (shipped 2026-01-28)
-- v1.1 User Management & Authentication (shipped 2026-01-26)
-- v1.0 Inventory & Equipment System (shipped 2026-01-26)
+**v1.2 GM Table & Campaign Management** (shipped 2026-01-28)
+**v1.1 User Management & Authentication** (shipped 2026-01-26)
+**v1.0 Inventory & Equipment System** (shipped 2026-01-26)
 
 ## Requirements
 
@@ -98,9 +113,17 @@ These capabilities exist in the codebase:
 
 ### Active
 
-Future milestones:
-- [ ] GM can create and manage NPCs with stats and abilities
-- [ ] NPC status appears in dashboard alongside player characters
+**v1.5 NPC Management System:**
+- [ ] GM can create NPC templates for pre-session prep
+- [ ] GM can quick-create NPCs during play
+- [ ] NPCs have full character stats (same model as PCs)
+- [ ] NPCs appear in GM dashboard in separate section from PCs
+- [ ] All GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
+- [ ] GM can choose to persist or dismiss NPCs after encounter
+- [ ] GM can toggle NPC visibility (hide/reveal for surprise)
+- [ ] GM can manage NPC groups with individual tracking + batch actions
+
+**Future milestones:**
 - [ ] Initiative tracking with automatic turn order
 - [ ] Automated encounter balancing based on party composition
 
@@ -233,4 +256,4 @@ The codebase already has a working TTRPG combat system with:
 | Same concentration check pattern for all actions | Consistent UX across melee, ranged, and reload actions | ✓ Good (v1.4) |
 
 ---
-*Last updated: 2026-01-29 after v1.4 milestone complete*
+*Last updated: 2026-02-01 after v1.5 milestone started*
