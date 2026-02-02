@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Milestone: v1.5 NPC Management System
-Phase: 23 - Data Model Foundation (pending)
-Plan: --
-Status: Roadmap created, ready for phase planning
-Last activity: 2026-02-01 -- Roadmap created with 5 phases (23-27)
+Phase: 23 - Data Model Foundation (in progress)
+Plan: 01 of 2
+Status: Plan 23-01 complete
+Last activity: 2026-02-01 -- Completed 23-01-PLAN.md (NPC flags)
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░░░░░░░░░░░] 5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 57
-- Average duration: 9.4 min
-- Total execution time: 9.8 hours
+- Total plans completed: 58
+- Average duration: 9.3 min
+- Total execution time: 9.9 hours
 
 **By Milestone:**
 
@@ -32,6 +32,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
+| v1.5 | 1 | 1 | 4 min | 4 min |
 
 ## Accumulated Context
 
@@ -44,6 +45,9 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Template pattern follows proven ItemTemplate approach
 - Dashboard reuses CharacterStatusCard and CharacterDetailModal
 - Visibility filtering prevents hidden NPCs from leaking to players
+
+**Plan 23-01 Decision:**
+- VisibleToPlayers defaults to true for backward compatibility
 
 ### Pending Todos
 
@@ -61,9 +65,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Roadmap created for v1.5
-Resume file: .planning/ROADMAP.md
-Next action: /gsd:plan-phase 23
+Stopped at: Completed 23-01-PLAN.md
+Resume file: .planning/phases/23-data-model-foundation/23-02-PLAN.md
+Next action: Execute 23-02 (SQLite schema migration)
 
 ---
-*v1.5 Milestone -- Roadmap created with 5 phases (23-27), 23 requirements mapped*
+*v1.5 Milestone -- Phase 23 in progress, 1/2 plans complete*
