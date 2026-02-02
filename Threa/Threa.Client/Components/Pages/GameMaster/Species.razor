@@ -9,56 +9,80 @@
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
-<h3>Manage Species</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Manage Species</strong>
+        @if (species != null)
+        {
+            <span class="item-meta ms-3">@species.Count() species defined</span>
+        }
+    </div>
+    <a href="/gamemaster/species/new" class="btn btn-primary btn-sm">Add New Species</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <div>Loading...</div>
-    <img src="images/busy.gif" class="busy-animation" />
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading species...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
 }
 else
 {
-    <a href="/gamemaster/species/new" class="btn btn-primary mb-3">Add New Species</a>
-    
-    <QuickGrid Items="species">
-        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
-        <PropertyColumn Title="Description" Property="@(p => p.Description)" />
-        <TemplateColumn Title="Attribute Modifiers">
-            @if (context.AttributeModifiers.Any())
-            {
-                @string.Join(", ", context.AttributeModifiers.Select(m => $"{m.AttributeName} {(m.Modifier >= 0 ? "+" : "")}{m.Modifier}"))
-            }
-            else
-            {
-                <span class="text-muted">None</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Title="Type">
-            @if (context.Id.Equals("Human", StringComparison.OrdinalIgnoreCase))
-            {
-                <span class="badge bg-primary">Baseline</span>
-            }
-            else
-            {
-                <span class="badge bg-secondary">Custom</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Title="Actions">
-            <a href="/gamemaster/species/@context.Id">Edit</a>
-            @if (context.CanBeDeleted)
-            {
-                <text> | </text>
-                <a href="/gamemaster/species/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
-            }
-            else
-            {
-                <text> | </text>
-                <span class="text-muted" title="Human is the baseline species and cannot be deleted">Delete</span>
-            }
-        </TemplateColumn>
-    </QuickGrid>
+    <div class="card">
+        <div class="card-body p-0">
+            <QuickGrid Items="species" Class="table table-hover">
+                <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+                <PropertyColumn Title="Description" Property="@(p => p.Description)" />
+                <TemplateColumn Title="Attribute Modifiers">
+                    @if (context.AttributeModifiers.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var mod in context.AttributeModifiers)
+                            {
+                                var colorClass = mod.Modifier > 0 ? "text-positive" : (mod.Modifier < 0 ? "text-negative" : "text-neutral");
+                                <span class="@colorClass">@mod.AttributeName @(mod.Modifier >= 0 ? "+" : "")@mod.Modifier</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-neutral">None (baseline)</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Type">
+                    @if (context.Id.Equals("Human", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="badge bg-primary">Baseline</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Custom</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Actions">
+                    <a href="/gamemaster/species/@context.Id">Edit</a>
+                    @if (context.CanBeDeleted)
+                    {
+                        <text> | </text>
+                        <a href="/gamemaster/species/@context.Id/delete" class="text-negative">Delete</a>
+                    }
+                    else
+                    {
+                        <text> | </text>
+                        <span class="text-neutral" title="Human is the baseline species and cannot be deleted">Delete</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+    </div>
 }
 
 @code {

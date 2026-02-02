@@ -10,40 +10,69 @@
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
-<h3>Manage Skills</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Manage Skills</strong>
+        @if (skills != null)
+        {
+            <span class="item-meta ms-3">@skills.Count() skills defined</span>
+        }
+    </div>
+    <a href="/gamemaster/skills/new" class="btn btn-primary btn-sm">Add New Skill</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <div>Loading...</div>
-    <img src="images/busy.gif" class="busy-animation" />
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading skills...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
 }
 else
 {
-    <a href="/gamemaster/skills/new" class="btn btn-primary mb-3">Add New Skill</a>
-    
-    <QuickGrid Items="skills">
-        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
-        <PropertyColumn Title="Category" Property="@(p => p.Category)" Sortable="true" />
-        <PropertyColumn Title="Type" Property="@(p => GetSkillType(p))" />
-        <PropertyColumn Title="Primary Attribute" Property="@(p => p.PrimaryAttribute)" />
-        <PropertyColumn Title="Untrained XP" Property="@(p => p.Untrained)" />
-        <PropertyColumn Title="Trained XP" Property="@(p => p.Trained)" />
-        <TemplateColumn Title="Actions">
-            <a href="/gamemaster/skills/@context.Id">Edit</a>
-            @if (context.CanBeDeleted)
-            {
-                <text> | </text>
-                <a href="/gamemaster/skills/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
-            }
-            else
-            {
-                <text> | </text>
-                <span class="text-muted" title="Core attribute skills cannot be deleted">Delete</span>
-            }
-        </TemplateColumn>
-    </QuickGrid>
+    <div class="card">
+        <div class="card-body p-0">
+            <QuickGrid Items="skills" Class="table table-hover">
+                <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+                <PropertyColumn Title="Category" Property="@(p => p.Category)" Sortable="true" />
+                <TemplateColumn Title="Type">
+                    @{
+                        var skillType = GetSkillType(context);
+                        var badgeClass = skillType switch
+                        {
+                            "Magic" => "badge-purple",
+                            "Specialized" => "badge bg-info",
+                            _ => "badge bg-secondary"
+                        };
+                    }
+                    <span class="badge @badgeClass">@skillType</span>
+                </TemplateColumn>
+                <PropertyColumn Title="Primary Attr" Property="@(p => p.PrimaryAttribute)" />
+                <PropertyColumn Title="Untrained" Property="@(p => p.Untrained)" />
+                <PropertyColumn Title="Trained" Property="@(p => p.Trained)" />
+                <TemplateColumn Title="Actions">
+                    <a href="/gamemaster/skills/@context.Id">Edit</a>
+                    @if (context.CanBeDeleted)
+                    {
+                        <text> | </text>
+                        <a href="/gamemaster/skills/@context.Id/delete" class="text-negative">Delete</a>
+                    }
+                    else
+                    {
+                        <text> | </text>
+                        <span class="text-neutral" title="Core attribute skills cannot be deleted">Delete</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+    </div>
 }
 
 @code {

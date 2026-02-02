@@ -9,60 +9,81 @@
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
-<h3>Manage Magic Schools</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Manage Magic Schools</strong>
+        @if (schools != null)
+        {
+            <span class="item-meta ms-3">@schools.Count() schools defined</span>
+        }
+    </div>
+    <a href="/gamemaster/magicschools/new" class="btn btn-primary btn-sm">Add New School</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <div>Loading...</div>
-    <img src="images/busy.gif" class="busy-animation" />
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading magic schools...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
 }
 else
 {
-    <a href="/gamemaster/magicschools/new" class="btn btn-primary mb-3">Add New School</a>
-    
-    <QuickGrid Items="schools">
-        <TemplateColumn Title="Color">
-            <div style="width: 30px; height: 30px; background-color: @context.ColorCode; border: 1px solid #ccc; border-radius: 4px;"></div>
-        </TemplateColumn>
-        <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
-        <PropertyColumn Title="Description" Property="@(p => p.ShortDescription)" />
-        <PropertyColumn Title="Order" Property="@(p => p.DisplayOrder)" Sortable="true" />
-        <TemplateColumn Title="Type">
-            @if (context.IsCore)
-            {
-                <span class="badge bg-primary">Core</span>
-            }
-            else
-            {
-                <span class="badge bg-secondary">Custom</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Title="Status">
-            @if (context.IsActive)
-            {
-                <span class="badge bg-success">Active</span>
-            }
-            else
-            {
-                <span class="badge bg-warning">Inactive</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Title="Actions">
-            <a href="/gamemaster/magicschools/@context.Id">Edit</a>
-            @if (context.CanBeDeleted)
-            {
-                <text> | </text>
-                <a href="/gamemaster/magicschools/@context.Id/delete" class="btn btn-link btn-sm">Delete</a>
-            }
-            else
-            {
-                <text> | </text>
-                <span class="text-muted" title="Core magic schools cannot be deleted">Delete</span>
-            }
-        </TemplateColumn>
-    </QuickGrid>
+    <div class="card">
+        <div class="card-body p-0">
+            <QuickGrid Items="schools" Class="table table-hover">
+                <TemplateColumn Title="Color">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 24px; height: 24px; background-color: @context.ColorCode; border: 1px solid var(--color-card-border); border-radius: 4px;"></div>
+                        <span class="item-meta">@context.ColorCode</span>
+                    </div>
+                </TemplateColumn>
+                <PropertyColumn Title="Name" Property="@(p => p.Name)" Sortable="true" />
+                <PropertyColumn Title="Description" Property="@(p => p.ShortDescription)" />
+                <PropertyColumn Title="Order" Property="@(p => p.DisplayOrder)" Sortable="true" />
+                <TemplateColumn Title="Type">
+                    @if (context.IsCore)
+                    {
+                        <span class="badge-purple">Core</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Custom</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Status">
+                    @if (context.IsActive)
+                    {
+                        <span class="text-positive">Active</span>
+                    }
+                    else
+                    {
+                        <span class="text-negative">Inactive</span>
+                    }
+                </TemplateColumn>
+                <TemplateColumn Title="Actions">
+                    <a href="/gamemaster/magicschools/@context.Id">Edit</a>
+                    @if (context.CanBeDeleted)
+                    {
+                        <text> | </text>
+                        <a href="/gamemaster/magicschools/@context.Id/delete" class="text-negative">Delete</a>
+                    }
+                    else
+                    {
+                        <text> | </text>
+                        <span class="text-neutral" title="Core magic schools cannot be deleted">Delete</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+    </div>
 }
 
 @code {

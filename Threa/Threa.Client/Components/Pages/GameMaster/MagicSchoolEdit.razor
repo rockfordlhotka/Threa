@@ -12,22 +12,46 @@
 @inject Threa.Services.RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 
-<h3>@(IsNewSchool ? "Add New Magic School" : "Edit Magic School")</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>@(IsNewSchool ? "Add New Magic School" : $"Edit: {vm.Model?.Name ?? "School"}")</strong>
+        @if (vm.Model != null)
+        {
+            <span class="badge ms-2 @(vm.Model.IsActive ? "bg-success" : "bg-warning")">
+                @(vm.Model.IsActive ? "Active" : "Inactive")
+            </span>
+            @if (vm.Model.IsCore)
+            {
+                <span class="badge-purple ms-1">Core</span>
+            }
+        }
+    </div>
+    <a href="/gamemaster/magicschools" class="btn btn-outline-secondary btn-sm">Back to Magic Schools</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <p>Loading...</p>
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta">Loading magic school...</div>
+        </div>
+    </div>
 }
 else
 {
-    <table>
-        <thead>
-            <tr><th></th><th></th></tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="2"><h4>Basic Information</h4></td></tr>
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                    <tr><th></th><th></th></tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="2"><div class="info-box card-header-purple"><strong>Basic Information</strong></div></td></tr>
             
             @if (IsNewSchool)
             {
@@ -51,8 +75,8 @@ else
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ShortDescription)" />
             <TextAreaRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Description)" />
 
-            <tr><td colspan="2"><hr /></td></tr>
-            <tr><td colspan="2"><h4>Visual Properties</h4></td></tr>
+                    <tr><td colspan="2"><hr /></td></tr>
+                    <tr><td colspan="2"><div class="info-box"><strong>Visual Properties</strong></div></td></tr>
 
             <tr>
                 <td>Color Code</td>
@@ -67,8 +91,8 @@ else
 
             <TextInputRow Property="vm.GetPropertyInfo<string?>(() => vm.Model.IconUrl)" />
 
-            <tr><td colspan="2"><hr /></td></tr>
-            <tr><td colspan="2"><h4>Configuration</h4></td></tr>
+                    <tr><td colspan="2"><hr /></td></tr>
+                    <tr><td colspan="2"><div class="info-box"><strong>Configuration</strong></div></td></tr>
 
             <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.ManaSkillId)" />
             <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.DisplayOrder)" />
@@ -87,23 +111,25 @@ else
                 </tr>
             }
 
-            <tr><td colspan="2"><hr /></td></tr>
-            <tr><td colspan="2">
-                <div class="alert alert-info">
-                    <strong>Note:</strong> After creating a magic school, you'll need to:
-                    <ul class="mb-0">
-                        <li>Create a corresponding mana skill (e.g., "shadow-mana")</li>
-                        <li>Create spell skills for this school</li>
-                        <li>Update spell definitions to use this school</li>
-                    </ul>
-                </div>
-            </td></tr>
-        </tbody>
-    </table>
-    
-    <div class="mt-3">
-        <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
-        <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+                    <tr><td colspan="2"><hr /></td></tr>
+                    <tr><td colspan="2">
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> After creating a magic school, you'll need to:
+                            <ul class="mb-0">
+                                <li>Create a corresponding mana skill (e.g., "shadow-mana")</li>
+                                <li>Create spell skills for this school</li>
+                                <li>Update spell definitions to use this school</li>
+                            </ul>
+                        </div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer">
+            <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+            <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+        </div>
     </div>
 }
 

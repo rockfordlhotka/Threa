@@ -13,37 +13,66 @@
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
-<h3>Manage Items</h3>
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Manage Items</strong>
+        @if (filteredItems != null)
+        {
+            <span class="item-meta ms-3">Showing @filteredItems.Count() of @(allItems?.Count() ?? 0) items</span>
+        }
+    </div>
+    <a href="/gamemaster/items/new" class="btn btn-primary btn-sm">Add New Item</a>
+</div>
 
-<div class="alert-danger">@vm.ViewModelErrorText</div>
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
 
 @if (vm.Model == null)
 {
-    <div>Loading...</div>
-    <img src="images/busy.gif" class="busy-animation" />
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading items...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
 }
 else
 {
-    <a href="/gamemaster/items/new" class="btn btn-primary mb-3">Add New Item</a>
-
-    <div class="d-flex gap-3 mb-3 align-items-center">
-        <RadzenTextBox @bind-Value="@searchText" Placeholder="Search items..."
-            @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
-            Style="width: 300px" />
-        <RadzenDropDown TValue="ItemType?" Data="@itemTypes"
-            @bind-Value="@selectedType" Change="@(_ => ApplyFilters())"
-            Placeholder="Filter by Type" AllowClear="true" Style="width: 200px" />
+    <div class="card">
+        <div class="card-header d-flex gap-3 align-items-center flex-wrap">
+            <RadzenTextBox @bind-Value="@searchText" Placeholder="Search items..."
+                @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
+                Style="width: 300px" />
+            <RadzenDropDown TValue="ItemType?" Data="@itemTypes"
+                @bind-Value="@selectedType" Change="@(_ => ApplyFilters())"
+                Placeholder="Filter by Type" AllowClear="true" Style="width: 200px" />
+        </div>
+        <div class="card-body p-0">
+            <RadzenDataGrid Data="@filteredItems" TItem="ItemTemplateInfo"
+                AllowSorting="true" AllowPaging="true" PageSize="20"
+                RowSelect="@(item => NavigationManager.NavigateTo($"/gamemaster/items/{item.Id}"))"
+                Style="cursor: pointer">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="300px" />
+                    <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="ItemType" Title="Type" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="ItemTemplateInfo" Title="Status" Width="100px">
+                        <Template Context="item">
+                            @if (item.IsActive)
+                            {
+                                <span class="text-positive">Active</span>
+                            }
+                            else
+                            {
+                                <span class="text-negative">Inactive</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
     </div>
-
-    <RadzenDataGrid Data="@filteredItems" TItem="ItemTemplateInfo"
-        AllowSorting="true" AllowPaging="true" PageSize="20"
-        RowSelect="@(item => NavigationManager.NavigateTo($"/gamemaster/items/{item.Id}"))"
-        Style="cursor: pointer">
-        <Columns>
-            <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="300px" />
-            <RadzenDataGridColumn TItem="ItemTemplateInfo" Property="ItemType" Title="Type" Sortable="true" Width="150px" />
-        </Columns>
-    </RadzenDataGrid>
 }
 
 @code {
