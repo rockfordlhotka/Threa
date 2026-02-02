@@ -1,0 +1,241 @@
+@* Multi-Select Skill Picker Modal - Allows selecting multiple skills at once during character creation *@
+
+@using GameMechanics.Reference
+@using Radzen
+
+@inject IDataPortal<SkillList> skillListPortal
+@inject DialogService DialogService
+
+<div class="skill-multi-picker-modal">
+    <!-- Search box -->
+    <div class="mb-2">
+        <input type="text"
+               class="form-control form-control-sm"
+               placeholder="Search skills..."
+               @bind="searchText"
+               @bind:event="oninput" />
+    </div>
+
+    <!-- Category filter -->
+    <div class="mb-2">
+        <div class="btn-group btn-group-sm flex-wrap" role="group">
+            <button type="button"
+                    class="btn btn-sm @(selectedCategory == null ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => selectedCategory = null">
+                All
+            </button>
+            @foreach (var category in availableCategories)
+            {
+                <button type="button"
+                        class="btn btn-sm @(selectedCategory == category ? "btn-primary" : "btn-outline-primary")"
+                        @onclick="() => selectedCategory = category">
+                    @category
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Sort options -->
+    <div class="mb-2 d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Sort by:</label>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button"
+                    class="btn btn-sm @(sortBy == SortOption.Name ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => sortBy = SortOption.Name">
+                Name
+            </button>
+            <button type="button"
+                    class="btn btn-sm @(sortBy == SortOption.Attribute ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => sortBy = SortOption.Attribute">
+                Attribute
+            </button>
+            <button type="button"
+                    class="btn btn-sm @(sortBy == SortOption.Category ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => sortBy = SortOption.Category">
+                Category
+            </button>
+        </div>
+    </div>
+
+    <!-- Selected count indicator -->
+    @if (selectedSkillIds.Count > 0)
+    {
+        <div class="mb-2 small text-primary">
+            <strong>@selectedSkillIds.Count</strong> skill(s) selected
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading skills...</span>
+            </div>
+        </div>
+    }
+    else if (filteredSkills.Any())
+    {
+        <!-- Skills list with checkboxes -->
+        <div class="skill-list" style="max-height: 350px; overflow-y: auto;">
+            @foreach (var skill in sortedSkills)
+            {
+                var isSelected = selectedSkillIds.Contains(skill.Id);
+                <div class="skill-item d-flex align-items-center gap-2 py-1 border-bottom skill-picker-row @(isSelected ? "selected" : "")"
+                     style="cursor: pointer;"
+                     @onclick="() => ToggleSkillSelection(skill)">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           checked="@isSelected"
+                           @onclick:stopPropagation="true"
+                           @onchange="() => ToggleSkillSelection(skill)" />
+                    <span class="flex-grow-1 small" title="@skill.Description">@skill.Name</span>
+                    <span class="text-muted small" style="min-width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@skill.PrimaryAttribute</span>
+                    @if (skill.IsSpecialized)
+                    {
+                        <span class="badge bg-info" style="font-size: 0.65rem;" title="Specialized skill">Spec</span>
+                    }
+                    @if (skill.IsMagic || skill.IsTheology || skill.IsPsionic)
+                    {
+                        var magicType = skill.IsMagic ? "Magic" : skill.IsTheology ? "Theology" : "Psionic";
+                        <span class="badge badge-purple" style="font-size: 0.65rem;" title="@magicType skill">@magicType</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info py-2 small">
+            <i class="bi bi-info-circle me-1"></i>
+            @if (!string.IsNullOrEmpty(searchText) || selectedCategory != null)
+            {
+                <span>No skills match your filter criteria.</span>
+            }
+            else
+            {
+                <span>No skills available to add.</span>
+            }
+        </div>
+    }
+
+    <!-- Action buttons -->
+    <div class="mt-3 d-flex justify-content-between">
+        <button class="btn btn-secondary btn-sm" @onclick="Cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm"
+                @onclick="AddSelectedSkills"
+                disabled="@(selectedSkillIds.Count == 0)">
+            Add @(selectedSkillIds.Count > 0 ? $"{selectedSkillIds.Count} " : "")Skill(s)
+        </button>
+    </div>
+</div>
+
+<style>
+    .skill-picker-row:hover {
+        background-color: var(--bs-tertiary-bg);
+    }
+    .skill-picker-row.selected {
+        background-color: var(--bs-primary-bg-subtle);
+    }
+    .skill-multi-picker-modal .form-check-input {
+        margin-top: 0;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Skill Names the character already has (to exclude from picker).
+    /// </summary>
+    [Parameter]
+    public HashSet<string> ExistingSkillNames { get; set; } = new();
+
+    /// <summary>
+    /// If true, filter out magic/theology/psionic skills.
+    /// </summary>
+    [Parameter]
+    public bool ExcludeMagicSkills { get; set; } = true;
+
+    private enum SortOption { Name, Attribute, Category }
+
+    private bool isLoading = true;
+    private List<SkillInfo> allSkills = new();
+    private string searchText = "";
+    private string? selectedCategory;
+    private SortOption sortBy = SortOption.Name;
+    private HashSet<string> selectedSkillIds = new();
+
+    private IEnumerable<SkillInfo> filteredSkills => allSkills
+        .Where(s => !ExistingSkillNames.Contains(s.Name))
+        .Where(s => !s.IsStandard)
+        .Where(s => !ExcludeMagicSkills || (!s.IsMagic && !s.IsTheology && !s.IsPsionic))
+        .Where(s => string.IsNullOrEmpty(searchText) ||
+                    s.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    s.PrimaryAttribute.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(s.Description) && s.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)))
+        .Where(s => selectedCategory == null || GetCategoryDisplay(s) == selectedCategory);
+
+    private IEnumerable<SkillInfo> sortedSkills => sortBy switch
+    {
+        SortOption.Name => filteredSkills.OrderBy(s => s.Name),
+        SortOption.Attribute => filteredSkills.OrderBy(s => s.PrimaryAttribute).ThenBy(s => s.Name),
+        SortOption.Category => filteredSkills.OrderBy(s => GetCategoryDisplay(s)).ThenBy(s => s.Name),
+        _ => filteredSkills.OrderBy(s => s.Name)
+    };
+
+    private IEnumerable<string> availableCategories => allSkills
+        .Where(s => !ExistingSkillNames.Contains(s.Name))
+        .Where(s => !s.IsStandard)
+        .Where(s => !ExcludeMagicSkills || (!s.IsMagic && !s.IsTheology && !s.IsPsionic))
+        .Select(GetCategoryDisplay)
+        .Distinct()
+        .OrderBy(c => c);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var skillList = await skillListPortal.FetchAsync();
+            allSkills = skillList.ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetCategoryDisplay(SkillInfo skill)
+    {
+        if (skill.IsMagic) return "Magic";
+        if (skill.IsTheology) return "Theology";
+        if (skill.IsPsionic) return "Psionic";
+        if (skill.IsSpecialized) return "Specialized";
+        return "General";
+    }
+
+    private void ToggleSkillSelection(SkillInfo skill)
+    {
+        if (selectedSkillIds.Contains(skill.Id))
+        {
+            selectedSkillIds.Remove(skill.Id);
+        }
+        else
+        {
+            selectedSkillIds.Add(skill.Id);
+        }
+    }
+
+    private void AddSelectedSkills()
+    {
+        // Return the list of selected skill identifiers (Id if available, else Name)
+        var selectedSkills = allSkills
+            .Where(s => selectedSkillIds.Contains(s.Id))
+            .Select(s => !string.IsNullOrEmpty(s.Id) ? s.Id : s.Name)
+            .ToList();
+
+        DialogService.Close(selectedSkills);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}
