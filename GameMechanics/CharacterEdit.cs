@@ -360,6 +360,30 @@ namespace GameMechanics
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsNpcProperty = RegisterProperty<bool>(nameof(IsNpc));
+    [Display(Name = "Is NPC")]
+    public bool IsNpc
+    {
+      get => GetProperty(IsNpcProperty);
+      set => SetProperty(IsNpcProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsTemplateProperty = RegisterProperty<bool>(nameof(IsTemplate));
+    [Display(Name = "Is Template")]
+    public bool IsTemplate
+    {
+      get => GetProperty(IsTemplateProperty);
+      set => SetProperty(IsTemplateProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> VisibleToPlayersProperty = RegisterProperty<bool>(nameof(VisibleToPlayers));
+    [Display(Name = "Visible to Players")]
+    public bool VisibleToPlayers
+    {
+      get => GetProperty(VisibleToPlayersProperty);
+      set => SetProperty(VisibleToPlayersProperty, value);
+    }
+
     public static readonly PropertyInfo<long> CurrentGameTimeSecondsProperty = RegisterProperty<long>(nameof(CurrentGameTimeSeconds));
     /// <summary>
     /// Current game time in seconds from epoch 0.
@@ -858,6 +882,7 @@ namespace GameMechanics
         Fatigue = fatPortal.CreateChild(this);
         Vitality = vitPortal.CreateChild(this);
         ActionPoints = actionPointsPortal.CreateChild(this);
+        VisibleToPlayers = true;
       }
       BusinessRules.CheckRules();
       
