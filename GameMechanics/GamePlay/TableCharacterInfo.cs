@@ -200,6 +200,47 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
         private set => LoadProperty(ConcentrationNameProperty, value);
     }
 
+    // NPC-specific properties for dashboard display
+    public static readonly PropertyInfo<bool> IsNpcProperty = RegisterProperty<bool>(nameof(IsNpc));
+    /// <summary>
+    /// Whether this character is an NPC (vs a player character).
+    /// </summary>
+    public bool IsNpc
+    {
+        get => GetProperty(IsNpcProperty);
+        private set => LoadProperty(IsNpcProperty, value);
+    }
+
+    public static readonly PropertyInfo<NpcDisposition> DispositionProperty = RegisterProperty<NpcDisposition>(nameof(Disposition));
+    /// <summary>
+    /// The NPC's disposition toward players (Hostile, Neutral, Friendly).
+    /// </summary>
+    public NpcDisposition Disposition
+    {
+        get => GetProperty(DispositionProperty);
+        private set => LoadProperty(DispositionProperty, value);
+    }
+
+    public static readonly PropertyInfo<int?> SourceTemplateIdProperty = RegisterProperty<int?>(nameof(SourceTemplateId));
+    /// <summary>
+    /// ID of the template this NPC was spawned from (null for PCs/templates).
+    /// </summary>
+    public int? SourceTemplateId
+    {
+        get => GetProperty(SourceTemplateIdProperty);
+        private set => LoadProperty(SourceTemplateIdProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> SourceTemplateNameProperty = RegisterProperty<string?>(nameof(SourceTemplateName));
+    /// <summary>
+    /// Name of the source template for display (e.g., "From: Goblin Warrior").
+    /// </summary>
+    public string? SourceTemplateName
+    {
+        get => GetProperty(SourceTemplateNameProperty);
+        private set => LoadProperty(SourceTemplateNameProperty, value);
+    }
+
     public string ConnectionStatusDisplay => ConnectionStatus switch
     {
         ConnectionStatus.Connected => "Connected",
@@ -277,6 +318,12 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
                     ConcentrationName = concentrationEffect.Name;
                 }
             }
+
+            // NPC-specific properties
+            IsNpc = character.IsNpc;
+            Disposition = character.DefaultDisposition;
+            SourceTemplateId = character.SourceTemplateId;
+            SourceTemplateName = character.SourceTemplateName;
         }
 
         // Load GM notes from table character record
