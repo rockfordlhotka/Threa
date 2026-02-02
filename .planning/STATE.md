@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 24 - NPC Template System (in progress)
-Plan: 01 of 5
+Plan: 02 of 5
 Status: In progress
-Last activity: 2026-02-02 -- Completed 24-01-PLAN.md (NPC Template Data Model)
+Last activity: 2026-02-02 -- Completed 24-02-PLAN.md (NPC Template Business Objects)
 
-Progress: [███░░░░░░░░░░░░░░░░░] 15%
+Progress: [████░░░░░░░░░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 61
-- Average duration: 9.1 min
-- Total execution time: 10 hours 4 min
+- Total plans completed: 62
+- Average duration: 9.0 min
+- Total execution time: 10 hours 7 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [███░░░░░░░░░░░░░░░░░] 15%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 2 | 3 | 13 min | 4.3 min |
+| v1.5 | 2 | 4 | 16 min | 4.0 min |
 
 ## Accumulated Context
 
@@ -57,6 +57,10 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - DifficultyRating uses average combat AS + health modifier - 10 normalization
 - GetNpcCategoriesAsync reuses GetNpcTemplatesAsync with memory filtering
 
+**Plan 24-02 Decision:**
+- IsActive property on NpcTemplateInfo maps from VisibleToPlayers (true = active)
+- TagList computed property returns IEnumerable<string> for LINQ flexibility
+
 ### Pending Todos
 
 None.
@@ -73,9 +77,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 24-01-PLAN.md
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
-Next action: Execute 24-02-PLAN.md (NPC Template Library Grid View)
+Next action: Execute 24-03-PLAN.md (NPC Template Library Grid View)
 
 ---
-*v1.5 Milestone -- Phase 24 plan 01 complete, ready for plan 02*
+*v1.5 Milestone -- Phase 24 plan 02 complete, ready for plan 03*
