@@ -620,8 +620,6 @@ public class TableDal : ITableDal
             if (tableChar == null)
                 return; // Invalid data - silently ignore
 
-            reader.Close();
-
             // Update the connection status and last activity
             tableChar.ConnectionStatus = status;
             tableChar.LastActivity = lastActivity;
@@ -638,7 +636,7 @@ public class TableDal : ITableDal
         catch (Exception ex)
         {
             // Log but don't throw - connection tracking is not critical
-            Console.WriteLine($"[TableDal] Error updating character connection status: {ex.Message}");
+            Console.WriteLine($"[TableDal] Error updating character connection status: {ex}");
         }
     }
 }

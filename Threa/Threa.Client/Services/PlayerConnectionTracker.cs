@@ -94,7 +94,7 @@ public class PlayerConnectionTracker
     {
         lock (_lock)
         {
-            return _characterCircuits.ContainsKey(characterId) && _characterCircuits[characterId].Count > 0;
+            return _characterCircuits.ContainsKey(characterId);
         }
     }
 
@@ -114,7 +114,7 @@ public class PlayerConnectionTracker
         catch (Exception ex)
         {
             // Log error but don't throw - connection tracking is not critical
-            Console.WriteLine($"[PlayerConnectionTracker] Error updating connection status: {ex.Message}");
+            Console.WriteLine($"[PlayerConnectionTracker] Error updating connection status: {ex}");
         }
     }
 

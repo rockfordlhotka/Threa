@@ -25,11 +25,11 @@ public class ActiveCircuitHandler : CircuitHandler
         return base.OnCircuitOpenedAsync(circuit, cancellationToken);
     }
 
-    public override Task OnCircuitClosedAsync(Circuit circuit, CancellationToken cancellationToken)
+    public override async Task OnCircuitClosedAsync(Circuit circuit, CancellationToken cancellationToken)
     {
         _state.CircuitExists = false;
         // Unregister any connections associated with this circuit
-        _ = _connectionTracker.UnregisterConnectionAsync(circuit.Id);
-        return base.OnCircuitClosedAsync(circuit, cancellationToken);
+        await _connectionTracker.UnregisterConnectionAsync(circuit.Id);
+        return;
     }
 }
