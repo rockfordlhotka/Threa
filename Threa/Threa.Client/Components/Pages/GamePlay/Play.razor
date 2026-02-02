@@ -11,6 +11,7 @@
 @using Threa.Services
 @using Threa.Client.Components.Shared
 @using Threa.Client.Components.Pages.GamePlay.Targeting
+@using Radzen
 
 @inject Csla.Blazor.State.StateManager StateManager
 @inject ITargetingInteractionManager TargetingManager
@@ -31,6 +32,7 @@
 @using Threa.Dal
 
 @inject ITableDal TableDal
+@inject DialogService DialogService
 
 <PageTitle>Threa - Play</PageTitle>
 
@@ -77,12 +79,16 @@ else
                     @if (!string.IsNullOrEmpty(character.ImageUrl))
                     {
                         <img src="@character.ImageUrl" alt="@character.Name"
-                             class="rounded" style="width: 48px; height: 48px; object-fit: cover;" />
+                             class="rounded" style="width: 48px; height: 48px; object-fit: cover; cursor: pointer;"
+                             @onclick="OpenChangeImageModal"
+                             title="Click to change image" />
                     }
                     else
                     {
                         <div class="rounded d-flex align-items-center justify-content-center"
-                             style="width: 48px; height: 48px; background: var(--color-bg-tertiary); font-size: 1.5rem;">
+                             style="width: 48px; height: 48px; background: var(--color-bg-tertiary); font-size: 1.5rem; cursor: pointer;"
+                             @onclick="OpenChangeImageModal"
+                             title="Click to add image">
                             @(character.Name.FirstOrDefault())
                         </div>
                     }
@@ -1536,5 +1542,41 @@ private async Task LoadTableCharactersAsync()
                 IsNPC = false // TableCharacters are player characters, not NPCs
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Opens modal to change character image.
+    /// </summary>
+    private async Task OpenChangeImageModal()
+    {
+        if (character == null) return;
+
+        var result = await DialogService.OpenAsync<ChangeImageModal>(
+            "Change Character Image",
+            new Dictionary<string, object>
+            {
+                { "CurrentImageUrl", character.ImageUrl ?? string.Empty }
+            },
+            new DialogOptions
+            {
+                Width = "500px",
+                Resizable = true,
+                Draggable = true
+            }
+        );
+
+        if (result is string newImageUrl && !string.IsNullOrEmpty(newImageUrl))
+        {
+            character.ImageUrl = newImageUrl;
+            try
+            {
+                await characterPortal.UpdateAsync(character);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to save character image: {ex.Message}";
+            }
+        }
     }
 }
