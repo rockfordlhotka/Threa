@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 25 - NPC Creation & Dashboard
-Plan: 02 of 5
+Plan: 03 of 5
 Status: In progress
-Last activity: 2026-02-02 -- Completed 25-02-PLAN.md (NPC Auto-Naming Service)
+Last activity: 2026-02-02 -- Completed 25-03-PLAN.md (NPC Spawner Command)
 
-Progress: [██████████░░░░░░░░░░] 52%
+Progress: [███████████░░░░░░░░░] 56%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 67
-- Average duration: 8.5 min
-- Total execution time: 10 hours 33 min
+- Total plans completed: 68
+- Average duration: 8.4 min
+- Total execution time: 10 hours 36 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [██████████░░░░░░░░░░] 52%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 3 | 9 | 42 min | 4.7 min |
+| v1.5 | 3 | 10 | 45 min | 4.5 min |
 
 ## Accumulated Context
 
@@ -84,6 +84,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Service registered as Scoped for per-session counter state
 - Prefix extraction from customized names updates future spawns
 
+**Plan 25-03 Decision:**
+- NpcSpawner uses SaveCharacterAsync (Id=0 triggers insert)
+- Spawned NPCs get IsPlayable=true immediately (no activation needed)
+- Health pools and AP start at max (full health, full AP)
+
 ### Pending Todos
 
 None.
@@ -100,9 +105,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 25-02-PLAN.md (NPC Auto-Naming Service)
+Stopped at: Completed 25-03-PLAN.md (NPC Spawner Command)
 Resume file: None
-Next action: Execute 25-03-PLAN.md (Spawn NPC Modal)
+Next action: Execute 25-04-PLAN.md (Spawn NPC Modal)
 
 ---
 *v1.5 Milestone -- Phase 25 in progress*
