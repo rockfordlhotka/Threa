@@ -1,6 +1,7 @@
 @* Modal for changing character image URL *@
 
 @using Radzen
+@using Microsoft.AspNetCore.Components
 
 @inject DialogService DialogService
 
@@ -49,6 +50,7 @@
 
 @code {
     [Parameter]
+    [EditorRequired]
     public string CurrentImageUrl { get; set; } = string.Empty;
 
     private string imageUrl = string.Empty;
