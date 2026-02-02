@@ -75,6 +75,16 @@ Plans:
 
 **Dependencies:** Phase 24 (templates exist to spawn from)
 
+**Plans:** 6 plans
+
+Plans:
+- [ ] 25-01-PLAN.md — Data model extensions (SourceTemplateId/Name, TableCharacterInfo NPC fields)
+- [ ] 25-02-PLAN.md — NPC auto-naming service with global counter and prefix memory
+- [ ] 25-03-PLAN.md — NPC spawner CSLA command (clone template to new character)
+- [ ] 25-04-PLAN.md — Spawn modal UI with template library integration
+- [ ] 25-05-PLAN.md — Dashboard NPC section with disposition grouping
+- [ ] 25-06-PLAN.md — Integration: dashboard spawn button and end-to-end workflow
+
 **Requirements:**
 - CRTN-01: GM can quick-create NPC from template
 - CRTN-02: NPCs have full character stats (same model as PCs)
@@ -194,3 +204,4 @@ Plans:
 *Phase 23 complete: 2026-02-01*
 *Phase 24 planned: 2026-02-02*
 *Phase 24 complete: 2026-02-02*
+*Phase 25 planned: 2026-02-02*
