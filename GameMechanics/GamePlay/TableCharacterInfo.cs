@@ -241,6 +241,17 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
         private set => LoadProperty(SourceTemplateNameProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> VisibleToPlayersProperty = RegisterProperty<bool>(nameof(VisibleToPlayers));
+    /// <summary>
+    /// Whether this NPC is visible to players (false = hidden for surprise).
+    /// Always true for PCs.
+    /// </summary>
+    public bool VisibleToPlayers
+    {
+        get => GetProperty(VisibleToPlayersProperty);
+        private set => LoadProperty(VisibleToPlayersProperty, value);
+    }
+
     public string ConnectionStatusDisplay => ConnectionStatus switch
     {
         ConnectionStatus.Connected => "Connected",
@@ -324,6 +335,7 @@ public class TableCharacterInfo : ReadOnlyBase<TableCharacterInfo>
             Disposition = character.DefaultDisposition;
             SourceTemplateId = character.SourceTemplateId;
             SourceTemplateName = character.SourceTemplateName;
+            VisibleToPlayers = character.VisibleToPlayers;
         }
 
         // Load GM notes from table character record
