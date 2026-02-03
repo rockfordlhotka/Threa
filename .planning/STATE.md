@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 26 - Visibility & Lifecycle
-Plan: 03 of 3
-Status: Phase complete
-Last activity: 2026-02-03 -- Completed 26-03-PLAN.md (NPC Lifecycle)
+Plan: 04 of 5
+Status: In progress
+Last activity: 2026-02-03 -- Completed 26-04-PLAN.md (NPC Archive Browser)
 
-Progress: [████████████████████░] 99% (74/75 plans)
+Progress: [████████████████████░] 99% (75/76 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 74
-- Average duration: 8.2 min
-- Total execution time: 11 hours 25 min
+- Total plans completed: 75
+- Average duration: 8.1 min
+- Total execution time: 11 hours 30 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████████████████░] 99% 
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 4 | 15 | 94 min | 6.3 min |
+| v1.5 | 4 | 16 | 99 min | 6.2 min |
 
 ## Accumulated Context
 
@@ -118,6 +118,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Delete requires confirmation dialog per CONTEXT.md specification
 - DAL methods already existed from Phase 25 (no Task 2 changes needed)
 
+**Plan 26-04 Decision:**
+- Restored NPCs return in hidden state (VisibleToPlayers = false) per CONTEXT.md
+- GetActiveTablesAsync already existed in ITableDal - no DAL changes required
+- Used GameTable DTO with local GetTableStatusDisplay helper for status rendering
+
 ### Pending Todos
 
 None.
@@ -134,9 +139,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 26-03-PLAN.md (NPC Lifecycle)
+Stopped at: Completed 26-04-PLAN.md (NPC Archive Browser)
 Resume file: None
-Next action: Phase 26 complete - ready for milestone wrap-up
+Next action: Execute 26-05-PLAN.md (Save as Template)
 
 ---
-*v1.5 Milestone -- Phase 26 complete*
+*v1.5 Milestone -- Phase 26 in progress*
