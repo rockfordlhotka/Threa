@@ -384,6 +384,14 @@ namespace GameMechanics
       set => SetProperty(VisibleToPlayersProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsArchivedProperty = RegisterProperty<bool>(nameof(IsArchived));
+    [Display(Name = "Is Archived")]
+    public bool IsArchived
+    {
+      get => GetProperty(IsArchivedProperty);
+      set => SetProperty(IsArchivedProperty, value);
+    }
+
     // Template organization properties (for NPC templates)
 
     public static readonly PropertyInfo<string?> CategoryProperty = RegisterProperty<string?>(nameof(Category));
