@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 26 - Visibility & Lifecycle
-Plan: 02 of 3
-Status: In progress
-Last activity: 2026-02-03 -- Completed 26-02-PLAN.md (GM Visibility Toggle)
+Plan: 03 of 3
+Status: Phase complete
+Last activity: 2026-02-03 -- Completed 26-03-PLAN.md (NPC Lifecycle)
 
-Progress: [████████████████████░] 97% (73/75 plans)
+Progress: [████████████████████░] 99% (74/75 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73
-- Average duration: 8.3 min
-- Total execution time: 11 hours 19 min
+- Total plans completed: 74
+- Average duration: 8.2 min
+- Total execution time: 11 hours 25 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████████████████░] 97% 
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 4 | 15 | 88 min | 5.9 min |
+| v1.5 | 4 | 15 | 94 min | 6.3 min |
 
 ## Accumulated Context
 
@@ -113,6 +113,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Spawned NPCs start hidden (VisibleToPlayers = false) for surprise encounters
 - Use CharacterUpdateType.General for visibility changes (StatusChange not in enum)
 
+**Plan 26-03 Decision:**
+- Archive is instant (no confirmation) per CONTEXT.md specification
+- Delete requires confirmation dialog per CONTEXT.md specification
+- DAL methods already existed from Phase 25 (no Task 2 changes needed)
+
 ### Pending Todos
 
 None.
@@ -129,9 +134,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 26-02-PLAN.md (GM Visibility Toggle)
+Stopped at: Completed 26-03-PLAN.md (NPC Lifecycle)
 Resume file: None
-Next action: Execute 26-03-PLAN.md (NPC Lifecycle)
+Next action: Phase 26 complete - ready for milestone wrap-up
 
 ---
-*v1.5 Milestone -- Phase 26 in progress*
+*v1.5 Milestone -- Phase 26 complete*
