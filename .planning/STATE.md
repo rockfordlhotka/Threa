@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Milestone: v1.5 NPC Management System
-Phase: 25 - NPC Creation & Dashboard
-Plan: 06 of 6 (complete)
-Status: Phase complete
-Last activity: 2026-02-02 -- Completed 25-06-PLAN.md (Spawn NPC Integration)
+Phase: 26 - Visibility & Lifecycle
+Plan: 01 of 3
+Status: In progress
+Last activity: 2026-02-03 -- Completed 26-01-PLAN.md (Data Model Extensions)
 
-Progress: [████████████████████] 100%
+Progress: [████████████████████░] 96% (72/75 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71
+- Total plans completed: 72
 - Average duration: 8.3 min
-- Total execution time: 11 hours 1 min
+- Total execution time: 11 hours 11 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████████████████] 100%
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 3 | 13 | 70 min | 5.4 min |
+| v1.5 | 4 | 14 | 80 min | 5.7 min |
 
 ## Accumulated Context
 
@@ -104,6 +104,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Spawn button in NPC section header alongside count badge
 - Auto-generated name shown in spawn modal with customization option
 
+**Plan 26-01 Decision:**
+- VisibleToPlayers populated from Character DTO in TableCharacterInfo Fetch
+- IsArchived property added to both DTO and CharacterEdit for full round-trip
+- GetArchivedNpcsAsync uses memory filtering pattern matching GetNpcTemplatesAsync
+
 ### Pending Todos
 
 None.
@@ -119,10 +124,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Completed 25-06-PLAN.md (Spawn NPC Integration)
+Last session: 2026-02-03
+Stopped at: Completed 26-01-PLAN.md (Data Model Extensions)
 Resume file: None
-Next action: Phase 25 complete. Ready for next milestone planning.
+Next action: Execute 26-02-PLAN.md (GM Visibility Toggle)
 
 ---
-*v1.5 Milestone -- Phase 25 complete*
+*v1.5 Milestone -- Phase 26 in progress*
