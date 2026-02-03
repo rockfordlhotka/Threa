@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 26 - Visibility & Lifecycle
-Plan: 01 of 3
+Plan: 02 of 3
 Status: In progress
-Last activity: 2026-02-03 -- Completed 26-01-PLAN.md (Data Model Extensions)
+Last activity: 2026-02-03 -- Completed 26-02-PLAN.md (GM Visibility Toggle)
 
-Progress: [████████████████████░] 96% (72/75 plans)
+Progress: [████████████████████░] 97% (73/75 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 72
+- Total plans completed: 73
 - Average duration: 8.3 min
-- Total execution time: 11 hours 11 min
+- Total execution time: 11 hours 19 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████████████████░] 96% 
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 4 | 14 | 80 min | 5.7 min |
+| v1.5 | 4 | 15 | 88 min | 5.9 min |
 
 ## Accumulated Context
 
@@ -109,6 +109,10 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - IsArchived property added to both DTO and CharacterEdit for full round-trip
 - GetArchivedNpcsAsync uses memory filtering pattern matching GetNpcTemplatesAsync
 
+**Plan 26-02 Decision:**
+- Spawned NPCs start hidden (VisibleToPlayers = false) for surprise encounters
+- Use CharacterUpdateType.General for visibility changes (StatusChange not in enum)
+
 ### Pending Todos
 
 None.
@@ -125,9 +129,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 26-01-PLAN.md (Data Model Extensions)
+Stopped at: Completed 26-02-PLAN.md (GM Visibility Toggle)
 Resume file: None
-Next action: Execute 26-02-PLAN.md (GM Visibility Toggle)
+Next action: Execute 26-03-PLAN.md (NPC Lifecycle)
 
 ---
 *v1.5 Milestone -- Phase 26 in progress*
