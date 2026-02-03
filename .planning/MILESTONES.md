@@ -1,5 +1,34 @@
 # Project Milestones: Threa TTRPG Assistant
 
+## v1.4 GM Character Manipulation + Concentration System (Shipped: 2026-01-29)
+
+**Delivered:** Complete GM character manipulation powers with health management, wound tracking, effect application, inventory control, stat editing, and full concentration system mechanics.
+
+**Phases completed:** 17-22 (21 plans total)
+
+**Key accomplishments:**
+
+- Health management with theme-aware color-coded health bars and pending pool damage/healing application
+- Wound management with four severity levels, common wound templates, and header badge indicators
+- Effect management with dictionary-based modifiers, template library, and searchable picker UI
+- Inventory manipulation with item template picker, quantity prompts, and currency editing
+- Stat editing with inline attribute/skill editing, validation warnings, and dependent stat recalculation
+- Complete concentration system with casting-time progress, sustained FAT/VIT drain, Focus skill checks, linked effect removal, and UI indicators
+
+**Stats:**
+
+- 322 files modified
+- +41,092 lines of C#/Razor (47,664 insertions, 6,572 deletions)
+- 6 phases, 21 plans
+- 2 days from start to ship (2026-01-28 to 2026-01-29)
+- 52/52 requirements shipped (100%)
+
+**Git range:** ef4981c → ca216d8
+
+**What's next:** Consider NPC management system, initiative tracking, or other GM capabilities
+
+---
+
 ## v1.2 GM Table & Campaign Management (Shipped: 2026-01-28)
 
 **Delivered:** Complete campaign table and character management system with real-time GM dashboard and comprehensive time control

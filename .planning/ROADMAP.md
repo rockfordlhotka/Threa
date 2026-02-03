@@ -1,157 +1,208 @@
-# Roadmap: Threa TTRPG Assistant - v1.3 GM Character Manipulation
+# Roadmap: Threa v1.5 NPC Management System
+
+**Created:** 2026-02-01
+**Depth:** Standard
+**Phases:** 5 (Phases 23-27)
+**Requirements:** 23 total
 
 ## Overview
 
-This milestone completes GM character manipulation powers by enabling direct health management, wound tracking, effect application, inventory control, and stat editing from the GM dashboard. Building on v1.2's dashboard foundation, GMs gain full control over character state during gameplay.
-
-## Milestones
-
-- v1.0 MVP - Phases 1-7 (shipped 2026-01-26)
-- v1.1 User Management & Authentication - Phases 8-11 (shipped 2026-01-26)
-- v1.2 GM Table & Campaign Management - Phases 12-16 (shipped 2026-01-28)
-- **v1.3 GM Character Manipulation** - Phases 17-21 (in progress)
+This roadmap enables GMs to create, manage, and run NPCs in combat encounters alongside player characters. NPCs use the existing CharacterEdit model with an IsNpc flag, providing 100% feature parity with PCs. The template pattern follows the proven ItemTemplate approach for pre-session prep, while quick-spawn enables improvisation during play.
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (17, 18, 19...): Planned milestone work
-- Decimal phases (17.1, 17.2): Urgent insertions (marked with INSERTED)
+### Phase 23: Data Model Foundation
 
-Decimal phases appear between their surrounding integers in numeric order.
+**Goal:** Character model supports NPC and template flags with database schema ready for NPC features.
 
-- [x] **Phase 17: Health Management** - GM applies damage/healing to character health pools
-- [x] **Phase 18: Wound Management** - GM tracks and manages character wounds
-- [x] **Phase 19: Effect Management** - GM applies, edits, and templates character effects
-- [x] **Phase 20: Inventory Manipulation** - GM controls character inventory directly
-- [x] **Phase 21: Stat Editing** - GM modifies character attributes and skills
-- [ ] **Phase 22: Concentration System** - Implement casting time and sustained effect concentration mechanics
+**Dependencies:** None (first phase)
 
-## Phase Details
-
-### Phase 17: Health Management
-**Goal**: GM can apply damage and healing to character FAT/VIT pools through the dashboard
-**Depends on**: Phase 16 (v1.2 dashboard foundation)
-**Requirements**: HLTH-01, HLTH-02, HLTH-03, HLTH-04, HLTH-05, HLTH-06, HLTH-07
-**Success Criteria** (what must be TRUE):
-  1. GM can apply numeric damage to a character's FAT pending pool and see the update immediately
-  2. GM can apply numeric damage to a character's VIT pending pool and see the update immediately
-  3. GM can apply numeric healing to both FAT and VIT pending pools
-  4. GM can view current pool values and pending values before applying changes
-  5. Dashboard updates in real-time when damage/healing is applied
-**Plans**: 2 plans
+**Plans:** 2 plans
 
 Plans:
-- [x] 17-01-PLAN.md — Enhance PendingPoolBar with color thresholds and overheal support
-- [x] 17-02-PLAN.md — Refactor CharacterDetailGmActions to mode toggle with warnings
+- [x] 23-01-PLAN.md — Add NPC flags to Character DTO and CharacterEdit business object
+- [x] 23-02-PLAN.md — Add DAL query methods and unit tests for NPC flags
 
-### Phase 18: Wound Management
-**Goal**: GM can add, remove, and edit wounds on characters with severity tracking
-**Depends on**: Phase 17
-**Requirements**: WOND-01, WOND-02, WOND-03, WOND-04
-**Success Criteria** (what must be TRUE):
-  1. GM can add a wound to a character with severity level (minor, moderate, severe, critical) and description
-  2. GM can remove a wound from a character
-  3. GM can edit an existing wound's description and severity
-  4. GM can view all active wounds on a character with their severities
-**Plans**: 2 plans
+**Requirements:**
+- CRTN-02 (partial): NPCs have full character stats (same model as PCs)
 
-Plans:
-- [x] 18-01-PLAN.md — Extend WoundState and create wound CRUD modals
-- [x] 18-02-PLAN.md — Header wound badges and VIT damage wound prompt
+**Success Criteria:**
+1. Character table has IsNpc, IsTemplate, and VisibleToPlayers columns with migration applied
+2. CharacterEdit business object exposes IsNpc, IsTemplate, and VisibleToPlayers properties
+3. ICharacterDal has GetNpcTemplatesAsync and GetTableNpcsAsync methods defined
+4. Unit tests verify new properties persist through save/fetch cycle
 
-### Phase 19: Effect Management
-**Goal**: GM can create, apply, edit, and template effects on characters
-**Depends on**: Phase 18
-**Requirements**: EFCT-01, EFCT-02, EFCT-03, EFCT-04, EFCT-05, EFCT-06, EFCT-07, EFCT-08, EFCT-09, EFCT-10
-**Success Criteria** (what must be TRUE):
-  1. GM can add a custom effect to a character with name, description, duration, and modifiers
-  2. GM can set effect duration in rounds or turns and specify attribute/skill modifiers
-  3. GM can remove an active effect from a character
-  4. GM can edit an existing effect's duration and modifiers
-  5. GM can save an effect as a template and apply saved templates to characters
-**Plans**: 4 plans
+**Rationale:** Everything depends on the data model. Establishing CharacterEdit reuse with NPC flags prevents rework and enables all existing GM manipulation tools to work unchanged on NPCs.
+
+---
+
+### Phase 24: NPC Template System
+
+**Goal:** GMs can build and organize a library of NPC templates for pre-session encounter prep.
+
+**Dependencies:** Phase 23 (data model)
+
+**Plans:** 5 plans
 
 Plans:
-- [x] 19-01-PLAN.md — EffectState model and DAL layer for effect templates
-- [x] 19-02-PLAN.md — CSLA business objects (EffectTemplate, EffectTemplateList, GenericEffectBehavior)
-- [x] 19-03-PLAN.md — Effect management UI (EffectManagementModal, EffectFormModal)
-- [x] 19-04-PLAN.md — Template picker and Effects tab integration
+- [x] 24-01-PLAN.md — Data model extensions (NpcDisposition enum, template properties, DAL methods)
+- [x] 24-02-PLAN.md — Template list business objects (NpcTemplateInfo, NpcTemplateList)
+- [x] 24-03-PLAN.md — Template library UI page with search/filter
+- [x] 24-04-PLAN.md — Template editor UI page with clone functionality
+- [x] 24-05-PLAN.md — Polish: category autocomplete, inactive styling, difficulty badges
 
-### Phase 20: Inventory Manipulation
-**Goal**: GM can directly add, remove, and manage items in character inventory
-**Depends on**: Phase 19
-**Requirements**: INVT-01, INVT-02, INVT-03, INVT-04, INVT-05, INVT-06, INVT-07, INVT-08
-**Success Criteria** (what must be TRUE):
-  1. GM can add items from the template library to a character's inventory with quantity support
-  2. GM can remove items from a character's inventory
-  3. GM can equip/unequip items to/from character equipment slots
-  4. GM can view character inventory before making changes
-  5. Inventory changes trigger real-time dashboard updates
-**Plans**: 3 plans
+**Requirements:**
+- TMPL-01: GM can create NPC templates with full character stats
+- TMPL-02: GM can edit existing NPC templates
+- TMPL-03: GM can browse/search NPC templates (filter by category/tags)
+- TMPL-04: GM can delete/deactivate NPC templates
+- TMPL-05: NPC templates support category tags for organization
 
-Plans:
-- [x] 20-01-PLAN.md — ItemTemplatePickerModal for browsing/selecting item templates
-- [x] 20-02-PLAN.md — CharacterDetailInventory GM actions and currency editing
-- [x] 20-03-PLAN.md — (Gap closure) Fix CharacterDetailModal integration
+**Success Criteria:**
+1. GM can create a new NPC template with attributes, skills, and equipment via web UI
+2. GM can edit an existing NPC template and changes persist
+3. GM can search templates by name and filter by category tags
+4. GM can deactivate a template (soft delete) and it no longer appears in active library
+5. Template library page shows organized view with tag-based filtering
 
-### Phase 21: Stat Editing
-**Goal**: GM can directly modify character attributes and skills
-**Depends on**: Phase 20
-**Requirements**: STAT-01, STAT-02, STAT-03, STAT-04, STAT-05, STAT-06
-**Success Criteria** (what must be TRUE):
-  1. GM can edit character attribute values (STR, DEX, END, INT, ITT, WIL, PHY)
-  2. GM can edit character skill levels
-  3. Attribute changes automatically recalculate dependent stats (health pools, Ability Scores)
-  4. Skill changes automatically recalculate Ability Scores
-  5. Stat changes trigger real-time dashboard updates
-**Plans**: 2 plans
+**Rationale:** Templates enable pre-session prep and quick spawning. Following the proven ItemTemplate pattern provides consistency and reduces implementation risk.
+
+---
+
+### Phase 25: NPC Creation & Dashboard
+
+**Goal:** GMs can spawn NPCs from templates during play and see them in the dashboard with full manipulation powers.
+
+**Dependencies:** Phase 24 (templates exist to spawn from)
+
+**Plans:** 6 plans
 
 Plans:
-- [x] 21-01-PLAN.md — Attribute editing with edit mode toggle in CharacterDetailSheet
-- [x] 21-02-PLAN.md — Skill editing and CharacterDetailModal coordination
+- [x] 25-01-PLAN.md — Data model extensions (SourceTemplateId/Name, TableCharacterInfo NPC fields)
+- [x] 25-02-PLAN.md — NPC auto-naming service with global counter and prefix memory
+- [x] 25-03-PLAN.md — NPC spawner CSLA command (clone template to new character)
+- [x] 25-04-PLAN.md — Spawn modal UI with template library integration
+- [x] 25-05-PLAN.md — Dashboard NPC section with disposition grouping
+- [x] 25-06-PLAN.md — Integration: dashboard spawn button and end-to-end workflow
 
-### Phase 22: Concentration System
-**Goal**: Implement both casting-time and sustained effect concentration mechanics
-**Depends on**: Phase 21
-**Requirements**: CONC-01, CONC-02, CONC-03, CONC-04, CONC-05, CONC-06, CONC-07, CONC-08, CONC-09, CONC-10, CONC-11, CONC-12, CONC-13, CONC-14, CONC-15
-**Success Criteria** (what must be TRUE):
-  1. Casting-time concentration effects (spell casting, magazine reload) track progress per round
-  2. Casting-time concentration executes deferred action on natural completion (OnExpire)
-  3. Casting-time concentration fails without executing when interrupted (OnRemove)
-  4. Sustained concentration effects (active spells) link to spell effects on target(s)
-  5. Sustained concentration drains FAT/VIT per round while active
-  6. Breaking sustained concentration removes all linked effects from targets immediately
-  7. Only one concentration effect active per character at a time
-  8. Taking active actions prompts to break concentration with confirmation
-  9. Passive defense triggers concentration check (Focus skill vs attacker AV, with damage penalty)
-  10. Concentration automatically breaks on incapacitation or FAT/VIT reaching 0
-  11. UI displays concentration type, progress (for casting), linked effects (for sustained), and drain cost
-**Plans**: 8 plans
+**Requirements:**
+- CRTN-01: GM can quick-create NPC from template
+- CRTN-02: NPCs have full character stats (same model as PCs)
+- CRTN-03: Smart naming auto-generates unique names
+- CRTN-04: GM can add session-specific notes to individual NPC instances
+- DASH-01: NPCs appear in GM dashboard in separate section from PCs
+- DASH-02: NPC status cards show same info as PC cards
+- DASH-03: NPC detail modal provides same manipulation powers as PCs
+- DASH-04: NPCs display disposition marker with visual differentiation
 
-Plans:
-- [x] 22-01-PLAN.md — ConcentrationState schema, EffectRecord linking properties, payload classes
-- [x] 22-02-PLAN.md — ConcentrationBehavior: casting time (OnTick progress, OnExpire execution, OnRemove cleanup)
-- [x] 22-03-PLAN.md — ConcentrationBehavior: sustained effects (FAT/VIT drain, linked effect removal)
-- [x] 22-04-PLAN.md — CharacterEdit concentration methods (GetConcentrationEffect, CheckConcentration)
-- [x] 22-05-PLAN.md — ConcentrationBreakDialog component for action confirmation
-- [x] 22-06-PLAN.md — Defense integration (concentration check on passive defense with damage penalty)
-- [x] 22-07-PLAN.md — ConcentrationIndicator UI component for status display
-- [ ] 22-08-PLAN.md — (Gap closure) Action integration with ConcentrationBreakDialog
+**Success Criteria:**
+1. GM can select a template and spawn an NPC instance to the active table
+2. Spawning multiple from same template auto-generates unique names (e.g., "Goblin 1", "Goblin 2")
+3. GM dashboard shows NPCs in a separate section below player characters
+4. NPC status cards display FAT/VIT bars, wound badges, AP, and active effects
+5. Clicking an NPC status card opens CharacterDetailModal with full GM Actions tab functionality
+6. GM can set and view session-specific notes on individual NPC instances
+7. NPCs display disposition marker (Hostile/Neutral/Friendly) with distinct visual styling
+
+**Rationale:** This phase delivers the core workflow: spawn NPCs and manipulate them using existing tools. Dashboard integration validates the CharacterEdit reuse approach.
+
+---
+
+### Phase 26: Visibility & Lifecycle
+
+**Goal:** GMs can hide NPCs for surprise encounters and manage NPC persistence across sessions.
+
+**Dependencies:** Phase 25 (NPCs exist to hide/manage)
+
+**Requirements:**
+- VSBL-01: GM can toggle NPC visibility
+- VSBL-02: Hidden NPCs do not appear in player-visible views
+- VSBL-03: Visibility toggle is accessible from both status card and detail modal
+- LIFE-01: GM can remove/dismiss NPCs from active table
+- LIFE-02: NPCs persist across sessions until explicitly dismissed
+- LIFE-03: GM can save active NPC as new template
+- LIFE-04: Dismissed NPCs can be optionally deleted or archived
+
+**Success Criteria:**
+1. GM can toggle NPC visibility from both status card and detail modal
+2. Hidden NPCs show visual indicator (eye icon, dimmed styling) in GM dashboard
+3. Hidden NPCs do not appear in any player-visible targeting lists or activity feeds
+4. GM can dismiss an NPC from the active table (removes from dashboard)
+5. NPCs persist across browser refresh and session reconnect until explicitly dismissed
+6. GM can save an active NPC (with current wounds, effects, inventory) as a new template
+7. Dismiss action offers choice between delete (permanent) and archive (retrievable)
+
+**Rationale:** Visibility enables surprise encounters. Lifecycle management prevents stale NPC accumulation while preserving useful NPCs for recurring encounters.
+
+---
+
+### Phase 27: Time & Combat Integration
+
+**Goal:** NPCs participate fully in combat rounds with time advancement affecting them identically to PCs.
+
+**Dependencies:** Phase 26 (NPCs fully manageable)
+
+**Requirements:**
+- CMBT-01: NPCs participate in round/time advancement
+- CMBT-02: NPCs can be targeted by combat actions
+- CMBT-03: Time advancement applies to NPCs same as PCs
+
+**Success Criteria:**
+1. Advancing time (rounds, minutes, hours) processes NPC effects same as PC effects (expiration, stacking)
+2. NPC AP recovers on round advancement according to standard rules
+3. NPCs appear in targeting dropdown when player initiates attack action
+4. Visible NPCs (not hidden) are available as valid targets in combat
+5. NPC wounds, effects, and health pools update in real-time during time advancement
+
+**Rationale:** Full combat integration validates the architectural decision to reuse CharacterEdit. NPCs behave identically to PCs in combat, enabling GMs to run encounters without learning separate mechanics.
+
+---
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 17 -> 17.1 -> 18 -> 18.1 -> 19 -> ...
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 23 | Data Model Foundation | 1 | Complete |
+| 24 | NPC Template System | 5 | Complete |
+| 25 | NPC Creation & Dashboard | 8 | Complete |
+| 26 | Visibility & Lifecycle | 7 | Pending |
+| 27 | Time & Combat Integration | 3 | Pending |
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 17. Health Management | 2/2 | Complete | 2026-01-28 |
-| 18. Wound Management | 2/2 | Complete | 2026-01-28 |
-| 19. Effect Management | 4/4 | Complete | 2026-01-28 |
-| 20. Inventory Manipulation | 3/3 | Complete | 2026-01-29 |
-| 21. Stat Editing | 2/2 | Complete | 2026-01-29 |
-| 22. Concentration System | 8/8 | Complete | 2026-01-29 |
+**Total:** 23 requirements mapped / 23 total = 100% coverage
+
+## Requirement Coverage
+
+| Requirement | Phase | Description |
+|-------------|-------|-------------|
+| CRTN-02 | 23, 25 | Full character stats (foundation in 23, completion in 25) |
+| TMPL-01 | 24 | Create NPC templates |
+| TMPL-02 | 24 | Edit NPC templates |
+| TMPL-03 | 24 | Browse/search templates |
+| TMPL-04 | 24 | Delete/deactivate templates |
+| TMPL-05 | 24 | Template category tags |
+| CRTN-01 | 25 | Quick-create NPC from template |
+| CRTN-03 | 25 | Smart auto-naming |
+| CRTN-04 | 25 | Session-specific notes |
+| DASH-01 | 25 | NPCs in separate dashboard section |
+| DASH-02 | 25 | NPC status cards |
+| DASH-03 | 25 | NPC detail modal |
+| DASH-04 | 25 | Disposition markers |
+| VSBL-01 | 26 | Toggle NPC visibility |
+| VSBL-02 | 26 | Hidden NPCs not visible to players |
+| VSBL-03 | 26 | Visibility toggle accessible from card and modal |
+| LIFE-01 | 26 | Remove/dismiss NPCs |
+| LIFE-02 | 26 | NPCs persist across sessions |
+| LIFE-03 | 26 | Save NPC as new template |
+| LIFE-04 | 26 | Delete or archive dismissed NPCs |
+| CMBT-01 | 27 | NPCs in round/time advancement |
+| CMBT-02 | 27 | NPCs as combat targets |
+| CMBT-03 | 27 | Time advancement applies to NPCs |
 
 ---
-*Created: 2026-01-28 for v1.3 milestone*
-*Updated: 2026-01-29 to add Phase 22 (Concentration System)*
+*Roadmap created: 2026-02-01*
+*Phase 23 planned: 2026-02-01*
+*Phase 23 complete: 2026-02-01*
+*Phase 24 planned: 2026-02-02*
+*Phase 24 complete: 2026-02-02*
+*Phase 25 planned: 2026-02-02*
+*Phase 25 complete: 2026-02-02*

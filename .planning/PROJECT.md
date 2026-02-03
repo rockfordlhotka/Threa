@@ -2,36 +2,42 @@
 
 ## What This Is
 
-A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, and real-time GM dashboard with comprehensive time control.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, and concentration system for spell casting and sustained effects.
 
 ## Core Value
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: v1.3 GM Character Manipulation
+## Current Milestone: v1.5 NPC Management System
 
-**Goal:** Complete GM powers by enabling direct character manipulation - apply damage/healing, manage effects, edit stats, and manipulate inventory from the dashboard.
+**Goal:** Enable GMs to create, manage, and run NPCs in combat encounters alongside player characters.
 
 **Target features:**
-- Apply damage and healing to character health pools (FAT/VIT pending pools)
-- Add, remove, and edit effects on characters (duration, modifiers, expiration)
-- Manipulate character inventory (add/remove items directly)
-- Edit character stats and properties outside normal player restrictions
-- Support GM character manipulation workflows in the existing dashboard
+- NPC templates/library for pre-session prep
+- Quick NPC creation during play for improvisation
+- Full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
+- NPCs appear in GM dashboard in separate section from PCs
+- All v1.4 GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
+- GM chooses which NPCs persist vs dismiss after encounter
+- Visibility toggle (hide/reveal NPCs for surprise encounters)
+- Group management with individual tracking + batch actions
 
-## Recent Achievement (v1.2)
+**Success criterion:** GM can run a full combat encounter with NPCs alongside PCs.
+
+## Previous Achievements
+
+**v1.4 GM Character Manipulation + Concentration System** (shipped 2026-01-29)
+- Health management with theme-aware color-coded health bars and pending pool damage/healing
+- Wound management with four severity levels, common wound templates, and header badges
+- Effect management with dictionary-based modifiers, template library, and searchable picker
+- Inventory manipulation with item template picker, quantity prompts, and currency editing
+- Stat editing with inline attribute/skill editing, validation warnings, and dependent stat recalculation
+- Complete concentration system with casting-time progress, sustained FAT/VIT drain, Focus skill checks, linked effect removal, and UI indicators
+- 52/52 requirements shipped (100%), 6 phases, 21 plans complete
 
 **v1.2 GM Table & Campaign Management** (shipped 2026-01-28)
-- Complete campaign table and character management system
-- Player request-to-join workflow with GM review and approval
-- Real-time GM dashboard with character status cards (health, AP, wounds, effects)
-- Detailed character modal with five tabbed views (GM Actions, Sheet, Inventory, Grant Items, Narrative)
-- Context-aware time management with combat rounds and calendar time
-- 43/43 requirements satisfied, all phases complete
-
-**Previous Achievements:**
-- v1.1 User Management & Authentication (shipped 2026-01-26)
-- v1.0 Inventory & Equipment System (shipped 2026-01-26)
+**v1.1 User Management & Authentication** (shipped 2026-01-26)
+**v1.0 Inventory & Equipment System** (shipped 2026-01-26)
 
 ## Requirements
 
@@ -51,16 +57,18 @@ These capabilities exist in the codebase:
 - ✓ Play page with combat, skills, magic, defense tabs — existing
 - ✓ Equipment slots defined (MainHand, OffHand, Head, Chest, etc.) — existing
 
-**Delivered in v1.1 (2026-01-26):**
-- ✓ New users can self-register with username, password (min 6 chars), and secret Q&A — v1.1
-- ✓ First registered user automatically becomes Admin — v1.1
-- ✓ Users can reset password using secret Q&A (case-insensitive, trimmed answer) — v1.1
-- ✓ Admin can view list of all users — v1.1
-- ✓ Admin can enable/disable users (preserves data) — v1.1
-- ✓ Admin can change user roles (User/GameMaster/Admin) — v1.1
-- ✓ Users can set display name (shown in UI, separate from login username) — v1.1
-- ✓ Users can optionally provide email address — v1.1
-- ✓ User avatars display via Gravatar (based on email if provided) — v1.1
+**Delivered in v1.4 (2026-01-29):**
+- ✓ GM can apply damage/healing to characters (add to pending pools) — v1.4
+- ✓ GM can add/remove effects to/from characters — v1.4
+- ✓ GM can edit effect properties (duration, modifiers, expiration) — v1.4
+- ✓ GM can manipulate character inventory (add/remove items) — v1.4
+- ✓ GM can edit character stats/properties outside normal restrictions — v1.4
+- ✓ Casting-time concentration tracks progress and executes deferred actions — v1.4
+- ✓ Sustained concentration drains FAT/VIT and links to spell effects — v1.4
+- ✓ Concentration checks on damage with Focus skill vs attacker AV — v1.4
+- ✓ Breaking concentration removes linked effects immediately — v1.4
+- ✓ Active actions prompt to break concentration with confirmation — v1.4
+- ✓ UI displays concentration status with type, progress, and drain — v1.4
 
 **Delivered in v1.2 (2026-01-28):**
 - ✓ GM can create campaign tables with name, theme (fantasy/sci-fi), and start epoch time — v1.2
@@ -73,6 +81,17 @@ These capabilities exist in the codebase:
 - ✓ GM dashboard updates in real-time when character state changes — v1.2
 - ✓ GM can view detailed character information (sheet, inventory, appearance) — v1.2
 - ✓ Characters are campaign-specific (not shared across tables) — v1.2
+
+**Delivered in v1.1 (2026-01-26):**
+- ✓ New users can self-register with username, password (min 6 chars), and secret Q&A — v1.1
+- ✓ First registered user automatically becomes Admin — v1.1
+- ✓ Users can reset password using secret Q&A (case-insensitive, trimmed answer) — v1.1
+- ✓ Admin can view list of all users — v1.1
+- ✓ Admin can enable/disable users (preserves data) — v1.1
+- ✓ Admin can change user roles (User/GameMaster/Admin) — v1.1
+- ✓ Users can set display name (shown in UI, separate from login username) — v1.1
+- ✓ Users can optionally provide email address — v1.1
+- ✓ User avatars display via Gravatar (based on email if provided) — v1.1
 
 **Delivered in v1.0 (2026-01-26):**
 - ✓ GM can create new item templates via web UI — v1.0
@@ -94,22 +113,25 @@ These capabilities exist in the codebase:
 
 ### Active
 
-Milestone v1.3 (GM Character Manipulation):
-- [ ] GM can apply damage/healing to characters (add to pending pools)
-- [ ] GM can add/remove effects to/from characters
-- [ ] GM can edit effect properties (duration, modifiers, expiration)
-- [ ] GM can manipulate character inventory (add/remove items)
-- [ ] GM can edit character stats/properties outside normal restrictions
+**v1.5 NPC Management System:**
+- [ ] GM can create NPC templates for pre-session prep
+- [ ] GM can quick-create NPCs during play
+- [ ] NPCs have full character stats (same model as PCs)
+- [ ] NPCs appear in GM dashboard in separate section from PCs
+- [ ] All GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
+- [ ] GM can choose to persist or dismiss NPCs after encounter
+- [ ] GM can toggle NPC visibility (hide/reveal for surprise)
+- [ ] GM can manage NPC groups with individual tracking + batch actions
 
-Future milestones:
-- [ ] GM can create and manage NPCs with stats and abilities
-- [ ] NPC status appears in dashboard alongside player characters
+**Future milestones:**
+- [ ] Initiative tracking with automatic turn order
+- [ ] Automated encounter balancing based on party composition
 
 ### Out of Scope
 
 Explicitly excluded (may be considered for future milestones):
 
-**Deferred to v1.3+:**
+**Deferred to future milestones:**
 - Initiative tracking automation — Round advancement exists; initiative order is future enhancement
 - Automated encounter balancing — Complex feature requiring game balance data
 - Session logs/history within campaign — Focus on real-time management first
@@ -126,8 +148,17 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.2 Shipped):**
-The Threa TTRPG Assistant now has complete user management, authentication, inventory systems, and campaign table management. Key components:
+**Current State (v1.4 Shipped):**
+The Threa TTRPG Assistant now has complete GM character manipulation powers including health management, wound tracking, effect application, inventory control, stat editing, and a full concentration system. Key components:
+
+**v1.4 GM Character Manipulation + Concentration (2026-01-29):**
+- Health management with theme-aware color-coded health bars (green/yellow/red)
+- Wound management with four severity levels and common wound templates
+- Effect management with dictionary-based modifiers and template library
+- Inventory manipulation with item template picker and quantity prompts
+- Stat editing with inline attribute/skill editing and validation
+- Concentration system: casting-time progress, sustained FAT/VIT drain, Focus checks
+- Codebase: +41,092 lines across 322 files modified
 
 **v1.2 GM Table & Campaign Management (2026-01-28):**
 - Campaign table creation with theme (Fantasy/Sci-Fi) and epoch-based world time
@@ -135,18 +166,12 @@ The Threa TTRPG Assistant now has complete user management, authentication, inve
 - Real-time GM dashboard with character status cards showing health, AP, wounds, effects
 - Detailed character modal with five tabbed views (GM Actions, Sheet, Inventory, Grant Items, Narrative)
 - Context-aware time management: combat rounds and calendar time (minutes, hours, days, weeks)
-- "In Rounds" combat mode with toggle for detailed tracking
-- Rx.NET messaging for real-time dashboard updates
-- NPC placeholder section for future expansion
-- Codebase: +12,093 lines across 83 files modified
 
 **v1.1 User Management & Authentication (2026-01-26):**
 - Self-service user registration with first-user-as-admin
 - Password recovery via secret Q&A with brute-force protection
 - Admin user management with last-admin protection safety feature
 - User profiles with Gravatar avatars and profanity filtering
-- 25 unit tests for authentication business logic
-- Codebase: ~2,300 lines of user management code across 49 files
 
 **v1.0 Inventory & Equipment System (2026-01-26):**
 - 52 seed items (weapons, armor, ammo, containers, consumables) available for testing
@@ -155,9 +180,6 @@ The Threa TTRPG Assistant now has complete user management, authentication, inve
 - Equipment slots with equip/unequip functionality
 - Container system with nesting rules and capacity tracking
 - Item bonuses (skill bonuses, attribute modifiers) integrated with combat
-- Real-time item distribution from GM to players via messaging
-- 38 passing unit tests across ItemTemplate, CharacterItem, and ItemBonusCalculator
-- Codebase: ~16,000+ lines of inventory/equipment code across 80 files
 
 **Existing System:**
 The codebase already has a working TTRPG combat system with:
@@ -170,22 +192,6 @@ The codebase already has a working TTRPG combat system with:
 - Character stats with attributes (STR, DEX, END, INT, ITT, WIL, PHY) and skills
 - Ability Score calculation: `AS = Attribute + Skill Level - 5 + Modifiers`
 
-**Time Management Infrastructure (v1.2 complete):**
-- Context-aware time controls: +1 Round in combat, calendar buttons outside combat
-- "In Rounds" combat mode with toggle button (Start/End Combat)
-- Multiple time increments: round (6s), minute, turn (10m), hour, day, week
-- Epoch-based world time tracking
-- Rx.NET in-memory messaging sends TimeSkipReceived events to all players at table
-- Character-side processing handles time advancement (pending pools, effect expiration, AP recovery)
-- Time skip processing capped at 100 iterations to prevent UI freeze on large skips
-
-**Integration Point:**
-Items provide the `+ Modifiers` portion of the Ability Score formula via ItemBonusCalculator:
-- Skill bonuses: Add directly to skill level before AS calculation
-- Attribute modifiers: Add to base attribute, which cascades to ALL skills using that attribute
-- Stacking rules: Multiple items with same bonus type stack additively
-- Combat integration: Equipped weapons provide damage class, SV/AV modifiers; armor provides absorption
-
 **Technical Environment:**
 - .NET 10, C# 12+
 - CSLA.NET 9.1.0 business objects
@@ -193,19 +199,12 @@ Items provide the `+ Modifiers` portion of the Ability Score formula via ItemBon
 - Radzen.Blazor 8.4.2 for UI components
 - SQLite database (Microsoft.Data.Sqlite 10.0.1)
 - Nullable reference types enabled project-wide
-
-**User Knowledge:**
-Users are already familiar with:
-- TTRPG concepts (equipment slots, weapons, armor, inventory)
-- The existing combat system (they've been testing melee/ranged attacks)
-- The Play page layout (tabs for Status, Combat, Skills, Magic, Defense, Inventory)
-- Item management workflows from v1.0 release
+- ~68,923 lines of C#/Razor code
 
 **Known Technical Debt (from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
 - Weapon filtering logic in UI layer (should move to GameMechanics)
 - Case sensitivity inconsistencies in skill/template comparisons
-- OnCharacterChanged callback not wired in Play.razor (minor UX improvement)
 
 ## Constraints
 
@@ -241,14 +240,20 @@ Users are already familiar with:
 | "In Rounds: Round X" combined badge | Single badge clearer than separate Round/Combat indicators | ✓ Good (v1.2) |
 | Time skip cap at 100 iterations | Prevents UI freeze on large calendar time skips (e.g., 1 week = 100,800 rounds) | ✓ Good (v1.2) |
 | Five-tab modal for character details | Prioritizes GM workflow: Actions, Sheet, Inventory, Grant Items, Narrative | ✓ Good (v1.2) |
-| Two-button FAT/VIT layout | Eliminates dropdown step for faster damage/healing application | ✓ Good (v1.2) |
+| Two-button FAT/VIT layout | Eliminates dropdown step for faster damage/healing application | ✓ Good (v1.4) |
 | RadzenDialog in interactive context | Required for modal rendering with DialogService | ✓ Good (v1.2) |
 | Character-specific GM notes | Notes stored per table-character pair for campaign context | ✓ Good (v1.2) |
 | Real-time updates via CharacterUpdateMessage | Reuse existing infrastructure, no new message types | ✓ Good (v1.2) |
 | ITimeEventSubscriber pattern | Consistent subscription pattern for time-based updates | ✓ Good (v1.2) |
 | 500ms delay before character list refresh | Debounce rapid time events to reduce UI thrashing | ✓ Good (v1.2) |
 | JoinRequest with status enum | Clean state management for Pending/Approved/Denied workflow | ✓ Good (v1.2) |
-| NPC placeholder in v1.2 | Foundation laid, full NPC management deferred to v1.3+ | ✓ Good (v1.2) |
+| NPC placeholder in v1.2 | Foundation laid, full NPC management deferred to future | ✓ Good (v1.2) |
+| Four fixed wound severity levels | Matches design, provides clear progression (Minor/Moderate/Severe/Critical) | ✓ Good (v1.4) |
+| Dictionary-based effect modifiers | Flexible extensibility for attributes/skills without schema changes | ✓ Good (v1.4) |
+| JSON blob storage for concentration state | No schema migration needed for SQLite | ✓ Good (v1.4) |
+| Effect linking via SourceEffectId | Enables cascade removal when concentration breaks | ✓ Good (v1.4) |
+| Focus skill check for concentration | Matches game design with damage penalty (-1 per 2 damage) | ✓ Good (v1.4) |
+| Same concentration check pattern for all actions | Consistent UX across melee, ranged, and reload actions | ✓ Good (v1.4) |
 
 ---
-*Last updated: 2026-01-28 after v1.3 milestone initialized*
+*Last updated: 2026-02-01 after v1.5 milestone started*

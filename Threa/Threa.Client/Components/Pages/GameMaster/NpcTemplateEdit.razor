@@ -1,0 +1,497 @@
+@page "/gamemaster/templates/{Id}"
+@page "/gamemaster/templates/new"
+@page "/gamemaster/templates/clone/{SourceId:int}"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics
+@using GameMechanics.Reference
+@using Threa.Dal.Dto
+@using Threa.Client.Components.Pages.Character
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject IDataPortal<NpcTemplateList> templateListPortal
+@inject IDataPortal<SpeciesList> speciesListPortal
+@inject ViewModel<GameMechanics.CharacterEdit> vm
+@inject Threa.Services.RenderModeProvider RenderModeProvider
+@inject NavigationManager NavigationManager
+
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>@(IsNewTemplate ? "Create NPC Template" : $"Edit: {vm.Model?.Name ?? "Template"}")</strong>
+        @if (vm.Model != null)
+        {
+            <span class="badge ms-2 @(vm.Model.VisibleToPlayers ? "bg-success" : "bg-warning")">
+                @(vm.Model.VisibleToPlayers ? "Active" : "Inactive")
+            </span>
+        }
+        @if (isCloning)
+        {
+            <span class="badge ms-2 bg-info">Cloning</span>
+        }
+    </div>
+    <a href="/gamemaster/templates" class="btn btn-outline-secondary btn-sm">Back to Templates</a>
+</div>
+
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
+
+@if (vm.Model == null)
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta">Loading template...</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="template-edit-form card">
+        <div class="card-body">
+            <RadzenTabs @bind-SelectedIndex="@selectedTabIndex">
+                <Tabs>
+                    <!-- ========================== -->
+                    <!-- TEMPLATE INFO TAB -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Template Info">
+                        <div class="info-box mt-3">
+                            <strong>Template Properties</strong>
+                        </div>
+                        <table class="table table-sm">
+                            <tbody>
+                                <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
+
+                                <tr>
+                                    <td>Species</td>
+                                    <td>
+                                        @if (speciesList != null)
+                                        {
+                                            <select @bind="vm.Model.Species" @bind:after="OnSpeciesChanged" class="form-control">
+                                                @foreach (var species in speciesList)
+                                                {
+                                                    <option value="@species.Id">@species.Name</option>
+                                                }
+                                            </select>
+                                            <small class="text-muted d-block mt-1">
+                                                @{
+                                                    var selectedSpecies = speciesList.FirstOrDefault(s => s.Id == vm.Model.Species);
+                                                    if (selectedSpecies != null && selectedSpecies.AttributeModifiers.Any())
+                                                    {
+                                                        <text>Modifiers: @string.Join(", ", selectedSpecies.AttributeModifiers.Select(m => $"{m.AttributeName} {(m.Modifier >= 0 ? "+" : "")}{m.Modifier}"))</text>
+                                                    }
+                                                    else
+                                                    {
+                                                        <text>No attribute modifiers</text>
+                                                    }
+                                                }
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <input type="text" value="@vm.Model.Species" class="form-control" disabled />
+                                            <small class="text-muted">Loading species...</small>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Category</td>
+                                    <td>
+                                        <input type="text" list="category-list"
+                                               @bind="vm.Model.Category"
+                                               class="form-control"
+                                               placeholder="e.g., Bandits, Undead, Wildlife..." />
+                                        <datalist id="category-list">
+                                            @foreach (var category in existingCategories)
+                                            {
+                                                <option value="@category" />
+                                            }
+                                        </datalist>
+                                        <small class="text-muted">Type to search existing categories or enter a new one</small>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Tags</td>
+                                    <td>
+                                        <div class="tags-input-container">
+                                            @if (tagList.Any())
+                                            {
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    @foreach (var tag in tagList)
+                                                    {
+                                                        <span class="badge bg-secondary d-flex align-items-center">
+                                                            @tag
+                                                            <button type="button" class="btn-close btn-close-white ms-1"
+                                                                style="font-size: 0.6rem;"
+                                                                @onclick="@(() => RemoveTag(tag))"></button>
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            <div class="d-flex gap-2">
+                                                <RadzenTextBox @bind-Value="@newTagInput" Placeholder="Add tag..."
+                                                    @onkeydown="@OnTagKeyDown" Style="width: 200px" />
+                                                <RadzenButton Text="Add" Icon="add" Click="@AddTag"
+                                                    Disabled="@string.IsNullOrWhiteSpace(newTagInput)" Size="Radzen.ButtonSize.Small" />
+                                            </div>
+                                            <small class="text-muted">Press Enter to add tag. Tags help with filtering and search.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Default Disposition</td>
+                                    <td>
+                                        <select @bind="vm.Model.DefaultDisposition" class="form-control">
+                                            @foreach (NpcDisposition disposition in Enum.GetValues(typeof(NpcDisposition)))
+                                            {
+                                                <option value="@disposition">@disposition</option>
+                                            }
+                                        </select>
+                                        <small class="text-muted">Initial attitude when spawned from this template</small>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Template Notes</td>
+                                    <td>
+                                        <RadzenTextArea @bind-Value="vm.Model.TemplateNotes"
+                                                       Rows="4"
+                                                       Placeholder="GM notes about this template..."
+                                                       Style="width: 100%" />
+                                        <small class="text-muted">Notes visible only to GM (tactics, spawn conditions, etc.)</small>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Difficulty Rating</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge @GetDifficultyBadgeClass()" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                                @vm.Model.DifficultyRating
+                                            </span>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RecalculateDifficulty">
+                                                Recalculate
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">
+                                            Based on combat skills and health pools. Click Recalculate after modifying attributes or skills.
+                                        </small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </RadzenTabsItem>
+
+                    <!-- ========================== -->
+                    <!-- ATTRIBUTES TAB -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Attributes">
+                        <TabAttributes vm="vm" />
+                    </RadzenTabsItem>
+
+                    <!-- ========================== -->
+                    <!-- SKILLS TAB -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Skills">
+                        <TabSkills vm="vm" />
+                    </RadzenTabsItem>
+
+                    <!-- ========================== -->
+                    <!-- EQUIPMENT TAB -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Equipment">
+                        <TabItems vm="vm" />
+                    </RadzenTabsItem>
+                </Tabs>
+            </RadzenTabs>
+        </div>
+
+        <!-- ========================== -->
+        <!-- SAVE/CANCEL BUTTONS (Sticky bottom bar) -->
+        <!-- ========================== -->
+        <div class="form-actions-bar">
+            <button type="button" @onclick="SaveData" class="btn btn-primary" disabled="@(!vm.Model.IsSavable)">Save</button>
+            <button type="button" @onclick="Cancel" class="btn btn-secondary ms-2">Cancel</button>
+            @if (!IsNewTemplate && !isCloning)
+            {
+                @if (vm.Model.VisibleToPlayers)
+                {
+                    <button type="button" @onclick="Deactivate" class="btn btn-warning ms-2">Deactivate</button>
+                }
+                else
+                {
+                    <button type="button" @onclick="Activate" class="btn btn-success ms-2">Activate</button>
+                }
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .form-actions-bar {
+        position: sticky;
+        bottom: 0;
+        background: var(--rz-base-background-color, white);
+        padding: 1rem;
+        border-top: 1px solid var(--rz-border-color, #dee2e6);
+        z-index: 100;
+        margin-top: 1rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public int? SourceId { get; set; }
+
+    private bool IsNewTemplate => Id == "new" || string.IsNullOrEmpty(Id);
+    private bool isCloning = false;
+    private int selectedTabIndex = 0;
+
+    // Species list for dropdown
+    private List<SpeciesInfo>? speciesList;
+
+    // Category autocomplete data
+    private IEnumerable<string> existingCategories = Enumerable.Empty<string>();
+
+    // Tag management
+    private string newTagInput = "";
+    private List<string> tagList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
+            return;
+
+        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/templates");
+        vm.ModelChanged += async () =>
+        {
+            LoadTags();
+            await InvokeAsync(() => StateHasChanged());
+        };
+        vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
+
+        // Load species list
+        try
+        {
+            var list = await speciesListPortal.FetchAsync();
+            speciesList = list.ToList();
+        }
+        catch
+        {
+            speciesList = null;
+        }
+
+        // Load existing categories from templates
+        try
+        {
+            var templates = await templateListPortal.FetchAsync();
+            existingCategories = templates
+                .Select(t => t.Category)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct()
+                .OrderBy(c => c)!;
+        }
+        catch
+        {
+            existingCategories = Enumerable.Empty<string>();
+        }
+
+        // Determine if this is a clone operation
+        if (SourceId.HasValue && SourceId.Value > 0)
+        {
+            isCloning = true;
+            await CloneFromSource(SourceId.Value);
+        }
+        else if (IsNewTemplate)
+        {
+            await vm.RefreshAsync(async () =>
+            {
+                // Use PlayerId 0 for GM-created templates
+                var template = await characterPortal.CreateAsync(0);
+                template.IsNpc = true;
+                template.IsTemplate = true;
+                template.VisibleToPlayers = true;
+                template.Name = "New Template";
+                return template;
+            });
+        }
+        else if (int.TryParse(Id, out int templateId))
+        {
+            await vm.RefreshAsync(() => characterPortal.FetchAsync(templateId));
+        }
+    }
+
+    private async Task CloneFromSource(int sourceId)
+    {
+        try
+        {
+            // Fetch the source character/template
+            var source = await characterPortal.FetchAsync(sourceId);
+
+            // Create a new template
+            await vm.RefreshAsync(async () =>
+            {
+                var template = await characterPortal.CreateAsync(0);
+                template.IsNpc = true;
+                template.IsTemplate = true;
+                template.VisibleToPlayers = true;
+                template.Name = $"{source.Name} (Template)";
+                template.Species = source.Species;
+
+                // Copy attributes from source
+                foreach (var sourceAttr in source.AttributeList)
+                {
+                    var templateAttr = template.AttributeList.FirstOrDefault(a => a.Name == sourceAttr.Name);
+                    if (templateAttr != null)
+                    {
+                        templateAttr.BaseValue = sourceAttr.BaseValue;
+                    }
+                }
+
+                // Copy skills from source
+                foreach (var sourceSkill in source.Skills)
+                {
+                    var templateSkill = template.Skills.FirstOrDefault(s => s.Name == sourceSkill.Name);
+                    if (templateSkill != null)
+                    {
+                        templateSkill.Level = sourceSkill.Level;
+                    }
+                }
+
+                // Per CONTEXT.md: Do NOT copy equipment or notes
+                // template.TemplateNotes stays empty
+                // Equipment is managed separately through the Tab
+
+                // Calculate difficulty rating
+                template.CalculateDifficultyRating();
+
+                return template;
+            });
+        }
+        catch
+        {
+            // If clone fails, fall back to creating a blank template
+            await vm.RefreshAsync(async () =>
+            {
+                var template = await characterPortal.CreateAsync(0);
+                template.IsNpc = true;
+                template.IsTemplate = true;
+                template.VisibleToPlayers = true;
+                template.Name = "New Template";
+                return template;
+            });
+        }
+    }
+
+    private void OnSpeciesChanged()
+    {
+        if (vm?.Model == null || speciesList == null) return;
+
+        var newSpeciesInfo = speciesList.FirstOrDefault(s => s.Id == vm.Model.Species);
+        vm.Model.UpdateSpeciesModifiers(newSpeciesInfo);
+    }
+
+    private void RecalculateDifficulty()
+    {
+        if (vm?.Model != null)
+        {
+            vm.Model.CalculateDifficultyRating();
+            StateHasChanged();
+        }
+    }
+
+    private string GetDifficultyBadgeClass()
+    {
+        if (vm?.Model == null) return "bg-secondary";
+
+        return vm.Model.DifficultyRating switch
+        {
+            <= 2 => "bg-success",      // Easy
+            <= 4 => "bg-info",         // Moderate
+            <= 6 => "bg-warning",      // Challenging
+            <= 8 => "bg-danger",       // Difficult
+            _ => "bg-dark"             // Very Difficult
+        };
+    }
+
+    private async Task SaveData()
+    {
+        // Ensure difficulty is calculated before save
+        vm.Model?.CalculateDifficultyRating();
+        await vm.SaveAsync();
+        NavigationManager.NavigateTo("/gamemaster/templates");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/gamemaster/templates");
+    }
+
+    private async Task Deactivate()
+    {
+        if (vm.Model != null)
+        {
+            vm.Model.VisibleToPlayers = false;
+            await vm.SaveAsync();
+        }
+    }
+
+    private async Task Activate()
+    {
+        if (vm.Model != null)
+        {
+            vm.Model.VisibleToPlayers = true;
+            await vm.SaveAsync();
+        }
+    }
+
+    // Tag management methods
+    private void LoadTags()
+    {
+        tagList = string.IsNullOrWhiteSpace(vm.Model?.Tags)
+            ? new List<string>()
+            : vm.Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .ToList();
+    }
+
+    private void SaveTags()
+    {
+        if (vm.Model != null)
+            vm.Model.Tags = tagList.Any() ? string.Join(",", tagList) : null;
+    }
+
+    private void AddTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTagInput) && !tagList.Contains(newTagInput.Trim(), StringComparer.OrdinalIgnoreCase))
+        {
+            tagList.Add(newTagInput.Trim().ToLowerInvariant());
+            SaveTags();
+            newTagInput = "";
+        }
+    }
+
+    private void RemoveTag(string tag)
+    {
+        tagList.Remove(tag);
+        SaveTags();
+    }
+
+    private void OnTagKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTag();
+        }
+    }
+}

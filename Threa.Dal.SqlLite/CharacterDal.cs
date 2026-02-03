@@ -159,6 +159,46 @@ namespace Threa.Dal.Sqlite
             }
         }
 
+        public async Task<List<Character>> GetNpcTemplatesAsync()
+        {
+            try
+            {
+                // Reuse existing fetch, filter in memory for JSON storage
+                var all = await GetAllCharactersAsync();
+                return all.Where(c => c.IsNpc && c.IsTemplate).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting NPC templates", ex);
+            }
+        }
+
+        public Task<List<Character>> GetTableNpcsAsync(Guid tableId)
+        {
+            // Full implementation requires TableDal integration (Phase 25)
+            // For Phase 23, provide a stub that throws NotImplementedException
+            throw new NotImplementedException("GetTableNpcsAsync requires Phase 25 table integration");
+        }
+
+        public async Task<List<string>> GetNpcCategoriesAsync()
+        {
+            try
+            {
+                // Reuse existing template fetch, extract distinct categories
+                var templates = await GetNpcTemplatesAsync();
+                return templates
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Category))
+                    .Select(c => c.Category!)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting NPC categories", ex);
+            }
+        }
+
         public async Task<Character> SaveCharacterAsync(Character character)
         {
             try

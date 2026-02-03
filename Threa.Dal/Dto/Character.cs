@@ -10,6 +10,9 @@ public class Character
     public string TrueName { get; set; } = string.Empty;
     public string Aliases { get; set; } = string.Empty;
     public bool IsPlayable { get; set; }
+    public bool IsNpc { get; set; }
+    public bool IsTemplate { get; set; }
+    public bool VisibleToPlayers { get; set; } = true;
     public string Species { get; set; } = string.Empty;
     public int DamageClass { get; set; }
     public string Height { get; set; } = string.Empty;
@@ -69,4 +72,46 @@ public class Character
     /// Used for epoch-based effect expiration.
     /// </summary>
     public long CurrentGameTimeSeconds { get; set; }
+
+    // Template organization properties (for NPC templates)
+
+    /// <summary>
+    /// Folder-like grouping for NPC templates (e.g., "Humanoids", "Beasts", "Undead").
+    /// </summary>
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// Comma-separated tags for filtering NPC templates (e.g., "minion,melee", "boss,caster").
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
+    /// GM notes about template usage (tactics, encounter suggestions, etc.).
+    /// </summary>
+    public string? TemplateNotes { get; set; }
+
+    /// <summary>
+    /// Default attitude when NPC is instantiated from template.
+    /// </summary>
+    public NpcDisposition DefaultDisposition { get; set; } = NpcDisposition.Hostile;
+
+    /// <summary>
+    /// Auto-calculated threat level based on combat AS values.
+    /// Higher values indicate more dangerous NPCs.
+    /// </summary>
+    public int DifficultyRating { get; set; }
+
+    // Source template tracking (for spawned NPCs)
+
+    /// <summary>
+    /// ID of the template this NPC was spawned from.
+    /// Null for player characters and templates themselves.
+    /// </summary>
+    public int? SourceTemplateId { get; set; }
+
+    /// <summary>
+    /// Denormalized name of the source template for display (e.g., "From: Goblin Warrior").
+    /// Null for player characters and templates themselves.
+    /// </summary>
+    public string? SourceTemplateName { get; set; }
 }

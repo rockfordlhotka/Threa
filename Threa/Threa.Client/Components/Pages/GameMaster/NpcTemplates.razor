@@ -1,0 +1,440 @@
+@page "/gamemaster/templates"
+@rendermode InteractiveServer
+
+@using GameMechanics
+@using GameMechanics.GameMaster
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+
+@implements IDisposable
+
+@using Threa.Client.Components.Shared
+
+@inject IDataPortal<NpcTemplateList> templateListPortal
+@inject IDataPortal<GmCharacterList> characterListPortal
+@inject ViewModel<NpcTemplateList> vm
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject Threa.Services.NpcAutoNamingService NamingService
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>NPC Template Library</strong>
+        @if (filteredTemplates != null)
+        {
+            <span class="item-meta ms-3">Showing @filteredTemplates.Count() of @(allTemplates?.Count() ?? 0) templates</span>
+        }
+    </div>
+    <div>
+        <a href="/gamemaster/templates/new" class="btn btn-primary btn-sm me-2">Create New</a>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ShowCloneModal">Clone From...</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(vm.ViewModelErrorText))
+{
+    <div class="alert alert-danger">@vm.ViewModelErrorText</div>
+}
+
+@if (vm.Model == null)
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading templates...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
+}
+else if (allTemplates != null && !allTemplates.Any())
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta">No NPC templates yet. Create one to get started.</div>
+        </div>
+    </div>
+}
+else if (filteredTemplates != null && !filteredTemplates.Any())
+{
+    <div class="card">
+        <div class="card-header d-flex gap-3 align-items-center flex-wrap">
+            @RenderFilters()
+        </div>
+        <div class="card-body text-center py-4">
+            <div class="item-meta">No templates match your filters.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header d-flex gap-3 align-items-center flex-wrap">
+            @RenderFilters()
+        </div>
+        <div class="card-body p-0">
+            <RadzenDataGrid Data="@filteredTemplates" TItem="NpcTemplateInfo"
+                AllowSorting="true" AllowPaging="true" PageSize="20"
+                RowSelect="@(template => NavigationManager.NavigateTo($"/gamemaster/templates/{template.Id}"))"
+                RowRender="@OnRowRender"
+                Style="cursor: pointer">
+                <Columns>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Name" Title="Name" Sortable="true" Width="250px">
+                        <Template Context="template">
+                            <span class="template-name">@template.Name</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Species" Title="Species" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Category" Title="Category" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Difficulty" Sortable="true" Width="120px" SortProperty="DifficultyRating">
+                        <Template Context="template">
+                            @{
+                                var (badgeClass, label, tooltip) = GetDifficultyDisplay(template.DifficultyRating);
+                            }
+                            <span class="badge @badgeClass" title="@tooltip">@label (@template.DifficultyRating)</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Tags" Width="200px">
+                        <Template Context="template">
+                            @foreach (var tag in template.TagList)
+                            {
+                                <span class="badge bg-secondary me-1">@tag</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Status" Width="100px">
+                        <Template Context="template">
+                            @if (template.IsActive)
+                            {
+                                <span class="text-positive">Active</span>
+                            }
+                            else
+                            {
+                                <span class="text-negative">Inactive</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Actions" Width="100px" Sortable="false">
+                        <Template Context="template">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => ShowSpawnModal(template)"
+                                    title="Spawn NPC from this template">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+}
+
+@* Clone Modal *@
+@if (showCloneModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Clone Template From Character</h5>
+                    <button type="button" class="btn-close" @onclick="HideCloneModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <RadzenTextBox @bind-Value="@cloneSearchText" Placeholder="Search by name or species..."
+                            @oninput="@((e) => OnCloneSearchInput(e.Value?.ToString() ?? ""))"
+                            Style="width: 100%" />
+                    </div>
+                    <div class="clone-source-list" style="max-height: 400px; overflow-y: auto;">
+                        @if (filteredCloneSources != null && filteredCloneSources.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var character in filteredCloneSources)
+                                {
+                                    var isSelected = selectedCloneSourceId == character.Id;
+                                    <button type="button"
+                                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(isSelected ? "active" : "")"
+                                        @onclick="@(() => SelectCloneSource(character.Id))">
+                                        <div>
+                                            <strong>@character.Name</strong>
+                                            @if (!string.IsNullOrEmpty(character.Species))
+                                            {
+                                                <span class="text-muted ms-2">(@character.Species)</span>
+                                            }
+                                        </div>
+                                        <span class="badge @GetTypeBadgeClass(character)">@character.CharacterType</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-3">
+                                No characters match your search.
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCloneModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmClone"
+                        disabled="@(!selectedCloneSourceId.HasValue)">Clone Selected</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Spawn Modal *@
+@if (showSpawnModal && spawnTarget != null)
+{
+    <NpcSpawnModal TemplateId="@spawnTarget.Id"
+                   TemplateName="@spawnTarget.Name"
+                   DefaultDisposition="@spawnTarget.DefaultDisposition"
+                   AutoGeneratedName="@spawnAutoName"
+                   OnSpawn="HandleSpawn"
+                   OnCancel="CloseSpawnModal" />
+}
+
+@if (!string.IsNullOrEmpty(spawnError))
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        @spawnError
+        <button type="button" class="btn-close" @onclick="() => spawnError = null"></button>
+    </div>
+}
+
+@code {
+    private IEnumerable<NpcTemplateInfo>? allTemplates;
+    private IEnumerable<NpcTemplateInfo>? filteredTemplates;
+    private string searchText = "";
+    private string? selectedCategory;
+    private string? selectedTag;
+    private bool showInactive = false;
+    private List<string> categories = new();
+    private List<string> availableTags = new();
+    private System.Timers.Timer? debounceTimer;
+    private const int DebounceMs = 300;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await vm.RefreshAsync(() => templateListPortal.FetchAsync());
+        allTemplates = vm.Model;
+        ExtractFilters();
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void ExtractFilters()
+    {
+        if (allTemplates == null) return;
+
+        categories = allTemplates
+            .Where(t => !string.IsNullOrEmpty(t.Category))
+            .Select(t => t.Category!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        availableTags = allTemplates
+            .SelectMany(t => t.TagList)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+    }
+
+    private void OnSearchInput(string value)
+    {
+        searchText = value;
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+        debounceTimer = new System.Timers.Timer(DebounceMs);
+        debounceTimer.Elapsed += (s, e) =>
+        {
+            debounceTimer?.Stop();
+            InvokeAsync(() => { ApplyFilters(); StateHasChanged(); });
+        };
+        debounceTimer.Start();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allTemplates?.AsEnumerable() ?? Enumerable.Empty<NpcTemplateInfo>();
+
+        // Filter by active status
+        if (!showInactive)
+            query = query.Where(t => t.IsActive);
+
+        // Filter by category
+        if (!string.IsNullOrEmpty(selectedCategory))
+            query = query.Where(t => t.Category == selectedCategory);
+
+        // Filter by tag
+        if (!string.IsNullOrEmpty(selectedTag))
+            query = query.Where(t => t.TagList.Contains(selectedTag));
+
+        // Filter by search text
+        if (!string.IsNullOrWhiteSpace(searchText))
+            query = query.Where(t =>
+                t.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(t.Species) && t.Species.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(t.Category) && t.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(t.Tags) && t.Tags.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+
+        filteredTemplates = query.ToList();
+    }
+
+    private (string badgeClass, string label, string tooltip) GetDifficultyDisplay(int difficulty)
+    {
+        return difficulty switch
+        {
+            <= 5 => ("bg-success", "Easy", "Difficulty 1-5: Suitable for low-level encounters or minions"),
+            <= 10 => ("bg-warning", "Moderate", "Difficulty 6-10: Standard combat encounter"),
+            <= 15 => ("bg-danger", "Hard", "Difficulty 11-15: Challenging encounter, use caution"),
+            _ => ("bg-dark", "Deadly", "Difficulty 16+: Very dangerous, could easily kill party members")
+        };
+    }
+
+    private void OnRowRender(RowRenderEventArgs<NpcTemplateInfo> args)
+    {
+        if (!args.Data.IsActive)
+        {
+            args.Attributes.Add("class", "template-inactive");
+        }
+    }
+
+    // Spawn modal state
+    private bool showSpawnModal;
+    private NpcTemplateInfo? spawnTarget;
+    private string spawnAutoName = "";
+    private string? spawnError;
+
+    // Clone modal state
+    private bool showCloneModal = false;
+    private string cloneSearchText = "";
+    private IEnumerable<GmCharacterInfo>? allCharacters;
+    private IEnumerable<GmCharacterInfo>? filteredCloneSources;
+    private int? selectedCloneSourceId;
+
+    private async Task ShowCloneModal()
+    {
+        showCloneModal = true;
+        cloneSearchText = "";
+        selectedCloneSourceId = null;
+
+        // Load all characters for clone source selection
+        if (allCharacters == null)
+        {
+            try
+            {
+                allCharacters = await characterListPortal.FetchAsync();
+            }
+            catch
+            {
+                allCharacters = Enumerable.Empty<GmCharacterInfo>();
+            }
+        }
+        FilterCloneSources();
+        StateHasChanged();
+    }
+
+    private void HideCloneModal()
+    {
+        showCloneModal = false;
+        selectedCloneSourceId = null;
+    }
+
+    private void FilterCloneSources()
+    {
+        var query = allCharacters?.AsEnumerable() ?? Enumerable.Empty<GmCharacterInfo>();
+
+        if (!string.IsNullOrWhiteSpace(cloneSearchText))
+        {
+            query = query.Where(c =>
+                c.Name.Contains(cloneSearchText, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(c.Species) && c.Species.Contains(cloneSearchText, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // Sort: Templates first, then NPCs, then PCs
+        filteredCloneSources = query
+            .OrderByDescending(c => c.IsTemplate)
+            .ThenByDescending(c => c.IsNpc)
+            .ThenBy(c => c.Name)
+            .ToList();
+    }
+
+    private void OnCloneSearchInput(string value)
+    {
+        cloneSearchText = value;
+        FilterCloneSources();
+    }
+
+    private void SelectCloneSource(int id)
+    {
+        selectedCloneSourceId = id;
+    }
+
+    private void ConfirmClone()
+    {
+        if (selectedCloneSourceId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/gamemaster/templates/clone/{selectedCloneSourceId.Value}");
+        }
+    }
+
+    private string GetTypeBadgeClass(GmCharacterInfo character)
+    {
+        if (character.IsTemplate) return "bg-info";
+        if (character.IsNpc) return "bg-warning text-dark";
+        return "bg-primary";
+    }
+
+    // Spawn modal methods
+    private void ShowSpawnModal(NpcTemplateInfo template)
+    {
+        spawnTarget = template;
+        spawnAutoName = NamingService.GenerateName(template.Id, template.Name);
+        showSpawnModal = true;
+    }
+
+    private void CloseSpawnModal()
+    {
+        showSpawnModal = false;
+        spawnTarget = null;
+    }
+
+    private async Task HandleSpawn(NpcSpawnModal.NpcSpawnRequest request)
+    {
+        // Update prefix memory if name was customized
+        NamingService.UpdatePrefixFromName(request.TemplateId, request.Name);
+
+        CloseSpawnModal();
+
+        // Spawn from template library requires an active table context
+        // Full spawn integration happens in Plan 25-06
+        spawnError = "Spawn from template library requires an active table. Use the spawn button in the GM dashboard instead.";
+    }
+
+    private RenderFragment RenderFilters() => __builder =>
+    {
+        <RadzenTextBox @bind-Value="@searchText" Placeholder="Search templates..."
+            @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
+            Style="width: 300px" />
+        <RadzenDropDown TValue="string?" Data="@categories"
+            @bind-Value="@selectedCategory" Change="@(_ => ApplyFilters())"
+            Placeholder="All Categories" AllowClear="true" Style="width: 200px" />
+        <RadzenDropDown TValue="string?" Data="@availableTags"
+            @bind-Value="@selectedTag" Change="@(_ => ApplyFilters())"
+            Placeholder="All Tags" AllowClear="true" Style="width: 150px" />
+        <RadzenCheckBox TValue="bool" @bind-Value="@showInactive" Name="showInactive" />
+        <RadzenLabel Text="Show Inactive" Component="showInactive" />
+    };
+
+    public void Dispose()
+    {
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+    }
+}

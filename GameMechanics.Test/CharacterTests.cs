@@ -447,8 +447,293 @@ namespace GameMechanics.Test
 
       // Should be valid - no currency-related broken rules
       var currencyRules = GetCurrencyBrokenRules(c);
-      Assert.IsFalse(currencyRules.Any(), 
+      Assert.IsFalse(currencyRules.Any(),
                     "Character should be valid with positive currency values");
+    }
+
+    [TestMethod]
+    public async Task Character_NpcFlags_PersistToDatabase()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Set NPC flags (hidden NPC, not a template)
+      c.Name = "Goblin Scout";
+      c.Species = "Goblin";
+      c.IsNpc = true;
+      c.IsTemplate = false;
+      c.VisibleToPlayers = false;  // Hidden for surprise
+
+      c = await c.SaveAsync();
+      var characterId = c.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(characterId);
+      Assert.IsTrue(fetched.IsNpc, "IsNpc should persist as true");
+      Assert.IsFalse(fetched.IsTemplate, "IsTemplate should persist as false");
+      Assert.IsFalse(fetched.VisibleToPlayers, "VisibleToPlayers should persist as false");
+    }
+
+    [TestMethod]
+    public async Task Character_TemplateFlags_PersistToDatabase()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Create NPC template
+      c.Name = "Goblin Warrior Template";
+      c.Species = "Goblin";
+      c.IsNpc = true;
+      c.IsTemplate = true;
+      c.VisibleToPlayers = true;  // Templates visible in library
+
+      c = await c.SaveAsync();
+      var characterId = c.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(characterId);
+      Assert.IsTrue(fetched.IsNpc, "Template IsNpc should persist");
+      Assert.IsTrue(fetched.IsTemplate, "Template IsTemplate should persist");
+      Assert.IsTrue(fetched.VisibleToPlayers, "Template VisibleToPlayers should persist");
+    }
+
+    [TestMethod]
+    public async Task Character_VisibleToPlayers_DefaultsToTrue()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Verify default value before any explicit set
+      Assert.IsTrue(c.VisibleToPlayers, "VisibleToPlayers should default to true");
+
+      // Save and fetch without setting VisibleToPlayers
+      c.Name = "Test Character";
+      c.Species = "Human";
+      c = await c.SaveAsync();
+
+      var fetched = await dp.FetchAsync(c.Id);
+      Assert.IsTrue(fetched.VisibleToPlayers, "VisibleToPlayers should remain true after fetch");
+    }
+
+    [TestMethod]
+    public async Task GetNpcTemplatesAsync_ReturnsOnlyTemplates()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var characterDal = provider.GetRequiredService<ICharacterDal>();
+
+      // Create a regular PC
+      var pc = dp.Create(42);
+      pc.Name = "Player Character";
+      pc.Species = "Human";
+      pc.IsNpc = false;
+      pc.IsTemplate = false;
+      pc = await pc.SaveAsync();
+
+      // Create an NPC (not a template)
+      var npc = dp.Create(42);
+      npc.Name = "Active NPC";
+      npc.Species = "Goblin";
+      npc.IsNpc = true;
+      npc.IsTemplate = false;
+      npc = await npc.SaveAsync();
+
+      // Create an NPC template
+      var template = dp.Create(42);
+      template.Name = "Goblin Template";
+      template.Species = "Goblin";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template = await template.SaveAsync();
+
+      // Query templates
+      var templates = await characterDal.GetNpcTemplatesAsync();
+
+      // Verify only the template is returned
+      Assert.IsTrue(templates.Any(t => t.Name == "Goblin Template"), "Template should be in results");
+      Assert.IsFalse(templates.Any(t => t.Name == "Player Character"), "PC should not be in results");
+      Assert.IsFalse(templates.Any(t => t.Name == "Active NPC"), "Non-template NPC should not be in results");
+    }
+
+    [TestMethod]
+    public async Task Template_Category_PersistsThroughSaveFetch()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create NPC template with category
+      var template = dp.Create(42);
+      template.Name = "Beast Template";
+      template.Species = "Wolf";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template.Category = "Beasts";
+
+      template = await template.SaveAsync();
+      var templateId = template.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(templateId);
+      Assert.AreEqual("Beasts", fetched.Category, "Category should persist");
+    }
+
+    [TestMethod]
+    public async Task Template_Tags_PersistsThroughSaveFetch()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create NPC template with tags
+      var template = dp.Create(42);
+      template.Name = "Goblin Archer Template";
+      template.Species = "Goblin";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template.Tags = "minion,ranged,goblin";
+
+      template = await template.SaveAsync();
+      var templateId = template.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(templateId);
+      Assert.AreEqual("minion,ranged,goblin", fetched.Tags, "Tags should persist");
+    }
+
+    [TestMethod]
+    public async Task Template_TemplateNotes_PersistsThroughSaveFetch()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create NPC template with notes
+      var template = dp.Create(42);
+      template.Name = "Orc Chieftain Template";
+      template.Species = "Orc";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template.TemplateNotes = "Use as boss encounter. Pair with 4-6 orc warriors.";
+
+      template = await template.SaveAsync();
+      var templateId = template.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(templateId);
+      Assert.AreEqual("Use as boss encounter. Pair with 4-6 orc warriors.", fetched.TemplateNotes, "TemplateNotes should persist");
+    }
+
+    [TestMethod]
+    public async Task Template_DefaultDisposition_PersistsThroughSaveFetch()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create NPC template with Friendly disposition
+      var template = dp.Create(42);
+      template.Name = "Village Elder Template";
+      template.Species = "Human";
+      template.IsNpc = true;
+      template.IsTemplate = true;
+      template.DefaultDisposition = Threa.Dal.Dto.NpcDisposition.Friendly;
+
+      template = await template.SaveAsync();
+      var templateId = template.Id;
+
+      // Fetch and verify
+      var fetched = await dp.FetchAsync(templateId);
+      Assert.AreEqual(Threa.Dal.Dto.NpcDisposition.Friendly, fetched.DefaultDisposition, "DefaultDisposition should persist as Friendly");
+
+      // Also test Neutral
+      fetched.DefaultDisposition = Threa.Dal.Dto.NpcDisposition.Neutral;
+      fetched = await fetched.SaveAsync();
+
+      var fetched2 = await dp.FetchAsync(templateId);
+      Assert.AreEqual(Threa.Dal.Dto.NpcDisposition.Neutral, fetched2.DefaultDisposition, "DefaultDisposition should persist as Neutral");
+    }
+
+    [TestMethod]
+    public void Template_DifficultyRating_CalculatesFromCombatSkills()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create character with combat skills
+      var c = dp.Create(42);
+      c.Name = "Combat Test Character";
+      c.Species = "Human";
+
+      // Add a Melee Combat skill (already in default skill list)
+      var meleeSkill = c.Skills.FirstOrDefault(s => s.Name.Contains("Melee"));
+      if (meleeSkill != null)
+      {
+        // Increase skill level to make it significant
+        meleeSkill.Level = 5;
+      }
+
+      // Calculate difficulty rating
+      int rating = c.CalculateDifficultyRating();
+
+      // Should be at least 1 (minimum)
+      Assert.IsTrue(rating >= 1, $"Difficulty rating should be at least 1, got {rating}");
+
+      // The DifficultyRating property should be updated
+      Assert.AreEqual(rating, c.DifficultyRating, "DifficultyRating property should match calculated value");
+    }
+
+    [TestMethod]
+    public async Task GetNpcCategoriesAsync_ReturnsDistinctCategories()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var characterDal = provider.GetRequiredService<ICharacterDal>();
+
+      // Create templates with categories
+      var template1 = dp.Create(42);
+      template1.Name = "Wolf Template";
+      template1.Species = "Wolf";
+      template1.IsNpc = true;
+      template1.IsTemplate = true;
+      template1.Category = "Beasts";
+      template1 = await template1.SaveAsync();
+
+      var template2 = dp.Create(42);
+      template2.Name = "Bear Template";
+      template2.Species = "Bear";
+      template2.IsNpc = true;
+      template2.IsTemplate = true;
+      template2.Category = "Beasts"; // Same category as template1
+      template2 = await template2.SaveAsync();
+
+      var template3 = dp.Create(42);
+      template3.Name = "Skeleton Template";
+      template3.Species = "Undead";
+      template3.IsNpc = true;
+      template3.IsTemplate = true;
+      template3.Category = "Undead";
+      template3 = await template3.SaveAsync();
+
+      var template4 = dp.Create(42);
+      template4.Name = "Uncategorized Template";
+      template4.Species = "Human";
+      template4.IsNpc = true;
+      template4.IsTemplate = true;
+      template4.Category = null; // No category
+      template4 = await template4.SaveAsync();
+
+      // Query categories
+      var categories = await characterDal.GetNpcCategoriesAsync();
+
+      // Verify results
+      Assert.IsTrue(categories.Contains("Beasts"), "Should include Beasts category");
+      Assert.IsTrue(categories.Contains("Undead"), "Should include Undead category");
+      Assert.AreEqual(1, categories.Count(c => c == "Beasts"), "Beasts should appear only once (distinct)");
+      Assert.IsFalse(categories.Any(c => string.IsNullOrWhiteSpace(c)), "Should not include null/empty categories");
+
+      // Should be sorted
+      var sortedCategories = categories.OrderBy(c => c).ToList();
+      CollectionAssert.AreEqual(sortedCategories, categories, "Categories should be sorted alphabetically");
     }
   }
 }

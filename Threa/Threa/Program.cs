@@ -49,6 +49,9 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TooltipService>();
 builder.Services.AddScoped<ContextMenuService>();
 
+// NPC auto-naming service (session-scoped)
+builder.Services.AddScoped<NpcAutoNamingService>();
+
 // Health checks for Kubernetes probes
 builder.Services.AddHealthChecks();
 

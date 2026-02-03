@@ -56,6 +56,33 @@ namespace GameMechanics.GameMaster
       private set => LoadProperty(XPBankedProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsNpcProperty = RegisterProperty<bool>(nameof(IsNpc));
+    public bool IsNpc
+    {
+      get => GetProperty(IsNpcProperty);
+      private set => LoadProperty(IsNpcProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsTemplateProperty = RegisterProperty<bool>(nameof(IsTemplate));
+    public bool IsTemplate
+    {
+      get => GetProperty(IsTemplateProperty);
+      private set => LoadProperty(IsTemplateProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the character type for display: "PC", "NPC", or "Template"
+    /// </summary>
+    public string CharacterType
+    {
+      get
+      {
+        if (IsTemplate) return "Template";
+        if (IsNpc) return "NPC";
+        return "PC";
+      }
+    }
+
     [FetchChild]
     private void Fetch(Character character)
     {
@@ -66,6 +93,8 @@ namespace GameMechanics.GameMaster
       IsPlayable = character.IsPlayable;
       XPTotal = character.XPTotal;
       XPBanked = character.XPBanked;
+      IsNpc = character.IsNpc;
+      IsTemplate = character.IsTemplate;
     }
   }
 }

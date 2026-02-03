@@ -1,0 +1,48 @@
+@namespace Threa.Client.Components.Shared
+
+@using GameMechanics.GamePlay
+@using Threa.Dal.Dto
+
+<div class="npc-status-card position-relative">
+    @* Disposition Icon - Top Right Corner *@
+    <div class="position-absolute npc-disposition-icon" style="top: 4px; right: 8px; z-index: 1;">
+        @switch (Character.Disposition)
+        {
+            case NpcDisposition.Hostile:
+                <i class="bi bi-skull text-danger" title="Hostile"></i>
+                break;
+            case NpcDisposition.Neutral:
+                <i class="bi bi-circle text-secondary" title="Neutral"></i>
+                break;
+            case NpcDisposition.Friendly:
+                <i class="bi bi-heart text-success" title="Friendly"></i>
+                break;
+        }
+    </div>
+
+    @* Reuse existing CharacterStatusCard *@
+    <CharacterStatusCard Character="@Character"
+                         IsSelected="@IsSelected"
+                         OnClick="@OnClick" />
+
+    @* Template Label - Below Card *@
+    @if (!string.IsNullOrEmpty(Character.SourceTemplateName))
+    {
+        <div class="npc-template-label text-center">
+            <small class="text-muted" style="font-size: 0.7rem;">
+                From: @Character.SourceTemplateName
+            </small>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TableCharacterInfo Character { get; set; } = null!;
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<TableCharacterInfo> OnClick { get; set; }
+}

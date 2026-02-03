@@ -1,99 +1,69 @@
-# Requirements: Threa TTRPG Assistant - v1.3 GM Character Manipulation
+# Requirements: Threa NPC Management System
 
-**Defined:** 2026-01-28
+**Defined:** 2026-02-01
 **Core Value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## v1.3 Requirements
+## v1.5 Requirements
 
-Requirements for GM character manipulation milestone. Each maps to roadmap phases.
+Requirements for NPC Management System. Each maps to roadmap phases.
 
-### Health Management
+### NPC Templates
 
-- [ ] **HLTH-01**: GM can apply damage to character FAT pool (adds to pending damage)
-- [ ] **HLTH-02**: GM can apply damage to character VIT pool (adds to pending damage)
-- [ ] **HLTH-03**: GM can apply healing to character FAT pool (adds to pending healing)
-- [ ] **HLTH-04**: GM can apply healing to character VIT pool (adds to pending healing)
-- [ ] **HLTH-05**: GM can specify damage/healing amount via numeric input
-- [ ] **HLTH-06**: GM can view current and pending FAT/VIT values before applying changes
-- [ ] **HLTH-07**: Damage/healing applies immediately to pending pools and triggers real-time dashboard update
+- [x] **TMPL-01**: GM can create NPC templates with full character stats (attributes, skills, equipment)
+- [x] **TMPL-02**: GM can edit existing NPC templates
+- [x] **TMPL-03**: GM can browse/search NPC templates (filter by category/tags)
+- [x] **TMPL-04**: GM can delete/deactivate NPC templates
+- [x] **TMPL-05**: NPC templates support category tags for organization (humanoid, beast, undead, etc.)
 
-### Wound Management
+### NPC Creation
 
-- [ ] **WOND-01**: GM can add wound to character with severity level and description
-- [ ] **WOND-02**: GM can remove wound from character
-- [ ] **WOND-03**: GM can edit wound description and severity
-- [ ] **WOND-04**: GM can view all active wounds on character with severities
+- [x] **CRTN-01**: GM can quick-create NPC from template (spawn instance to active table)
+- [x] **CRTN-02**: NPCs have full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
+- [x] **CRTN-03**: Smart naming auto-generates unique names ("Goblin 1", "Goblin 2")
+- [x] **CRTN-04**: GM can add session-specific notes to individual NPC instances
 
-### Effect Management
+### Dashboard Display
 
-- [ ] **EFCT-01**: GM can add custom effect to character with name, description, and duration
-- [ ] **EFCT-02**: GM can specify effect modifiers (attribute/skill bonuses or penalties)
-- [ ] **EFCT-03**: GM can set effect duration in rounds or turns
-- [ ] **EFCT-04**: GM can remove active effect from character
-- [ ] **EFCT-05**: GM can edit effect duration (extend/reduce time remaining)
-- [ ] **EFCT-06**: GM can edit effect modifiers on existing effect
-- [ ] **EFCT-07**: GM can view all active effects on character with durations
-- [ ] **EFCT-08**: GM can create effect template for reuse (saved preset)
-- [ ] **EFCT-09**: GM can apply effect from saved template to character
-- [ ] **EFCT-10**: Effect changes trigger real-time dashboard update
+- [x] **DASH-01**: NPCs appear in GM dashboard in separate section from PCs
+- [x] **DASH-02**: NPC status cards show same info as PC cards (FAT/VIT/wounds, AP, effects)
+- [x] **DASH-03**: NPC detail modal provides same manipulation powers as PCs (health, wounds, effects, inventory, stats)
+- [x] **DASH-04**: NPCs display disposition marker (Hostile/Neutral/Friendly) with visual differentiation
 
-### Inventory Manipulation
+### Visibility & Surprise
 
-- [ ] **INVT-01**: GM can add item from template library to character inventory
-- [ ] **INVT-02**: GM can specify quantity when adding stackable items
-- [ ] **INVT-03**: GM can remove item from character inventory
-- [ ] **INVT-04**: GM can modify quantity of stackable items in inventory
-- [ ] **INVT-05**: GM can equip item to character equipment slot
-- [ ] **INVT-06**: GM can unequip item from character equipment slot
-- [ ] **INVT-07**: Inventory changes trigger real-time dashboard update
-- [ ] **INVT-08**: GM can view character inventory before making changes
+- [ ] **VSBL-01**: GM can toggle NPC visibility (hide/reveal for surprise encounters)
+- [ ] **VSBL-02**: Hidden NPCs do not appear in player-visible views
+- [ ] **VSBL-03**: Visibility toggle is accessible from both status card and detail modal
 
-### Stat Editing
+### NPC Lifecycle
 
-- [ ] **STAT-01**: GM can edit character attribute values (STR, DEX, END, INT, ITT, WIL, PHY)
-- [ ] **STAT-02**: GM can edit character skill levels
-- [ ] **STAT-03**: Attribute changes recalculate dependent stats automatically
-- [ ] **STAT-04**: Skill changes recalculate Ability Scores automatically
-- [ ] **STAT-05**: Stat changes trigger real-time dashboard update
-- [ ] **STAT-06**: GM can view character sheet with current values before editing
+- [ ] **LIFE-01**: GM can remove/dismiss NPCs from active table
+- [ ] **LIFE-02**: NPCs persist across sessions until explicitly dismissed
+- [ ] **LIFE-03**: GM can save active NPC as new template (capture current state for reuse)
+- [ ] **LIFE-04**: Dismissed NPCs can be optionally deleted or archived
 
-### Concentration System
+### Time & Combat Integration
 
-- [ ] **CONC-01**: Casting time concentration effects track progress and execute deferred actions on completion
-- [ ] **CONC-02**: Casting time concentration effects fail without executing action when interrupted
-- [ ] **CONC-03**: Magazine reload concentration completes and updates weapon when concentration expires naturally
-- [ ] **CONC-04**: Magazine reload concentration fails and loses progress when interrupted
-- [ ] **CONC-05**: Sustained concentration effects drain FAT/VIT per round while active
-- [ ] **CONC-06**: Sustained concentration effects link to spell effects on target(s)
-- [ ] **CONC-07**: Breaking sustained concentration removes all linked effects from targets immediately
-- [ ] **CONC-08**: Character can only concentrate on one effect at a time
-- [ ] **CONC-09**: Taking active actions automatically breaks concentration with confirmation
-- [ ] **CONC-10**: Character failing concentration check breaks concentration and removes effect
-- [ ] **CONC-11**: Passive defense triggers concentration check using Focus skill vs attacker's AV
-- [ ] **CONC-12**: Damage dealt applies penalty to concentration check (-1 per 2 damage)
-- [ ] **CONC-13**: Character becoming unconscious/incapacitated automatically breaks concentration
-- [ ] **CONC-14**: Concentration effects expire automatically when caster's FAT/VIT reaches 0
-- [ ] **CONC-15**: UI displays concentration status with type, progress, and linked effects
+- [ ] **CMBT-01**: NPCs participate in round/time advancement (effects expire, AP recovers)
+- [ ] **CMBT-02**: NPCs can be targeted by combat actions
+- [ ] **CMBT-03**: Time advancement applies to NPCs same as PCs
 
 ## Future Requirements
 
-Deferred to future milestones.
+Deferred to later milestones.
 
-### NPC Management
+### Group Management (v1.6+)
 
-- **NPC-01**: GM can create NPC with stats and abilities
-- **NPC-02**: GM can edit NPC stats and properties
-- **NPC-03**: GM can add NPC to campaign table
-- **NPC-04**: NPC status appears in dashboard alongside player characters
-- **NPC-05**: GM can apply damage/healing to NPCs
-- **NPC-06**: GM can add/remove effects on NPCs
+- **GRPM-01**: GM can select multiple NPCs for batch actions
+- **GRPM-02**: GM can apply damage/healing to multiple NPCs at once
+- **GRPM-03**: GM can apply effects to multiple NPCs at once
+- **GRPM-04**: NPCs can be assigned to named groups
 
-### Advanced Features
+### Initiative System (v1.6+)
 
-- **ADV-01**: Initiative tracking with automatic turn order
-- **ADV-02**: Automated encounter balancing based on party composition
-- **ADV-03**: Session logs and history within campaign
-- **ADV-04**: Campaign sharing between multiple GMs
+- **INIT-01**: Initiative tracking with automatic turn order
+- **INIT-02**: Roll initiative for all hostile NPCs at once
+- **INIT-03**: Group identical NPCs in initiative order
 
 ## Out of Scope
 
@@ -101,13 +71,13 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Player-initiated health manipulation | GM-only power; players manage via combat/rest |
-| Direct current pool editing | Pending pools are the safe GM interface; avoids bypassing game rules |
-| Bulk effect application (to multiple characters) | Single-character focus for v1.3; batch operations are future enhancement |
-| Custom effect formulas/scripting | Predefined modifiers sufficient; scripting adds complexity |
-| Item creation from GM panel | Item templates managed separately; GM uses existing templates |
-| Character deletion by GM | Characters owned by players; GM can remove from table only |
-| Automated effect expiration notifications | Effect durations auto-expire on time skip; notifications are future UX enhancement |
+| Simplified NPC stat blocks | Full character model is already designed; creating second model doubles maintenance |
+| AI-powered NPC generation | Scope creep; not core to management workflow; adds external dependencies |
+| NPC-to-PC conversion | Edge case that complicates data model; copy manually if needed |
+| Automatic CR calculation | Threa has different power scaling than D&D; complex to implement correctly |
+| NPC loot tables | Feature creep; GM grants items manually using existing distribution system |
+| Map/token integration | Threa is not a VTT; no map system exists |
+| Voice/personality AI | Far outside core scope; GM manages roleplay manually |
 
 ## Traceability
 
@@ -115,62 +85,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HLTH-01 | Phase 17 | Complete |
-| HLTH-02 | Phase 17 | Complete |
-| HLTH-03 | Phase 17 | Complete |
-| HLTH-04 | Phase 17 | Complete |
-| HLTH-05 | Phase 17 | Complete |
-| HLTH-06 | Phase 17 | Complete |
-| HLTH-07 | Phase 17 | Complete |
-| WOND-01 | Phase 18 | Complete |
-| WOND-02 | Phase 18 | Complete |
-| WOND-03 | Phase 18 | Complete |
-| WOND-04 | Phase 18 | Complete |
-| EFCT-01 | Phase 19 | Pending |
-| EFCT-02 | Phase 19 | Pending |
-| EFCT-03 | Phase 19 | Pending |
-| EFCT-04 | Phase 19 | Pending |
-| EFCT-05 | Phase 19 | Pending |
-| EFCT-06 | Phase 19 | Pending |
-| EFCT-07 | Phase 19 | Pending |
-| EFCT-08 | Phase 19 | Pending |
-| EFCT-09 | Phase 19 | Pending |
-| EFCT-10 | Phase 19 | Pending |
-| INVT-01 | Phase 20 | Pending |
-| INVT-02 | Phase 20 | Pending |
-| INVT-03 | Phase 20 | Pending |
-| INVT-04 | Phase 20 | Pending |
-| INVT-05 | Phase 20 | Pending |
-| INVT-06 | Phase 20 | Pending |
-| INVT-07 | Phase 20 | Pending |
-| INVT-08 | Phase 20 | Pending |
-| STAT-01 | Phase 21 | Pending |
-| STAT-02 | Phase 21 | Pending |
-| STAT-03 | Phase 21 | Pending |
-| STAT-04 | Phase 21 | Pending |
-| STAT-05 | Phase 21 | Pending |
-| STAT-06 | Phase 21 | Pending |
-| CONC-01 | Phase 22 | Complete |
-| CONC-02 | Phase 22 | Complete |
-| CONC-03 | Phase 22 | Complete |
-| CONC-04 | Phase 22 | Complete |
-| CONC-05 | Phase 22 | Complete |
-| CONC-06 | Phase 22 | Complete |
-| CONC-07 | Phase 22 | Complete |
-| CONC-08 | Phase 22 | Complete |
-| CONC-09 | Phase 22 | Complete |
-| CONC-10 | Phase 22 | Complete |
-| CONC-11 | Phase 22 | Complete |
-| CONC-12 | Phase 22 | Complete |
-| CONC-13 | Phase 22 | Complete |
-| CONC-14 | Phase 22 | Complete |
-| CONC-15 | Phase 22 | Complete |
+| TMPL-01 | Phase 24 | Complete |
+| TMPL-02 | Phase 24 | Complete |
+| TMPL-03 | Phase 24 | Complete |
+| TMPL-04 | Phase 24 | Complete |
+| TMPL-05 | Phase 24 | Complete |
+| CRTN-01 | Phase 25 | Complete |
+| CRTN-02 | Phase 23, 25 | Complete |
+| CRTN-03 | Phase 25 | Complete |
+| CRTN-04 | Phase 25 | Complete |
+| DASH-01 | Phase 25 | Complete |
+| DASH-02 | Phase 25 | Complete |
+| DASH-03 | Phase 25 | Complete |
+| DASH-04 | Phase 25 | Complete |
+| VSBL-01 | Phase 26 | Pending |
+| VSBL-02 | Phase 26 | Pending |
+| VSBL-03 | Phase 26 | Pending |
+| LIFE-01 | Phase 26 | Pending |
+| LIFE-02 | Phase 26 | Pending |
+| LIFE-03 | Phase 26 | Pending |
+| LIFE-04 | Phase 26 | Pending |
+| CMBT-01 | Phase 27 | Pending |
+| CMBT-02 | Phase 27 | Pending |
+| CMBT-03 | Phase 27 | Pending |
 
 **Coverage:**
-- v1.3 requirements: 52 total (37 original + 15 concentration)
-- Mapped to phases: 52
+- v1.5 requirements: 23 total
+- Mapped to phases: 23
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-01-28*
-*Last updated: 2026-01-28 after roadmap creation*
+*Requirements defined: 2026-02-01*
+*Last updated: 2026-02-02 after Phase 25 completion*

@@ -360,6 +360,131 @@ namespace GameMechanics
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsNpcProperty = RegisterProperty<bool>(nameof(IsNpc));
+    [Display(Name = "Is NPC")]
+    public bool IsNpc
+    {
+      get => GetProperty(IsNpcProperty);
+      set => SetProperty(IsNpcProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> IsTemplateProperty = RegisterProperty<bool>(nameof(IsTemplate));
+    [Display(Name = "Is Template")]
+    public bool IsTemplate
+    {
+      get => GetProperty(IsTemplateProperty);
+      set => SetProperty(IsTemplateProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> VisibleToPlayersProperty = RegisterProperty<bool>(nameof(VisibleToPlayers));
+    [Display(Name = "Visible to Players")]
+    public bool VisibleToPlayers
+    {
+      get => GetProperty(VisibleToPlayersProperty);
+      set => SetProperty(VisibleToPlayersProperty, value);
+    }
+
+    // Template organization properties (for NPC templates)
+
+    public static readonly PropertyInfo<string?> CategoryProperty = RegisterProperty<string?>(nameof(Category));
+    [Display(Name = "Category")]
+    public string? Category
+    {
+      get => GetProperty(CategoryProperty);
+      set => SetProperty(CategoryProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> TagsProperty = RegisterProperty<string?>(nameof(Tags));
+    [Display(Name = "Tags")]
+    public string? Tags
+    {
+      get => GetProperty(TagsProperty);
+      set => SetProperty(TagsProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> TemplateNotesProperty = RegisterProperty<string?>(nameof(TemplateNotes));
+    [Display(Name = "Template Notes")]
+    public string? TemplateNotes
+    {
+      get => GetProperty(TemplateNotesProperty);
+      set => SetProperty(TemplateNotesProperty, value);
+    }
+
+    public static readonly PropertyInfo<NpcDisposition> DefaultDispositionProperty = RegisterProperty<NpcDisposition>(nameof(DefaultDisposition));
+    [Display(Name = "Default Disposition")]
+    public NpcDisposition DefaultDisposition
+    {
+      get => GetProperty(DefaultDispositionProperty);
+      set => SetProperty(DefaultDispositionProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> DifficultyRatingProperty = RegisterProperty<int>(nameof(DifficultyRating));
+    [Display(Name = "Difficulty Rating")]
+    public int DifficultyRating
+    {
+      get => GetProperty(DifficultyRatingProperty);
+      private set => LoadProperty(DifficultyRatingProperty, value);
+    }
+
+    // Source template tracking (for spawned NPCs)
+
+    public static readonly PropertyInfo<int?> SourceTemplateIdProperty = RegisterProperty<int?>(nameof(SourceTemplateId));
+    [Display(Name = "Source Template ID")]
+    public int? SourceTemplateId
+    {
+      get => GetProperty(SourceTemplateIdProperty);
+      set => SetProperty(SourceTemplateIdProperty, value);
+    }
+
+    public static readonly PropertyInfo<string?> SourceTemplateNameProperty = RegisterProperty<string?>(nameof(SourceTemplateName));
+    [Display(Name = "Source Template")]
+    public string? SourceTemplateName
+    {
+      get => GetProperty(SourceTemplateNameProperty);
+      set => SetProperty(SourceTemplateNameProperty, value);
+    }
+
+    /// <summary>
+    /// Calculates the difficulty rating based on combat-related skills and health pools.
+    /// Call this after skills are set to update the DifficultyRating property.
+    /// </summary>
+    /// <returns>Calculated difficulty rating (minimum 1).</returns>
+    public int CalculateDifficultyRating()
+    {
+      // Find combat-related skills
+      var combatSkills = Skills.Where(s =>
+        s.Name.Contains("Combat", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Melee", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Ranged", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Firearms", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Archery", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Dodge", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Block", StringComparison.OrdinalIgnoreCase) ||
+        s.Name.Contains("Parry", StringComparison.OrdinalIgnoreCase)
+      ).ToList();
+
+      // Calculate average combat AS
+      double avgCombatAS = 0;
+      if (combatSkills.Count > 0)
+      {
+        avgCombatAS = combatSkills.Average(s => s.AbilityScore);
+      }
+
+      // Add health modifier: (Fatigue + Vitality) / 10
+      double healthModifier = (Fatigue.BaseValue + Vitality.BaseValue) / 10.0;
+
+      // Calculate rating: average combat AS + health modifier - 10 (normalize around 0-10)
+      int rating = (int)Math.Round(avgCombatAS + healthModifier - 10);
+
+      // Ensure minimum of 1
+      rating = Math.Max(1, rating);
+
+      // Store in property
+      DifficultyRating = rating;
+
+      return rating;
+    }
+
     public static readonly PropertyInfo<long> CurrentGameTimeSecondsProperty = RegisterProperty<long>(nameof(CurrentGameTimeSeconds));
     /// <summary>
     /// Current game time in seconds from epoch 0.
@@ -858,6 +983,7 @@ namespace GameMechanics
         Fatigue = fatPortal.CreateChild(this);
         Vitality = vitPortal.CreateChild(this);
         ActionPoints = actionPointsPortal.CreateChild(this);
+        VisibleToPlayers = true;
       }
       BusinessRules.CheckRules();
       
