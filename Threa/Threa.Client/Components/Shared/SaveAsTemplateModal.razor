@@ -1,0 +1,147 @@
+@using GameMechanics
+@using Threa.Dal
+
+@inject IDataPortal<NpcTemplateCreator> CreatorPortal
+@inject ICharacterDal CharacterDal
+
+<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-plus me-2"></i>Save as Template
+                </h5>
+                <button type="button" class="btn-close" @onclick="Cancel"></button>
+            </div>
+            <div class="modal-body">
+                @if (errorMessage != null)
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Template Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" @bind="templateName" />
+                    <small class="text-muted">Name for the new template</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-control" @bind="category"
+                           list="categoryList" placeholder="e.g., Humanoids, Beasts, Undead" />
+                    <datalist id="categoryList">
+                        @foreach (var cat in existingCategories)
+                        {
+                            <option value="@cat" />
+                        }
+                    </datalist>
+                    <small class="text-muted">Optional folder-like grouping</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tags</label>
+                    <input type="text" class="form-control" @bind="tags"
+                           placeholder="e.g., minion, melee, boss" />
+                    <small class="text-muted">Comma-separated tags for filtering</small>
+                </div>
+
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>What gets saved:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li>Attributes, skills, and equipment</li>
+                        <li>Health pools reset to full</li>
+                        <li>All temporary effects cleared</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                <button type="button" class="btn btn-primary"
+                        @onclick="Save"
+                        disabled="@(string.IsNullOrWhiteSpace(templateName) || isSaving)">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    <i class="bi bi-file-earmark-plus me-1"></i>Save Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CharacterEdit Character { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
+
+    private string templateName = "";
+    private string category = "";
+    private string tags = "";
+    private List<string> existingCategories = new();
+    private bool isSaving;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Pre-fill with character name
+        templateName = Character.Name;
+        category = Character.Category ?? "";
+        tags = Character.Tags ?? "";
+
+        // Load existing categories for autocomplete
+        try
+        {
+            existingCategories = await CharacterDal.GetNpcCategoriesAsync();
+        }
+        catch
+        {
+            existingCategories = new List<string>();
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(templateName)) return;
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var creator = CreatorPortal.Create();
+            creator.SourceCharacterId = Character.Id;
+            creator.TemplateName = templateName.Trim();
+            creator.Category = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
+            creator.Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim();
+
+            creator = await CreatorPortal.ExecuteAsync(creator);
+
+            if (creator.Success)
+            {
+                await OnClose.InvokeAsync(true);
+            }
+            else
+            {
+                errorMessage = creator.ErrorMessage ?? "Failed to create template";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await OnClose.InvokeAsync(false);
+    }
+}
