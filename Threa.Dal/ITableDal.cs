@@ -100,4 +100,9 @@ public interface ITableDal
     /// Gets the GM notes for a specific character at a specific table.
     /// </summary>
     Task<string?> GetGmNotesAsync(Guid tableId, int characterId);
+
+    /// <summary>
+    /// Updates the connection status and last activity timestamp for a character at a table.
+    /// </summary>
+    Task UpdateCharacterConnectionStatusAsync(Guid tableId, int characterId, ConnectionStatus status, DateTime lastActivity);
 }

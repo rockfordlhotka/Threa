@@ -8,6 +8,7 @@ using Radzen;
 using Threa.Components;
 using Threa.Dal;
 using Threa.Services;
+using Threa.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,8 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddTransient<RenderModeProvider>();
 builder.Services.AddScoped<ActiveCircuitState>();
+builder.Services.AddScoped<CircuitIdProvider>();
+builder.Services.AddSingleton<PlayerConnectionTracker>();
 builder.Services.AddScoped(typeof(CircuitHandler), typeof(ActiveCircuitHandler));
 
 builder.Services.AddCsla(o => o

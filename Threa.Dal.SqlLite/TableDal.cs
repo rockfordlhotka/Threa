@@ -599,4 +599,44 @@ public class TableDal : ITableDal
             throw new OperationFailedException("Error getting GM notes", ex);
         }
     }
+
+    public async Task UpdateCharacterConnectionStatusAsync(Guid tableId, int characterId, ConnectionStatus status, DateTime lastActivity)
+    {
+        try
+        {
+            // First fetch the existing table character
+            var fetchSql = "SELECT Json FROM TableCharacters WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var fetchCommand = Connection.CreateCommand();
+            fetchCommand.CommandText = fetchSql;
+            fetchCommand.Parameters.AddWithValue("@TableId", tableId.ToString());
+            fetchCommand.Parameters.AddWithValue("@CharacterId", characterId);
+            using var reader = await fetchCommand.ExecuteReaderAsync();
+
+            if (!reader.Read())
+                return; // Character not at table - silently ignore
+
+            string json = reader.GetString(0);
+            var tableChar = JsonSerializer.Deserialize<TableCharacter>(json);
+            if (tableChar == null)
+                return; // Invalid data - silently ignore
+
+            // Update the connection status and last activity
+            tableChar.ConnectionStatus = status;
+            tableChar.LastActivity = lastActivity;
+
+            // Save back
+            var updateSql = "UPDATE TableCharacters SET Json = @Json WHERE TableId = @TableId AND CharacterId = @CharacterId";
+            using var updateCommand = Connection.CreateCommand();
+            updateCommand.CommandText = updateSql;
+            updateCommand.Parameters.AddWithValue("@TableId", tableId.ToString());
+            updateCommand.Parameters.AddWithValue("@CharacterId", characterId);
+            updateCommand.Parameters.AddWithValue("@Json", JsonSerializer.Serialize(tableChar));
+            await updateCommand.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log but don't throw - connection tracking is not critical
+            Console.WriteLine($"[TableDal] Error updating character connection status: {ex}");
+        }
+    }
 }
