@@ -114,6 +114,15 @@ Plans:
 
 **Dependencies:** Phase 25 (NPCs exist to hide/manage)
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 26-01-PLAN.md — Data model extensions (TableCharacterInfo.VisibleToPlayers, IsArchived, DAL methods)
+- [ ] 26-02-PLAN.md — Visibility toggle (spawn hidden, Hidden section, HiddenNpcCard, modal toggle)
+- [ ] 26-03-PLAN.md — NPC lifecycle - dismiss/archive/delete in CharacterDetailAdmin
+- [ ] 26-04-PLAN.md — NPC archive browser page with restore flow
+- [ ] 26-05-PLAN.md — Save as template (NpcTemplateCreator command, modal integration)
+
 **Requirements:**
 - VSBL-01: GM can toggle NPC visibility
 - VSBL-02: Hidden NPCs do not appear in player-visible views
@@ -165,7 +174,7 @@ Plans:
 | 23 | Data Model Foundation | 1 | Complete |
 | 24 | NPC Template System | 5 | Complete |
 | 25 | NPC Creation & Dashboard | 8 | Complete |
-| 26 | Visibility & Lifecycle | 7 | Pending |
+| 26 | Visibility & Lifecycle | 7 | Planned |
 | 27 | Time & Combat Integration | 3 | Pending |
 
 **Total:** 23 requirements mapped / 23 total = 100% coverage
@@ -206,3 +215,4 @@ Plans:
 *Phase 24 complete: 2026-02-02*
 *Phase 25 planned: 2026-02-02*
 *Phase 25 complete: 2026-02-02*
+*Phase 26 planned: 2026-02-03*
