@@ -12,6 +12,7 @@
 @inject DialogService DialogService
 @inject ITableDal tableDal
 @inject ITimeEventSubscriber TimeEventSubscriber
+@inject ITimeEventPublisher TimeEventPublisher
 
 <div class="character-detail-modal">
     <!-- Header with character switcher, summary, and close -->
@@ -85,6 +86,17 @@
                         <span class="badge bg-info" title="Active Effects">
                             <i class="bi bi-stars"></i> @character.Effects.Count(e => e.EffectType != Threa.Dal.Dto.EffectType.Wound)
                         </span>
+                    }
+
+                    @* NPC Visibility Toggle *@
+                    @if (character.IsNpc)
+                    {
+                        <button class="btn @(character.VisibleToPlayers ? "btn-outline-warning" : "btn-outline-success") btn-sm ms-2"
+                                @onclick="ToggleVisibility"
+                                title="@(character.VisibleToPlayers ? "Hide from players" : "Reveal to players")">
+                            <i class="bi @(character.VisibleToPlayers ? "bi-eye-slash" : "bi-eye") me-1"></i>
+                            @(character.VisibleToPlayers ? "Hide" : "Reveal")
+                        </button>
                     }
                 </div>
             </div>
@@ -283,6 +295,35 @@
     {
         // Close the modal - the character has been removed from the table
         DialogService.Close("removed");
+    }
+
+    private async Task ToggleVisibility()
+    {
+        if (character == null || !character.IsNpc) return;
+
+        var wasVisible = character.VisibleToPlayers;
+        character.VisibleToPlayers = !character.VisibleToPlayers;
+
+        try
+        {
+            await characterPortal.UpdateAsync(character);
+
+            // Publish update for real-time sync
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = character.Id,
+                UpdateType = CharacterUpdateType.General,
+                CampaignId = TableId.ToString(),
+                Description = character.VisibleToPlayers ? "Revealed to players" : "Hidden from players"
+            });
+        }
+        catch
+        {
+            // Revert on failure
+            character.VisibleToPlayers = wasVisible;
+        }
+
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()
