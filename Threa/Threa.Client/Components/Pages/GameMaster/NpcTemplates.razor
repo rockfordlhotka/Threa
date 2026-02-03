@@ -17,6 +17,7 @@
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject Threa.Services.NpcAutoNamingService NamingService
+@inject Threa.Dal.ICharacterDal CharacterDal
 
 @attribute [Authorize(Roles = "GameMaster,Administrator")]
 
@@ -30,7 +31,10 @@
     </div>
     <div>
         <a href="/gamemaster/templates/new" class="btn btn-primary btn-sm me-2">Create New</a>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="ShowCloneModal">Clone From...</button>
+        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="ShowCloneModal">Clone From...</button>
+        <a href="/gamemaster/npcs/archive" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-archive me-1"></i>Archive (@archivedCount)
+        </a>
     </div>
 </div>
 
@@ -217,6 +221,7 @@ else
     private List<string> availableTags = new();
     private System.Timers.Timer? debounceTimer;
     private const int DebounceMs = 300;
+    private int archivedCount;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -224,6 +229,18 @@ else
         allTemplates = vm.Model;
         ExtractFilters();
         ApplyFilters();
+
+        // Load archived count for badge
+        try
+        {
+            var archived = await CharacterDal.GetArchivedNpcsAsync();
+            archivedCount = archived.Count;
+        }
+        catch
+        {
+            archivedCount = 0;
+        }
+
         StateHasChanged();
     }
 
