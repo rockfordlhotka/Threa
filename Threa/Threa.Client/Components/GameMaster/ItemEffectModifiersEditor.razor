@@ -1,0 +1,199 @@
+@using GameMechanics.Effects.Behaviors
+@using System.Text.Json
+@using Radzen
+@using Radzen.Blazor
+
+<div class="modifiers-editor">
+    <div class="mb-2">
+        <RadzenButton Text="Add Modifier" Icon="add" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary"
+                      Click="@AddModifier" />
+    </div>
+
+    @if (_state.Modifiers.Count == 0)
+    {
+        <div class="text-muted small p-2 border rounded">
+            No modifiers defined. Add modifiers to specify what this effect does.
+        </div>
+    }
+    else
+    {
+        <div class="modifiers-list">
+            @foreach (var (modifier, index) in _state.Modifiers.Select((m, i) => (m, i)))
+            {
+                <div class="modifier-row d-flex align-items-center gap-2 p-2 border-bottom" @key="index">
+                    <RadzenDropDown @bind-Value="modifier.Type" Data="@_modifierTypes"
+                                    TextProperty="Text" ValueProperty="Value"
+                                    Style="width: 150px" Change="@((object args) => OnChange())" />
+
+                    @switch (modifier.Type)
+                    {
+                        case BuffModifierType.Attribute:
+                            <RadzenDropDown @bind-Value="modifier.Target" Data="@_attributes"
+                                            Style="width: 100px" Change="@((object args) => OnChange())"
+                                            Placeholder="Attr" />
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">bonus</span>
+                            break;
+
+                        case BuffModifierType.AbilityScoreGlobal:
+                            <span class="text-muted">All skills</span>
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">bonus</span>
+                            break;
+
+                        case BuffModifierType.AbilityScoreSkill:
+                            <RadzenTextBox @bind-Value="modifier.Target" Style="width: 150px"
+                                           Placeholder="Skill name" Change="@((string args) => OnChange())" />
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">bonus</span>
+                            break;
+
+                        case BuffModifierType.SuccessValueGlobal:
+                            <span class="text-muted">All SVs</span>
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">bonus</span>
+                            break;
+
+                        case BuffModifierType.SuccessValueAction:
+                            <RadzenTextBox @bind-Value="modifier.Target" Style="width: 150px"
+                                           Placeholder="Action type" Change="@((string args) => OnChange())" />
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">bonus</span>
+                            break;
+
+                        case BuffModifierType.HealingOverTime:
+                            <RadzenDropDown @bind-Value="modifier.Target" Data="@_healthPools"
+                                            Style="width: 80px" Change="@((object args) => OnChange())"
+                                            Placeholder="Pool" />
+                            <RadzenNumeric @bind-Value="modifier.Value" Style="width: 80px"
+                                           Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">per</span>
+                            <RadzenNumeric @bind-Value="modifier.HealIntervalRounds" Style="width: 80px"
+                                           Min="1" Change="@((int args) => OnChange())" />
+                            <span class="text-muted small">rounds</span>
+                            <span class="text-info small ms-2">
+                                @if (modifier.Value > 0)
+                                {
+                                    <text>(heals)</text>
+                                }
+                                else
+                                {
+                                    <text>(damages)</text>
+                                }
+                            </span>
+                            break;
+                    }
+
+                    <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger"
+                                  Click="@(() => RemoveModifier(modifier))" title="Remove modifier" />
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Advanced Settings -->
+    <RadzenPanel AllowCollapse="true" Collapsed="true" class="mt-3">
+        <HeaderTemplate>
+            <span class="small">Advanced Settings</span>
+        </HeaderTemplate>
+        <ChildContent>
+            <div class="p-2">
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <RadzenLabel Text="Effect Name Override" Component="effectName" />
+                        <RadzenTextBox @bind-Value="_state.EffectName" Name="effectName" Style="width: 100%"
+                                       Placeholder="Display name in effect list" Change="@((string args) => OnChange())" />
+                    </div>
+                    <div class="col-6">
+                        <RadzenLabel Text="Item Name" Component="itemName" />
+                        <RadzenTextBox @bind-Value="_state.ItemName" Name="itemName" Style="width: 100%"
+                                       Placeholder="Source item display name" Change="@((string args) => OnChange())" />
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-4">
+                        <RadzenLabel Text="Identify Difficulty" Component="identifyDiff" />
+                        <RadzenNumeric @bind-Value="_state.IdentifyDifficulty" Name="identifyDiff"
+                                       Style="width: 100%" Min="0" Change="@((int args) => OnChange())" />
+                    </div>
+                    <div class="col-4">
+                        <RadzenLabel Text="Removal Difficulty" Component="removalDiff" />
+                        <RadzenNumeric @bind-Value="_state.RemovalDifficulty" Name="removalDiff"
+                                       Style="width: 100%" Min="0" Change="@((int args) => OnChange())" />
+                    </div>
+                    <div class="col-4 d-flex align-items-end">
+                        <div>
+                            <RadzenCheckBox @bind-Value="_state.IsRevealed" Name="isRevealed" />
+                            <RadzenLabel Text="Initially Revealed" Component="isRevealed" Style="margin-left: 8px" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ChildContent>
+    </RadzenPanel>
+</div>
+
+@code {
+    [Parameter]
+    public string? BehaviorState { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> BehaviorStateChanged { get; set; }
+
+    private ItemEffectState _state = new();
+
+    private readonly List<DropdownItem<BuffModifierType>> _modifierTypes =
+    [
+        new("Attribute", BuffModifierType.Attribute),
+        new("Skill Bonus", BuffModifierType.AbilityScoreSkill),
+        new("All Skills", BuffModifierType.AbilityScoreGlobal),
+        new("SV (Global)", BuffModifierType.SuccessValueGlobal),
+        new("SV (Action)", BuffModifierType.SuccessValueAction),
+        new("Heal/Damage", BuffModifierType.HealingOverTime)
+    ];
+
+    private readonly List<string> _attributes = ["STR", "DEX", "END", "INT", "ITT", "WIL", "PHY"];
+    private readonly List<string> _healthPools = ["FAT", "VIT"];
+
+    protected override void OnParametersSet()
+    {
+        _state = ItemEffectState.Deserialize(BehaviorState);
+    }
+
+    private void AddModifier()
+    {
+        _state.Modifiers.Add(new BuffModifier
+        {
+            Type = BuffModifierType.Attribute,
+            Target = "STR",
+            Value = 1
+        });
+        UpdateBehaviorState();
+    }
+
+    private void RemoveModifier(BuffModifier modifier)
+    {
+        _state.Modifiers.Remove(modifier);
+        UpdateBehaviorState();
+    }
+
+    private void OnChange()
+    {
+        UpdateBehaviorState();
+    }
+
+    private void UpdateBehaviorState()
+    {
+        var json = _state.Modifiers.Count > 0 || !string.IsNullOrEmpty(_state.EffectName)
+            ? _state.Serialize()
+            : null;
+        BehaviorStateChanged.InvokeAsync(json);
+    }
+
+    private record DropdownItem<T>(string Text, T Value);
+}

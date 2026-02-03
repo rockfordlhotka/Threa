@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Csla;
 using Csla.Core;
@@ -237,6 +238,17 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(ContainerWeightReductionProperty, value);
     }
 
+    public static readonly PropertyInfo<ItemEffectEditList> EffectsProperty = RegisterProperty<ItemEffectEditList>(nameof(Effects));
+    /// <summary>
+    /// Magic/tech effects that this item can apply to a character.
+    /// These are applied based on their trigger conditions (equipped, possessed, used, etc.).
+    /// </summary>
+    public ItemEffectEditList Effects
+    {
+        get => GetProperty(EffectsProperty);
+        private set => LoadProperty(EffectsProperty, value);
+    }
+
     protected override void AddBusinessRules()
     {
         base.AddBusinessRules();
@@ -257,7 +269,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
     }
 
     [Create]
-    private async Task Create()
+    private async Task Create([Inject] IChildDataPortal<ItemEffectEditList> effectsPortal)
     {
         using (BypassPropertyChecks)
         {
@@ -293,20 +305,21 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ContainerMaxVolume = null;
             ContainerAllowedTypes = null;
             ContainerWeightReduction = 1.0m;
+            Effects = effectsPortal.CreateChild();
         }
         BusinessRules.CheckRules();
         await Task.CompletedTask;
     }
 
     [Fetch]
-    private async Task Fetch(int id, [Inject] IItemTemplateDal dal)
+    private async Task Fetch(int id, [Inject] IItemTemplateDal dal, [Inject] IChildDataPortal<ItemEffectEditList> effectsPortal)
     {
         var data = await dal.GetTemplateAsync(id)
             ?? throw new InvalidOperationException($"ItemTemplate {id} not found");
-        LoadFromDto(data);
+        LoadFromDto(data, effectsPortal);
     }
 
-    private void LoadFromDto(ItemTemplate data)
+    private void LoadFromDto(ItemTemplate data, IChildDataPortal<ItemEffectEditList>? effectsPortal = null)
     {
         using (BypassPropertyChecks)
         {
@@ -342,6 +355,12 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ContainerMaxVolume = data.ContainerMaxVolume;
             ContainerAllowedTypes = data.ContainerAllowedTypes;
             ContainerWeightReduction = data.ContainerWeightReduction;
+
+            // Load effects child collection
+            if (effectsPortal != null)
+            {
+                Effects = effectsPortal.FetchChild(data.Effects ?? []);
+            }
         }
         BusinessRules.CheckRules();
     }
@@ -381,7 +400,8 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ContainerMaxWeight = ContainerMaxWeight,
             ContainerMaxVolume = ContainerMaxVolume,
             ContainerAllowedTypes = ContainerAllowedTypes,
-            ContainerWeightReduction = ContainerWeightReduction
+            ContainerWeightReduction = ContainerWeightReduction,
+            Effects = Effects?.ToDtoList() ?? []
         };
 
         var result = await dal.SaveTemplateAsync(dto);
@@ -427,7 +447,8 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ContainerMaxWeight = ContainerMaxWeight,
             ContainerMaxVolume = ContainerMaxVolume,
             ContainerAllowedTypes = ContainerAllowedTypes,
-            ContainerWeightReduction = ContainerWeightReduction
+            ContainerWeightReduction = ContainerWeightReduction,
+            Effects = Effects?.ToDtoList() ?? []
         };
 
         await dal.SaveTemplateAsync(dto);

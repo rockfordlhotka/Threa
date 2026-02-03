@@ -699,6 +699,19 @@ else
                         </table>
                     </RadzenTabsItem>
                 }
+
+                    <!-- ========================== -->
+                    <!-- EFFECTS TAB (Always visible) -->
+                    <!-- ========================== -->
+                    <RadzenTabsItem Text="Effects">
+                        <div class="info-box mt-3">
+                            <strong>Item Effects</strong>
+                            <span class="badge bg-secondary ms-2">@(vm.Model.Effects?.Count ?? 0)</span>
+                        </div>
+                        <div class="mt-3">
+                            <Threa.Client.Components.GameMaster.ItemEffectsEditor Item="@vm.Model" />
+                        </div>
+                    </RadzenTabsItem>
                 </Tabs>
             </RadzenTabs>
         </div>
