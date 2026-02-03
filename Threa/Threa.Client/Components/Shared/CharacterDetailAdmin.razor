@@ -45,6 +45,14 @@
                         Manage this NPC's lifecycle. Archive to save for later, or delete to remove permanently.
                     </p>
                     <div class="d-flex flex-column gap-2">
+                        @* Save as Template *@
+                        <button class="btn btn-outline-primary" @onclick="OpenSaveAsTemplateModal" disabled="@isProcessing">
+                            <i class="bi bi-file-earmark-plus me-1"></i>Save as Template
+                        </button>
+                        <small class="text-muted">Create a reusable template from this NPC's current state.</small>
+
+                        <hr class="my-2" />
+
                         @* Archive - instant, no confirmation *@
                         <button class="btn btn-outline-secondary" @onclick="ArchiveNpc" disabled="@isProcessing">
                             <i class="bi bi-archive me-1"></i>Archive NPC
@@ -113,6 +121,13 @@
     </div>
 }
 
+@* Save as Template Modal *@
+@if (showSaveAsTemplateModal && Character != null)
+{
+    <SaveAsTemplateModal Character="@Character"
+                         OnClose="OnSaveAsTemplateModalClose" />
+}
+
 @* Feedback messages *@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -139,6 +154,7 @@
     private bool isProcessing;
     private bool showRemoveConfirm;
     private bool showDeleteNpcConfirm;
+    private bool showSaveAsTemplateModal;
     private string? errorMessage;
 
     private void ConfirmRemove()
@@ -215,6 +231,22 @@
     private void CancelDeleteNpc()
     {
         showDeleteNpcConfirm = false;
+    }
+
+    private void OpenSaveAsTemplateModal()
+    {
+        showSaveAsTemplateModal = true;
+    }
+
+    private async Task OnSaveAsTemplateModalClose(bool saved)
+    {
+        showSaveAsTemplateModal = false;
+        if (saved)
+        {
+            // Template was successfully created
+            // Could show a success message or navigate to template library
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ExecuteDeleteNpc()
