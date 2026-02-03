@@ -1,0 +1,128 @@
+@using GameMechanics.Items
+@using Threa.Dal.Dto
+@using Csla
+@using Radzen
+@using Radzen.Blazor
+
+@inject IChildDataPortal<ItemEffectEdit> effectPortal
+@inject Radzen.DialogService DialogService
+
+<div class="effects-editor">
+    <div class="effects-toolbar mb-3">
+        <RadzenButton Text="Add Effect" Icon="add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                      Click="@AddEffect" />
+    </div>
+
+    @if (Item.Effects.Count == 0)
+    {
+        <div class="no-effects-message alert alert-info">
+            <p class="mb-1"><strong>No effects defined for this item.</strong></p>
+            <p class="mb-0 text-muted small">
+                Effects allow items to apply buffs, debuffs, or special abilities when equipped, possessed, or used.
+                Click "Add Effect" to define a new effect.
+            </p>
+        </div>
+    }
+    else
+    {
+        <RadzenDataGrid Data="@Item.Effects" TItem="ItemEffectEdit" AllowSorting="true" AllowFiltering="false"
+                        GridLines="DataGridGridLines.Both" Density="Density.Compact">
+            <Columns>
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Property="Name" Title="Effect Name" Width="180px" />
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Property="TriggerDisplayName" Title="Trigger" Width="130px" />
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Property="EffectType" Title="Type" Width="100px">
+                    <Template Context="effect">
+                        <span class="badge @GetEffectTypeBadgeClass(effect.EffectType)">@effect.EffectType</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Title="Flags" Width="120px">
+                    <Template Context="effect">
+                        @if (effect.IsCursed)
+                        {
+                            <span class="badge bg-danger me-1" title="Cursed">Cursed</span>
+                        }
+                        @if (effect.RequiresAttunement)
+                        {
+                            <span class="badge bg-info me-1" title="Requires Attunement">Attune</span>
+                        }
+                        @if (effect.DurationRounds.HasValue)
+                        {
+                            <span class="badge bg-secondary" title="@(effect.DurationRounds) rounds">@effect.DurationRounds rnd</span>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Property="Description" Title="Description" />
+                <RadzenDataGridColumn TItem="ItemEffectEdit" Title="Actions" Width="100px" Sortable="false" TextAlign="TextAlign.Center">
+                    <Template Context="effect">
+                        <RadzenButton Icon="edit" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Light"
+                                      Click="@(() => EditEffect(effect))" title="Edit effect" class="me-1" />
+                        <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger"
+                                      Click="@(() => DeleteEffect(effect))" title="Delete effect" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public required ItemTemplateEdit Item { get; set; }
+
+    private async Task AddEffect()
+    {
+        var newEffect = Item.Effects.AddNewEffect(Item.Id, effectPortal);
+        await EditEffect(newEffect);
+    }
+
+    private async Task EditEffect(ItemEffectEdit effect)
+    {
+        var result = await DialogService.OpenAsync<ItemEffectEditDialog>(
+            effect.IsNew ? "Add Effect" : "Edit Effect",
+            new Dictionary<string, object> { { "Effect", effect } },
+            new DialogOptions
+            {
+                Width = "700px",
+                Height = "auto",
+                Resizable = true,
+                Draggable = true,
+                CloseDialogOnOverlayClick = false
+            });
+
+        // If dialog returned false (cancelled) and this is a new effect, remove it
+        if (result is false && effect.IsNew)
+        {
+            Item.Effects.Remove(effect);
+        }
+    }
+
+    private async Task DeleteEffect(ItemEffectEdit effect)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"Delete effect '{effect.Name}'?",
+            "Confirm Delete",
+            new ConfirmOptions
+            {
+                OkButtonText = "Delete",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed == true)
+        {
+            Item.Effects.Remove(effect);
+        }
+    }
+
+    private string GetEffectTypeBadgeClass(EffectType type) => type switch
+    {
+        EffectType.Buff => "bg-success",
+        EffectType.Debuff => "bg-warning text-dark",
+        EffectType.ItemEffect => "bg-primary",
+        EffectType.Wound => "bg-danger",
+        EffectType.Poison => "bg-danger",
+        EffectType.Disease => "bg-warning text-dark",
+        EffectType.Condition => "bg-secondary",
+        EffectType.SpellEffect => "bg-info",
+        _ => "bg-secondary"
+    };
+}

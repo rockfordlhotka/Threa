@@ -1,0 +1,182 @@
+@using GameMechanics.Items
+@using Threa.Dal.Dto
+@using Radzen
+@using Radzen.Blazor
+
+@inject Radzen.DialogService DialogService
+
+<div class="effect-edit-dialog">
+    <!-- Basic Information Section -->
+    <RadzenFieldset Text="Basic Information" class="mb-3">
+        <div class="row">
+            <div class="col-12 mb-2">
+                <RadzenLabel Text="Effect Name" Component="effectName" />
+                <RadzenTextBox @bind-Value="Effect.Name" Name="effectName" Style="width: 100%"
+                               Placeholder="e.g., Strength Boost, Life Drain" />
+                @if (!string.IsNullOrEmpty(nameError))
+                {
+                    <div class="text-danger small">@nameError</div>
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <RadzenLabel Text="Description" Component="effectDescription" />
+                <RadzenTextArea @bind-Value="Effect.Description" Name="effectDescription"
+                                Rows="2" Style="width: 100%"
+                                Placeholder="What does this effect do?" />
+            </div>
+        </div>
+    </RadzenFieldset>
+
+    <!-- Effect Configuration Section -->
+    <RadzenFieldset Text="Effect Configuration" class="mb-3">
+        <div class="row">
+            <div class="col-6 mb-2">
+                <RadzenLabel Text="Trigger" Component="trigger" />
+                <RadzenDropDown @bind-Value="Effect.Trigger" Data="@_triggers" Name="trigger"
+                                TextProperty="Text" ValueProperty="Value" Style="width: 100%" />
+                <small class="text-muted">@ItemEffectEdit.GetTriggerDescription(Effect.Trigger)</small>
+            </div>
+            <div class="col-6 mb-2">
+                <RadzenLabel Text="Effect Type" Component="effectType" />
+                <RadzenDropDown @bind-Value="Effect.EffectType" Data="@_effectTypes" Name="effectType"
+                                TextProperty="Text" ValueProperty="Value" Style="width: 100%" />
+            </div>
+        </div>
+
+        @if (ShowDurationField)
+        {
+            <div class="row">
+                <div class="col-6">
+                    <RadzenLabel Text="Duration (rounds)" Component="duration" />
+                    <RadzenNumeric @bind-Value="Effect.DurationRounds" Name="duration" Style="width: 100%"
+                                   Min="1" Placeholder="Leave blank for permanent" />
+                    <small class="text-muted">
+                        @if (Effect.Trigger == ItemEffectTrigger.OnUse)
+                        {
+                            <text>How long the effect lasts after use</text>
+                        }
+                        else
+                        {
+                            <text>Leave blank for permanent while trigger condition is met</text>
+                        }
+                    </small>
+                </div>
+                <div class="col-6">
+                    <RadzenLabel Text="Priority" Component="priority" />
+                    <RadzenNumeric @bind-Value="Effect.Priority" Name="priority" Style="width: 100%"
+                                   Placeholder="0" />
+                    <small class="text-muted">Higher priority effects apply first</small>
+                </div>
+            </div>
+        }
+    </RadzenFieldset>
+
+    <!-- Curse Settings Section -->
+    <RadzenFieldset Text="Curse Settings" class="mb-3">
+        <div class="row">
+            <div class="col-6">
+                <RadzenCheckBox @bind-Value="Effect.IsCursed" Name="isCursed" />
+                <RadzenLabel Text="Is Cursed" Component="isCursed" Style="margin-left: 8px" />
+            </div>
+            <div class="col-6">
+                <RadzenCheckBox @bind-Value="Effect.RequiresAttunement" Name="requiresAttunement" />
+                <RadzenLabel Text="Requires Attunement" Component="requiresAttunement" Style="margin-left: 8px" />
+            </div>
+        </div>
+        @if (Effect.IsCursed)
+        {
+            <div class="mt-2">
+                <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true" Variant="Variant.Flat" Size="AlertSize.Small">
+                    @ItemEffectEdit.GetCurseBlockingDescription(Effect.Trigger)
+                </RadzenAlert>
+            </div>
+        }
+    </RadzenFieldset>
+
+    <!-- Effect Modifiers Section -->
+    <RadzenFieldset Text="Effect Modifiers" class="mb-3">
+        <ItemEffectModifiersEditor @bind-BehaviorState="Effect.BehaviorState" />
+    </RadzenFieldset>
+
+    <!-- Display Section -->
+    <RadzenFieldset Text="Display Settings" class="mb-3">
+        <div class="row">
+            <div class="col-6">
+                <RadzenLabel Text="Icon Name" Component="iconName" />
+                <RadzenTextBox @bind-Value="Effect.IconName" Name="iconName" Style="width: 100%"
+                               Placeholder="e.g., shield, fire, heart" />
+                <small class="text-muted">Icon identifier for UI display</small>
+            </div>
+            <div class="col-6">
+                <RadzenLabel Text="Active" Component="isActive" />
+                <div class="mt-2">
+                    <RadzenCheckBox @bind-Value="Effect.IsActive" Name="isActive" />
+                    <RadzenLabel Text="Effect is active" Component="isActive" Style="margin-left: 8px" />
+                </div>
+            </div>
+        </div>
+    </RadzenFieldset>
+
+    <!-- Dialog Buttons -->
+    <div class="dialog-buttons d-flex justify-content-end gap-2 pt-2 border-top">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="@Save" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required ItemEffectEdit Effect { get; set; }
+
+    private string? nameError;
+
+    private readonly List<DropdownItem<ItemEffectTrigger>> _triggers =
+    [
+        new("While Equipped", ItemEffectTrigger.WhileEquipped),
+        new("While Possessed", ItemEffectTrigger.WhilePossessed),
+        new("On Pickup", ItemEffectTrigger.OnPickup),
+        new("On Use", ItemEffectTrigger.OnUse),
+        new("On Attack With", ItemEffectTrigger.OnAttackWith),
+        new("On Hit While Wearing", ItemEffectTrigger.OnHitWhileWearing),
+        new("On Critical", ItemEffectTrigger.OnCritical)
+    ];
+
+    private readonly List<DropdownItem<EffectType>> _effectTypes =
+    [
+        new("Item Effect", EffectType.ItemEffect),
+        new("Buff", EffectType.Buff),
+        new("Debuff", EffectType.Debuff),
+        new("Condition", EffectType.Condition),
+        new("Poison", EffectType.Poison),
+        new("Disease", EffectType.Disease),
+        new("Spell Effect", EffectType.SpellEffect)
+    ];
+
+    private bool ShowDurationField => Effect.Trigger == ItemEffectTrigger.OnUse ||
+                                       Effect.Trigger == ItemEffectTrigger.OnAttackWith ||
+                                       Effect.Trigger == ItemEffectTrigger.OnHitWhileWearing ||
+                                       Effect.Trigger == ItemEffectTrigger.OnCritical;
+
+    private void Save()
+    {
+        // Validate
+        nameError = null;
+        if (string.IsNullOrWhiteSpace(Effect.Name))
+        {
+            nameError = "Effect name is required.";
+            return;
+        }
+
+        DialogService.Close(true);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    // Helper class for dropdown items
+    private record DropdownItem<T>(string Text, T Value);
+}
