@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.5 NPC Management System
 Phase: 26 - Visibility & Lifecycle
-Plan: 04 of 5
-Status: In progress
-Last activity: 2026-02-03 -- Completed 26-04-PLAN.md (NPC Archive Browser)
+Plan: 05 of 5 (COMPLETE)
+Status: Phase complete
+Last activity: 2026-02-03 -- Completed 26-05-PLAN.md (Save as Template)
 
-Progress: [████████████████████░] 99% (75/76 plans)
+Progress: [█████████████████████] 100% (76/76 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 75
-- Average duration: 8.1 min
-- Total execution time: 11 hours 30 min
+- Total plans completed: 76
+- Average duration: 8.0 min
+- Total execution time: 11 hours 36 min
 
 **By Milestone:**
 
@@ -32,7 +32,7 @@ Progress: [████████████████████░] 99% 
 | v1.1 | 4 | 8 | 92 min | 11.5 min |
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
-| v1.5 | 4 | 16 | 99 min | 6.2 min |
+| v1.5 | 4 | 17 | 105 min | 6.2 min |
 
 ## Accumulated Context
 
@@ -123,6 +123,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - GetActiveTablesAsync already existed in ITableDal - no DAL changes required
 - Used GameTable DTO with local GetTableStatusDisplay helper for status rendering
 
+**Plan 26-05 Decision:**
+- Item copying uses CharacterItem template reference (ItemTemplateId, StackSize, etc.)
+- Health pools reset to full in template (fresh NPC state)
+- Effects cleared in template (wounds, buffs are combat state, not NPC definition)
+
 ### Pending Todos
 
 None.
@@ -139,9 +144,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 26-04-PLAN.md (NPC Archive Browser)
+Stopped at: Completed 26-05-PLAN.md (Save as Template)
 Resume file: None
-Next action: Execute 26-05-PLAN.md (Save as Template)
+Next action: v1.5 Milestone complete - ready for milestone wrap-up
 
 ---
-*v1.5 Milestone -- Phase 26 in progress*
+*v1.5 Milestone COMPLETE -- All 76 plans executed*
