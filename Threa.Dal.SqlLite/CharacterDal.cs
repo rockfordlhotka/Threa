@@ -199,6 +199,20 @@ namespace Threa.Dal.Sqlite
             }
         }
 
+        public async Task<List<Character>> GetArchivedNpcsAsync()
+        {
+            try
+            {
+                // Reuse existing fetch, filter in memory for JSON storage
+                var all = await GetAllCharactersAsync();
+                return all.Where(c => c.IsNpc && !c.IsTemplate && c.IsArchived).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("Error getting archived NPCs", ex);
+            }
+        }
+
         public async Task<Character> SaveCharacterAsync(Character character)
         {
             try
