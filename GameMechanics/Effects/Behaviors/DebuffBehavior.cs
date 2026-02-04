@@ -29,7 +29,22 @@ public class DebuffState
   /// </summary>
   public int GlobalPenalty { get; set; }
 
-  public string Serialize() => JsonSerializer.Serialize(this);
+  /// <summary>
+  /// Penalties to specific skills (skill ID -> penalty value).
+  /// Negative values are penalties.
+  /// </summary>
+  public Dictionary<string, int>? SkillPenalties { get; set; }
+
+  /// <summary>
+  /// Penalties to specific attributes (attribute name -> penalty value).
+  /// Negative values are penalties. Affects all skills using that attribute.
+  /// </summary>
+  public Dictionary<string, int>? AttributePenalties { get; set; }
+
+  public string Serialize() => JsonSerializer.Serialize(this, new JsonSerializerOptions
+  {
+    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+  });
 
   public static DebuffState Deserialize(string? json)
   {
@@ -89,8 +104,19 @@ public class DebuffBehavior : IEffectBehavior
 
   public IEnumerable<EffectModifier> GetAttributeModifiers(EffectRecord effect, string attributeName, int baseValue)
   {
-    // Debuffs don't modify base attributes
-    return [];
+    var state = DebuffState.Deserialize(effect.BehaviorState);
+
+    // Apply attribute-specific penalties
+    if (state.AttributePenalties != null &&
+        state.AttributePenalties.TryGetValue(attributeName, out var penalty) &&
+        penalty != 0)
+    {
+      yield return new EffectModifier
+      {
+        Description = $"{effect.Name} ({attributeName})",
+        Value = penalty
+      };
+    }
   }
 
   public IEnumerable<EffectModifier> GetAbilityScoreModifiers(EffectRecord effect, string skillName, string attributeName, int currentAS)
@@ -126,6 +152,19 @@ public class DebuffBehavior : IEffectBehavior
       {
         Description = $"{effect.Name} (Defense)",
         Value = state.DefensePenalty,
+        TargetSkill = skillName
+      };
+    }
+
+    // Apply skill-specific penalties
+    if (state.SkillPenalties != null &&
+        state.SkillPenalties.TryGetValue(skillName, out var skillPenalty) &&
+        skillPenalty != 0)
+    {
+      yield return new EffectModifier
+      {
+        Description = $"{effect.Name} ({skillName})",
+        Value = skillPenalty,
         TargetSkill = skillName
       };
     }

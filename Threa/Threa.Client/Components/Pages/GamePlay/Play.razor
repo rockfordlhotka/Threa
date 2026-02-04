@@ -932,6 +932,29 @@ private async Task LoadTableCharactersAsync()
                         AddLogEntry(result.Message, ActivityCategory.Effect);
                     }
                     break;
+
+                case "SkillUse":
+                    // Pre-use skill concentration completed - skill is now ready to use
+                    if (result.Success)
+                    {
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    else
+                    {
+                        // Pre-use concentration was interrupted - skill did not execute
+                        AddLogEntry(result.Message, ActivityCategory.Effect);
+                    }
+                    break;
+
+                case "PostUseSkillEnded":
+                    // Post-use concentration completed normally - linked effects will be removed
+                    AddLogEntry(result.Message, ActivityCategory.Effect);
+                    break;
+
+                case "PostUseSkillInterrupted":
+                    // Post-use concentration was interrupted - linked effects removed and penalty applied
+                    AddLogEntry(result.Message, ActivityCategory.Effect);
+                    break;
             }
         }
         finally
