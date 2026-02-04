@@ -1318,7 +1318,9 @@ else
             character.VisibleToPlayers = true;
             await characterPortal.UpdateAsync(character);
 
-            AddLogEntry($"Revealed NPC: {npc.CharacterName}", ActivityCategory.Player);
+            // Activity log announcement - visible to players
+            // Per CONTEXT.md: "[NPC Name] appears!" (name only, no disposition)
+            AddLogEntry($"{npc.CharacterName} appears!", ActivityCategory.Announcement);
 
             // Publish update for real-time sync
             await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
