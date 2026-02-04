@@ -154,8 +154,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 27-01-PLAN.md — NPC target loading and selection UI (TableCharacterList, disposition grouping)
-- [ ] 27-02-PLAN.md — Combat polish (target invalidation, reveal activity log)
+- [x] 27-01-PLAN.md — NPC target loading and selection UI (TableCharacterList, disposition grouping)
+- [x] 27-02-PLAN.md — Combat polish (target invalidation, reveal activity log)
 
 **Requirements:**
 - CMBT-01: NPCs participate in round/time advancement
@@ -181,7 +181,7 @@ Plans:
 | 24 | NPC Template System | 5 | Complete |
 | 25 | NPC Creation & Dashboard | 8 | Complete |
 | 26 | Visibility & Lifecycle | 7 | Complete |
-| 27 | Time & Combat Integration | 3 | Pending |
+| 27 | Time & Combat Integration | 3 | Complete |
 
 **Total:** 23 requirements mapped / 23 total = 100% coverage
 
@@ -224,3 +224,4 @@ Plans:
 *Phase 26 planned: 2026-02-03*
 *Phase 26 complete: 2026-02-03*
 *Phase 27 planned: 2026-02-03*
+*Phase 27 complete: 2026-02-03*
