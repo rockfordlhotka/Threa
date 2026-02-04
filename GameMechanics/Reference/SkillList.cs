@@ -126,6 +126,41 @@ namespace GameMechanics.Reference
       private set => LoadProperty(TertiaryAttributeProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> RequiresPreUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPreUseConcentration));
+    public bool RequiresPreUseConcentration
+    {
+      get => GetProperty(RequiresPreUseConcentrationProperty);
+      private set => LoadProperty(RequiresPreUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PreUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PreUseConcentrationRounds));
+    public int PreUseConcentrationRounds
+    {
+      get => GetProperty(PreUseConcentrationRoundsProperty);
+      private set => LoadProperty(PreUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> RequiresPostUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPostUseConcentration));
+    public bool RequiresPostUseConcentration
+    {
+      get => GetProperty(RequiresPostUseConcentrationProperty);
+      private set => LoadProperty(RequiresPostUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PostUseConcentrationRounds));
+    public int PostUseConcentrationRounds
+    {
+      get => GetProperty(PostUseConcentrationRoundsProperty);
+      private set => LoadProperty(PostUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseInterruptionPenaltyRoundsProperty = RegisterProperty<int>(nameof(PostUseInterruptionPenaltyRounds));
+    public int PostUseInterruptionPenaltyRounds
+    {
+      get => GetProperty(PostUseInterruptionPenaltyRoundsProperty);
+      private set => LoadProperty(PostUseInterruptionPenaltyRoundsProperty, value);
+    }
+
     [FetchChild]
     private void Fetch(Skill skill)
     {
@@ -143,6 +178,11 @@ namespace GameMechanics.Reference
       PrimaryAttribute = skill.PrimaryAttribute;
       SecondaryAttribute = skill.SecondaryAttribute;
       TertiaryAttribute = skill.TertiaryAttribute;
+      RequiresPreUseConcentration = skill.RequiresPreUseConcentration;
+      PreUseConcentrationRounds = skill.PreUseConcentrationRounds;
+      RequiresPostUseConcentration = skill.RequiresPostUseConcentration;
+      PostUseConcentrationRounds = skill.PostUseConcentrationRounds;
+      PostUseInterruptionPenaltyRounds = skill.PostUseInterruptionPenaltyRounds;
     }
   }
 }
