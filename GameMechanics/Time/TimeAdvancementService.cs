@@ -335,6 +335,16 @@ public class TimeAdvancementService
                         return result.Message;
                     }
                     break;
+
+                case "SkillUse":
+                    // Pre-use concentration completed - skill is now ready to use
+                    // The UI will allow the player to execute the skill on their next action
+                    return result.Message;
+
+                case "PostUseSkillInterrupted":
+                    // Post-use concentration was interrupted - apply penalty debuff
+                    ApplySkillInterruptionPenalty(character, result.Payload);
+                    return result.Message;
             }
 
             // Clear the result after processing
@@ -626,6 +636,37 @@ public class TimeAdvancementService
             // If no matching template found, the rounds are lost - this shouldn't happen
             // if the ammo type is properly set up
         }
+    }
+
+    /// <summary>
+    /// Applies a penalty debuff when post-use skill concentration is interrupted.
+    /// Creates a -1 AS debuff effect for the configured penalty duration.
+    /// </summary>
+    private void ApplySkillInterruptionPenalty(CharacterEdit character, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = SkillUsePayload.FromJson(payloadJson);
+        if (payload == null || payload.InterruptionPenaltyRounds <= 0) return;
+
+        // Create debuff state with -1 global AS penalty
+        var debuffState = new DebuffState
+        {
+            GlobalPenalty = -1
+        };
+
+        // Create the debuff effect
+        var effect = _effectPortal.CreateChild(
+            EffectType.Debuff,
+            $"{payload.SkillName} Concentration Broken",
+            null, // no body location
+            payload.InterruptionPenaltyRounds,
+            debuffState.Serialize());
+
+        effect.Description = $"Concentration on {payload.SkillName} was interrupted. -1 to all ability scores.";
+        effect.Source = payload.SkillName;
+
+        character.Effects.AddEffect(effect);
     }
 
     /// <summary>

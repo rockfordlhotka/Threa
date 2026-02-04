@@ -57,7 +57,8 @@ public class ConcentrationBehavior : IEffectBehavior
     }
 
     /// <summary>
-    /// Checks if the concentration type is a casting-time type (has finite duration and deferred action).
+    /// Checks if the concentration type is a casting-time type (has finite duration).
+    /// This includes both pre-use (deferred action) and post-use (maintenance) skill concentration.
     /// </summary>
     private static bool IsCastingTimeConcentration(string? concentrationType)
     {
@@ -68,7 +69,8 @@ public class ConcentrationBehavior : IEffectBehavior
             || concentrationType == "AmmoContainerUnload"
             || concentrationType == "WeaponUnload"
             || concentrationType == "MedicalHealing"
-            || concentrationType == "PreUseSkill";
+            || concentrationType == "PreUseSkill"
+            || concentrationType == "PostUseSkill";
     }
 
     /// <summary>
@@ -78,8 +80,7 @@ public class ConcentrationBehavior : IEffectBehavior
     {
         return concentrationType == "SustainedSpell"
             || concentrationType == "SustainedAbility"
-            || concentrationType == "MentalControl"
-            || concentrationType == "PostUseSkill";
+            || concentrationType == "MentalControl";
     }
 
     /// <summary>
@@ -206,8 +207,8 @@ public class ConcentrationBehavior : IEffectBehavior
             "AmmoContainerReload" => $"Loading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "AmmoContainerUnload" => $"Unloading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "MedicalHealing" => $"Treating patient: {state.CurrentProgress}/{state.TotalRequired} rounds",
-            "PreUseSkill" => state.CompletionMessage ?? $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds",
-            "PostUseSkill" => state.CompletionMessage ?? $"Maintaining concentration: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "PreUseSkill" => $"Concentrating on skill: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "PostUseSkill" => $"Maintaining concentration: {state.CurrentProgress}/{state.TotalRequired} rounds",
             _ => $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds"
         };
     }
@@ -384,18 +385,20 @@ public class ConcentrationBehavior : IEffectBehavior
         // Handle casting-time concentration interruption
         if (IsCastingTimeConcentration(state.ConcentrationType))
         {
-            HandleCastingTimeInterruption(character, state);
+            // Special handling for PostUseSkill - apply penalty effect instead of normal interruption
+            if (state.ConcentrationType == "PostUseSkill")
+            {
+                HandlePostUseSkillInterruption(character, state);
+            }
+            else
+            {
+                HandleCastingTimeInterruption(character, state);
+            }
         }
 
         // Handle sustained concentration cleanup
         if (IsSustainedConcentration(state.ConcentrationType))
         {
-            // Special handling for PostUseSkill - apply penalty effect
-            if (state.ConcentrationType == "PostUseSkill")
-            {
-                HandlePostUseSkillInterruption(character, state);
-            }
-            
             PrepareLinkedEffectRemoval(character, state);
         }
     }

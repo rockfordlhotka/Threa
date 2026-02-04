@@ -2,8 +2,10 @@
 
 @using GameMechanics.Effects.Behaviors
 @using Threa.Client.Components.Shared
+@using Threa.Dal.Dto
 @inject Radzen.DialogService DialogService
 @inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
+@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
 
 <div class="row">
     <div class="col-md-8">
@@ -37,13 +39,24 @@
                             @foreach (var skill in FilteredSkills())
                             {
                                 var skillDescription = GetSkillDescription(skill);
-                                var tooltipText = !string.IsNullOrEmpty(skillDescription) 
-                                    ? skillDescription 
+                                var skillInfo = GetSkillInfo(skill);
+                                var tooltipText = !string.IsNullOrEmpty(skillDescription)
+                                    ? skillDescription
                                     : (skill.CanUse ? "" : skill.CannotUseReason);
                                 <tr class="@(skill.CanUse ? "" : "text-muted")"
                                     title="@tooltipText">
                                     <td>
                                         @skill.Name
+                                        @if (skillInfo?.RequiresPreUseConcentration == true)
+                                        {
+                                            <i class="bi bi-hourglass-top text-info ms-1"
+                                               title="Requires @skillInfo.PreUseConcentrationRounds round(s) of concentration before use"></i>
+                                        }
+                                        @if (skillInfo?.RequiresPostUseConcentration == true)
+                                        {
+                                            <i class="bi bi-hourglass-bottom text-warning ms-1"
+                                               title="Requires @skillInfo.PostUseConcentrationRounds round(s) of concentration after use"></i>
+                                        }
                                         @if (!skill.CanUse)
                                         {
                                             <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
@@ -97,6 +110,27 @@
                         </div>
                     }
 
+                    @if (GetSkillInfo(selectedSkill) is { } selectedSkillInfo && (selectedSkillInfo.RequiresPreUseConcentration || selectedSkillInfo.RequiresPostUseConcentration))
+                    {
+                        <div class="alert alert-secondary py-2 small mb-3">
+                            <strong><i class="bi bi-hourglass me-1"></i>Concentration Requirements</strong>
+                            <ul class="mb-0 mt-1">
+                                @if (selectedSkillInfo.RequiresPreUseConcentration)
+                                {
+                                    <li><i class="bi bi-hourglass-top text-info me-1"></i>Pre-use: @selectedSkillInfo.PreUseConcentrationRounds round(s)</li>
+                                }
+                                @if (selectedSkillInfo.RequiresPostUseConcentration)
+                                {
+                                    <li><i class="bi bi-hourglass-bottom text-warning me-1"></i>Post-use: @selectedSkillInfo.PostUseConcentrationRounds round(s)</li>
+                                    @if (selectedSkillInfo.PostUseInterruptionPenaltyRounds > 0)
+                                    {
+                                        <li class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Interruption penalty: -1 AS for @selectedSkillInfo.PostUseInterruptionPenaltyRounds round(s)</li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    }
+
                     <div class="mb-3">
                         <label class="form-label">Target Value (TV)</label>
                         <input type="number" class="form-control" @bind="targetValue" min="1" max="20" />
@@ -122,7 +156,14 @@
                     <button class="btn btn-primary w-100"
                             disabled="@(!CanPerformCheck())"
                             @onclick="PerformCheckAsync">
-                        Roll Check
+                        @if (GetSkillInfo(selectedSkill)?.RequiresPreUseConcentration == true)
+                        {
+                            <span><i class="bi bi-hourglass-top me-1"></i>Start Concentration</span>
+                        }
+                        else
+                        {
+                            <span>Roll Check</span>
+                        }
                     </button>
 
                     @if (selectedSkill?.Name == "Drive")
@@ -245,8 +286,13 @@
 
     private string? GetSkillDescription(GameMechanics.SkillEdit skill)
     {
-        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        var skillInfo = GetSkillInfo(skill);
         return skillInfo?.Description;
+    }
+
+    private GameMechanics.Reference.SkillInfo? GetSkillInfo(GameMechanics.SkillEdit skill)
+    {
+        return allSkills?.FirstOrDefault(s => s.Name == skill.Name);
     }
 
     private IEnumerable<GameMechanics.SkillEdit> FilteredSkills()
@@ -349,6 +395,90 @@
     {
         if (selectedSkill == null || Character == null) return;
 
+        var skillInfo = GetSkillInfo(selectedSkill);
+
+        // Check for pre-use concentration requirement
+        if (skillInfo?.RequiresPreUseConcentration == true)
+        {
+            await StartPreUseConcentrationAsync(skillInfo);
+            return;
+        }
+
+        // Execute the skill check normally
+        await ExecuteSkillCheckAsync(skillInfo);
+    }
+
+    private async Task StartPreUseConcentrationAsync(GameMechanics.Reference.SkillInfo skillInfo)
+    {
+        if (selectedSkill == null || Character == null) return;
+
+        // Show confirmation dialog
+        var confirmed = await DialogService.Confirm(
+            $"This skill requires {skillInfo.PreUseConcentrationRounds} round(s) of concentration before use. " +
+            "During this time, you cannot take other actions. If interrupted, the skill will not execute.\n\n" +
+            "Do you want to start concentrating?",
+            "Start Concentration",
+            new Radzen.ConfirmOptions { OkButtonText = "Start Concentration", CancelButtonText = "Cancel" });
+
+        if (confirmed != true) return;
+
+        // Deduct base action costs (1 AP + 1 FAT to start concentration)
+        if (actionType == "standard")
+        {
+            Character.ActionPoints.TakeActionWithFatigue();
+        }
+        else
+        {
+            Character.ActionPoints.TakeActionNoFatigue();
+        }
+
+        // Create the pre-use concentration effect
+        var concentrationState = ConcentrationBehavior.CreatePreUseSkillState(
+            skillInfo.Id,
+            skillInfo.Name,
+            skillInfo.PreUseConcentrationRounds);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            $"Concentrating on {skillInfo.Name}",
+            null, // no body location
+            skillInfo.PreUseConcentrationRounds,
+            concentrationState);
+
+        if (Character.Effects.AddEffect(effect))
+        {
+            lastCheckResult = new CheckResult(
+                false,
+                0,
+                selectedSkill.AbilityScore,
+                0,
+                selectedSkill.AbilityScore,
+                targetValue,
+                0,
+                $"Started concentrating on {skillInfo.Name} ({skillInfo.PreUseConcentrationRounds} rounds)",
+                $"Skill will be ready after concentration completes");
+
+            await OnCharacterChanged.InvokeAsync();
+        }
+        else
+        {
+            lastCheckResult = new CheckResult(
+                false,
+                0,
+                selectedSkill.AbilityScore,
+                0,
+                selectedSkill.AbilityScore,
+                targetValue,
+                0,
+                "Failed to start concentration",
+                "You may already be concentrating on another action");
+        }
+    }
+
+    private async Task ExecuteSkillCheckAsync(GameMechanics.Reference.SkillInfo? skillInfo)
+    {
+        if (selectedSkill == null || Character == null) return;
+
         // Deduct base action costs
         if (actionType == "standard")
         {
@@ -384,6 +514,14 @@
             specialEffect = $"Queued 1 VIT damage and {fatHealing} FAT healing";
         }
 
+        // Apply post-use concentration if required and skill was successful
+        if (success && skillInfo?.RequiresPostUseConcentration == true)
+        {
+            ApplyPostUseConcentration(skillInfo);
+            specialEffect = (specialEffect != null ? specialEffect + "; " : "") +
+                $"Must maintain concentration for {skillInfo.PostUseConcentrationRounds} round(s)";
+        }
+
         string outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
         lastCheckResult = new CheckResult(
             success,
@@ -398,6 +536,26 @@
 
         // Notify parent that character changed (for saving)
         await OnCharacterChanged.InvokeAsync();
+    }
+
+    private void ApplyPostUseConcentration(GameMechanics.Reference.SkillInfo skillInfo)
+    {
+        if (Character == null) return;
+
+        var concentrationState = ConcentrationBehavior.CreatePostUseSkillState(
+            skillInfo.Id,
+            skillInfo.Name,
+            skillInfo.PostUseConcentrationRounds,
+            skillInfo.PostUseInterruptionPenaltyRounds);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            $"Maintaining {skillInfo.Name}",
+            null, // no body location
+            skillInfo.PostUseConcentrationRounds,
+            concentrationState);
+
+        Character.Effects.AddEffect(effect);
     }
 
     private string GetSuccessOutcome(int sv)
