@@ -125,6 +125,18 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(IsActiveProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsVirtualProperty = RegisterProperty<bool>(nameof(IsVirtual));
+    /// <summary>
+    /// Whether this is a virtual weapon (innate ability like punch/kick).
+    /// Virtual weapons are not shown in inventory or equipment UI,
+    /// but appear as combat options when conditions are met.
+    /// </summary>
+    public bool IsVirtual
+    {
+        get => GetProperty(IsVirtualProperty);
+        set => SetProperty(IsVirtualProperty, value);
+    }
+
     public static readonly PropertyInfo<string?> TagsProperty = RegisterProperty<string?>(nameof(Tags));
     public string? Tags
     {
@@ -289,6 +301,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = 0;
             Rarity = ItemRarity.Common;
             IsActive = true;
+            IsVirtual = false;
             Tags = null;
             RelatedSkill = null;
             MinSkillLevel = 0;
@@ -339,6 +352,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = data.MaxDurability;
             Rarity = data.Rarity;
             IsActive = data.IsActive;
+            IsVirtual = data.IsVirtual;
             Tags = data.Tags;
             RelatedSkill = data.RelatedSkill;
             MinSkillLevel = data.MinSkillLevel;
@@ -385,6 +399,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = MaxDurability,
             Rarity = Rarity,
             IsActive = IsActive,
+            IsVirtual = IsVirtual,
             Tags = Tags,
             RelatedSkill = RelatedSkill,
             MinSkillLevel = MinSkillLevel,
@@ -432,6 +447,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             MaxDurability = MaxDurability,
             Rarity = Rarity,
             IsActive = IsActive,
+            IsVirtual = IsVirtual,
             Tags = Tags,
             RelatedSkill = RelatedSkill,
             MinSkillLevel = MinSkillLevel,

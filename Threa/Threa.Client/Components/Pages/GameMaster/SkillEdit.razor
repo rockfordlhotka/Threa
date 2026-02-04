@@ -213,9 +213,46 @@ else
                         <tr><td colspan="2"><hr /></td></tr>
                         <tr><td colspan="2"><div class="info-box text-mana"><strong>Mana Channeling Properties</strong></div></td></tr>
 
-                        <tr>
+                         <tr>
                             <td colspan="2">
                                 <em class="item-description">Mana channeling skills focus on gathering and storing mana for spell use.</em>
+                            </td>
+                        </tr>
+                    }
+
+                    <!-- Concentration Requirements -->
+                    <tr><td colspan="2"><hr /></td></tr>
+                    <tr><td colspan="2"><div class="info-box"><strong>Concentration Requirements</strong></div></td></tr>
+
+                    <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.RequiresPreUseConcentration)" />
+                    
+                    @if (vm.Model.RequiresPreUseConcentration)
+                    {
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PreUseConcentrationRounds)" />
+                        <tr>
+                            <td colspan="2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Character must concentrate for this many rounds before the skill takes effect. 
+                                    If interrupted, the skill does not execute.
+                                </small>
+                            </td>
+                        </tr>
+                    }
+
+                    <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.RequiresPostUseConcentration)" />
+                    
+                    @if (vm.Model.RequiresPostUseConcentration)
+                    {
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PostUseConcentrationRounds)" />
+                        <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PostUseInterruptionPenaltyRounds)" />
+                        <tr>
+                            <td colspan="2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Character must maintain concentration after using the skill. 
+                                    If interrupted, applies a -1 AS penalty for the specified number of rounds.
+                                </small>
                             </td>
                         </tr>
                     }

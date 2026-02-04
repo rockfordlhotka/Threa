@@ -430,13 +430,13 @@ public class TestDataSeeder
             },
             new Skill
             {
-                Id = "unarmed-combat",
-                Name = "Unarmed Combat",
+                Id = "hand-to-hand",
+                Name = "Hand-to-Hand",
                 Category = SkillCategory.Combat,
                 IsSpecialized = true,
                 Untrained = 6,
                 Trained = 3,
-                PrimaryAttribute = "DEX"
+                PrimaryAttribute = "STR"
             },
 
             // === MOVEMENT SKILLS ===
@@ -765,6 +765,52 @@ public class TestDataSeeder
                 Rarity = ItemRarity.Common,
                 Tags = "ranged,starter-gear",
                 CustomProperties = "{\"isRangedWeapon\":true,\"ammoType\":\"Arrow\",\"capacity\":1,\"rangeShort\":20,\"rangeMedium\":40,\"rangeLong\":80,\"rangeExtreme\":120}"
+            },
+
+            // === VIRTUAL WEAPONS (Unarmed Combat) ===
+            new ItemTemplate
+            {
+                Id = 15,
+                Name = "Punch",
+                Description = "A quick strike with the fist. Favors speed over power.",
+                ShortDescription = "Unarmed punch attack",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed,
+                EquipmentSlot = EquipmentSlot.None,
+                Weight = 0m,
+                Volume = 0m,
+                Value = 0,
+                IsVirtual = true,
+                RelatedSkill = "Hand-to-Hand",
+                MinSkillLevel = 0,
+                DamageClass = 1,
+                DamageType = "Bludgeoning",
+                SVModifier = 2,
+                AVModifier = 0,
+                Rarity = ItemRarity.Common,
+                Tags = "unarmed,virtual"
+            },
+            new ItemTemplate
+            {
+                Id = 16,
+                Name = "Kick",
+                Description = "A powerful strike with the leg. Trades accuracy for damage.",
+                ShortDescription = "Unarmed kick attack",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed,
+                EquipmentSlot = EquipmentSlot.None,
+                Weight = 0m,
+                Volume = 0m,
+                Value = 0,
+                IsVirtual = true,
+                RelatedSkill = "Hand-to-Hand",
+                MinSkillLevel = 0,
+                DamageClass = 1,
+                DamageType = "Bludgeoning",
+                SVModifier = 4,
+                AVModifier = -1,
+                Rarity = ItemRarity.Common,
+                Tags = "unarmed,virtual"
             },
 
             // === AMMUNITION ===

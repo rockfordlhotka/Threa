@@ -115,6 +115,13 @@ public class ItemTemplate
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Whether this is a virtual weapon (innate ability like punch/kick).
+    /// Virtual weapons are not shown in inventory or equipment UI,
+    /// but appear as combat options when conditions are met.
+    /// </summary>
+    public bool IsVirtual { get; set; }
+
+    /// <summary>
     /// Comma-separated list of custom tags for categorization.
     /// </summary>
     public string? Tags { get; set; }

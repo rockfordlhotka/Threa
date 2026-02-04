@@ -200,6 +200,41 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         set => SetProperty(ActionDescriptionProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> RequiresPreUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPreUseConcentration));
+    public bool RequiresPreUseConcentration
+    {
+        get => GetProperty(RequiresPreUseConcentrationProperty);
+        set => SetProperty(RequiresPreUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PreUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PreUseConcentrationRounds));
+    public int PreUseConcentrationRounds
+    {
+        get => GetProperty(PreUseConcentrationRoundsProperty);
+        set => SetProperty(PreUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> RequiresPostUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPostUseConcentration));
+    public bool RequiresPostUseConcentration
+    {
+        get => GetProperty(RequiresPostUseConcentrationProperty);
+        set => SetProperty(RequiresPostUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PostUseConcentrationRounds));
+    public int PostUseConcentrationRounds
+    {
+        get => GetProperty(PostUseConcentrationRoundsProperty);
+        set => SetProperty(PostUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseInterruptionPenaltyRoundsProperty = RegisterProperty<int>(nameof(PostUseInterruptionPenaltyRounds));
+    public int PostUseInterruptionPenaltyRounds
+    {
+        get => GetProperty(PostUseInterruptionPenaltyRoundsProperty);
+        set => SetProperty(PostUseInterruptionPenaltyRoundsProperty, value);
+    }
+
     // Helper properties for UI
     public bool IsSpell => IsMagic || IsTheology || IsPsionic;
     public bool IsManaSkill => Category == SkillCategory.Mana;
@@ -251,6 +286,11 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             IsFreeAction = false;
             IsPassive = false;
             ActionDescription = null;
+            RequiresPreUseConcentration = false;
+            PreUseConcentrationRounds = 0;
+            RequiresPostUseConcentration = false;
+            PostUseConcentrationRounds = 0;
+            PostUseInterruptionPenaltyRounds = 0;
         }
         BusinessRules.CheckRules();
         await Task.CompletedTask;
@@ -295,6 +335,11 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             IsFreeAction = data.IsFreeAction;
             IsPassive = data.IsPassive;
             ActionDescription = data.ActionDescription;
+            RequiresPreUseConcentration = data.RequiresPreUseConcentration;
+            PreUseConcentrationRounds = data.PreUseConcentrationRounds;
+            RequiresPostUseConcentration = data.RequiresPostUseConcentration;
+            PostUseConcentrationRounds = data.PostUseConcentrationRounds;
+            PostUseInterruptionPenaltyRounds = data.PostUseInterruptionPenaltyRounds;
         }
         BusinessRules.CheckRules();
     }
@@ -331,7 +376,12 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             PumpDescription = PumpDescription,
             IsFreeAction = IsFreeAction,
             IsPassive = IsPassive,
-            ActionDescription = ActionDescription
+            ActionDescription = ActionDescription,
+            RequiresPreUseConcentration = RequiresPreUseConcentration,
+            PreUseConcentrationRounds = PreUseConcentrationRounds,
+            RequiresPostUseConcentration = RequiresPostUseConcentration,
+            PostUseConcentrationRounds = PostUseConcentrationRounds,
+            PostUseInterruptionPenaltyRounds = PostUseInterruptionPenaltyRounds
         };
 
         await dal.SaveSkillAsync(dto);

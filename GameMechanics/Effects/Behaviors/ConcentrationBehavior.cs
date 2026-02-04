@@ -67,7 +67,8 @@ public class ConcentrationBehavior : IEffectBehavior
             || concentrationType == "AmmoContainerReload"
             || concentrationType == "AmmoContainerUnload"
             || concentrationType == "WeaponUnload"
-            || concentrationType == "MedicalHealing";
+            || concentrationType == "MedicalHealing"
+            || concentrationType == "PreUseSkill";
     }
 
     /// <summary>
@@ -77,7 +78,8 @@ public class ConcentrationBehavior : IEffectBehavior
     {
         return concentrationType == "SustainedSpell"
             || concentrationType == "SustainedAbility"
-            || concentrationType == "MentalControl";
+            || concentrationType == "MentalControl"
+            || concentrationType == "PostUseSkill";
     }
 
     /// <summary>
@@ -204,6 +206,8 @@ public class ConcentrationBehavior : IEffectBehavior
             "AmmoContainerReload" => $"Loading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "AmmoContainerUnload" => $"Unloading ammo: {state.CurrentProgress}/{state.TotalRequired} rounds",
             "MedicalHealing" => $"Treating patient: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "PreUseSkill" => state.CompletionMessage ?? $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds",
+            "PostUseSkill" => state.CompletionMessage ?? $"Maintaining concentration: {state.CurrentProgress}/{state.TotalRequired} rounds",
             _ => $"Concentrating: {state.CurrentProgress}/{state.TotalRequired} rounds"
         };
     }
@@ -243,6 +247,9 @@ public class ConcentrationBehavior : IEffectBehavior
                 break;
             case "MedicalHealing":
                 ExecuteMedicalHealing(character, state);
+                break;
+            case "SkillUse":
+                ExecuteSkillUse(character, state);
                 break;
         }
     }
@@ -348,6 +355,26 @@ public class ConcentrationBehavior : IEffectBehavior
         };
     }
 
+    /// <summary>
+    /// Handles skill use completion after pre-use concentration.
+    /// Stores result in character.LastConcentrationResult for UI to process.
+    /// </summary>
+    private void ExecuteSkillUse(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = SkillUsePayload.FromJson(state.DeferredActionPayload);
+        if (payload == null)
+            return;
+
+        // Store result for UI/controller to process
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "SkillUse",
+            Payload = state.DeferredActionPayload,
+            Message = state.CompletionMessage ?? "Skill ready to use!",
+            Success = true
+        };
+    }
+
     public void OnRemove(EffectRecord effect, CharacterEdit character)
     {
         var state = ConcentrationState.FromJson(effect.BehaviorState);
@@ -363,6 +390,12 @@ public class ConcentrationBehavior : IEffectBehavior
         // Handle sustained concentration cleanup
         if (IsSustainedConcentration(state.ConcentrationType))
         {
+            // Special handling for PostUseSkill - apply penalty effect
+            if (state.ConcentrationType == "PostUseSkill")
+            {
+                HandlePostUseSkillInterruption(character, state);
+            }
+            
             PrepareLinkedEffectRemoval(character, state);
         }
     }
@@ -381,6 +414,26 @@ public class ConcentrationBehavior : IEffectBehavior
             ActionType = state.DeferredActionType ?? state.ConcentrationType ?? "Unknown",
             Payload = state.DeferredActionPayload,
             Message = message,
+            Success = false
+        };
+    }
+
+    /// <summary>
+    /// Handles interruption of post-use skill concentration.
+    /// Stores a result indicating a penalty should be applied by the calling service.
+    /// </summary>
+    private void HandlePostUseSkillInterruption(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = SkillUsePayload.FromJson(state.DeferredActionPayload);
+        if (payload == null || payload.InterruptionPenaltyRounds <= 0)
+            return;
+
+        // Store result for the service layer to apply the penalty effect
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "PostUseSkillInterrupted",
+            Payload = state.DeferredActionPayload,
+            Message = state.InterruptionMessage ?? "Post-use concentration interrupted! -1 AS penalty will be applied.",
             Success = false
         };
     }
@@ -808,6 +861,80 @@ public class ConcentrationBehavior : IEffectBehavior
             DeferredActionPayload = payload.Serialize(),
             CompletionMessage = completionMessage,
             InterruptionMessage = $"{skillName} treatment interrupted!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for pre-use skill concentration.
+    /// Character must concentrate before the skill can be used.
+    /// </summary>
+    /// <param name="skillId">The skill ID</param>
+    /// <param name="skillName">The skill name</param>
+    /// <param name="concentrationRounds">Number of rounds to concentrate</param>
+    /// <param name="additionalData">Optional additional context data</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreatePreUseSkillState(
+        string skillId,
+        string skillName,
+        int concentrationRounds,
+        string? additionalData = null)
+    {
+        var payload = new SkillUsePayload
+        {
+            SkillId = skillId,
+            SkillName = skillName,
+            InterruptionPenaltyRounds = 0, // No penalty for pre-use interruption
+            AdditionalData = additionalData
+        };
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "PreUseSkill",
+            TotalRequired = concentrationRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            DeferredActionType = "SkillUse",
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"Concentrated on {skillName} - ready to use!",
+            InterruptionMessage = $"{skillName} concentration interrupted - skill not usable!"
+        }.Serialize();
+    }
+
+    /// <summary>
+    /// Creates state for post-use skill concentration.
+    /// Character must maintain concentration after using the skill.
+    /// If interrupted, applies a penalty effect.
+    /// </summary>
+    /// <param name="skillId">The skill ID</param>
+    /// <param name="skillName">The skill name</param>
+    /// <param name="concentrationRounds">Number of rounds to maintain concentration</param>
+    /// <param name="interruptionPenaltyRounds">Duration of penalty if interrupted</param>
+    /// <param name="additionalData">Optional additional context data</param>
+    /// <returns>Serialized ConcentrationState JSON</returns>
+    public static string CreatePostUseSkillState(
+        string skillId,
+        string skillName,
+        int concentrationRounds,
+        int interruptionPenaltyRounds,
+        string? additionalData = null)
+    {
+        var payload = new SkillUsePayload
+        {
+            SkillId = skillId,
+            SkillName = skillName,
+            InterruptionPenaltyRounds = interruptionPenaltyRounds,
+            AdditionalData = additionalData
+        };
+
+        return new ConcentrationState
+        {
+            ConcentrationType = "PostUseSkill",
+            TotalRequired = concentrationRounds,
+            CurrentProgress = 0,
+            RoundsPerTick = 1,
+            DeferredActionPayload = payload.Serialize(),
+            CompletionMessage = $"Maintained concentration on {skillName}",
+            InterruptionMessage = $"{skillName} post-use concentration interrupted!"
         }.Serialize();
     }
 }

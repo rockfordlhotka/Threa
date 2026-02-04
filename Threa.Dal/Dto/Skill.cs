@@ -200,5 +200,40 @@ public class Skill
     /// Description of what this skill does as an action.
     /// </summary>
     public string? ActionDescription { get; set; }
+
+    // === Concentration Properties ===
+
+    /// <summary>
+    /// Whether this skill requires concentration before use (casting time).
+    /// If true, the character must concentrate for the specified duration before the skill takes effect.
+    /// If concentration is interrupted, the skill does not execute.
+    /// </summary>
+    public bool RequiresPreUseConcentration { get; set; } = false;
+
+    /// <summary>
+    /// Duration of pre-use concentration in rounds.
+    /// Only applies when RequiresPreUseConcentration is true.
+    /// </summary>
+    public int PreUseConcentrationRounds { get; set; } = 0;
+
+    /// <summary>
+    /// Whether this skill requires concentration after use (cooldown-like effect).
+    /// If true, the character must maintain concentration after using the skill.
+    /// If concentration is interrupted, a penalty is applied.
+    /// </summary>
+    public bool RequiresPostUseConcentration { get; set; } = false;
+
+    /// <summary>
+    /// Duration of post-use concentration in rounds.
+    /// Only applies when RequiresPostUseConcentration is true.
+    /// </summary>
+    public int PostUseConcentrationRounds { get; set; } = 0;
+
+    /// <summary>
+    /// Duration of penalty effect in rounds if post-use concentration is interrupted.
+    /// Applies a -1 AS penalty for this many rounds.
+    /// Only applies when RequiresPostUseConcentration is true.
+    /// </summary>
+    public int PostUseInterruptionPenaltyRounds { get; set; } = 0;
 }
 
