@@ -2,29 +2,32 @@
 
 ## What This Is
 
-A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, and concentration system for spell casting and sustained effects.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, concentration system for spell casting, and NPC management for running combat encounters.
 
 ## Core Value
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: v1.5 NPC Management System
+## Current Milestone: Planning Next
 
-**Goal:** Enable GMs to create, manage, and run NPCs in combat encounters alongside player characters.
+Milestone v1.5 NPC Management System has been completed. Next milestone to be determined via `/gsd:new-milestone`.
 
-**Target features:**
-- NPC templates/library for pre-session prep
-- Quick NPC creation during play for improvisation
-- Full character stats (same model as PCs — attributes, skills, equipment, effects, wounds)
-- NPCs appear in GM dashboard in separate section from PCs
-- All v1.4 GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
-- GM chooses which NPCs persist vs dismiss after encounter
-- Visibility toggle (hide/reveal NPCs for surprise encounters)
-- Group management with individual tracking + batch actions
-
-**Success criterion:** GM can run a full combat encounter with NPCs alongside PCs.
+**Potential future directions:**
+- NPC group management with batch actions
+- Initiative tracking with automatic turn order
+- Automated encounter balancing
+- Session logs/history within campaign
 
 ## Previous Achievements
+
+**v1.5 NPC Management System** (shipped 2026-02-03)
+- NPC template library with search, filter, category tags, and difficulty badges
+- Quick-spawn NPCs from templates with auto-naming and disposition selection
+- Dashboard NPC section with disposition grouping and full GM manipulation powers
+- Visibility toggle for surprise encounters with hidden NPC section
+- NPC lifecycle management (archive, restore, delete, save-as-template)
+- Combat integration with NPCs in targeting and time advancement
+- 23/23 requirements shipped (100%), 5 phases, 20 plans complete
 
 **v1.4 GM Character Manipulation + Concentration System** (shipped 2026-01-29)
 - Health management with theme-aware color-coded health bars and pending pool damage/healing
@@ -56,6 +59,31 @@ These capabilities exist in the codebase:
 - ✓ Character creation and edit pages — existing
 - ✓ Play page with combat, skills, magic, defense tabs — existing
 - ✓ Equipment slots defined (MainHand, OffHand, Head, Chest, etc.) — existing
+
+**Delivered in v1.5 (2026-02-03):**
+- ✓ GM can create NPC templates with full character stats (attributes, skills, equipment) — v1.5
+- ✓ GM can edit existing NPC templates — v1.5
+- ✓ GM can browse/search NPC templates (filter by category/tags) — v1.5
+- ✓ GM can delete/deactivate NPC templates — v1.5
+- ✓ NPC templates support category tags for organization — v1.5
+- ✓ GM can quick-create NPC from template (spawn instance to active table) — v1.5
+- ✓ NPCs have full character stats (same model as PCs) — v1.5
+- ✓ Smart naming auto-generates unique names ("Goblin 1", "Goblin 2") — v1.5
+- ✓ GM can add session-specific notes to individual NPC instances — v1.5
+- ✓ NPCs appear in GM dashboard in separate section from PCs — v1.5
+- ✓ NPC status cards show same info as PC cards (FAT/VIT/wounds, AP, effects) — v1.5
+- ✓ NPC detail modal provides same manipulation powers as PCs — v1.5
+- ✓ NPCs display disposition marker (Hostile/Neutral/Friendly) — v1.5
+- ✓ GM can toggle NPC visibility (hide/reveal for surprise encounters) — v1.5
+- ✓ Hidden NPCs do not appear in player-visible views — v1.5
+- ✓ Visibility toggle accessible from both status card and detail modal — v1.5
+- ✓ GM can remove/dismiss NPCs from active table — v1.5
+- ✓ NPCs persist across sessions until explicitly dismissed — v1.5
+- ✓ GM can save active NPC as new template — v1.5
+- ✓ Dismissed NPCs can be optionally deleted or archived — v1.5
+- ✓ NPCs participate in round/time advancement (effects expire, AP recovers) — v1.5
+- ✓ NPCs can be targeted by combat actions — v1.5
+- ✓ Time advancement applies to NPCs same as PCs — v1.5
 
 **Delivered in v1.4 (2026-01-29):**
 - ✓ GM can apply damage/healing to characters (add to pending pools) — v1.4
@@ -113,17 +141,8 @@ These capabilities exist in the codebase:
 
 ### Active
 
-**v1.5 NPC Management System:**
-- [ ] GM can create NPC templates for pre-session prep
-- [ ] GM can quick-create NPCs during play
-- [ ] NPCs have full character stats (same model as PCs)
-- [ ] NPCs appear in GM dashboard in separate section from PCs
-- [ ] All GM manipulation tools work on NPCs (health, wounds, effects, inventory, stats)
-- [ ] GM can choose to persist or dismiss NPCs after encounter
-- [ ] GM can toggle NPC visibility (hide/reveal for surprise)
-- [ ] GM can manage NPC groups with individual tracking + batch actions
-
-**Future milestones:**
+**Future milestones (to be defined):**
+- [ ] NPC group management with batch actions
 - [ ] Initiative tracking with automatic turn order
 - [ ] Automated encounter balancing based on party composition
 
@@ -148,8 +167,18 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.4 Shipped):**
-The Threa TTRPG Assistant now has complete GM character manipulation powers including health management, wound tracking, effect application, inventory control, stat editing, and a full concentration system. Key components:
+**Current State (v1.5 Shipped):**
+The Threa TTRPG Assistant now has complete NPC management capabilities enabling GMs to run full combat encounters with NPCs alongside player characters. Key components:
+
+**v1.5 NPC Management System (2026-02-03):**
+- NPC template library with search, filter, category tags, difficulty badges, and clone functionality
+- Quick-spawn from templates with auto-naming ("Goblin 1", "Goblin 2") and disposition selection
+- Dashboard NPC section with disposition grouping (Hostile/Neutral/Friendly)
+- Full GM manipulation powers on NPCs (same as PCs: health, wounds, effects, inventory, stats)
+- Visibility toggle for surprise encounters with hidden NPC section
+- NPC lifecycle: archive, restore, delete, save-as-template
+- Combat integration: NPCs in targeting dropdown and time advancement processing
+- Codebase: +8,380 lines across 48 files modified
 
 **v1.4 GM Character Manipulation + Concentration (2026-01-29):**
 - Health management with theme-aware color-coded health bars (green/yellow/red)
@@ -158,7 +187,6 @@ The Threa TTRPG Assistant now has complete GM character manipulation powers incl
 - Inventory manipulation with item template picker and quantity prompts
 - Stat editing with inline attribute/skill editing and validation
 - Concentration system: casting-time progress, sustained FAT/VIT drain, Focus checks
-- Codebase: +41,092 lines across 322 files modified
 
 **v1.2 GM Table & Campaign Management (2026-01-28):**
 - Campaign table creation with theme (Fantasy/Sci-Fi) and epoch-based world time
@@ -199,7 +227,7 @@ The codebase already has a working TTRPG combat system with:
 - Radzen.Blazor 8.4.2 for UI components
 - SQLite database (Microsoft.Data.Sqlite 10.0.1)
 - Nullable reference types enabled project-wide
-- ~68,923 lines of C#/Razor code
+- ~77,300 lines of C#/Razor code
 
 **Known Technical Debt (from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
@@ -254,6 +282,14 @@ The codebase already has a working TTRPG combat system with:
 | Effect linking via SourceEffectId | Enables cascade removal when concentration breaks | ✓ Good (v1.4) |
 | Focus skill check for concentration | Matches game design with damage penalty (-1 per 2 damage) | ✓ Good (v1.4) |
 | Same concentration check pattern for all actions | Consistent UX across melee, ranged, and reload actions | ✓ Good (v1.4) |
+| NPCs use existing CharacterEdit model | 100% feature parity with PCs, no parallel model maintenance | ✓ Good (v1.5) |
+| Template pattern follows ItemTemplate approach | Proven pattern, consistent UX | ✓ Good (v1.5) |
+| Spawn hidden by default | Surprise encounters are common GM need | ✓ Good (v1.5) |
+| Global auto-naming counter | Avoids confusion between templates | ✓ Good (v1.5) |
+| Disposition grouping in dashboard | Visual organization for combat management | ✓ Good (v1.5) |
+| VisibleToPlayers filter in targeting | Prevents hidden NPCs leaking to players | ✓ Good (v1.5) |
+| Archive vs delete option | Preserves useful NPCs while cleaning dashboard | ✓ Good (v1.5) |
+| Save-as-template resets health | Fresh NPC definition, not combat state | ✓ Good (v1.5) |
 
 ---
-*Last updated: 2026-02-01 after v1.5 milestone started*
+*Last updated: 2026-02-03 after v1.5 milestone completed*
