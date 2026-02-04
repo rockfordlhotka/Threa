@@ -151,6 +151,12 @@ Plans:
 
 **Dependencies:** Phase 26 (NPCs fully manageable)
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 27-01-PLAN.md — NPC target loading and selection UI (TableCharacterList, disposition grouping)
+- [ ] 27-02-PLAN.md — Combat polish (target invalidation, reveal activity log)
+
 **Requirements:**
 - CMBT-01: NPCs participate in round/time advancement
 - CMBT-02: NPCs can be targeted by combat actions
@@ -217,3 +223,4 @@ Plans:
 *Phase 25 complete: 2026-02-02*
 *Phase 26 planned: 2026-02-03*
 *Phase 26 complete: 2026-02-03*
+*Phase 27 planned: 2026-02-03*
