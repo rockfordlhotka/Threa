@@ -671,19 +671,48 @@ private async Task LoadTableCharactersAsync()
 
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
-        // Ignore events if component is disposed or not our character
-        if (_disposed || character == null || e.CharacterId != character.Id)
-        {
-            return;
-        }
+        // Ignore events if component is disposed
+        if (_disposed || table == null) return;
 
         _ = InvokeAsync(async () =>
         {
             try
             {
-                // Refresh the character to get the updated state
-                character = await characterPortal.FetchAsync(character.Id);
-                await LoadEquippedItemsAsync();
+                // If this is our character, refresh it
+                if (character != null && e.CharacterId == character.Id)
+                {
+                    character = await characterPortal.FetchAsync(character.Id);
+                    await LoadEquippedItemsAsync();
+                }
+
+                // Always refresh table characters to catch NPC visibility changes
+                await LoadTableCharactersAsync();
+
+                // Check if we're in targeting and our target is no longer valid
+                if (currentTargetingInteraction != null && showTargetingModal)
+                {
+                    var targetId = currentTargetingInteraction.DefenderId;
+                    var target = tableCharacters.FirstOrDefault(c => c.CharacterId == targetId);
+
+                    // Target invalid if: not found, or is NPC that's now hidden
+                    bool targetInvalid = target == null ||
+                        (target.IsNpc && !target.VisibleToPlayers);
+
+                    if (targetInvalid)
+                    {
+                        // Cancel the targeting interaction
+                        await TargetingManager.CancelAsync(
+                            currentTargetingInteraction.InteractionId,
+                            "Target is no longer available");
+
+                        // Close the modal
+                        showTargetingModal = false;
+                        currentTargetingInteraction = null;
+
+                        // Log the invalidation for the player
+                        AddLogEntry("Target hidden - select a new target", ActivityCategory.Combat);
+                    }
+                }
 
                 StateHasChanged();
             }
