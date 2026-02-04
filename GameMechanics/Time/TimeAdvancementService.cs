@@ -118,15 +118,30 @@ public class TimeAdvancementService
             // Load all characters at the table
             var tableCharacters = await _tableDal.GetTableCharactersAsync(tableId);
 
+            // Pre-load all characters so we can access them for linked effect removal
+            var loadedCharacters = new Dictionary<int, CharacterEdit>();
             foreach (var tc in tableCharacters)
             {
                 try
                 {
-                    // Load the character
                     var character = await _characterPortal.FetchAsync(tc.CharacterId);
+                    loadedCharacters[tc.CharacterId] = character;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedCharacterIds.Add(tc.CharacterId);
+                    result.Errors.Add($"Character {tc.CharacterId} load failed: {ex.Message}");
+                }
+            }
+
+            foreach (var kvp in loadedCharacters)
+            {
+                try
+                {
+                    var character = kvp.Value;
 
                     // Sync character's game time with table
-                    if (currentTableTimeSeconds > 0 && 
+                    if (currentTableTimeSeconds > 0 &&
                         (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < currentTableTimeSeconds))
                     {
                         character.CurrentGameTimeSeconds = currentTableTimeSeconds;
@@ -138,9 +153,10 @@ public class TimeAdvancementService
                         character.EndOfRound(_effectPortal);
 
                         // Process any concentration result (deferred actions like ammo reload)
+                        // Pass loadedCharacters so linked effects can be removed from other characters
                         if (character.LastConcentrationResult != null)
                         {
-                            var concentrationMessage = await ProcessConcentrationResultAsync(character);
+                            var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
                             if (!string.IsNullOrEmpty(concentrationMessage))
                             {
                                 result.Messages.Add(concentrationMessage);
@@ -150,12 +166,12 @@ public class TimeAdvancementService
 
                     // Save the updated character
                     await _characterPortal.UpdateAsync(character);
-                    result.UpdatedCharacterIds.Add(tc.CharacterId);
+                    result.UpdatedCharacterIds.Add(kvp.Key);
                 }
                 catch (Exception ex)
                 {
-                    result.FailedCharacterIds.Add(tc.CharacterId);
-                    result.Errors.Add($"Character {tc.CharacterId}: {ex.Message}");
+                    result.FailedCharacterIds.Add(kvp.Key);
+                    result.Errors.Add($"Character {kvp.Key}: {ex.Message}");
                 }
             }
 
@@ -199,15 +215,30 @@ public class TimeAdvancementService
             // Load all characters at the table
             var tableCharacters = await _tableDal.GetTableCharactersAsync(tableId);
 
+            // Pre-load all characters so we can access them for linked effect removal
+            var loadedCharacters = new Dictionary<int, CharacterEdit>();
             foreach (var tc in tableCharacters)
             {
                 try
                 {
-                    // Load the character
                     var character = await _characterPortal.FetchAsync(tc.CharacterId);
+                    loadedCharacters[tc.CharacterId] = character;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedCharacterIds.Add(tc.CharacterId);
+                    result.Errors.Add($"Character {tc.CharacterId} load failed: {ex.Message}");
+                }
+            }
+
+            foreach (var kvp in loadedCharacters)
+            {
+                try
+                {
+                    var character = kvp.Value;
 
                     // Sync character's game time with table
-                    if (currentTableTimeSeconds > 0 && 
+                    if (currentTableTimeSeconds > 0 &&
                         (character.CurrentGameTimeSeconds == 0 || character.CurrentGameTimeSeconds < currentTableTimeSeconds))
                     {
                         character.CurrentGameTimeSeconds = currentTableTimeSeconds;
@@ -217,9 +248,10 @@ public class TimeAdvancementService
                     character.ProcessTimeSkip(skipUnit, count, _effectPortal);
 
                     // Process any concentration result (deferred actions like ammo reload)
+                    // Pass loadedCharacters so linked effects can be removed from other characters
                     if (character.LastConcentrationResult != null)
                     {
-                        var concentrationMessage = await ProcessConcentrationResultAsync(character);
+                        var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
                         if (!string.IsNullOrEmpty(concentrationMessage))
                         {
                             result.Messages.Add(concentrationMessage);
@@ -228,12 +260,12 @@ public class TimeAdvancementService
 
                     // Save the updated character
                     await _characterPortal.UpdateAsync(character);
-                    result.UpdatedCharacterIds.Add(tc.CharacterId);
+                    result.UpdatedCharacterIds.Add(kvp.Key);
                 }
                 catch (Exception ex)
                 {
-                    result.FailedCharacterIds.Add(tc.CharacterId);
-                    result.Errors.Add($"Character {tc.CharacterId}: {ex.Message}");
+                    result.FailedCharacterIds.Add(kvp.Key);
+                    result.Errors.Add($"Character {kvp.Key}: {ex.Message}");
                 }
             }
 
@@ -284,10 +316,14 @@ public class TimeAdvancementService
 
     /// <summary>
     /// Processes the LastConcentrationResult from a character after concentration ends.
-    /// Handles magazine reload completion and ammo container reload.
+    /// Handles magazine reload completion, ammo container reload, and linked effect removal.
     /// </summary>
+    /// <param name="character">The character whose concentration result is being processed.</param>
+    /// <param name="loadedCharacters">All loaded characters at the table, for linked effect removal.</param>
     /// <returns>A message describing what happened, or null if nothing to process.</returns>
-    private async Task<string?> ProcessConcentrationResultAsync(CharacterEdit character)
+    private async Task<string?> ProcessConcentrationResultAsync(
+        CharacterEdit character,
+        Dictionary<int, CharacterEdit> loadedCharacters)
     {
         var result = character.LastConcentrationResult;
         if (result == null) return null;
@@ -341,8 +377,14 @@ public class TimeAdvancementService
                     // The UI will allow the player to execute the skill on their next action
                     return result.Message;
 
+                case "PostUseSkillEnded":
+                    // Post-use concentration completed normally - remove linked effects, no debuff
+                    RemoveLinkedEffects(loadedCharacters, result.Payload);
+                    return result.Message;
+
                 case "PostUseSkillInterrupted":
-                    // Post-use concentration was interrupted - apply penalty debuff
+                    // Post-use concentration was interrupted - remove linked effects AND apply debuff
+                    RemoveLinkedEffects(loadedCharacters, result.Payload);
                     ApplySkillInterruptionPenalty(character, result.Payload);
                     return result.Message;
             }
@@ -639,32 +681,101 @@ public class TimeAdvancementService
     }
 
     /// <summary>
+    /// Removes linked effects from target characters when concentration ends.
+    /// </summary>
+    /// <param name="loadedCharacters">All loaded characters at the table.</param>
+    /// <param name="payloadJson">The SkillUsePayload JSON containing linked effect info.</param>
+    private void RemoveLinkedEffects(Dictionary<int, CharacterEdit> loadedCharacters, string? payloadJson)
+    {
+        if (string.IsNullOrEmpty(payloadJson)) return;
+
+        var payload = SkillUsePayload.FromJson(payloadJson);
+        if (payload?.LinkedEffects == null || payload.LinkedEffects.Count == 0) return;
+
+        foreach (var linkedEffect in payload.LinkedEffects)
+        {
+            if (loadedCharacters.TryGetValue(linkedEffect.TargetCharacterId, out var targetCharacter))
+            {
+                targetCharacter.Effects.RemoveEffect(linkedEffect.EffectId);
+            }
+        }
+    }
+
+    /// <summary>
     /// Applies a penalty debuff when post-use skill concentration is interrupted.
-    /// Creates a -1 AS debuff effect for the configured penalty duration.
+    /// Uses the InterruptionDebuffConfig if available, otherwise falls back to legacy behavior.
     /// </summary>
     private void ApplySkillInterruptionPenalty(CharacterEdit character, string? payloadJson)
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
         var payload = SkillUsePayload.FromJson(payloadJson);
-        if (payload == null || payload.InterruptionPenaltyRounds <= 0) return;
+        if (payload == null) return;
 
-        // Create debuff state with -1 global AS penalty
+        // Use InterruptionDebuffConfig if available
+        if (payload.InterruptionDebuff != null)
+        {
+            ApplyConfiguredDebuff(character, payload.SkillName, payload.InterruptionDebuff);
+            return;
+        }
+
+        // Fall back to legacy behavior
+        if (payload.InterruptionPenaltyRounds <= 0) return;
+
         var debuffState = new DebuffState
         {
             GlobalPenalty = -1
         };
 
-        // Create the debuff effect
         var effect = _effectPortal.CreateChild(
             EffectType.Debuff,
             $"{payload.SkillName} Concentration Broken",
-            null, // no body location
+            null,
             payload.InterruptionPenaltyRounds,
             debuffState.Serialize());
 
         effect.Description = $"Concentration on {payload.SkillName} was interrupted. -1 to all ability scores.";
         effect.Source = payload.SkillName;
+
+        character.Effects.AddEffect(effect);
+    }
+
+    /// <summary>
+    /// Applies a debuff using the full InterruptionDebuffConfig.
+    /// </summary>
+    private void ApplyConfiguredDebuff(CharacterEdit character, string skillName, InterruptionDebuffConfig config)
+    {
+        if (config.DurationRounds <= 0) return;
+
+        // Build debuff state from config
+        var debuffState = new DebuffState
+        {
+            GlobalPenalty = config.GlobalAsPenalty
+        };
+
+        // Add skill-specific penalties if configured
+        if (config.SkillPenalties != null)
+        {
+            debuffState.SkillPenalties = config.SkillPenalties;
+        }
+
+        // Add attribute penalties if configured
+        if (config.AttributePenalties != null)
+        {
+            debuffState.AttributePenalties = config.AttributePenalties;
+        }
+
+        // Create the debuff effect
+        var effect = _effectPortal.CreateChild(
+            EffectType.Debuff,
+            config.Name,
+            null,
+            config.DurationRounds,
+            debuffState.Serialize());
+
+        effect.Description = config.Description
+            ?? $"Concentration on {skillName} was interrupted. {config.GlobalAsPenalty} to all ability scores.";
+        effect.Source = skillName;
 
         character.Effects.AddEffect(effect);
     }

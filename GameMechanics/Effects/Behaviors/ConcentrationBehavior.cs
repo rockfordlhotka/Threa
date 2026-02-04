@@ -219,7 +219,14 @@ public class ConcentrationBehavior : IEffectBehavior
         if (state == null)
             return;
 
-        // For casting-time concentration, execute the deferred action
+        // For PostUseSkill, handle normal completion (linked effects removed, no debuff)
+        if (state.ConcentrationType == "PostUseSkill")
+        {
+            HandlePostUseSkillCompletion(character, state);
+            return;
+        }
+
+        // For other casting-time concentration, execute the deferred action
         if (IsCastingTimeConcentration(state.ConcentrationType) && !string.IsNullOrEmpty(state.DeferredActionType))
         {
             ExecuteDeferredAction(character, state);
@@ -422,21 +429,55 @@ public class ConcentrationBehavior : IEffectBehavior
     }
 
     /// <summary>
+    /// Handles normal completion of post-use skill concentration.
+    /// Linked effects are removed from targets, but no debuff is applied.
+    /// </summary>
+    private void HandlePostUseSkillCompletion(CharacterEdit character, ConcentrationState state)
+    {
+        var payload = SkillUsePayload.FromJson(state.DeferredActionPayload);
+
+        // Store result for the service layer to remove linked effects
+        character.LastConcentrationResult = new ConcentrationCompletionResult
+        {
+            ActionType = "PostUseSkillEnded",
+            Payload = state.DeferredActionPayload,
+            Message = state.CompletionMessage ?? "Concentration complete - effect ended.",
+            Success = true
+        };
+    }
+
+    /// <summary>
     /// Handles interruption of post-use skill concentration.
-    /// Stores a result indicating a penalty should be applied by the calling service.
+    /// Linked effects are removed from targets AND the debuff penalty is applied.
     /// </summary>
     private void HandlePostUseSkillInterruption(CharacterEdit character, ConcentrationState state)
     {
         var payload = SkillUsePayload.FromJson(state.DeferredActionPayload);
-        if (payload == null || payload.InterruptionPenaltyRounds <= 0)
+        if (payload == null)
             return;
 
-        // Store result for the service layer to apply the penalty effect
+        // Check if there's a debuff to apply
+        var hasDebuff = payload.InterruptionDebuff != null ||
+                        payload.InterruptionPenaltyRounds > 0;
+
+        // Build the message
+        var message = state.InterruptionMessage ?? "Concentration interrupted!";
+        if (hasDebuff)
+        {
+            var debuffDesc = payload.InterruptionDebuff != null
+                ? $" {payload.InterruptionDebuff.Name} applied."
+                : " -1 AS penalty applied.";
+            message += debuffDesc;
+        }
+
+        // Store result for the service layer to:
+        // 1. Remove linked effects from targets
+        // 2. Apply debuff penalty to the caster
         character.LastConcentrationResult = new ConcentrationCompletionResult
         {
             ActionType = "PostUseSkillInterrupted",
             Payload = state.DeferredActionPayload,
-            Message = state.InterruptionMessage ?? "Post-use concentration interrupted! -1 AS penalty will be applied.",
+            Message = message,
             Success = false
         };
     }
@@ -906,26 +947,40 @@ public class ConcentrationBehavior : IEffectBehavior
     /// <summary>
     /// Creates state for post-use skill concentration.
     /// Character must maintain concentration after using the skill.
-    /// If interrupted, applies a penalty effect.
+    /// While concentrating, linked effects on targets are maintained.
+    /// When concentration ends (normal or interrupted), linked effects are removed.
+    /// If interrupted, also applies the configured debuff penalty.
     /// </summary>
     /// <param name="skillId">The skill ID</param>
     /// <param name="skillName">The skill name</param>
     /// <param name="concentrationRounds">Number of rounds to maintain concentration</param>
-    /// <param name="interruptionPenaltyRounds">Duration of penalty if interrupted</param>
+    /// <param name="linkedEffects">Effects on targets maintained while concentrating</param>
+    /// <param name="interruptionDebuff">Debuff configuration for interruption penalty</param>
     /// <param name="additionalData">Optional additional context data</param>
     /// <returns>Serialized ConcentrationState JSON</returns>
     public static string CreatePostUseSkillState(
         string skillId,
         string skillName,
         int concentrationRounds,
-        int interruptionPenaltyRounds,
+        List<LinkedEffectInfo>? linkedEffects = null,
+        InterruptionDebuffConfig? interruptionDebuff = null,
         string? additionalData = null)
     {
+        // Default debuff if not specified
+        interruptionDebuff ??= new InterruptionDebuffConfig
+        {
+            Name = $"{skillName} Concentration Broken",
+            Description = $"Concentration on {skillName} was interrupted.",
+            DurationRounds = 3,
+            GlobalAsPenalty = -1
+        };
+
         var payload = new SkillUsePayload
         {
             SkillId = skillId,
             SkillName = skillName,
-            InterruptionPenaltyRounds = interruptionPenaltyRounds,
+            LinkedEffects = linkedEffects,
+            InterruptionDebuff = interruptionDebuff,
             AdditionalData = additionalData
         };
 
@@ -935,9 +990,11 @@ public class ConcentrationBehavior : IEffectBehavior
             TotalRequired = concentrationRounds,
             CurrentProgress = 0,
             RoundsPerTick = 1,
+            LinkedEffects = linkedEffects,
+            InterruptionDebuff = interruptionDebuff,
             DeferredActionPayload = payload.Serialize(),
-            CompletionMessage = $"Maintained concentration on {skillName}",
-            InterruptionMessage = $"{skillName} post-use concentration interrupted!"
+            CompletionMessage = $"Concentration on {skillName} complete",
+            InterruptionMessage = $"{skillName} concentration interrupted!"
         }.Serialize();
     }
 }
@@ -986,7 +1043,13 @@ public class ConcentrationState
     public string? SpellName { get; set; }              // Name of sustained spell
 
     [JsonPropertyName("linkedEffectIds")]
-    public List<Guid>? LinkedEffectIds { get; set; }    // Active effects on target(s)
+    public List<Guid>? LinkedEffectIds { get; set; }    // Active effects on target(s) - for SustainedSpell
+
+    [JsonPropertyName("linkedEffects")]
+    public List<LinkedEffectInfo>? LinkedEffects { get; set; }  // Full linked effect info - for PostUseSkill
+
+    [JsonPropertyName("interruptionDebuff")]
+    public InterruptionDebuffConfig? InterruptionDebuff { get; set; }  // Debuff config for PostUseSkill interruption
 
     [JsonPropertyName("fatDrainPerRound")]
     public int FatDrainPerRound { get; set; }           // FAT cost per round (0 for casting-time)

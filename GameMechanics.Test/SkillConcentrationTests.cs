@@ -173,11 +173,18 @@ public class SkillConcentrationTests : TestBase
     public void CreatePostUseSkillState_CreatesValidState()
     {
         // Arrange & Act
+        var debuffConfig = new InterruptionDebuffConfig
+        {
+            Name = "Mighty Blow Broken",
+            DurationRounds = 5,
+            GlobalAsPenalty = -1
+        };
+
         var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "skill-456",
             skillName: "Mighty Blow",
             concentrationRounds: 3,
-            interruptionPenaltyRounds: 5);
+            interruptionDebuff: debuffConfig);
 
         var state = ConcentrationState.FromJson(stateJson);
 
@@ -196,7 +203,9 @@ public class SkillConcentrationTests : TestBase
         Assert.IsNotNull(payload);
         Assert.AreEqual("skill-456", payload.SkillId);
         Assert.AreEqual("Mighty Blow", payload.SkillName);
-        Assert.AreEqual(5, payload.InterruptionPenaltyRounds);
+        Assert.IsNotNull(payload.InterruptionDebuff);
+        Assert.AreEqual(5, payload.InterruptionDebuff.DurationRounds);
+        Assert.AreEqual(-1, payload.InterruptionDebuff.GlobalAsPenalty);
     }
 
     [TestMethod]
@@ -211,8 +220,7 @@ public class SkillConcentrationTests : TestBase
         var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "skill-456",
             skillName: "Mighty Blow",
-            concentrationRounds: 4,
-            interruptionPenaltyRounds: 5);
+            concentrationRounds: 4);
 
         var effect = effectPortal.CreateChild(
             EffectType.Concentration,
@@ -248,8 +256,7 @@ public class SkillConcentrationTests : TestBase
         var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "skill-456",
             skillName: "Mighty Blow",
-            concentrationRounds: 2,
-            interruptionPenaltyRounds: 5);
+            concentrationRounds: 2);
 
         var effect = effectPortal.CreateChild(
             EffectType.Concentration,
@@ -267,9 +274,10 @@ public class SkillConcentrationTests : TestBase
         // Assert
         Assert.AreEqual(0, c.Effects.Count, "Effect should be removed after completion");
 
-        // Post-use completion doesn't set a specific action result like pre-use does
-        // It just completes normally without penalty
-        // Note: The completion message is set but ActionType will be from OnExpire behavior
+        // Post-use completion signals linked effects should be removed (no debuff)
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("PostUseSkillEnded", c.LastConcentrationResult.ActionType);
+        Assert.IsTrue(c.LastConcentrationResult.Success, "Normal completion should be successful");
     }
 
     [TestMethod]
@@ -281,11 +289,18 @@ public class SkillConcentrationTests : TestBase
         var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
         var c = dp.Create(42);
 
+        var debuffConfig = new InterruptionDebuffConfig
+        {
+            Name = "Mighty Blow Broken",
+            DurationRounds = 5,
+            GlobalAsPenalty = -1
+        };
+
         var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "skill-456",
             skillName: "Mighty Blow",
             concentrationRounds: 4,
-            interruptionPenaltyRounds: 5);
+            interruptionDebuff: debuffConfig);
 
         var effect = effectPortal.CreateChild(
             EffectType.Concentration,
@@ -308,15 +323,16 @@ public class SkillConcentrationTests : TestBase
         Assert.IsFalse(c.LastConcentrationResult.Success);
         Assert.IsTrue(c.LastConcentrationResult.Message.Contains("interrupted"));
 
-        // Verify payload contains penalty info
+        // Verify payload contains debuff config
         var payload = SkillUsePayload.FromJson(c.LastConcentrationResult.Payload);
         Assert.IsNotNull(payload);
-        Assert.AreEqual(5, payload.InterruptionPenaltyRounds);
+        Assert.IsNotNull(payload.InterruptionDebuff);
+        Assert.AreEqual(5, payload.InterruptionDebuff.DurationRounds);
         Assert.AreEqual("Mighty Blow", payload.SkillName);
     }
 
     [TestMethod]
-    public void OnRemove_PostUseSkill_NoPenaltyWhenRoundsIsZero()
+    public void OnRemove_PostUseSkill_StillSignalsInterruptionWithDefaultDebuff()
     {
         // Arrange
         var provider = InitServices();
@@ -324,11 +340,11 @@ public class SkillConcentrationTests : TestBase
         var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
         var c = dp.Create(42);
 
+        // Create without explicit debuff config - will get default
         var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "skill-456",
             skillName: "Mighty Blow",
-            concentrationRounds: 4,
-            interruptionPenaltyRounds: 0); // No penalty
+            concentrationRounds: 4);
 
         var effect = effectPortal.CreateChild(
             EffectType.Concentration,
@@ -344,10 +360,14 @@ public class SkillConcentrationTests : TestBase
         // Act - manually remove (simulating interruption)
         ConcentrationBehavior.BreakConcentration(c);
 
-        // Assert - should not have PostUseSkillInterrupted action type when no penalty
-        // The effect will still be removed but no penalty result is set
-        Assert.IsNull(c.LastConcentrationResult,
-            "No penalty result should be set when InterruptionPenaltyRounds is 0");
+        // Assert - interruption is signaled with default debuff config
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("PostUseSkillInterrupted", c.LastConcentrationResult.ActionType);
+
+        var payload = SkillUsePayload.FromJson(c.LastConcentrationResult.Payload);
+        Assert.IsNotNull(payload?.InterruptionDebuff);
+        Assert.AreEqual(3, payload.InterruptionDebuff.DurationRounds, "Default debuff should be 3 rounds");
+        Assert.AreEqual(-1, payload.InterruptionDebuff.GlobalAsPenalty, "Default penalty should be -1 AS");
     }
 
     #endregion
@@ -451,8 +471,7 @@ public class SkillConcentrationTests : TestBase
         var postUseState = ConcentrationBehavior.CreatePostUseSkillState(
             skillId: "chain-skill",
             skillName: "Chain Skill",
-            concentrationRounds: 2,
-            interruptionPenaltyRounds: 3);
+            concentrationRounds: 2);
 
         var postUseEffect = effectPortal.CreateChild(
             EffectType.Concentration,
@@ -469,6 +488,171 @@ public class SkillConcentrationTests : TestBase
 
         // Assert - post-use completed without penalty
         Assert.AreEqual(0, c.Effects.Count, "Post-use effect should be removed");
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("PostUseSkillEnded", c.LastConcentrationResult.ActionType);
+        Assert.IsTrue(c.LastConcentrationResult.Success);
+    }
+
+    #endregion
+
+    #region Linked Effects Tests
+
+    [TestMethod]
+    public void CreatePostUseSkillState_WithLinkedEffects_PreservesEffectInfo()
+    {
+        // Arrange
+        var linkedEffects = new List<LinkedEffectInfo>
+        {
+            new LinkedEffectInfo
+            {
+                EffectId = Guid.NewGuid(),
+                TargetCharacterId = 42,
+                Description = "Blinded on Goblin"
+            },
+            new LinkedEffectInfo
+            {
+                EffectId = Guid.NewGuid(),
+                TargetCharacterId = 43,
+                Description = "Blinded on Orc"
+            }
+        };
+
+        // Act
+        var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
+            skillId: "blindness-spell",
+            skillName: "Blindness",
+            concentrationRounds: 3,
+            linkedEffects: linkedEffects);
+
+        var state = ConcentrationState.FromJson(stateJson);
+
+        // Assert
+        Assert.IsNotNull(state);
+        Assert.IsNotNull(state.LinkedEffects);
+        Assert.AreEqual(2, state.LinkedEffects.Count);
+        Assert.AreEqual(42, state.LinkedEffects[0].TargetCharacterId);
+        Assert.AreEqual(43, state.LinkedEffects[1].TargetCharacterId);
+
+        // Also verify in payload
+        var payload = SkillUsePayload.FromJson(state.DeferredActionPayload);
+        Assert.IsNotNull(payload?.LinkedEffects);
+        Assert.AreEqual(2, payload.LinkedEffects.Count);
+    }
+
+    [TestMethod]
+    public void OnExpire_PostUseSkill_WithLinkedEffects_SignalsRemovalNeeded()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        var linkedEffectId = Guid.NewGuid();
+        var linkedEffects = new List<LinkedEffectInfo>
+        {
+            new LinkedEffectInfo
+            {
+                EffectId = linkedEffectId,
+                TargetCharacterId = 99,
+                Description = "Blinded on Target"
+            }
+        };
+
+        var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
+            skillId: "blindness-spell",
+            skillName: "Blindness",
+            concentrationRounds: 2,
+            linkedEffects: linkedEffects);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Maintaining Blindness",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+
+        // Act - run to completion
+        c.Effects.EndOfRound(0);
+        c.Effects.EndOfRound(0);
+
+        // Assert - should signal linked effect removal
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("PostUseSkillEnded", c.LastConcentrationResult.ActionType);
+        Assert.IsTrue(c.LastConcentrationResult.Success);
+
+        // Verify payload contains linked effect info for removal
+        var payload = SkillUsePayload.FromJson(c.LastConcentrationResult.Payload);
+        Assert.IsNotNull(payload?.LinkedEffects);
+        Assert.AreEqual(1, payload.LinkedEffects.Count);
+        Assert.AreEqual(linkedEffectId, payload.LinkedEffects[0].EffectId);
+        Assert.AreEqual(99, payload.LinkedEffects[0].TargetCharacterId);
+    }
+
+    [TestMethod]
+    public void OnRemove_PostUseSkill_WithLinkedEffects_SignalsRemovalAndDebuff()
+    {
+        // Arrange
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+        var effectPortal = provider.GetRequiredService<IChildDataPortal<EffectRecord>>();
+        var c = dp.Create(42);
+
+        var linkedEffectId = Guid.NewGuid();
+        var linkedEffects = new List<LinkedEffectInfo>
+        {
+            new LinkedEffectInfo
+            {
+                EffectId = linkedEffectId,
+                TargetCharacterId = 99,
+                Description = "Grappled on Target"
+            }
+        };
+
+        var debuffConfig = new InterruptionDebuffConfig
+        {
+            Name = "Grapple Broken",
+            DurationRounds = 2,
+            GlobalAsPenalty = -2
+        };
+
+        var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
+            skillId: "grapple",
+            skillName: "Grapple",
+            concentrationRounds: 5,
+            linkedEffects: linkedEffects,
+            interruptionDebuff: debuffConfig);
+
+        var effect = effectPortal.CreateChild(
+            EffectType.Concentration,
+            "Maintaining Grapple",
+            null,
+            null,
+            stateJson);
+
+        c.Effects.AddEffect(effect);
+        c.Effects.EndOfRound(0);
+        c.ClearConcentrationResult();
+
+        // Act - interrupt
+        ConcentrationBehavior.BreakConcentration(c);
+
+        // Assert - should signal both linked effect removal AND debuff
+        Assert.IsNotNull(c.LastConcentrationResult);
+        Assert.AreEqual("PostUseSkillInterrupted", c.LastConcentrationResult.ActionType);
+        Assert.IsFalse(c.LastConcentrationResult.Success);
+
+        var payload = SkillUsePayload.FromJson(c.LastConcentrationResult.Payload);
+        Assert.IsNotNull(payload?.LinkedEffects);
+        Assert.AreEqual(1, payload.LinkedEffects.Count);
+        Assert.AreEqual(linkedEffectId, payload.LinkedEffects[0].EffectId);
+
+        Assert.IsNotNull(payload?.InterruptionDebuff);
+        Assert.AreEqual("Grapple Broken", payload.InterruptionDebuff.Name);
+        Assert.AreEqual(2, payload.InterruptionDebuff.DurationRounds);
+        Assert.AreEqual(-2, payload.InterruptionDebuff.GlobalAsPenalty);
     }
 
     #endregion
@@ -501,7 +685,6 @@ public class SkillConcentrationTests : TestBase
             skillId: "skill-456",
             skillName: "Mighty Blow",
             concentrationRounds: 3,
-            interruptionPenaltyRounds: 5,
             additionalData: "{\"damage\":15}");
 
         var state = ConcentrationState.FromJson(stateJson);
