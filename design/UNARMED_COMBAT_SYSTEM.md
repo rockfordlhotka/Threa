@@ -30,6 +30,41 @@ Unarmed attacks are implemented as **virtual weapon templates** - `ItemTemplate`
 
 ---
 
+## Virtual Weapons
+
+### What Are Virtual Weapons?
+
+Virtual weapons are `ItemTemplate` records that represent innate abilities rather than physical items. They are distinguished from regular weapons by:
+
+1. **`IsVirtual` flag**: Set to `true` on the ItemTemplate
+2. **Associated skill**: Linked to a specific skill (e.g., Hand-to-Hand)
+3. **Minimum skill level**: Some virtual weapons require training; punch/kick require 0
+
+### UI Behavior
+
+Virtual weapons are **hidden from normal item management**:
+
+- **Do NOT appear** in lists of items that can be given to a character
+- **Do NOT appear** in equipment selection UI
+- **Do NOT appear** in character inventory
+- **Cannot be dropped, traded, or destroyed**
+
+Instead, virtual weapons appear automatically in **combat attack options** when:
+1. The character has no weapon equipped (for punch/kick)
+2. The character meets the minimum skill level requirement
+
+### GM Management
+
+When a GM creates or edits virtual weapons:
+
+- Must mark the item as **virtual** (`IsVirtual = true`)
+- Must associate with a **skill** (`RelatedSkill`)
+- Must set **minimum skill level** (`MinSkillLevel`)
+  - Punch/Kick: `MinSkillLevel = 0` (anyone can use)
+  - Future advanced techniques: `MinSkillLevel >= 1`
+
+---
+
 ## Unarmed Attack Types
 
 ### Punch
@@ -43,8 +78,9 @@ A quick strike with the fist. Favors speed over power.
 | **Damage Type** | Bludgeoning |
 | **Damage Class** | DC1 |
 | **AP Cost** | 1 AP + 1 FAT (standard) |
-| **Related Skill** | Unarmed Combat |
-| **Equipment Slot** | MainHand or OffHand |
+| **Related Skill** | Hand-to-Hand |
+| **Min Skill Level** | 0 (anyone can use) |
+| **Is Virtual** | Yes |
 
 **Use Case**: Default unarmed attack. Good when accuracy matters more than damage. Useful for multiple attacks per round due to no AS penalty.
 
@@ -59,8 +95,9 @@ A powerful strike with the leg. Trades accuracy for damage.
 | **Damage Type** | Bludgeoning |
 | **Damage Class** | DC1 |
 | **AP Cost** | 1 AP + 1 FAT (standard) |
-| **Related Skill** | Unarmed Combat |
-| **Equipment Slot** | N/A (uses legs) |
+| **Related Skill** | Hand-to-Hand |
+| **Min Skill Level** | 0 (anyone can use) |
+| **Is Virtual** | Yes |
 
 **Use Case**: When landing a solid hit, kicks deal more damage. The -1 AS penalty makes them slightly harder to land but more rewarding on success.
 
@@ -68,32 +105,32 @@ A powerful strike with the leg. Trades accuracy for damage.
 
 ---
 
-## Unarmed Combat Skill
+## Hand-to-Hand Skill
 
-Unarmed Combat is a **Physicality (STR)**-based skill that governs all unarmed attacks.
+Hand-to-Hand is an existing **Physicality (STR)**-based skill that governs all unarmed attacks.
 
 ### Ability Score Calculation
 
 ```
-Unarmed Combat AS = Physicality + Unarmed Combat Skill Level - 5 + Modifiers
+Hand-to-Hand AS = Physicality + Hand-to-Hand Skill Level - 5 + Modifiers
 ```
 
 **Example**:
-- Character with Physicality 12, Unarmed Combat skill 4
+- Character with Physicality 12, Hand-to-Hand skill 4
 - Base AS = 12 + 4 - 5 = **11**
 - Punch attack: AS 11, SV +2 on hit
 - Kick attack: AS 11 - 1 = **10**, SV +4 on hit
 
-### Untrained Unarmed Combat
+### Untrained Combat
 
-**All characters can punch and kick**, even without training in the Unarmed Combat skill. Untrained characters use skill level 0:
+**All characters can punch and kick**, even without training in the Hand-to-Hand skill. Untrained characters use skill level 0:
 
 ```
 Untrained AS = Physicality + 0 - 5 = Physicality - 5
 ```
 
 **Example**:
-- Character with Physicality 10, no Unarmed Combat skill
+- Character with Physicality 10, no Hand-to-Hand skill
 - Base AS = 10 + 0 - 5 = **5**
 - Punch: AS 5, +2 SV on hit
 - Kick: AS 4 (5 - 1), +4 SV on hit
@@ -120,7 +157,7 @@ Unarmed attacks follow the standard melee attack flow:
 ### Example: Punch Attack
 
 ```
-Aldric (Unarmed Combat AS 11) punches a Goblin (Dodge AS 9)
+Aldric (Hand-to-Hand AS 11) punches a Goblin (Dodge AS 9)
 
 1. Attack roll: 11 + 4dF+ (+1) = 12 AV
 2. Goblin passive defense: TV = 9 - 1 = 8
@@ -166,7 +203,7 @@ Characters can parry melee attacks while unarmed, but at a penalty:
 
 **Mechanics**:
 - Enter parry mode as normal (1 AP + 1 FAT)
-- Use Unarmed Combat AS - 2 for parry TV
+- Use Hand-to-Hand AS - 2 for parry TV
 - Only works against melee attacks
 - Higher risk of injury on failed parry (see Parry Failure below)
 
@@ -193,8 +230,8 @@ Characters can perform a flurry of unarmed strikes:
 Both punches resolve simultaneously. Kicks cannot be dual-wielded (only two hands, not four legs).
 
 **Example - Punch Flurry**:
-- Primary punch: Unarmed AS 11
-- Off-hand punch: Unarmed AS 11 - 2 = 9
+- Primary punch: Hand-to-Hand AS 11
+- Off-hand punch: Hand-to-Hand AS 11 - 2 = 9
 - Both get +2 SV if they hit
 
 ---
@@ -218,9 +255,9 @@ Items can provide bonuses to unarmed combat:
 | Item Example | Bonus Type | Effect |
 |--------------|------------|--------|
 | Brass Knuckles | +1 SV | Adds to punch SV modifier |
-| Combat Gloves | +1 AS | Adds to Unarmed Combat AS |
+| Combat Gloves | +1 AS | Adds to Hand-to-Hand AS |
 | Steel-Toed Boots | +1 SV | Adds to kick SV modifier |
-| Martial Arts Manual | +2 Skill | Bonus to Unarmed Combat skill |
+| Martial Arts Manual | +2 Skill | Bonus to Hand-to-Hand skill |
 
 These items stack with base unarmed modifiers.
 
@@ -230,16 +267,17 @@ These items stack with base unarmed modifiers.
 
 ### Phase 1: Core System
 
-1. **Add Unarmed Combat Skill**
-   - Add to skill list with Physicality as governing attribute
-   - Default skill level 0 for all characters
+1. **Use Existing Hand-to-Hand Skill**
+   - The Hand-to-Hand skill already exists with Physicality as governing attribute
+   - No new skill needed; virtual weapons reference this existing skill
 
 2. **Create Virtual Weapon Templates as ItemTemplate Records**
    - Create `ItemTemplate` records in the database for:
      - `Punch`: SVModifier +2, AVModifier +0, WeaponType = Unarmed
      - `Kick`: SVModifier +4, AVModifier -1, WeaponType = Unarmed
    - Both use `DamageType = "Bludgeoning"`, `DamageClass = 1`
-   - Both reference `RelatedSkill = "Unarmed Combat"`
+   - Both reference `RelatedSkill = "Hand-to-Hand"`
+   - Both set `IsVirtual = true`, `MinSkillLevel = 0`
    - These are **data-driven**, not hardcoded in combat resolution
    - System loads these templates when character has no weapon equipped
 
@@ -262,10 +300,11 @@ These items stack with base unarmed modifiers.
    - Use `INSERT OR IGNORE` or check existence before insert for idempotency
    - Document migration in `MIGRATIONS.md`
 
-   **Template Identification:**
-   - Use well-known IDs (e.g., negative IDs or reserved range) to identify system templates
-   - Add `IsSystemTemplate` flag or use reserved ID range to distinguish system-provided templates from GM-created ones
-   - System templates cannot be deleted by users
+   **Schema Update (if needed):**
+   - Add `IsVirtual` boolean column to ItemTemplates table if not present
+   - Add `MinSkillLevel` integer column to ItemTemplates table if not present
+   - Virtual weapons are filtered out of inventory/equipment queries
+   - Virtual weapons appear in combat attack options based on skill requirements
 
 4. **Update Combat Resolution**
    - When no weapon equipped, load available unarmed attack templates
@@ -286,7 +325,7 @@ These items stack with base unarmed modifiers.
    - Narration support for unarmed attacks
 
 6. **Character Sheet Updates**
-   - Display Unarmed Combat skill
+   - Display Hand-to-Hand skill
    - Show equipped state affecting available attacks
 
 ### Phase 3: Testing
@@ -315,10 +354,10 @@ Different fighting styles could provide unique techniques:
 
 | Style | Unlock Skill | Special Ability |
 |-------|--------------|-----------------|
-| Boxing | Unarmed 4 | Combo attacks, faster recovery |
-| Kickboxing | Unarmed 4 | Reduced kick AS penalty |
-| Grappling | Unarmed 6 | Grab, throw, submission moves |
-| Pressure Points | Unarmed 8 | Stun effects on critical hits |
+| Boxing | Hand-to-Hand 4 | Combo attacks, faster recovery |
+| Kickboxing | Hand-to-Hand 4 | Reduced kick AS penalty |
+| Grappling | Hand-to-Hand 6 | Grab, throw, submission moves |
+| Pressure Points | Hand-to-Hand 8 | Stun effects on critical hits |
 
 ### Additional Unarmed Attacks
 
