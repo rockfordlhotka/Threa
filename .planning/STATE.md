@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Planning next milestone
+**Current focus:** v1.6 Batch Character Actions
 
 ## Current Position
 
-Milestone: v1.5 NPC Management System — COMPLETE
-Phase: 27 of 27 (Time & Combat Integration) — COMPLETE
-Plan: 2 of 2 (Combat Polish) — COMPLETE
-Status: Milestone shipped and archived
-Last activity: 2026-02-03 — v1.5 milestone completed
+Milestone: v1.6 Batch Character Actions
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-04 — Milestone v1.6 started
 
-Progress: [██████████████████████] 100% (78/78 plans through v1.5)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (milestone starting)
 
 ## Performance Metrics
 
@@ -65,11 +65,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-03
-Stopped at: Milestone v1.5 completed and archived
+Last session: 2026-02-04
+Stopped at: Defining requirements for v1.6
 Resume file: None
-Next action: /gsd:new-milestone to start next milestone
+Next action: Complete requirements → roadmap → /gsd:plan-phase
 
 ---
-*Milestone v1.5 NPC Management System shipped 2026-02-03*
-*Archives: .planning/milestones/v1.5-ROADMAP.md, v1.5-REQUIREMENTS.md, v1.5-MILESTONE-AUDIT.md*
+*Milestone v1.6 Batch Character Actions started 2026-02-04*
+*Previous milestone archives: .planning/milestones/v1.5-ROADMAP.md, v1.5-REQUIREMENTS.md, v1.5-MILESTONE-AUDIT.md*

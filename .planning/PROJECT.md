@@ -8,12 +8,19 @@ A web-based TTRPG assistant for the Threa game system that helps players manage 
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: Planning Next
+## Current Milestone: v1.6 Batch Character Actions
 
-Milestone v1.5 NPC Management System has been completed. Next milestone to be determined via `/gsd:new-milestone`.
+**Goal:** Enable GMs to select multiple characters (NPCs and/or PCs) and apply actions to all at once for efficient encounter management.
+
+**Target features:**
+- Multi-select characters from GM dashboard
+- Batch damage/healing application
+- Batch effect add/remove
+- Batch visibility toggle
+- Batch dismiss/archive
+- Partial success with clear feedback (show what succeeded/failed)
 
 **Potential future directions:**
-- NPC group management with batch actions
 - Initiative tracking with automatic turn order
 - Automated encounter balancing
 - Session logs/history within campaign
@@ -141,8 +148,15 @@ These capabilities exist in the codebase:
 
 ### Active
 
+**v1.6 Batch Character Actions:**
+- [ ] GM can multi-select characters from dashboard
+- [ ] GM can apply damage/healing to selected characters in batch
+- [ ] GM can add/remove effects to selected characters in batch
+- [ ] GM can toggle visibility on selected characters in batch
+- [ ] GM can dismiss/archive selected characters in batch
+- [ ] Batch operations show clear feedback (partial success: what succeeded/failed)
+
 **Future milestones (to be defined):**
-- [ ] NPC group management with batch actions
 - [ ] Initiative tracking with automatic turn order
 - [ ] Automated encounter balancing based on party composition
 
@@ -292,4 +306,4 @@ The codebase already has a working TTRPG combat system with:
 | Save-as-template resets health | Fresh NPC definition, not combat state | ✓ Good (v1.5) |
 
 ---
-*Last updated: 2026-02-03 after v1.5 milestone completed*
+*Last updated: 2026-02-04 after v1.6 milestone started*
