@@ -31,8 +31,10 @@
 
 @using GameMechanics.Time
 @using Threa.Dal
+@using Threa.Dal.Dto
 
 @inject ITableDal TableDal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
 @inject DialogService DialogService
 @inject PlayerConnectionTracker ConnectionTracker
 @inject CircuitIdProvider CircuitIdProvider
@@ -374,7 +376,7 @@ private List<TargetingRequestMessage> pendingTargetingRequests = new();
 private TargetingInteraction? currentTargetingInteraction;
 private bool showTargetingModal;
 private bool isTargetingAttacker;
-private List<Threa.Dal.Dto.TableCharacter> tableCharacters = new();
+private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 
 // Semaphore to prevent concurrent processing of time skip messages
 private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
@@ -478,7 +480,8 @@ private async Task LoadEquippedItemsAsync()
 private async Task LoadTableCharactersAsync()
 {
     if (table == null) return;
-    tableCharacters = await TableDal.GetTableCharactersAsync(table.Id);
+    var charList = await characterListPortal.FetchAsync(table.Id);
+    tableCharacters = charList.ToList();
 }
 
     private void SelectTab(string tabName)
@@ -668,19 +671,48 @@ private async Task LoadTableCharactersAsync()
 
     private void OnCharacterUpdateReceived(object? sender, CharacterUpdateMessage e)
     {
-        // Ignore events if component is disposed or not our character
-        if (_disposed || character == null || e.CharacterId != character.Id)
-        {
-            return;
-        }
+        // Ignore events if component is disposed
+        if (_disposed || table == null) return;
 
         _ = InvokeAsync(async () =>
         {
             try
             {
-                // Refresh the character to get the updated state
-                character = await characterPortal.FetchAsync(character.Id);
-                await LoadEquippedItemsAsync();
+                // If this is our character, refresh it
+                if (character != null && e.CharacterId == character.Id)
+                {
+                    character = await characterPortal.FetchAsync(character.Id);
+                    await LoadEquippedItemsAsync();
+                }
+
+                // Always refresh table characters to catch NPC visibility changes
+                await LoadTableCharactersAsync();
+
+                // Check if we're in targeting and our target is no longer valid
+                if (currentTargetingInteraction != null && showTargetingModal)
+                {
+                    var targetId = currentTargetingInteraction.DefenderId;
+                    var target = tableCharacters.FirstOrDefault(c => c.CharacterId == targetId);
+
+                    // Target invalid if: not found, or is NPC that's now hidden
+                    bool targetInvalid = target == null ||
+                        (target.IsNpc && !target.VisibleToPlayers);
+
+                    if (targetInvalid)
+                    {
+                        // Cancel the targeting interaction
+                        await TargetingManager.CancelAsync(
+                            currentTargetingInteraction.InteractionId,
+                            "Target is no longer available");
+
+                        // Close the modal
+                        showTargetingModal = false;
+                        currentTargetingInteraction = null;
+
+                        // Log the invalidation for the player
+                        AddLogEntry("Target hidden - select a new target", ActivityCategory.Combat);
+                    }
+                }
 
                 StateHasChanged();
             }
@@ -1536,19 +1568,23 @@ private async Task LoadTableCharactersAsync()
 
     /// <summary>
     /// Gets available targets at the current table (excluding self).
+    /// Filters out hidden NPCs (only visible NPCs appear as targets).
     /// </summary>
     public List<TargetSelectionModal.TargetInfo> GetAvailableTargets()
     {
-        if (table == null || character == null) return new List<TargetSelectionModal.TargetInfo>();
+        if (table == null || character == null)
+            return new List<TargetSelectionModal.TargetInfo>();
 
         return tableCharacters
             .Where(c => c.CharacterId != character.Id)
+            .Where(c => !c.IsNpc || c.VisibleToPlayers) // PCs always visible, NPCs only if revealed
             .Select(c => new TargetSelectionModal.TargetInfo
             {
                 CharacterId = c.CharacterId,
                 CharacterName = c.CharacterName,
-                PlayerName = c.PlayerName,
-                IsNPC = false // TableCharacters are player characters, not NPCs
+                PlayerName = c.IsNpc ? null : "Player",
+                IsNPC = c.IsNpc,
+                Disposition = c.Disposition
             })
             .ToList();
     }

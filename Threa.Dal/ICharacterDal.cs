@@ -13,6 +13,10 @@ public interface ICharacterDal
     Task<List<Character>> GetNpcTemplatesAsync();
     Task<List<Character>> GetTableNpcsAsync(Guid tableId);
     Task<List<string>> GetNpcCategoriesAsync();
+    /// <summary>
+    /// Gets archived NPCs for the archive browser.
+    /// </summary>
+    Task<List<Character>> GetArchivedNpcsAsync();
     Task<Character> GetCharacterAsync(int id);
     Task<Character> SaveCharacterAsync(Character character);
     Task DeleteCharacterAsync(int id);

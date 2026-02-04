@@ -181,7 +181,7 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 IsNpc = true,
                 IsTemplate = false,
                 IsPlayable = true, // Ready for play immediately
-                VisibleToPlayers = template.VisibleToPlayers,
+                VisibleToPlayers = false, // Spawned NPCs start hidden for surprise encounters
 
                 // Disposition - use parameter override or template default
                 DefaultDisposition = Disposition,

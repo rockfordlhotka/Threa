@@ -207,6 +207,38 @@ else
                     }
                     else
                     {
+                        @* Hidden Section - Collapsed by default, shows count *@
+                        @if (hiddenNpcs.Any())
+                        {
+                            <div class="npc-group mb-3">
+                                <button class="btn btn-sm w-100 d-flex justify-content-between align-items-center py-1"
+                                        style="background: var(--color-bg-tertiary);"
+                                        @onclick="() => showHiddenSection = !showHiddenSection">
+                                    <span>
+                                        <i class="bi bi-eye-slash text-muted me-1"></i>
+                                        Hidden (@hiddenNpcs.Count())
+                                    </span>
+                                    <i class="bi @(showHiddenSection ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                </button>
+
+                                @if (showHiddenSection)
+                                {
+                                    <div class="mt-2">
+                                        <div class="row row-cols-2 row-cols-lg-3 g-2">
+                                            @foreach (var npc in hiddenNpcs)
+                                            {
+                                                <div class="col" @key="@($"hidden-{npc.CharacterId}-{characterListVersion}")">
+                                                    <HiddenNpcCard Character="@npc"
+                                                                  OnReveal="RevealNpc"
+                                                                  OnClick="OpenCharacterDetails" />
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
                         @* Hostile Group - Red Header *@
                         @if (hostileNpcs.Any())
                         {
@@ -483,14 +515,19 @@ else
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> tableNpcs =>
         tableCharacters?.Where(c => c.IsNpc) ?? Enumerable.Empty<GameMechanics.GamePlay.TableCharacterInfo>();
 
+    // Hidden NPCs (not visible to players)
+    private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> hiddenNpcs =>
+        tableNpcs.Where(c => !c.VisibleToPlayers);
+
+    // Visible NPCs filtered by disposition
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> hostileNpcs =>
-        tableNpcs.Where(c => c.Disposition == NpcDisposition.Hostile);
+        tableNpcs.Where(c => c.VisibleToPlayers && c.Disposition == NpcDisposition.Hostile);
 
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> neutralNpcs =>
-        tableNpcs.Where(c => c.Disposition == NpcDisposition.Neutral);
+        tableNpcs.Where(c => c.VisibleToPlayers && c.Disposition == NpcDisposition.Neutral);
 
     private IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> friendlyNpcs =>
-        tableNpcs.Where(c => c.Disposition == NpcDisposition.Friendly);
+        tableNpcs.Where(c => c.VisibleToPlayers && c.Disposition == NpcDisposition.Friendly);
 
     // Form fields
     private string announcementText = "";
@@ -512,6 +549,9 @@ else
     private string spawnAutoName = "";
     private IEnumerable<GameMechanics.NpcTemplateInfo>? availableTemplates;
     private bool showTemplateSelector;
+
+    // Hidden NPC section state
+    private bool showHiddenSection = false;
 
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -1267,6 +1307,36 @@ else
         catch (Exception ex)
         {
             errorMessage = $"Error spawning NPC: {ex.Message}";
+        }
+    }
+
+    private async Task RevealNpc(GameMechanics.GamePlay.TableCharacterInfo npc)
+    {
+        try
+        {
+            var character = await characterPortal.FetchAsync(npc.CharacterId);
+            character.VisibleToPlayers = true;
+            await characterPortal.UpdateAsync(character);
+
+            // Activity log announcement - visible to players
+            // Per CONTEXT.md: "[NPC Name] appears!" (name only, no disposition)
+            AddLogEntry($"{npc.CharacterName} appears!", ActivityCategory.Announcement);
+
+            // Publish update for real-time sync
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = npc.CharacterId,
+                UpdateType = CharacterUpdateType.General,
+                CampaignId = table!.Id.ToString(),
+                Description = $"{npc.CharacterName} revealed to players"
+            });
+
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to reveal NPC: {ex.Message}";
         }
     }
 }

@@ -2,8 +2,12 @@
 
 @using GameMechanics
 @using Radzen
+@using Threa.Dal
 
 @inject IDataPortal<GameMechanics.GamePlay.TableCharacterDetacher> detacherPortal
+@inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
+@inject ICharacterDal characterDal
+@inject ITableDal tableDal
 @inject DialogService DialogService
 
 <div class="row justify-content-center">
@@ -28,6 +32,42 @@
                 </button>
             </div>
         </div>
+
+        @* NPC Lifecycle Section - Only shown for NPCs *@
+        @if (Character?.IsNpc == true)
+        {
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <strong><i class="bi bi-gear me-1"></i>NPC Lifecycle</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Manage this NPC's lifecycle. Archive to save for later, or delete to remove permanently.
+                    </p>
+                    <div class="d-flex flex-column gap-2">
+                        @* Save as Template *@
+                        <button class="btn btn-outline-primary" @onclick="OpenSaveAsTemplateModal" disabled="@isProcessing">
+                            <i class="bi bi-file-earmark-plus me-1"></i>Save as Template
+                        </button>
+                        <small class="text-muted">Create a reusable template from this NPC's current state.</small>
+
+                        <hr class="my-2" />
+
+                        @* Archive - instant, no confirmation *@
+                        <button class="btn btn-outline-secondary" @onclick="ArchiveNpc" disabled="@isProcessing">
+                            <i class="bi bi-archive me-1"></i>Archive NPC
+                        </button>
+                        <small class="text-muted">Archives the NPC for later restoration. Instant - no confirmation needed.</small>
+
+                        @* Delete - requires confirmation *@
+                        <button class="btn btn-outline-danger mt-2" @onclick="ConfirmDeleteNpc" disabled="@isProcessing">
+                            <i class="bi bi-trash me-1"></i>Delete Permanently
+                        </button>
+                        <small class="text-muted">Permanently removes the NPC. Cannot be undone.</small>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
@@ -56,6 +96,38 @@
     </div>
 }
 
+@* Delete NPC Confirmation Dialog *@
+@if (showDeleteNpcConfirm)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Delete NPC Permanently</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelDeleteNpc"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to <strong>permanently delete</strong> <strong>@Character?.Name</strong>?</p>
+                    <p class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>This action cannot be undone. The NPC will be gone forever.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDeleteNpc">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ExecuteDeleteNpc" disabled="@isProcessing">
+                        <i class="bi bi-trash"></i> Delete Forever
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Save as Template Modal *@
+@if (showSaveAsTemplateModal && Character != null)
+{
+    <SaveAsTemplateModal Character="@Character"
+                         OnClose="OnSaveAsTemplateModalClose" />
+}
+
 @* Feedback messages *@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -81,6 +153,8 @@
 
     private bool isProcessing;
     private bool showRemoveConfirm;
+    private bool showDeleteNpcConfirm;
+    private bool showSaveAsTemplateModal;
     private string? errorMessage;
 
     private void ConfirmRemove()
@@ -118,6 +192,87 @@
         {
             isProcessing = false;
             showRemoveConfirm = false;
+        }
+    }
+
+    private async Task ArchiveNpc()
+    {
+        if (Character == null || !Character.IsNpc) return;
+        isProcessing = true;
+
+        try
+        {
+            // 1. Set IsArchived flag on character
+            Character.IsArchived = true;
+            await characterPortal.UpdateAsync(Character);
+
+            // 2. Detach from table
+            await tableDal.RemoveCharacterFromTableAsync(TableId, CharacterId);
+
+            // 3. Notify parent that character was removed
+            await OnCharacterRemoved.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to archive: {ex.Message}";
+            Character.IsArchived = false; // Revert on failure
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void ConfirmDeleteNpc()
+    {
+        showDeleteNpcConfirm = true;
+    }
+
+    private void CancelDeleteNpc()
+    {
+        showDeleteNpcConfirm = false;
+    }
+
+    private void OpenSaveAsTemplateModal()
+    {
+        showSaveAsTemplateModal = true;
+    }
+
+    private async Task OnSaveAsTemplateModalClose(bool saved)
+    {
+        showSaveAsTemplateModal = false;
+        if (saved)
+        {
+            // Template was successfully created
+            // Could show a success message or navigate to template library
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ExecuteDeleteNpc()
+    {
+        if (Character == null || !Character.IsNpc) return;
+        isProcessing = true;
+
+        try
+        {
+            // 1. Detach from table first (avoid FK constraint issues)
+            await tableDal.RemoveCharacterFromTableAsync(TableId, CharacterId);
+
+            // 2. Delete character permanently
+            await characterDal.DeleteCharacterAsync(CharacterId);
+
+            // 3. Notify parent that character was removed
+            await OnCharacterRemoved.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+            showDeleteNpcConfirm = false;
         }
     }
 }

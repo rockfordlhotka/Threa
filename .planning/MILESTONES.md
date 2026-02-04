@@ -1,5 +1,34 @@
 # Project Milestones: Threa TTRPG Assistant
 
+## v1.5 NPC Management System (Shipped: 2026-02-03)
+
+**Delivered:** Complete NPC management system enabling GMs to create, manage, and run NPCs in combat encounters alongside player characters.
+
+**Phases completed:** 23-27 (20 plans total)
+
+**Key accomplishments:**
+
+- NPC template library with search, filter, category tags, difficulty badges, and clone functionality
+- Quick-spawn NPCs from templates with auto-naming ("Goblin 1", "Goblin 2") and disposition selection
+- Dashboard NPC section with disposition grouping (Hostile/Neutral/Friendly) and full GM manipulation powers
+- Visibility toggle for surprise encounters with hidden NPC section and reveal activity log
+- NPC lifecycle management (archive, restore, delete, save-as-template)
+- Combat integration with NPCs in targeting dropdown and time advancement processing
+
+**Stats:**
+
+- 48 files modified
+- +8,380 lines of C#/Razor (8,445 insertions, 65 deletions)
+- 5 phases, 20 plans
+- 3 days from start to ship (2026-02-01 to 2026-02-03)
+- 23/23 requirements shipped (100%)
+
+**Git range:** 50c21ed → 219043f
+
+**What's next:** Consider group management (batch NPC actions), initiative tracking, or other GM capabilities
+
+---
+
 ## v1.4 GM Character Manipulation + Concentration System (Shipped: 2026-01-29)
 
 **Delivered:** Complete GM character manipulation powers with health management, wound tracking, effect application, inventory control, stat editing, and full concentration system mechanics.

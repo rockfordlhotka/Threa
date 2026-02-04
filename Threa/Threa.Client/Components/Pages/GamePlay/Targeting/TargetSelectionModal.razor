@@ -1,5 +1,6 @@
 @using GameMechanics.GamePlay
 @using GameMechanics.Messaging
+@using Threa.Dal.Dto
 
 <div class="target-selection-modal">
     <div class="modal-header">
@@ -18,7 +19,59 @@
         else
         {
             <div class="list-group">
-                @foreach (var target in AvailableTargets)
+                @{
+                    var npcs = AvailableTargets.Where(t => t.IsNPC).ToList();
+                    var pcs = AvailableTargets.Where(t => !t.IsNPC).ToList();
+                }
+
+                @* NPCs Section - Hostile first, then Neutral, then Friendly *@
+                @foreach (var target in npcs.Where(n => n.Disposition == NpcDisposition.Hostile))
+                {
+                    <button type="button"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedTargetId == target.CharacterId ? "active" : "")"
+                            @onclick="() => SelectTarget(target)">
+                        <div>
+                            <i class="bi bi-skull text-danger me-1" title="Hostile"></i>
+                            <strong>@target.CharacterName</strong>
+                        </div>
+                        <span class="badge bg-secondary">NPC</span>
+                    </button>
+                }
+                @foreach (var target in npcs.Where(n => n.Disposition == NpcDisposition.Neutral))
+                {
+                    <button type="button"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedTargetId == target.CharacterId ? "active" : "")"
+                            @onclick="() => SelectTarget(target)">
+                        <div>
+                            <i class="bi bi-circle text-secondary me-1" title="Neutral"></i>
+                            <strong>@target.CharacterName</strong>
+                        </div>
+                        <span class="badge bg-secondary">NPC</span>
+                    </button>
+                }
+                @foreach (var target in npcs.Where(n => n.Disposition == NpcDisposition.Friendly))
+                {
+                    <button type="button"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedTargetId == target.CharacterId ? "active" : "")"
+                            @onclick="() => SelectTarget(target)">
+                        <div>
+                            <i class="bi bi-heart text-success me-1" title="Friendly"></i>
+                            <strong>@target.CharacterName</strong>
+                        </div>
+                        <span class="badge bg-secondary">NPC</span>
+                    </button>
+                }
+
+                @* Divider between NPCs and PCs if both exist *@
+                @if (npcs.Any() && pcs.Any())
+                {
+                    <div class="list-group-item bg-secondary text-white py-1">
+                        <small>Players</small>
+                    </div>
+                }
+
+                @* PCs Section *@
+                @foreach (var target in pcs)
                 {
                     <button type="button"
                             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedTargetId == target.CharacterId ? "active" : "")"
@@ -30,9 +83,7 @@
                                 <small class="text-muted d-block">(@target.PlayerName)</small>
                             }
                         </div>
-                        <span class="badge @(target.IsNPC ? "bg-secondary" : "bg-primary")">
-                            @(target.IsNPC ? "NPC" : "PC")
-                        </span>
+                        <span class="badge bg-primary">PC</span>
                     </button>
                 }
             </div>
@@ -100,5 +151,6 @@
         public string CharacterName { get; init; } = string.Empty;
         public string? PlayerName { get; init; }
         public bool IsNPC { get; init; }
+        public NpcDisposition Disposition { get; init; }
     }
 }

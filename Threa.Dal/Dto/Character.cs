@@ -114,4 +114,10 @@ public class Character
     /// Null for player characters and templates themselves.
     /// </summary>
     public string? SourceTemplateName { get; set; }
+
+    /// <summary>
+    /// Whether this character is archived (dismissed but not deleted).
+    /// Archived characters don't appear in active lists but can be restored.
+    /// </summary>
+    public bool IsArchived { get; set; }
 }
