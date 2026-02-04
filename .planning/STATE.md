@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.5 NPC Management System
+**Current focus:** v1.6 Time & Combat Integration
 
 ## Current Position
 
-Milestone: v1.5 NPC Management System
-Phase: 26 - Visibility & Lifecycle
-Plan: 05 of 5 (COMPLETE)
-Status: Phase complete
-Last activity: 2026-02-03 -- Completed 26-05-PLAN.md (Save as Template)
+Milestone: v1.6 Time & Combat Integration
+Phase: 27 - Time & Combat Integration
+Plan: 01 of 2 (COMPLETE)
+Status: In progress
+Last activity: 2026-02-03 -- Completed 27-01-PLAN.md (NPC Targeting Integration)
 
-Progress: [█████████████████████] 100% (76/76 plans)
+Progress: [█████████████████████░] 98% (77/78 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 76
+- Total plans completed: 77
 - Average duration: 8.0 min
-- Total execution time: 11 hours 36 min
+- Total execution time: 11 hours 42 min
 
 **By Milestone:**
 
@@ -33,6 +33,7 @@ Progress: [█████████████████████] 100%
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 4 | 17 | 105 min | 6.2 min |
+| v1.6 | 1 | 1 | 6 min | 6 min |
 
 ## Accumulated Context
 
@@ -128,6 +129,9 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Health pools reset to full in template (fresh NPC state)
 - Effects cleared in template (wounds, buffs are combat state, not NPC definition)
 
+**Plan 27-01 Decision:**
+- Tasks combined into single commit due to interdependency (Play.razor needs Disposition from TargetInfo)
+
 ### Pending Todos
 
 None.
@@ -144,9 +148,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 26-05-PLAN.md (Save as Template)
+Stopped at: Completed 27-01-PLAN.md (NPC Targeting Integration)
 Resume file: None
-Next action: v1.5 Milestone complete - ready for milestone wrap-up
+Next action: Execute 27-02-PLAN.md (Time Advancement)
 
 ---
-*v1.5 Milestone COMPLETE -- All 76 plans executed*
+*Phase 27 in progress -- 1/2 plans complete*
