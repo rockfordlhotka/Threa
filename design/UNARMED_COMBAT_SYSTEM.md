@@ -235,7 +235,7 @@ These items stack with base unarmed modifiers.
    - Default skill level 0 for all characters
 
 2. **Create Virtual Weapon Templates as ItemTemplate Records**
-   - Create `ItemTemplate` records in the database/mock data for:
+   - Create `ItemTemplate` records in the database for:
      - `Punch`: SVModifier +2, AVModifier +0, WeaponType = Unarmed
      - `Kick`: SVModifier +4, AVModifier -1, WeaponType = Unarmed
    - Both use `DamageType = "Bludgeoning"`, `DamageClass = 1`
@@ -246,10 +246,6 @@ These items stack with base unarmed modifiers.
 3. **Data Migration Strategy** (per `Threa.Dal.SqlLite/MIGRATIONS.md`)
 
    This feature requires **seed data** (new ItemTemplate records), not schema changes.
-
-   **MockDb Implementation:**
-   - Add Punch and Kick `ItemTemplate` records to the mock data initialization
-   - Use well-known IDs (e.g., negative IDs or reserved range) to identify system templates
 
    **SQLite Implementation:**
    - Add a data migration in `ItemTemplateDal.RunMigrations()`:
@@ -267,6 +263,7 @@ These items stack with base unarmed modifiers.
    - Document migration in `MIGRATIONS.md`
 
    **Template Identification:**
+   - Use well-known IDs (e.g., negative IDs or reserved range) to identify system templates
    - Add `IsSystemTemplate` flag or use reserved ID range to distinguish system-provided templates from GM-created ones
    - System templates cannot be deleted by users
 
