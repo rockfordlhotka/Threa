@@ -243,7 +243,34 @@ These items stack with base unarmed modifiers.
    - These are **data-driven**, not hardcoded in combat resolution
    - System loads these templates when character has no weapon equipped
 
-3. **Update Combat Resolution**
+3. **Data Migration Strategy** (per `Threa.Dal.SqlLite/MIGRATIONS.md`)
+
+   This feature requires **seed data** (new ItemTemplate records), not schema changes.
+
+   **MockDb Implementation:**
+   - Add Punch and Kick `ItemTemplate` records to the mock data initialization
+   - Use well-known IDs (e.g., negative IDs or reserved range) to identify system templates
+
+   **SQLite Implementation:**
+   - Add a data migration in `ItemTemplateDal.RunMigrations()`:
+     ```csharp
+     // Migration N: Add unarmed combat templates
+     if (currentVersion < N)
+     {
+         // Check if templates already exist (idempotent)
+         // INSERT Punch template if not exists
+         // INSERT Kick template if not exists
+         SetSchemaVersion(N);
+     }
+     ```
+   - Use `INSERT OR IGNORE` or check existence before insert for idempotency
+   - Document migration in `MIGRATIONS.md`
+
+   **Template Identification:**
+   - Add `IsSystemTemplate` flag or use reserved ID range to distinguish system-provided templates from GM-created ones
+   - System templates cannot be deleted by users
+
+4. **Update Combat Resolution**
    - When no weapon equipped, load available unarmed attack templates
    - Present unarmed attack options from loaded templates
    - Apply modifiers from the selected ItemTemplate (same flow as equipped weapons)
