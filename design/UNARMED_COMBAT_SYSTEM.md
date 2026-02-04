@@ -63,6 +63,8 @@ A powerful strike with the leg. Trades accuracy for damage.
 
 **Use Case**: When landing a solid hit, kicks deal more damage. The -1 AS penalty makes them slightly harder to land but more rewarding on success.
 
+**Balance Note**: The -1 AS modifier reduces the attack roll, which directly reduces the base SV (since SV = AV - TV). This means the **effective SV benefit** of a kick over a punch is +3, not +4. The kick's +4 SV modifier minus the -1 AS penalty's impact on base SV = net +3 SV advantage when both attacks hit.
+
 ---
 
 ## Unarmed Combat Skill
@@ -83,7 +85,7 @@ Unarmed Combat AS = Physicality + Unarmed Combat Skill Level - 5 + Modifiers
 
 ### Untrained Unarmed Combat
 
-Characters without the Unarmed Combat skill can still punch and kick, but with significant penalties:
+**All characters can punch and kick**, even without training in the Unarmed Combat skill. Untrained characters use skill level 0:
 
 ```
 Untrained AS = Physicality + 0 - 5 = Physicality - 5
@@ -92,7 +94,10 @@ Untrained AS = Physicality + 0 - 5 = Physicality - 5
 **Example**:
 - Character with Physicality 10, no Unarmed Combat skill
 - Base AS = 10 + 0 - 5 = **5**
-- This represents flailing rather than trained fighting
+- Punch: AS 5, +2 SV on hit
+- Kick: AS 4 (5 - 1), +4 SV on hit
+
+This represents instinctive fighting rather than trained technique. Anyone can throw a punch when desperate, but trained fighters are far more effective.
 
 ---
 
@@ -308,9 +313,15 @@ A complete grappling subsystem with:
 
 ## Summary
 
-| Attack | AS Mod | SV Mod | Best For |
-|--------|--------|--------|----------|
-| **Punch** | +0 | +2 | Accuracy, multiple attacks |
-| **Kick** | -1 | +4 | Damage when you can afford the AS penalty |
+| Attack | AS Mod | SV Mod | Effective SV Benefit | Best For |
+|--------|--------|--------|---------------------|----------|
+| **Punch** | +0 | +2 | +2 | Accuracy, multiple attacks |
+| **Kick** | -1 | +4 | +3 (net) | Damage when you can afford the AS penalty |
+
+**Design Decisions**:
+- All characters can punch and kick at skill level 0 (untrained)
+- Only Punch and Kick are available initially; additional attacks (headbutt, elbow) are future enhancements
+- Unarmed parry is available at -2 AS penalty
+- Kick's effective SV benefit is +3 because the -1 AS reduces base SV by 1
 
 Unarmed combat provides a viable fallback when disarmed and a foundation for martial arts characters. The trade-off between punch (accurate) and kick (powerful) gives players meaningful tactical choices.
