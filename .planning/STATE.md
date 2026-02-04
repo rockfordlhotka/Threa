@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 Milestone: v1.6 Time & Combat Integration
 Phase: 27 - Time & Combat Integration
-Plan: 01 of 2 (COMPLETE)
-Status: In progress
-Last activity: 2026-02-03 -- Completed 27-01-PLAN.md (NPC Targeting Integration)
+Plan: 02 of 2 (COMPLETE)
+Status: Phase complete
+Last activity: 2026-02-03 -- Completed 27-02-PLAN.md (Combat Polish)
 
-Progress: [█████████████████████░] 98% (77/78 plans)
+Progress: [██████████████████████] 100% (78/78 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 77
+- Total plans completed: 78
 - Average duration: 8.0 min
-- Total execution time: 11 hours 42 min
+- Total execution time: 11 hours 50 min
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [█████████████████████░] 9
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.3/v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 4 | 17 | 105 min | 6.2 min |
-| v1.6 | 1 | 1 | 6 min | 6 min |
+| v1.6 | 1 | 2 | 14 min | 7 min |
 
 ## Accumulated Context
 
@@ -148,9 +148,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 27-01-PLAN.md (NPC Targeting Integration)
+Stopped at: Completed 27-02-PLAN.md (Combat Polish)
 Resume file: None
-Next action: Execute 27-02-PLAN.md (Time Advancement)
+Next action: Milestone v1.6 complete
 
 ---
-*Phase 27 in progress -- 1/2 plans complete*
+*Phase 27 complete -- 2/2 plans complete*
+*Milestone v1.6 (Time & Combat Integration) complete*
