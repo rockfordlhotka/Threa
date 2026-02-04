@@ -70,6 +70,41 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
         private set => LoadProperty(TrainedProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> RequiresPreUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPreUseConcentration));
+    public bool RequiresPreUseConcentration
+    {
+        get => GetProperty(RequiresPreUseConcentrationProperty);
+        private set => LoadProperty(RequiresPreUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PreUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PreUseConcentrationRounds));
+    public int PreUseConcentrationRounds
+    {
+        get => GetProperty(PreUseConcentrationRoundsProperty);
+        private set => LoadProperty(PreUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<bool> RequiresPostUseConcentrationProperty = RegisterProperty<bool>(nameof(RequiresPostUseConcentration));
+    public bool RequiresPostUseConcentration
+    {
+        get => GetProperty(RequiresPostUseConcentrationProperty);
+        private set => LoadProperty(RequiresPostUseConcentrationProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PostUseConcentrationRounds));
+    public int PostUseConcentrationRounds
+    {
+        get => GetProperty(PostUseConcentrationRoundsProperty);
+        private set => LoadProperty(PostUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseInterruptionPenaltyRoundsProperty = RegisterProperty<int>(nameof(PostUseInterruptionPenaltyRounds));
+    public int PostUseInterruptionPenaltyRounds
+    {
+        get => GetProperty(PostUseInterruptionPenaltyRoundsProperty);
+        private set => LoadProperty(PostUseInterruptionPenaltyRoundsProperty, value);
+    }
+
     /// <summary>
     /// Whether this skill can be deleted.
     /// Standard attribute skills cannot be deleted.
@@ -88,5 +123,10 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
         LoadProperty(PrimaryAttributeProperty, dto.PrimaryAttribute);
         LoadProperty(UntrainedProperty, dto.Untrained);
         LoadProperty(TrainedProperty, dto.Trained);
+        LoadProperty(RequiresPreUseConcentrationProperty, dto.RequiresPreUseConcentration);
+        LoadProperty(PreUseConcentrationRoundsProperty, dto.PreUseConcentrationRounds);
+        LoadProperty(RequiresPostUseConcentrationProperty, dto.RequiresPostUseConcentration);
+        LoadProperty(PostUseConcentrationRoundsProperty, dto.PostUseConcentrationRounds);
+        LoadProperty(PostUseInterruptionPenaltyRoundsProperty, dto.PostUseInterruptionPenaltyRounds);
     }
 }
