@@ -1,397 +1,297 @@
-# Domain Pitfalls: NPC Management System
+# Pitfalls Research: Batch Character Actions
 
-**Domain:** Adding NPC management to existing TTRPG character assistant
-**Researched:** 2026-02-01
-**Confidence:** HIGH (based on existing codebase analysis + industry patterns)
+**Domain:** Adding batch character operations to existing TTRPG assistant
+**Researched:** 2026-02-04
+**Confidence:** HIGH (based on existing codebase patterns and batch operation best practices)
 
 ## Critical Pitfalls
 
 Mistakes that cause rewrites or major issues if not addressed early.
 
-### Pitfall 1: Template/Instance Identity Confusion
+### Pitfall 1: Message Flooding from Rapid Batch Updates
 
-**What goes wrong:** The system conflates NPC templates (blueprints in the library) with NPC instances (active copies in a session). This leads to:
-- Editing a template accidentally modifies all active instances
-- Deleting a template orphans or corrupts active instances
-- No way to track which template an instance came from
-- Changes to an instance bleed back into the template
+**What goes wrong:**
+When applying batch actions to multiple characters, each individual character update triggers a `PublishCharacterUpdateAsync` call. With 10+ characters selected, this floods the Rx.NET message bus, causing:
+- UI re-renders cascading across all connected clients
+- Activity log spam making it unreadable
+- Potential race conditions as multiple StateHasChanged calls overlap
+- Browser performance degradation from excessive DOM updates
 
-**Why it happens:** The existing `Character` and `ItemTemplates`/`Items` patterns work differently. Characters are unique entities, while items follow a clear template-instance separation. NPCs need the item pattern but developers may instinctively follow the character pattern since NPCs "feel" like characters.
+**Why it happens:**
+The existing individual operation pattern (seen in `TimeAdvancementService.cs`) was designed for single-character updates. When iterating through multiple characters, developers naturally call the same publish method per character without considering the aggregate message volume.
 
-**Consequences:**
-- GM edits goblin stats mid-combat; all goblins in the campaign change
-- GM deletes "Bandit" template; active bandits in encounters crash or vanish
-- No audit trail of "this orc was created from template X but modified"
-- Template versioning nightmares when templates evolve
+**How to avoid:**
+- Implement batch-aware messaging: publish a single `BatchUpdateMessage` containing all affected character IDs
+- Use the existing `CharactersUpdatedMessage` pattern (lines 294-300 in TimeAdvancementService.cs) which already supports multiple character IDs
+- Add debouncing/throttling on the subscriber side for activity log display
+- Consider coalescing updates: delay UI refresh until batch completes, then refresh once
 
-**Prevention:**
-1. Follow the existing `ItemTemplates` -> `Items` pattern exactly:
-   - `NpcTemplates` table: blueprints with stats, abilities, equipment
-   - `NpcInstances` table: runtime copies with `TemplateId`, `SessionId`, current state
-2. Instance creation must deep-copy all mutable state (health, effects, inventory)
-3. Template deletion requires validation: block if active instances exist, or orphan instances gracefully with a "template deleted" flag
-4. Add `CreatedFromTemplateId` and `CreatedAt` fields to instances for traceability
+**Warning signs:**
+- Activity log shows rapid-fire individual entries during batch operations
+- UI flickers or stutters during batch actions
+- Network traffic spikes during batch operations
+- Test logs show many sequential publish calls instead of single batched publish
 
-**Detection:**
-- Code review: Any direct modification of template properties after instance creation
-- Test: Create instance, modify instance, verify template unchanged
-- Test: Delete template, verify instance still functions
-
-**Phase to address:** Phase 1 (Data Model) - establish the separation in the database schema from the start
+**Phase to address:**
+Phase 1 - Foundation. Define the batch messaging contract before implementing any batch operations.
 
 ---
 
-### Pitfall 2: Dashboard Performance Collapse with Many NPCs
+### Pitfall 2: Partial Failure Obscuring Errors
 
-**What goes wrong:** The GM dashboard becomes unresponsive when displaying 20+ NPCs alongside player characters. The existing real-time update pattern (Rx.NET `Subject<T>` broadcasts) causes:
-- Full re-renders on any NPC change
-- N+1 query patterns fetching NPC details
-- SignalR message flooding when multiple NPCs update simultaneously
+**What goes wrong:**
+Batch operations that continue after individual failures can leave the system in an inconsistent state. For example:
+- Apply damage to 5 characters: 3 succeed, 2 fail due to validation
+- UI shows "operation complete" but 2 characters weren't updated
+- User doesn't know which characters failed or why
+- Subsequent actions based on assumed state cause confusion
 
-**Why it happens:** The current `CharacterUpdateMessage` and dashboard subscription model works well for 4-6 player characters. NPCs can easily reach 30-50 entities in a large combat. The pattern doesn't scale.
+**Why it happens:**
+The existing `TimeAdvancementResult` pattern (lines 16-57 in TimeAdvancementService.cs) shows the correct approach with separate `UpdatedCharacterIds` and `FailedCharacterIds` lists. However, developers often implement simpler try/catch that swallows errors and continues.
 
-**Consequences:**
-- Dashboard freezes during large combats
-- Browser memory exhaustion from excessive DOM nodes
-- Real-time updates lag by seconds
-- GM abandons the tool mid-session
+**How to avoid:**
+- Mirror the `TimeAdvancementResult` pattern for all batch operations
+- Always return a structured result with: success list, failure list, error messages per failure
+- UI must display partial failure states clearly: "Applied to 3 of 5 characters. Failed: [names] - [reasons]"
+- Never commit partial transactions if atomicity is required for the operation
+- Log all failures even if operation "mostly succeeded"
 
-**Prevention:**
-1. **Virtualization:** Render only visible NPC cards (Blazor `Virtualize<T>` component)
-2. **Batched updates:** Debounce NPC updates to 100-200ms intervals; batch multiple changes into single render cycles
-3. **Separate message streams:** Add `NpcUpdateMessage` separate from `CharacterUpdateMessage` to enable selective subscription
-4. **Summary-first pattern:** Dashboard shows NPC counts and summary; expand to details on demand
-5. **Pagination or grouping:** NPCs organized by group/encounter with collapse/expand
+**Warning signs:**
+- Batch methods return simple bool or void instead of structured results
+- No per-character error tracking in batch loops
+- UI only shows "success" or "failure" without details
+- Integration tests only check happy path, not partial failure scenarios
 
-**Detection:**
-- Load test with 50+ NPCs active
-- Monitor render times in browser dev tools
-- Profile SignalR message frequency during batch operations
-
-**Phase to address:** Phase 3 (Dashboard Integration) - design for scale from the start, not retrofitted
-
----
-
-### Pitfall 3: Visibility State Leakage
-
-**What goes wrong:** Hidden NPCs leak information to players through:
-- Activity log messages mentioning hidden NPCs
-- Targeting lists including hidden NPCs
-- Combat initiative showing "???"-type entries that reveal ambush existence
-- Real-time updates broadcasting hidden NPC changes to player clients
-
-**Why it happens:** The existing architecture broadcasts updates to all connected clients via the `InMemoryMessageBus`. No concept of visibility filtering exists. Adding NPC visibility as an afterthought means retrofitting every broadcast point.
-
-**Consequences:**
-- Surprise encounters ruined by UI hints
-- Players meta-game around hidden NPC presence
-- GM loses trust in the system for dramatic reveals
-- Inconsistent behavior: some features respect visibility, others don't
-
-**Prevention:**
-1. **Visibility as first-class concept:** Add `IsVisibleToPlayers` flag to NPC instances
-2. **Message filtering layer:** Introduce client-filtering in message publishing:
-   ```csharp
-   // Instead of broadcasting to all
-   _messageBus.PublishNpcUpdate(npc);
-   // Filter by visibility
-   _messageBus.PublishNpcUpdate(npc, visibleToClientIds: GetClientsWhoCanSee(npc));
-   ```
-3. **GM-only message stream:** Create `GmOnlyMessages` subject for hidden NPC updates
-4. **Audit all broadcast points:** Systematically review every `Publish*` call for NPC awareness
-5. **Activity log filtering:** Add `VisibleTo` property to `ActivityLogMessage`
-
-**Detection:**
-- Test: Create hidden NPC, act with it, verify player client receives no updates
-- Test: Reveal hidden NPC, verify player client receives update
-- Review: Search codebase for all `Publish` calls and verify NPC visibility handling
-
-**Phase to address:** Phase 2 (Core CRUD) - bake visibility into the NPC model from day one
+**Phase to address:**
+Phase 1 - Foundation. Establish the batch result pattern before any batch operations are implemented.
 
 ---
 
-### Pitfall 4: Group Operations Partial Failure Chaos
+### Pitfall 3: CSLA Validation Running Per-Character Without Aggregation
 
-**What goes wrong:** Batch operations (damage all goblins, heal all allies) fail partially with no clear recovery path:
-- 3 of 5 NPCs updated, 2 fail due to validation
-- No rollback mechanism leaves inconsistent state
-- Error messages don't identify which NPCs failed
-- UI shows success while some operations silently failed
+**What goes wrong:**
+CSLA business objects run validation rules when properties change. In a batch operation:
+- Select 10 characters
+- Apply "-5 FAT damage" to each
+- 3 characters have FAT < 5, so validation fails
+- Validation errors appear one at a time as you process each character
+- User sees confusing sequence of errors instead of upfront validation
 
-**Why it happens:** The existing single-character manipulation pattern doesn't handle batch operations. Developers apply damage one-by-one in a loop without transaction boundaries or error aggregation.
+**Why it happens:**
+CSLA's validation model is designed for individual object editing, not batch previewing. The `CharacterEdit.AddBusinessRules()` method (line 902) sets up rules that trigger during property modification, not before.
 
-**Consequences:**
-- GM applies "10 damage to all orcs" - some orcs take damage, some don't, unclear which
-- Partial state requires manual cleanup
-- GM trust erodes; they stop using batch features
-- Combat slows down as GM applies changes individually "to be safe"
+**How to avoid:**
+- Implement a "pre-validation" step that checks all characters BEFORE applying changes
+- Create a `BatchActionValidator` that accepts the action and character list, returns all validation failures upfront
+- Only proceed to apply changes after pre-validation passes (or user explicitly overrides)
+- For mixed success scenarios, show which characters will succeed/fail before committing
 
-**Prevention:**
-1. **All-or-nothing operations:** Wrap batch operations in database transactions
-2. **Error aggregation:** Collect all failures, report them together:
-   ```csharp
-   var results = await ApplyDamageToGroup(npcs, damage);
-   // results.Succeeded: [npc1, npc2, npc3]
-   // results.Failed: [(npc4, "Already dead"), (npc5, "Effect immunity")]
-   ```
-3. **Preview mode:** Show what would happen before committing batch action
-4. **Detailed feedback UI:** List succeeded/failed items clearly; don't just show "partial success"
-5. **Undo support:** Enable reverting batch operations (especially important for mistakes)
+**Warning signs:**
+- Batch operations start applying changes before checking all characters
+- Validation errors appear mid-operation instead of upfront
+- Users ask "why did it stop halfway through?"
+- No way to preview which characters an action will affect
 
-**Detection:**
-- Test: Batch operation with one invalid target; verify correct behavior for valid targets
-- Test: Batch operation with all failures; verify graceful handling
-- UX review: Can GM understand what happened after partial failure?
-
-**Phase to address:** Phase 4 (Group Management) - design the batch pattern before implementing features
+**Phase to address:**
+Phase 2 - Batch Action Framework. Build validation preview into the core batch action infrastructure.
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 4: UI Selection State Diverging from Server State
 
-Mistakes that cause delays or technical debt.
+**What goes wrong:**
+User selects 5 characters, applies action, but:
+- During processing, another client removes one character from the table
+- Server processes 4 characters successfully
+- UI still shows 5 selected
+- Character list refreshes, selected character gone but selection state stale
+- Subsequent batch actions target phantom character
 
-### Pitfall 5: Keep vs Dismiss Persistence Ambiguity
+**Why it happens:**
+Blazor Server maintains UI state in circuits. The `GmTable.razor` (line 509) tracks `tableCharacters` and refreshes via `RefreshCharacterListAsync()`, but `selectedCharacter` is maintained separately. In batch mode with multiple selections, this divergence compounds.
 
-**What goes wrong:** The NPC persistence model (keep for future sessions vs dismiss after encounter) is unclear to GMs:
-- "Dismiss" deletes the NPC entirely when GM expected to archive it
-- "Keep" creates clutter; GM has hundreds of "kept" NPCs with no organization
-- State at dismissal not preserved for resurrection scenarios
-- No distinction between "dead and gone" vs "retreated and may return"
+**How to avoid:**
+- Validate selection against current server state at execution time, not selection time
+- Clear/refresh selection when character list updates (extend the pattern at lines 709-711)
+- Use optimistic UI carefully: show immediate feedback but reconcile with server state on completion
+- Consider "selection is a filter, not a state" pattern: resolve selected IDs to current characters at execution
 
-**Why it happens:** The feature seems simple but has subtle UX requirements that aren't specified upfront.
+**Warning signs:**
+- Selected character count doesn't match actual characters in batch result
+- Users report actions applied to wrong characters
+- UI shows selected state for characters no longer at table
+- Race conditions in tests when adding/removing characters during batch operations
 
-**Prevention:**
-1. **Three-state model:** Active (in session), Archived (kept for later), Dismissed (gone but logged)
-2. **Clear UI language:**
-   - "Archive" = remove from active play, keep all state, can restore
-   - "Dismiss" = remove from session, keep minimal record for logs
-   - "Delete" = permanent removal (GM confirmation required)
-3. **State preservation:** Archived NPCs retain health, effects, inventory exactly as archived
-4. **Archive organization:** Tags, folders, or encounter groupings for archived NPCs
-5. **Resurrection workflow:** Clear path to "bring back" an archived NPC
-
-**Detection:**
-- UX testing: Ask GM to "save this NPC for later" - do they find the right action?
-- Test: Archive NPC, restore it - is state identical?
-
-**Phase to address:** Phase 5 (Persistence) - define the mental model before building UI
+**Phase to address:**
+Phase 2 - Batch Action Framework. Selection management is part of the batch infrastructure.
 
 ---
 
-### Pitfall 6: Initiative Integration Collision
+### Pitfall 5: Mixed PC/NPC Handling Breaking Authorization
 
-**What goes wrong:** NPCs in combat don't integrate cleanly with the existing initiative and round management:
-- `RoundManager` expects `CharacterId` but NPCs have `NpcInstanceId`
-- Initiative messages broadcast NPC details to players (visibility leak)
-- Multiple NPCs with same initiative score create ordering ambiguity
-- NPC removal mid-combat doesn't clean up initiative state
+**What goes wrong:**
+Batch selection includes both PCs (player characters) and NPCs. Authorization rules differ:
+- Players can only modify their own PCs
+- GM can modify any character
+- Batch applies GM-level action but includes player's PC
+- Player's PC modified without proper authorization check
 
-**Why it happens:** The existing `CombatState` and `CombatStateManager` use `string combatantId` which is generic, but downstream code may assume these are character IDs.
+**Why it happens:**
+Individual character operations check authorization at the CSLA business object level or route level. Batch operations that iterate through characters may bypass these checks if they use an elevated service context.
 
-**Prevention:**
-1. **Combatant abstraction:** Introduce `ICombatant` interface or discriminated ID type:
-   ```csharp
-   public record CombatantId(string Type, string Id); // ("Character", "123") or ("Npc", "456")
-   ```
-2. **Visibility-aware initiative:** Initiative display filters NPCs by visibility
-3. **Tie-breaking rules:** Define and implement NPC initiative ties (e.g., DEX tiebreaker, then alphabetical)
-4. **Cleanup hooks:** NPC removal triggers `CombatStateManager.RemoveCombatant`
+**How to avoid:**
+- Check authorization per-character, not per-batch
+- Use CSLA's authorization rules even in batch loops
+- Filter selection based on current user's permissions BEFORE showing available characters
+- For GM actions, clearly indicate "this action will affect X PCs and Y NPCs"
+- Consider separate batch action sets for "my characters" vs "GM actions"
 
-**Detection:**
-- Test: Add NPC to combat, verify initiative works
-- Test: Hide NPC, verify player doesn't see it in initiative
-- Test: Kill/remove NPC mid-combat, verify no dangling state
+**Warning signs:**
+- Batch operations use raw DAL calls instead of going through CSLA portal
+- No per-character authorization checks in batch loops
+- Players can select NPCs they shouldn't modify
+- Tests don't cover mixed PC/NPC batch scenarios with different user contexts
 
-**Phase to address:** Phase 3 (Dashboard Integration) - when NPCs appear alongside characters
-
----
-
-### Pitfall 7: Template Library Discovery Nightmare
-
-**What goes wrong:** GM can't find the NPC template they need:
-- Hundreds of templates with no organization
-- Search only matches exact names
-- No preview of template stats before instantiating
-- Custom templates mixed with system templates
-
-**Why it happens:** Template management is treated as a secondary concern; focus goes to instance management.
-
-**Prevention:**
-1. **Hierarchical categories:** Monster Type > Subtype > Specific (e.g., Humanoid > Goblinoid > Goblin Warrior)
-2. **Tagging system:** CR/level, environment, faction, custom tags
-3. **Full-text search:** Search name, description, abilities, equipment
-4. **Quick preview:** Hover or click to see full stat block before instantiation
-5. **Favorites/recents:** Track frequently used templates for quick access
-6. **User vs system templates:** Clear visual distinction; user templates editable, system templates not
-
-**Detection:**
-- UX test: "Find and spawn a medium-difficulty fire-based creature" - how long does it take?
-- Test: 100+ templates in library - is navigation still reasonable?
-
-**Phase to address:** Phase 1 (Data Model) for structure, Phase 2 (CRUD) for UI
+**Phase to address:**
+Phase 1 - Foundation. Authorization model must be established before any batch operations.
 
 ---
 
-### Pitfall 8: Equipment and Effect System Divergence
+### Pitfall 6: Blazor Circuit Timeout During Long Batch Operations
 
-**What goes wrong:** NPC equipment and effects don't use the same systems as characters:
-- NPC weapons don't follow `ItemTemplates` pattern
-- NPC effects don't integrate with `CharacterEffects` table
-- Damage calculation bypasses standard resolver because NPC data is structured differently
-- Spell effects on NPCs don't expire correctly via time skip
+**What goes wrong:**
+Batch operation processing 20+ characters takes several seconds. During this time:
+- Blazor Server circuit has no activity from user
+- If processing takes too long, circuit may timeout
+- StateHasChanged never reaches the client
+- User sees frozen UI, clicks again, creates duplicate operations
 
-**Why it happens:** Pressure to ship quickly leads to NPC-specific shortcuts that diverge from the established character systems.
+**Why it happens:**
+The `GmTable.razor` processes time advancement synchronously (lines 884-899). For batch operations with more characters or more complex actions, this pattern doesn't scale.
 
-**Consequences:**
-- Two code paths for damage calculation (character vs NPC)
-- Effects work differently on NPCs than characters
-- Bug fixes need to be applied in multiple places
-- Eventually, systems drift apart and become unmaintainable
+**How to avoid:**
+- Use progress indication for batch operations (show "Processing 3 of 10...")
+- Process in chunks with UI updates between chunks
+- Consider background processing with SignalR notification on completion
+- Set appropriate timeouts and show clear feedback during long operations
+- Never block UI thread for more than ~2 seconds without feedback
 
-**Prevention:**
-1. **Single source of truth:** NPCs use the same `Item`, `CharacterEffect` (renamed to just `Effect`), and skill systems
-2. **Composition over duplication:** If NPCs need simpler data, create simplified views or DTOs, not separate tables
-3. **Resolver reuse:** `AttackResolver`, `DamageResolver` etc. work with interfaces, not concrete character types
-4. **Time system integration:** NPCs register with `RoundManager` for effect expiration
+**Warning signs:**
+- No loading indicator during batch operations
+- Users report frozen UI
+- Duplicate operations in logs (user clicked multiple times)
+- Tests timeout when batch size exceeds certain threshold
 
-**Detection:**
-- Code review: Grep for NPC-specific damage/effect handling
-- Test: Apply same effect to character and NPC; verify identical behavior
-- Test: Time skip expires NPC effects correctly
-
-**Phase to address:** Phase 2 (Core CRUD) - establish pattern of reuse, not duplication
-
----
-
-## Minor Pitfalls
-
-Mistakes that cause annoyance but are fixable.
-
-### Pitfall 9: Naming Collision with Player Characters
-
-**What goes wrong:** GM creates NPC named "Elara" when a player character is also named "Elara":
-- Activity log becomes confusing ("Elara attacks Elara")
-- Targeting lists show duplicate names
-- Search returns both without clear distinction
-
-**Prevention:**
-1. **Warn on collision:** Alert GM when creating NPC with name matching a character
-2. **Visual distinction:** NPCs have different icon/badge than characters everywhere
-3. **Qualified names in logs:** "[NPC] Elara attacks [PC] Elara" or "Elara (Goblin) attacks Elara (Elf)"
-4. **Unique identifier fallback:** System can reference by ID if names collide
-
-**Phase to address:** Phase 2 (Core CRUD) - validation rule during NPC creation
+**Phase to address:**
+Phase 3 - Batch Action UI. Progress feedback is part of the UI implementation.
 
 ---
 
-### Pitfall 10: Bulk Spawn Floods Session
+## Technical Debt Patterns
 
-**What goes wrong:** GM spawns "10 Goblins" and dashboard shows 10 nearly-identical cards cluttering the UI:
-- Can't tell goblins apart (Goblin 1, Goblin 2, ... Goblin 10)
-- Each has full stat block visible, wasting space
-- Batch actions require selecting each individually
+Shortcuts that seem reasonable but create long-term problems.
 
-**Prevention:**
-1. **Auto-naming:** Goblin Alpha, Goblin Beta, or Goblin 1, Goblin 2 with easy bulk-rename
-2. **Collapsed group view:** "Goblins (10)" expands to show individuals
-3. **Shared stat display:** One stat block for identical NPCs, individual health/effects only
-4. **Bulk selection:** Checkbox to select entire group for batch actions
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Looping individual saves in batch | Simple implementation | N+1 database round-trips, slow at scale | Prototyping only; never in production |
+| Single error message for batch failures | Less code | Users can't identify which items failed | Never for user-facing operations |
+| Reusing single-item UI for batch preview | No new UI needed | Confusing UX, can't see full batch scope | Early alpha only |
+| Publishing one message per character | Existing pattern works | Message flooding, UI churn | Never for batch > 3 items |
+| Ignoring selection validation | Faster batch execution | Phantom selections cause confusing failures | Never |
 
-**Phase to address:** Phase 4 (Group Management) - group display patterns
+## Integration Gotchas
 
----
+Common mistakes when connecting to existing Threa systems.
 
-### Pitfall 11: Real-Time Update Race Conditions
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Activity Log Service | Publishing N individual messages for N characters | Publish single batch message: "Applied [action] to [count] characters: [list]" |
+| Time Event Publisher | Calling `PublishCharacterUpdateAsync` in loop | Use `PublishCharactersUpdatedAsync` with ID list (already exists in TimeAdvancementService!) |
+| CSLA Data Portal | Fetching all characters sequentially before batch | Pre-load in parallel using `Task.WhenAll` for character fetches |
+| Rx.NET Message Bus | No backpressure consideration | Use `Buffer` or `Throttle` operators on subscriber side for UI updates |
+| Character Status Cards | Re-rendering entire list on each update | Use proper `@key` directives (already done at line 178) and batch refresh |
 
-**What goes wrong:** Rapid NPC updates create race conditions:
-- GM applies damage while another update is in flight
-- UI shows stale health briefly, then corrects
-- Optimistic updates conflict with server state
+## Performance Traps
 
-**Prevention:**
-1. **Sequence numbers:** Each NPC update includes sequence; ignore out-of-order updates
-2. **Server-authoritative state:** Don't optimistically update; wait for server confirmation
-3. **Debounced UI updates:** Coalesce rapid changes into single render
+Patterns that work at small scale but fail as usage grows.
 
-**Phase to address:** Phase 3 (Dashboard Integration) - as part of real-time infrastructure
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Sequential character fetches | Batch of 10 takes 10x single operation time | Parallel fetch with `Task.WhenAll`, or use batch fetch DAL method | > 5 characters |
+| Full character reload after batch | High latency between action and UI update | Use partial state updates, only refresh affected properties | > 3 characters |
+| Unbounded message history in activity log | Memory grows, scroll performance degrades | Already has 100-item cap (line 746), ensure batch messages count as 1 | > 50 batch operations/session |
+| Individual validation per character | O(n * rules) validation time | Batch validation with early termination on fatal errors | > 10 characters with complex validation |
 
----
+## Security Mistakes
 
-### Pitfall 12: Missing Audit Trail for NPC Actions
+Domain-specific security issues beyond general web security.
 
-**What goes wrong:** After session, GM can't review what happened to NPCs:
-- No record of damage dealt/taken by NPCs
-- Effect applications not logged
-- Can't reconstruct combat for dispute resolution
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Batch action bypasses per-character authorization | Player could modify other players' characters | Check authorization for each character in batch, filter before execution |
+| GM actions applied to PCs without logging | Accountability lost for GM modifications | Log all GM-initiated batch actions with explicit "GM modified [PC name]" entries |
+| Batch selection includes hidden NPCs player shouldn't see | Information disclosure | Filter selection list based on `VisibleToPlayers` flag for non-GM users |
 
-**Prevention:**
-1. **Activity log integration:** All NPC actions logged exactly like character actions
-2. **NPC-specific log filtering:** View "actions by/to Goblin Chief"
-3. **Session summary:** NPC participation stats (damage dealt, taken, kills, deaths)
+## UX Pitfalls
 
-**Phase to address:** Phase 3 (Dashboard Integration) - activity log integration
+Common user experience mistakes in batch operations.
 
----
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| No confirmation for destructive batch actions | Accidental mass damage/kills | Show confirmation: "Apply 10 damage to 8 characters? This will kill 2 of them." |
+| Success message without details | User doesn't know what happened | "Applied 5 FAT damage to: Warrior, Mage, Thief. Skipped: Paladin (already at 0 FAT)" |
+| No undo for batch actions | Mistakes are permanent | At minimum, provide detailed log for manual reversal; ideally implement batch undo |
+| Batch toolbar appears/disappears unpredictably | Disorienting, users lose context | Keep batch toolbar persistent while any characters selected; show selection count |
+| No visual distinction between selected PCs and NPCs | GM applies wrong action scope | Color-code or group selection: "2 PCs, 5 NPCs selected" |
 
-## Phase-Specific Warnings
+## "Looks Done But Isn't" Checklist
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Data Model | Template/Instance confusion | Follow ItemTemplates pattern exactly |
-| Data Model | Equipment divergence | Reuse existing Item/Effect tables |
-| Core CRUD | Visibility leakage | Add visibility to model on day one |
-| Core CRUD | Name collisions | Validation rule warning |
-| Dashboard Integration | Performance collapse | Virtualization + batching from start |
-| Dashboard Integration | Initiative collision | Combatant abstraction |
-| Group Management | Partial failure chaos | Transaction + error aggregation pattern |
-| Group Management | Bulk spawn UI flood | Collapsed group view |
-| Persistence | Keep/dismiss ambiguity | Three-state model with clear UX |
+Things that appear complete but are missing critical pieces.
 
-## Integration Warnings Specific to Threa
+- [ ] **Batch selection:** Often missing keyboard shortcuts (Shift+click for range, Ctrl+click for toggle) -- verify full selection patterns work
+- [ ] **Batch preview:** Often missing validation failures shown upfront -- verify all characters checked before "Apply"
+- [ ] **Batch result:** Often missing per-character breakdown -- verify failure details shown, not just count
+- [ ] **Batch messages:** Often missing message coalescing -- verify activity log shows one entry, not N entries
+- [ ] **Batch progress:** Often missing progress indicator for >5 characters -- verify UI shows "Processing 3 of 10"
+- [ ] **Batch authorization:** Often missing per-character auth checks -- verify player can't batch-modify NPCs they don't own
+- [ ] **Batch undo/recovery:** Often missing recovery path -- verify user can identify and manually fix partial failures
 
-Based on analysis of existing codebase:
+## Recovery Strategies
 
-### InMemoryMessageBus Expansion
+When pitfalls occur despite prevention, how to recover.
 
-The `InMemoryMessageBus` currently has 15 subject types. Adding NPC support will require:
-- `NpcUpdateMessage` (separate from `CharacterUpdateMessage`)
-- `NpcGroupUpdateMessage` (for batch operations)
-- Visibility filtering capability
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Message flooding | LOW | Add throttling to subscriber, deploy without full rollback |
+| Partial failure not shown | MEDIUM | Add detailed logging immediately, backfill UI reporting |
+| UI state divergence | MEDIUM | Force full refresh on batch complete, add selection validation |
+| Authorization bypass | HIGH | Audit logs for unauthorized modifications, add retroactive permission checks, notify affected players |
+| Circuit timeout | LOW | Add loading indicator, reduce batch processing time per chunk |
+| Validation errors mid-operation | MEDIUM | Roll back applied changes if possible, show clear status of what succeeded |
 
-**Risk:** Bus becomes unwieldy. Consider message inheritance or generic `EntityUpdateMessage<T>`.
+## Pitfall-to-Phase Mapping
 
-### CSLA Business Object Pattern
+How roadmap phases should address these pitfalls.
 
-NPCs should follow CSLA patterns:
-- `NpcTemplateEdit` extends `BusinessBase<T>` for templates
-- `NpcInstanceEdit` extends `BusinessBase<T>` for instances
-- `NpcTemplateList` / `NpcInstanceList` for collections
-- DAL interfaces: `INpcTemplateDal`, `INpcInstanceDal`
-
-**Risk:** Shortcutting CSLA patterns to ship faster creates technical debt.
-
-### Existing Character Model Reuse
-
-The `CharacterEdit` has 7 attributes, skills, equipment, effects. NPCs should:
-- Share attribute definitions (`STR`, `DEX`, etc.)
-- Share skill system (`SkillDefinitions`)
-- Use same `Item` table for equipment
-- Use same `CharacterEffects` table (rename to `EntityEffects`?)
-
-**Risk:** Creating parallel NPC-specific tables instead of reusing character tables.
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Message flooding | Phase 1 - Foundation | Single `CharactersUpdatedMessage` published per batch operation |
+| Partial failure obscuring | Phase 1 - Foundation | Batch result type returns success/failure lists with reasons |
+| CSLA validation aggregation | Phase 2 - Batch Framework | Pre-validation step checks all characters before any changes |
+| UI selection divergence | Phase 2 - Batch Framework | Selection validated against server state at execution time |
+| Mixed PC/NPC authorization | Phase 1 - Foundation | Per-character authorization checks in batch loop |
+| Circuit timeout | Phase 3 - Batch UI | Progress indicator and chunked processing for large batches |
 
 ## Sources
 
-Research compiled from:
-- [Mythcreants - Eight Tips For Managing NPCs](https://mythcreants.com/blog/eight-tips-for-managing-npcs/) - naming and management advice
-- [Microsoft Learn - Blazor Performance Best Practices](https://learn.microsoft.com/en-us/aspnet/core/blazor/performance/) - virtualization and rendering optimization
-- [Eleken - Bulk Actions UX Guidelines](https://www.eleken.co/blog-posts/bulk-actions-ux) - batch operation error handling patterns
-- [NN/g - Cancel vs Close](https://www.nngroup.com/articles/cancel-vs-close/) - dismiss/archive UX patterns
-- [N3 Game Database Structure](https://floooh.github.io/2009/02/21/n3s-game-database-structure.html) - template vs instance database design
-- [World Anvil - Visibility Toggle](https://blog.worldanvil.com/2020/02/12/introducing-the-visibility-toggle-show-to-your-players-only-what-you-want-them-to-see) - TTRPG visibility patterns
-- Existing Threa codebase analysis: `DATABASE_DESIGN.md`, `InMemoryMessageBus.cs`, `CombatState.cs`
+- Threa codebase analysis: `TimeAdvancementService.cs` (existing batch pattern), `GmTable.razor` (existing UI patterns), `InMemoryMessageBus.cs` (messaging infrastructure), `CharacterEdit.cs` (CSLA business rules)
+- [Microsoft Learn - Blazor Server state management](https://learn.microsoft.com/en-us/aspnet/core/blazor/state-management/server?view=aspnetcore-10.0) - Circuit lifetime and state preservation
+- [Eleken - Bulk action UX guidelines](https://www.eleken.co/blog-posts/bulk-actions-ux) - Partial failure feedback and confirmation patterns
+- [Adidas API Guidelines - Batch Operations](https://adidas.gitbook.io/api-guidelines/rest-api-guidelines/execution/batch-operations) - Error handling and partial commits
+- [Inngest - Rate limiting, debouncing, throttling](https://www.inngest.com/blog/rate-limit-debouncing-throttling-explained) - Message flood prevention strategies
+- [CSLA Forum - Transaction Scope on multiple object saves](https://cslanet.com/old-forum/10293.html) - CSLA-specific batch update patterns
+- [PatternFly - Bulk selection](https://www.patternfly.org/patterns/bulk-selection/) - Selection state reflection patterns
 
 ---
-
-*This pitfalls document should be reviewed during phase planning to ensure each phase addresses relevant warnings.*
+*Pitfalls research for: Batch Character Actions (Threa v1.6)*
+*Researched: 2026-02-04*
