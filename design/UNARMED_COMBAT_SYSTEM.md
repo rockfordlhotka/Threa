@@ -20,12 +20,13 @@ When a character is disarmed or chooses not to use a weapon, they need a way to 
 
 ### Solution Approach
 
-Unarmed attacks are implemented as **virtual weapon templates** - predefined attack types with specific modifiers that are automatically available when a character's hands are empty. This approach:
+Unarmed attacks are implemented as **virtual weapon templates** - `ItemTemplate` records stored in the database that define attack types with specific modifiers. These templates are automatically available when a character's hands are empty. This approach:
 
-1. Leverages the existing weapon/item infrastructure
+1. Leverages the existing weapon/item infrastructure (`ItemTemplate` with SVModifier, AVModifier, etc.)
 2. Allows different attack types (punch, kick) with distinct trade-offs
-3. Enables future expansion (martial arts skills, special techniques)
+3. Enables future expansion (martial arts skills, special techniques) by adding new templates
 4. Maintains consistency with the combat resolver flow
+5. **Data-driven**: Modifiers are not hardcoded; GMs can potentially customize or add new unarmed attacks
 
 ---
 
@@ -233,15 +234,19 @@ These items stack with base unarmed modifiers.
    - Add to skill list with Physicality as governing attribute
    - Default skill level 0 for all characters
 
-2. **Create Virtual Weapon Templates**
-   - `Punch` template with SV +2, AS +0
-   - `Kick` template with SV +4, AS -1
-   - Both use `WeaponType.Unarmed`
-   - Both use `DamageType = "Bludgeoning"`
+2. **Create Virtual Weapon Templates as ItemTemplate Records**
+   - Create `ItemTemplate` records in the database/mock data for:
+     - `Punch`: SVModifier +2, AVModifier +0, WeaponType = Unarmed
+     - `Kick`: SVModifier +4, AVModifier -1, WeaponType = Unarmed
+   - Both use `DamageType = "Bludgeoning"`, `DamageClass = 1`
+   - Both reference `RelatedSkill = "Unarmed Combat"`
+   - These are **data-driven**, not hardcoded in combat resolution
+   - System loads these templates when character has no weapon equipped
 
 3. **Update Combat Resolution**
-   - When no weapon equipped, present Punch/Kick options
-   - Apply unarmed modifiers in attack resolution
+   - When no weapon equipped, load available unarmed attack templates
+   - Present unarmed attack options from loaded templates
+   - Apply modifiers from the selected ItemTemplate (same flow as equipped weapons)
    - Handle SV modifier application for melee (currently only ranged uses it)
 
 4. **Update TargetingInteractionManager**
