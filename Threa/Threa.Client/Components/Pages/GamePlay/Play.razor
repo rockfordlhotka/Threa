@@ -31,8 +31,10 @@
 
 @using GameMechanics.Time
 @using Threa.Dal
+@using Threa.Dal.Dto
 
 @inject ITableDal TableDal
+@inject IDataPortal<GameMechanics.GamePlay.TableCharacterList> characterListPortal
 @inject DialogService DialogService
 @inject PlayerConnectionTracker ConnectionTracker
 @inject CircuitIdProvider CircuitIdProvider
@@ -374,7 +376,7 @@ private List<TargetingRequestMessage> pendingTargetingRequests = new();
 private TargetingInteraction? currentTargetingInteraction;
 private bool showTargetingModal;
 private bool isTargetingAttacker;
-private List<Threa.Dal.Dto.TableCharacter> tableCharacters = new();
+private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 
 // Semaphore to prevent concurrent processing of time skip messages
 private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
@@ -478,7 +480,8 @@ private async Task LoadEquippedItemsAsync()
 private async Task LoadTableCharactersAsync()
 {
     if (table == null) return;
-    tableCharacters = await TableDal.GetTableCharactersAsync(table.Id);
+    var charList = await characterListPortal.FetchAsync(table.Id);
+    tableCharacters = charList.ToList();
 }
 
     private void SelectTab(string tabName)
@@ -1536,19 +1539,23 @@ private async Task LoadTableCharactersAsync()
 
     /// <summary>
     /// Gets available targets at the current table (excluding self).
+    /// Filters out hidden NPCs (only visible NPCs appear as targets).
     /// </summary>
     public List<TargetSelectionModal.TargetInfo> GetAvailableTargets()
     {
-        if (table == null || character == null) return new List<TargetSelectionModal.TargetInfo>();
+        if (table == null || character == null)
+            return new List<TargetSelectionModal.TargetInfo>();
 
         return tableCharacters
             .Where(c => c.CharacterId != character.Id)
+            .Where(c => !c.IsNpc || c.VisibleToPlayers) // PCs always visible, NPCs only if revealed
             .Select(c => new TargetSelectionModal.TargetInfo
             {
                 CharacterId = c.CharacterId,
                 CharacterName = c.CharacterName,
-                PlayerName = c.PlayerName,
-                IsNPC = false // TableCharacters are player characters, not NPCs
+                PlayerName = c.IsNpc ? null : "Player",
+                IsNPC = c.IsNpc,
+                Disposition = c.Disposition
             })
             .ToList();
     }
