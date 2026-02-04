@@ -451,7 +451,9 @@ public class TargetingInteractionManager : ITargetingInteractionManager
                 }
             }
 
-            var damage = CombatResultTables.GetDamage(sv);
+            // Apply weapon SV modifier (e.g., unarmed attacks: Punch +2, Kick +4)
+            int effectiveSV = sv + attackerData.WeaponSVModifier;
+            var damage = CombatResultTables.GetDamage(effectiveSV);
             fatDamage = damage.FatigueDamage * (damageClass > 0 ? damageClass : 1);
             vitDamage = damage.VitalityDamage * (damageClass > 0 ? damageClass : 1);
         }
@@ -470,6 +472,11 @@ public class TargetingInteractionManager : ITargetingInteractionManager
         string defenderDetails = $"{attackBreakdown}\n{defenseBreakdown}\nSV = {av} - {tv} = {sv}";
         if (isHit)
         {
+            if (attackerData.WeaponSVModifier != 0)
+            {
+                int effectiveSVDisplay = sv + attackerData.WeaponSVModifier;
+                defenderDetails += $" + {attackerData.WeaponSVModifier} (weapon) = {effectiveSVDisplay}";
+            }
             defenderDetails += $"\nHit Location: {hitLocation}\nDamage: {fatDamage} FAT, {vitDamage} VIT";
         }
 
@@ -587,6 +594,11 @@ public class TargetingInteractionManager : ITargetingInteractionManager
         string defenderDetails = $"{attackBreakdown}\n{defenseBreakdown}\nSV = {av} - {tv} = {sv}";
         if (isHit)
         {
+            if (attackerData.WeaponSVModifier != 0)
+            {
+                int effectiveSVDisplay = sv + attackerData.WeaponSVModifier;
+                defenderDetails += $" + {attackerData.WeaponSVModifier} (weapon) = {effectiveSVDisplay}";
+            }
             defenderDetails += $"\nHit Location: {hitLocation}\nDamage: {fatDamage} FAT, {vitDamage} VIT";
         }
 
