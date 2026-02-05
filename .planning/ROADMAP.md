@@ -45,11 +45,11 @@ See .planning/milestones/ for archived roadmaps and requirements from previous m
   3. GM can click "Select All" to select all characters within a section (PCs, Hostile NPCs, etc.)
   4. GM can click "Deselect All" to clear all selections
   5. Selected characters have visible highlight/indicator distinguishing them from unselected
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 28-01: Selection state management and checkbox UI
-- [ ] 28-02: Selection controls (Select All, Deselect All, count display)
+- [ ] 28-01-PLAN.md - Selection state management and checkbox UI on all card components
+- [ ] 28-02-PLAN.md - Selection controls (SelectionBar, per-section Select All, Escape key handler)
 
 ### Phase 29: Batch Action Framework
 **Goal**: GMs can apply damage or healing to all selected characters at once with clear feedback
@@ -104,7 +104,7 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 28. Selection Infrastructure | v1.6 | 0/2 | Not started | - |
+| 28. Selection Infrastructure | v1.6 | 0/2 | Planned | - |
 | 29. Batch Action Framework | v1.6 | 0/3 | Not started | - |
 | 30. Batch Visibility & Lifecycle | v1.6 | 0/2 | Not started | - |
 | 31. Batch Effects | v1.6 | 0/2 | Not started | - |
