@@ -61,12 +61,12 @@ Plans:
   3. GM can enter healing amount and apply to all selected characters in one action
   4. Batch results show success count ("Applied 3 FAT damage to 5 characters")
   5. When some characters fail (e.g., already at max health), feedback shows both successes and failures with reasons
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 29-01: BatchActionService backend with sequential processing
-- [ ] 29-02: BatchActionPanel UI and damage/healing modal
-- [ ] 29-03: Result feedback and partial success display
+- [ ] 29-01-PLAN.md - BatchActionService backend with sequential processing
+- [ ] 29-02-PLAN.md - SelectionBar action buttons and damage/healing modal
+- [ ] 29-03-PLAN.md - Result feedback display and selection cleanup
 
 ### Phase 30: Batch Visibility & Lifecycle
 **Goal**: GMs can toggle visibility or dismiss/archive multiple NPCs at once
