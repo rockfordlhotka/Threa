@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-04)
 
 Milestone: v1.6 Batch Character Actions
 Phase: 28 of 31 (Selection Infrastructure)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-04 — Roadmap created for v1.6
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-04 — Completed 28-01-PLAN.md
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0/9 plans)
+Progress: [██░░░░░░░░░░░░░░░░░░] 11% (1/9 plans)
 
 ## Performance Metrics
 
@@ -47,6 +47,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Single CharactersUpdatedMessage after batch completes (prevents message flooding)
 - Structured BatchActionResult for partial failure handling
 
+**28-01 Decisions:**
+- Checkbox container handles click with stopPropagation (not RadzenCheckBox directly)
+- Compact checkbox variant for HiddenNpcCard (smaller touch target)
+- IsMultiSelected/IsSelectable/OnSelectionChanged as standard selection parameters
+
 ### Pending Todos
 
 None.
@@ -63,10 +68,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Roadmap created for v1.6
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None
-Next action: /gsd:plan-phase 28
+Next action: Execute 28-02-PLAN.md
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
+*28-01 completed 2026-02-04: Selection state and checkbox infrastructure*
 *Previous milestone archives: .planning/milestones/*
