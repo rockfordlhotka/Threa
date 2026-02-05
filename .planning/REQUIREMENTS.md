@@ -79,32 +79,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEL-01 | TBD | Pending |
-| SEL-02 | TBD | Pending |
-| SEL-03 | TBD | Pending |
-| SEL-04 | TBD | Pending |
-| SEL-05 | TBD | Pending |
-| DMG-01 | TBD | Pending |
-| DMG-02 | TBD | Pending |
-| DMG-03 | TBD | Pending |
-| DMG-04 | TBD | Pending |
-| VIS-01 | TBD | Pending |
-| VIS-02 | TBD | Pending |
-| LIFE-01 | TBD | Pending |
-| LIFE-02 | TBD | Pending |
-| EFF-01 | TBD | Pending |
-| EFF-02 | TBD | Pending |
-| EFF-03 | TBD | Pending |
-| UX-01 | TBD | Pending |
-| UX-02 | TBD | Pending |
-| UX-03 | TBD | Pending |
-| UX-04 | TBD | Pending |
+| SEL-01 | Phase 28 | Pending |
+| SEL-02 | Phase 28 | Pending |
+| SEL-03 | Phase 28 | Pending |
+| SEL-04 | Phase 28 | Pending |
+| SEL-05 | Phase 28 | Pending |
+| DMG-01 | Phase 29 | Pending |
+| DMG-02 | Phase 29 | Pending |
+| DMG-03 | Phase 29 | Pending |
+| DMG-04 | Phase 29 | Pending |
+| VIS-01 | Phase 30 | Pending |
+| VIS-02 | Phase 30 | Pending |
+| LIFE-01 | Phase 30 | Pending |
+| LIFE-02 | Phase 30 | Pending |
+| EFF-01 | Phase 31 | Pending |
+| EFF-02 | Phase 31 | Pending |
+| EFF-03 | Phase 31 | Pending |
+| UX-01 | Phase 29 | Pending |
+| UX-02 | Phase 29 | Pending |
+| UX-03 | Phase 29 | Pending |
+| UX-04 | Phase 29 | Pending |
 
 **Coverage:**
 - v1.6 requirements: 20 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-04*
-*Last updated: 2026-02-04 after initial definition*
+*Last updated: 2026-02-04 after roadmap creation*

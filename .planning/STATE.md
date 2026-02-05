@@ -2,20 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-03)
+See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.6 Batch Character Actions
+**Current focus:** Phase 28 - Selection Infrastructure
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-04 — Milestone v1.6 started
+Phase: 28 of 31 (Selection Infrastructure)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-02-04 — Roadmap created for v1.6
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (milestone starting)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0/9 plans)
 
 ## Performance Metrics
 
@@ -33,6 +33,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (mil
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
+| v1.6 | 4 | 9 | - | - |
 
 ## Accumulated Context
 
@@ -40,15 +41,11 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (mil
 
 All decisions are logged in PROJECT.md Key Decisions table.
 
-**v1.5 Key Decisions:**
-- NPCs use existing CharacterEdit model with IsNpc flag (not parallel NPC model)
-- Template pattern follows proven ItemTemplate approach
-- Dashboard reuses CharacterStatusCard and CharacterDetailModal
-- Visibility filtering prevents hidden NPCs from leaking to players
-- Spawn hidden by default for surprise encounters
-- Global auto-naming counter (not per-template)
-- Archive vs delete option for NPC lifecycle
-- Save-as-template resets health (fresh NPC definition)
+**v1.6 Decisions (from research):**
+- Selection state as HashSet<int> in GmTable.razor (component-level)
+- Sequential processing pattern (mirrors TimeAdvancementService)
+- Single CharactersUpdatedMessage after batch completes (prevents message flooding)
+- Structured BatchActionResult for partial failure handling
 
 ### Pending Todos
 
@@ -66,10 +63,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Defining requirements for v1.6
+Stopped at: Roadmap created for v1.6
 Resume file: None
-Next action: Complete requirements → roadmap → /gsd:plan-phase
+Next action: /gsd:plan-phase 28
 
 ---
-*Milestone v1.6 Batch Character Actions started 2026-02-04*
-*Previous milestone archives: .planning/milestones/v1.5-ROADMAP.md, v1.5-REQUIREMENTS.md, v1.5-MILESTONE-AUDIT.md*
+*Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
+*Previous milestone archives: .planning/milestones/*
