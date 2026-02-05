@@ -74,7 +74,7 @@ else
     <SelectionBar SelectedCount="@selectedCharacterIds.Count"
                   OnDeselectAll="DeselectAll" />
 
-    <div class="row">
+    <div class="row" @onkeydown="HandleKeyDown" tabindex="0" style="outline: none;">
         <!-- Left Panel: Characters/NPCs -->
         <div class="col-md-6">
             @* Pending Join Requests Section - only shown when requests exist *@
@@ -803,6 +803,13 @@ else
             {
                 selectedCharacter = tableCharacters.FirstOrDefault(c => c.CharacterId == selectedCharacter.CharacterId);
             }
+
+            // Clean up selections for characters no longer at table
+            if (selectedCharacterIds.Count > 0 && tableCharacters != null)
+            {
+                var currentCharacterIds = new HashSet<int>(tableCharacters.Select(c => c.CharacterId));
+                selectedCharacterIds.RemoveWhere(id => !currentCharacterIds.Contains(id));
+            }
         }
         catch (Exception ex)
         {
@@ -1422,6 +1429,14 @@ else
     {
         selectedCharacterIds.Clear();
         StateHasChanged();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && selectedCharacterIds.Count > 0)
+        {
+            DeselectAll();
+        }
     }
 
     private void SelectAllInSection(IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> characters)
