@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 28 - Selection Infrastructure
+**Current focus:** Phase 29 - Batch Damage Application (next)
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
 Phase: 28 of 31 (Selection Infrastructure)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-04 — Completed 28-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-04 - Completed 28-02-PLAN.md
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 11% (1/9 plans)
+Progress: [████░░░░░░░░░░░░░░░░] 22% (2/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 78
-- Average duration: 7.8 min
-- Total execution time: ~10 hours
+- Total plans completed: 80
+- Average duration: 7.7 min
+- Total execution time: ~10.2 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [██░░░░░░░░░░░░░░░░░░] 11% (1/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | - | - |
+| v1.6 | 4 | 9 | 14 min | 7 min |
 
 ## Accumulated Context
 
@@ -52,6 +52,12 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Compact checkbox variant for HiddenNpcCard (smaller touch target)
 - IsMultiSelected/IsSelectable/OnSelectionChanged as standard selection parameters
 
+**28-02 Decisions:**
+- SelectionBar uses transform/opacity transition for slide-in animation
+- Hidden section Select All buttons only visible when section expanded
+- Escape key handling uses tabindex="0" on container (component scoped)
+- Selection cleanup uses HashSet.RemoveWhere for efficient stale removal
+
 ### Pending Todos
 
 None.
@@ -68,11 +74,12 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Completed 28-01-PLAN.md
+Stopped at: Completed 28-02-PLAN.md (Phase 28 complete)
 Resume file: None
-Next action: Execute 28-02-PLAN.md
+Next action: /gsd:plan-phase 29
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
 *28-01 completed 2026-02-04: Selection state and checkbox infrastructure*
+*28-02 completed 2026-02-04: Selection controls, Escape key, cleanup*
 *Previous milestone archives: .planning/milestones/*
