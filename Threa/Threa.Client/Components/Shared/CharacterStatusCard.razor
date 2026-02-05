@@ -1,9 +1,17 @@
 @namespace Threa.Client.Components.Shared
 @inherits CharacterStatusCardBase
 
-<div class="character-status-card card @CardBorderClass @(IsSelected ? "selected" : "") mb-2"
+<div class="character-status-card card @CardBorderClass @(IsSelected ? "selected" : "") @(IsMultiSelected ? "multi-selected" : "") mb-2"
      @onclick="() => OnClick.InvokeAsync(Character)"
-     style="cursor: pointer;">
+     style="cursor: pointer; position: relative;">
+    @if (IsSelectable)
+    {
+        <div class="selection-checkbox" @onclick:stopPropagation="true" @onclick="HandleCheckboxClick">
+            <RadzenCheckBox TValue="bool"
+                           Value="@IsMultiSelected"
+                           class="selection-cb" />
+        </div>
+    }
     <div class="card-body py-2 px-3">
         @* Header: Name and connection status *@
         <div class="d-flex justify-content-between align-items-center mb-2">

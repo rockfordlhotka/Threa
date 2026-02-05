@@ -966,6 +966,130 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--glow-secondary, 0 0 20px rgba(255, 0, 255, 0.4));
 }
 
+/* Multi-selection checkbox styling */
+.selection-checkbox {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 10;
+    padding: 8px; /* Touch target expansion per WCAG */
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    background: rgba(255, 255, 255, 0.9);
+    transition: background 150ms ease;
+}
+
+[data-theme="scifi"] .selection-checkbox {
+    background: rgba(18, 18, 26, 0.9);
+}
+
+.selection-checkbox:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="scifi"] .selection-checkbox:hover {
+    background: rgba(26, 26, 37, 1);
+}
+
+/* RadzenCheckBox sizing inside selection container */
+.selection-checkbox .selection-cb {
+    transform: scale(1.2);
+}
+
+/* Multi-selected card styling */
+.character-status-card.multi-selected {
+    border-color: var(--color-accent-primary) !important;
+    background-color: var(--color-bg-tertiary);
+    box-shadow: 0 0 0 2px var(--color-accent-primary);
+    transition: all 150ms ease;
+}
+
+[data-theme="scifi"] .character-status-card.multi-selected {
+    box-shadow: 0 0 10px var(--color-accent-primary);
+}
+
+/* Hidden NPC card multi-selection styling */
+.hidden-npc-card.multi-selected {
+    border-color: var(--color-accent-primary) !important;
+    background-color: var(--color-bg-tertiary) !important;
+    box-shadow: 0 0 0 2px var(--color-accent-primary);
+}
+
+[data-theme="scifi"] .hidden-npc-card.multi-selected {
+    box-shadow: 0 0 8px var(--color-accent-primary);
+}
+
+/* Compact selection checkbox for hidden NPC cards */
+.selection-checkbox-compact {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    z-index: 10;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="scifi"] .selection-checkbox-compact {
+    background: rgba(18, 18, 26, 0.9);
+}
+
+.selection-checkbox-compact .selection-cb-compact {
+    transform: scale(0.9);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SELECTION BAR - Sticky bar showing selection count and controls
+   ═══════════════════════════════════════════════════════════════════ */
+
+.selection-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--color-card-bg);
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: transform 150ms ease, opacity 150ms ease;
+    pointer-events: none;
+}
+
+.selection-bar.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.selection-bar .selection-count {
+    font-family: var(--font-display);
+    color: var(--color-text-primary);
+}
+
+.selection-bar .selection-count strong {
+    color: var(--color-accent-primary);
+    font-size: 1.1em;
+}
+
+/* Sci-fi theme enhancements */
+[data-theme="scifi"] .selection-bar {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+[data-theme="scifi"] .selection-bar.visible {
+    animation: selection-bar-glow 2s ease-in-out infinite;
+}
+
+@keyframes selection-bar-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    SCI-FI THEME TEXT READABILITY FIXES
    Ensuring all text is readable on dark backgrounds

@@ -23,6 +23,9 @@
     @* Reuse existing CharacterStatusCard *@
     <CharacterStatusCard Character="@Character"
                          IsSelected="@IsSelected"
+                         IsMultiSelected="@IsMultiSelected"
+                         IsSelectable="@IsSelectable"
+                         OnSelectionChanged="@OnSelectionChanged"
                          OnClick="@OnClick" />
 
     @* Template Label - Below Card *@
@@ -42,6 +45,15 @@
 
     [Parameter]
     public bool IsSelected { get; set; }
+
+    [Parameter]
+    public bool IsMultiSelected { get; set; }
+
+    [Parameter]
+    public bool IsSelectable { get; set; }
+
+    [Parameter]
+    public EventCallback OnSelectionChanged { get; set; }
 
     [Parameter]
     public EventCallback<TableCharacterInfo> OnClick { get; set; }

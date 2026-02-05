@@ -8,6 +8,9 @@ public class CharacterStatusCardBase : ComponentBase
     [Parameter] public TableCharacterInfo Character { get; set; } = null!;
     [Parameter] public EventCallback<TableCharacterInfo> OnClick { get; set; }
     [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsMultiSelected { get; set; }
+    [Parameter] public bool IsSelectable { get; set; }
+    [Parameter] public EventCallback OnSelectionChanged { get; set; }
 
     // Cached values recalculated in OnParametersSet to ensure fresh renders
     protected string CardBorderClass { get; private set; } = "border-success";
@@ -57,4 +60,9 @@ public class CharacterStatusCardBase : ComponentBase
     protected string EffectTooltipHtml => string.IsNullOrEmpty(Character.EffectSummary)
         ? "No active effects"
         : Character.EffectSummary.Replace(", ", "<br/>");
+
+    protected async Task HandleCheckboxClick()
+    {
+        await OnSelectionChanged.InvokeAsync();
+    }
 }

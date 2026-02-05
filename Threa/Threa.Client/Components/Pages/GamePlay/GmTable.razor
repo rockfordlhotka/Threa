@@ -70,7 +70,11 @@ else
         </div>
     </div>
 
-    <div class="row">
+    <!-- Selection Bar - appears when characters are selected -->
+    <SelectionBar SelectedCount="@selectedCharacterIds.Count"
+                  OnDeselectAll="DeselectAll" />
+
+    <div class="row" @onkeydown="HandleKeyDown" tabindex="0" style="outline: none;">
         <!-- Left Panel: Characters/NPCs -->
         <div class="col-md-6">
             @* Pending Join Requests Section - only shown when requests exist *@
@@ -156,7 +160,23 @@ else
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Characters at Table</strong>
-                    <span class="badge bg-primary">@playerCharacters.Count()</span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-primary">@playerCharacters.Count()</span>
+                        @if (playerCharacters.Any())
+                        {
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    @onclick="() => SelectAllInSection(playerCharacters)"
+                                    title="Select all PCs">
+                                <i class="bi bi-check2-all"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    @onclick="() => DeselectAllInSection(playerCharacters)"
+                                    disabled="@(!HasSelectionInSection(playerCharacters))"
+                                    title="Deselect all PCs">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        }
+                    </div>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @if (!playerCharacters.Any())
@@ -178,6 +198,9 @@ else
                                 <div class="col" @key="@($"{character.CharacterId}-{characterListVersion}")">
                                     <CharacterStatusCard Character="@character"
                                                         IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
+                                                        IsMultiSelected="@IsCharacterSelected(character.CharacterId)"
+                                                        IsSelectable="true"
+                                                        OnSelectionChanged="@(() => ToggleSelection(character.CharacterId))"
                                                         OnClick="OpenCharacterDetails" />
                                 </div>
                             }
@@ -218,7 +241,24 @@ else
                                         <i class="bi bi-eye-slash text-muted me-1"></i>
                                         Hidden (@hiddenNpcs.Count())
                                     </span>
-                                    <i class="bi @(showHiddenSection ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                    <div class="d-flex align-items-center gap-1">
+                                        @if (showHiddenSection)
+                                        {
+                                            <span class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                  @onclick:stopPropagation="true"
+                                                  @onclick="() => SelectAllInSection(hiddenNpcs)"
+                                                  title="Select all hidden NPCs">
+                                                <i class="bi bi-check2-all" style="font-size: 0.8rem;"></i>
+                                            </span>
+                                            <span class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                  @onclick:stopPropagation="true"
+                                                  @onclick="() => DeselectAllInSection(hiddenNpcs)"
+                                                  title="Deselect all hidden NPCs">
+                                                <i class="bi bi-x-lg" style="font-size: 0.8rem;"></i>
+                                            </span>
+                                        }
+                                        <i class="bi @(showHiddenSection ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                    </div>
                                 </button>
 
                                 @if (showHiddenSection)
@@ -229,6 +269,9 @@ else
                                             {
                                                 <div class="col" @key="@($"hidden-{npc.CharacterId}-{characterListVersion}")">
                                                     <HiddenNpcCard Character="@npc"
+                                                                  IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                                  IsSelectable="true"
+                                                                  OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                                   OnReveal="RevealNpc"
                                                                   OnClick="OpenCharacterDetails" />
                                                 </div>
@@ -243,8 +286,21 @@ else
                         @if (hostileNpcs.Any())
                         {
                             <div class="npc-group mb-3">
-                                <h6 class="npc-group-header text-danger mb-2">
-                                    <i class="bi bi-skull-crossbones me-1"></i>Hostile (@hostileNpcs.Count())
+                                <h6 class="npc-group-header text-danger mb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-skull-crossbones me-1"></i>Hostile (@hostileNpcs.Count())</span>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => SelectAllInSection(hostileNpcs)"
+                                                title="Select all hostile NPCs">
+                                            <i class="bi bi-check2-all" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => DeselectAllInSection(hostileNpcs)"
+                                                disabled="@(!HasSelectionInSection(hostileNpcs))"
+                                                title="Deselect all hostile NPCs">
+                                            <i class="bi bi-x-lg" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    </div>
                                 </h6>
                                 <div class="row row-cols-1 row-cols-lg-2 g-2">
                                     @foreach (var npc in hostileNpcs)
@@ -252,6 +308,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -263,8 +322,21 @@ else
                         @if (neutralNpcs.Any())
                         {
                             <div class="npc-group mb-3">
-                                <h6 class="npc-group-header text-secondary mb-2">
-                                    <i class="bi bi-circle me-1"></i>Neutral (@neutralNpcs.Count())
+                                <h6 class="npc-group-header text-secondary mb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-circle me-1"></i>Neutral (@neutralNpcs.Count())</span>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => SelectAllInSection(neutralNpcs)"
+                                                title="Select all neutral NPCs">
+                                            <i class="bi bi-check2-all" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => DeselectAllInSection(neutralNpcs)"
+                                                disabled="@(!HasSelectionInSection(neutralNpcs))"
+                                                title="Deselect all neutral NPCs">
+                                            <i class="bi bi-x-lg" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    </div>
                                 </h6>
                                 <div class="row row-cols-1 row-cols-lg-2 g-2">
                                     @foreach (var npc in neutralNpcs)
@@ -272,6 +344,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -283,8 +358,21 @@ else
                         @if (friendlyNpcs.Any())
                         {
                             <div class="npc-group mb-3">
-                                <h6 class="npc-group-header text-success mb-2">
-                                    <i class="bi bi-heart me-1"></i>Friendly (@friendlyNpcs.Count())
+                                <h6 class="npc-group-header text-success mb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-heart me-1"></i>Friendly (@friendlyNpcs.Count())</span>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => SelectAllInSection(friendlyNpcs)"
+                                                title="Select all friendly NPCs">
+                                            <i class="bi bi-check2-all" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                                                @onclick="() => DeselectAllInSection(friendlyNpcs)"
+                                                disabled="@(!HasSelectionInSection(friendlyNpcs))"
+                                                title="Deselect all friendly NPCs">
+                                            <i class="bi bi-x-lg" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    </div>
                                 </h6>
                                 <div class="row row-cols-1 row-cols-lg-2 g-2">
                                     @foreach (var npc in friendlyNpcs)
@@ -292,6 +380,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -553,6 +644,9 @@ else
     // Hidden NPC section state
     private bool showHiddenSection = false;
 
+    // Selection state for batch operations
+    private HashSet<int> selectedCharacterIds = new();
+
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
@@ -708,6 +802,13 @@ else
             if (selectedCharacter != null)
             {
                 selectedCharacter = tableCharacters.FirstOrDefault(c => c.CharacterId == selectedCharacter.CharacterId);
+            }
+
+            // Clean up selections for characters no longer at table
+            if (selectedCharacterIds.Count > 0 && tableCharacters != null)
+            {
+                var currentCharacterIds = new HashSet<int>(tableCharacters.Select(c => c.CharacterId));
+                selectedCharacterIds.RemoveWhere(id => !currentCharacterIds.Contains(id));
             }
         }
         catch (Exception ex)
@@ -1309,6 +1410,51 @@ else
             errorMessage = $"Error spawning NPC: {ex.Message}";
         }
     }
+
+    // Multi-selection methods for batch operations
+    private void ToggleSelection(int characterId)
+    {
+        if (!selectedCharacterIds.Add(characterId))
+        {
+            // Already existed, so remove it (toggle off)
+            selectedCharacterIds.Remove(characterId);
+        }
+        StateHasChanged();
+    }
+
+    private bool IsCharacterSelected(int characterId)
+        => selectedCharacterIds.Contains(characterId);
+
+    private void DeselectAll()
+    {
+        selectedCharacterIds.Clear();
+        StateHasChanged();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && selectedCharacterIds.Count > 0)
+        {
+            DeselectAll();
+        }
+    }
+
+    private void SelectAllInSection(IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> characters)
+    {
+        foreach (var c in characters)
+            selectedCharacterIds.Add(c.CharacterId);
+        StateHasChanged();
+    }
+
+    private void DeselectAllInSection(IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> characters)
+    {
+        foreach (var c in characters)
+            selectedCharacterIds.Remove(c.CharacterId);
+        StateHasChanged();
+    }
+
+    private bool HasSelectionInSection(IEnumerable<GameMechanics.GamePlay.TableCharacterInfo> characters)
+        => characters.Any(c => selectedCharacterIds.Contains(c.CharacterId));
 
     private async Task RevealNpc(GameMechanics.GamePlay.TableCharacterInfo npc)
     {
