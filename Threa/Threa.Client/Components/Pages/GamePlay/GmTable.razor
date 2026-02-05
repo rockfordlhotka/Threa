@@ -178,6 +178,9 @@ else
                                 <div class="col" @key="@($"{character.CharacterId}-{characterListVersion}")">
                                     <CharacterStatusCard Character="@character"
                                                         IsSelected="@(selectedCharacter?.CharacterId == character.CharacterId)"
+                                                        IsMultiSelected="@IsCharacterSelected(character.CharacterId)"
+                                                        IsSelectable="true"
+                                                        OnSelectionChanged="@(() => ToggleSelection(character.CharacterId))"
                                                         OnClick="OpenCharacterDetails" />
                                 </div>
                             }
@@ -229,6 +232,9 @@ else
                                             {
                                                 <div class="col" @key="@($"hidden-{npc.CharacterId}-{characterListVersion}")">
                                                     <HiddenNpcCard Character="@npc"
+                                                                  IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                                  IsSelectable="true"
+                                                                  OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                                   OnReveal="RevealNpc"
                                                                   OnClick="OpenCharacterDetails" />
                                                 </div>
@@ -252,6 +258,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -272,6 +281,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -292,6 +304,9 @@ else
                                         <div class="col" @key="@($"npc-{npc.CharacterId}-{characterListVersion}")">
                                             <NpcStatusCard Character="@npc"
                                                           IsSelected="@(selectedCharacter?.CharacterId == npc.CharacterId)"
+                                                          IsMultiSelected="@IsCharacterSelected(npc.CharacterId)"
+                                                          IsSelectable="true"
+                                                          OnSelectionChanged="@(() => ToggleSelection(npc.CharacterId))"
                                                           OnClick="OpenCharacterDetails" />
                                         </div>
                                     }
@@ -552,6 +567,9 @@ else
 
     // Hidden NPC section state
     private bool showHiddenSection = false;
+
+    // Selection state for batch operations
+    private HashSet<int> selectedCharacterIds = new();
 
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -1309,6 +1327,20 @@ else
             errorMessage = $"Error spawning NPC: {ex.Message}";
         }
     }
+
+    // Multi-selection methods for batch operations
+    private void ToggleSelection(int characterId)
+    {
+        if (!selectedCharacterIds.Add(characterId))
+        {
+            // Already existed, so remove it (toggle off)
+            selectedCharacterIds.Remove(characterId);
+        }
+        StateHasChanged();
+    }
+
+    private bool IsCharacterSelected(int characterId)
+        => selectedCharacterIds.Contains(characterId);
 
     private async Task RevealNpc(GameMechanics.GamePlay.TableCharacterInfo npc)
     {
