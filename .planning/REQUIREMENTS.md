@@ -9,11 +9,11 @@ Requirements for Batch Character Actions milestone. Each maps to roadmap phases.
 
 ### Selection Infrastructure
 
-- [ ] **SEL-01**: GM can multi-select characters via checkboxes on status cards
-- [ ] **SEL-02**: Dashboard displays selection count ("3 selected")
-- [ ] **SEL-03**: GM can Select All characters within a section (PCs, Hostile NPCs, etc.)
-- [ ] **SEL-04**: GM can Deselect All to clear selection
-- [ ] **SEL-05**: Selected characters have visual selection indicator
+- [x] **SEL-01**: GM can multi-select characters via checkboxes on status cards
+- [x] **SEL-02**: Dashboard displays selection count ("3 selected")
+- [x] **SEL-03**: GM can Select All characters within a section (PCs, Hostile NPCs, etc.)
+- [x] **SEL-04**: GM can Deselect All to clear selection
+- [x] **SEL-05**: Selected characters have visual selection indicator
 
 ### Batch Damage/Healing
 
@@ -79,11 +79,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEL-01 | Phase 28 | Pending |
-| SEL-02 | Phase 28 | Pending |
-| SEL-03 | Phase 28 | Pending |
-| SEL-04 | Phase 28 | Pending |
-| SEL-05 | Phase 28 | Pending |
+| SEL-01 | Phase 28 | Complete |
+| SEL-02 | Phase 28 | Complete |
+| SEL-03 | Phase 28 | Complete |
+| SEL-04 | Phase 28 | Complete |
+| SEL-05 | Phase 28 | Complete |
 | DMG-01 | Phase 29 | Pending |
 | DMG-02 | Phase 29 | Pending |
 | DMG-03 | Phase 29 | Pending |

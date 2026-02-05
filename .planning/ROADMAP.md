@@ -28,7 +28,7 @@ See .planning/milestones/ for archived roadmaps and requirements from previous m
 
 **Milestone Goal:** Enable GMs to select multiple characters (NPCs and/or PCs) and apply actions to all at once for efficient encounter management.
 
-- [ ] **Phase 28: Selection Infrastructure** - Multi-character selection UI and state management
+- [x] **Phase 28: Selection Infrastructure** - Multi-character selection UI and state management
 - [ ] **Phase 29: Batch Action Framework** - Backend service and damage/healing batch operations
 - [ ] **Phase 30: Batch Visibility & Lifecycle** - NPC visibility toggle and dismiss/archive operations
 - [ ] **Phase 31: Batch Effects** - Effect add/remove batch operations
@@ -48,8 +48,8 @@ See .planning/milestones/ for archived roadmaps and requirements from previous m
 **Plans**: 2 plans
 
 Plans:
-- [ ] 28-01-PLAN.md - Selection state management and checkbox UI on all card components
-- [ ] 28-02-PLAN.md - Selection controls (SelectionBar, per-section Select All, Escape key handler)
+- [x] 28-01-PLAN.md - Selection state management and checkbox UI on all card components
+- [x] 28-02-PLAN.md - Selection controls (SelectionBar, per-section Select All, Escape key handler)
 
 ### Phase 29: Batch Action Framework
 **Goal**: GMs can apply damage or healing to all selected characters at once with clear feedback
@@ -104,7 +104,7 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 28. Selection Infrastructure | v1.6 | 0/2 | Planned | - |
+| 28. Selection Infrastructure | v1.6 | 2/2 | Complete | 2026-02-04 |
 | 29. Batch Action Framework | v1.6 | 0/3 | Not started | - |
 | 30. Batch Visibility & Lifecycle | v1.6 | 0/2 | Not started | - |
 | 31. Batch Effects | v1.6 | 0/2 | Not started | - |
