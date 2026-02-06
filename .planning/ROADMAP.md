@@ -77,11 +77,11 @@ Plans:
   2. GM can dismiss/archive all selected NPCs in one action
   3. Visibility batch shows success/failure feedback
   4. Dismiss batch shows success/failure feedback
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 30-01: Batch visibility toggle implementation
-- [ ] 30-02: Batch dismiss/archive implementation
+- [ ] 30-01-PLAN.md - Backend: extend BatchActionService with visibility toggle and dismiss methods
+- [ ] 30-02-PLAN.md - Frontend: SelectionBar visibility/dismiss buttons, confirmation modal, GmTable wiring
 
 ### Phase 31: Batch Effects
 **Goal**: GMs can add or remove effects to/from multiple characters at once
