@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Csla;
 using GameMechanics.Messaging;
@@ -215,6 +216,80 @@ public class BatchActionService
                 result.Errors.Add($"Character {characterId}: {ex.Message}");
             }
         }
+
+        // Single notification after batch completes
+        if (result.SuccessIds.Count > 0)
+        {
+            await _timeEventPublisher.PublishCharactersUpdatedAsync(
+                new CharactersUpdatedMessage
+                {
+                    TableId = request.TableId,
+                    CharacterIds = result.SuccessIds,
+                    EventType = TimeEventType.EndOfRound,
+                    SourceId = "BatchActionService"
+                });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Removes effects by name from multiple characters.
+    /// Characters without matching effects are silently skipped.
+    /// Uses EffectList.RemoveEffect for proper behavior callbacks (OnRemove).
+    /// </summary>
+    /// <param name="request">The batch effect remove request.</param>
+    /// <returns>Result with success/failure details and total effects removed count.</returns>
+    public async Task<BatchActionResult> RemoveEffectsAsync(BatchActionRequest request)
+    {
+        var result = new BatchActionResult
+        {
+            ActionType = BatchActionType.EffectRemove
+        };
+
+        int totalEffectsRemoved = 0;
+
+        foreach (var characterId in request.CharacterIds)
+        {
+            try
+            {
+                var character = await _characterPortal.FetchAsync(characterId);
+                int removedFromThis = 0;
+
+                foreach (var effectName in request.EffectNamesToRemove)
+                {
+                    // Find matching effects by name, excluding wounds (wounds have special lifecycle)
+                    var matching = character.Effects
+                        .Where(e => e.Name == effectName
+                                 && e.EffectType != Threa.Dal.Dto.EffectType.Wound
+                                 && e.IsActive)
+                        .ToList();
+
+                    foreach (var effect in matching)
+                    {
+                        character.Effects.RemoveEffect(effect.Id);
+                        removedFromThis++;
+                    }
+                }
+
+                // Only save and count if effects were actually removed
+                if (removedFromThis > 0)
+                {
+                    await _characterPortal.UpdateAsync(character);
+                    result.SuccessIds.Add(characterId);
+                    result.SuccessNames.Add(character.Name);
+                    totalEffectsRemoved += removedFromThis;
+                }
+                // Characters with no matching effects are silently skipped
+            }
+            catch (Exception ex)
+            {
+                result.FailedIds.Add(characterId);
+                result.Errors.Add($"Character {characterId}: {ex.Message}");
+            }
+        }
+
+        result.TotalEffectsRemoved = totalEffectsRemoved;
 
         // Single notification after batch completes
         if (result.SuccessIds.Count > 0)
