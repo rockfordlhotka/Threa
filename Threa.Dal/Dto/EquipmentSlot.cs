@@ -124,6 +124,16 @@ public enum EquipmentSlot
     /// <summary>
     /// Hand/finger enhancement (separate from arm).
     /// </summary>
-    ImplantHandRight = 114
+    ImplantHandRight = 114,
+
+    /// <summary>
+    /// Foot/ankle cybernetic enhancement (left).
+    /// </summary>
+    ImplantFootLeft = 115,
+
+    /// <summary>
+    /// Foot/ankle cybernetic enhancement (right).
+    /// </summary>
+    ImplantFootRight = 116
 }
 

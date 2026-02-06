@@ -1,0 +1,194 @@
+@using GameMechanics.Effects
+@using Threa.Dal.Dto
+
+<div class="activate-implant-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-cpu text-info"></i> Implant Management</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="Done">
+            <i class="bi bi-x-lg"></i> Done
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+            @statusMessage
+            <button type="button" class="btn-close" @onclick="() => statusMessage = null"></button>
+        </div>
+    }
+
+    <div class="mb-2">
+        <small class="text-muted">
+            <i class="bi bi-info-circle"></i>
+            Toggle implant effects on or off. AP cost is deducted per toggle.
+            Available AP: <strong>@(Character?.ActionPoints.Available ?? 0)</strong>
+        </small>
+    </div>
+
+    @foreach (var implant in GetToggleableImplants())
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-cpu me-1"></i>
+                    <strong>@(implant.Item.Template?.Name ?? "Unknown Implant")</strong>
+                    <span class="badge bg-secondary ms-2">@implant.Item.EquippedSlot.GetDisplayName()</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach (var effect in implant.ToggleableEffects)
+                    {
+                        var isActive = IsEffectActive(implant.Item.Id, effect);
+                        var canAfford = effect.ToggleApCost == 0 || (Character?.ActionPoints.Available ?? 0) >= effect.ToggleApCost;
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@effect.Name</strong>
+                                @if (!string.IsNullOrEmpty(effect.Description))
+                                {
+                                    <div class="small text-muted">@effect.Description</div>
+                                }
+                                <div class="small">
+                                    @if (effect.ToggleApCost > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark me-1">@effect.ToggleApCost AP</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success me-1">Free</span>
+                                    }
+                                    @if (isActive)
+                                    {
+                                        <span class="badge bg-info">ON</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">OFF</span>
+                                    }
+                                </div>
+                            </div>
+                            <div>
+                                @if (isActive)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            disabled="@(isToggling || !canAfford)"
+                                            @onclick="() => ToggleOff(implant.Item.Id, effect)">
+                                        <i class="bi bi-toggle2-on"></i> Deactivate
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-success"
+                                            disabled="@(isToggling || !canAfford)"
+                                            @onclick="() => ToggleOn(implant.Item.Id, effect)">
+                                        <i class="bi bi-toggle2-off"></i> Activate
+                                    </button>
+                                }
+                                @if (!canAfford && effect.ToggleApCost > 0)
+                                {
+                                    <div class="small text-danger mt-1">Insufficient AP</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public List<CharacterItem>? EquippedItems { get; set; }
+
+    [Parameter]
+    public required ItemEffectService ImplantEffectService { get; set; }
+
+    [Parameter]
+    public EventCallback OnComplete { get; set; }
+
+    [Parameter]
+    public EventCallback OnCharacterChanged { get; set; }
+
+    private string? statusMessage;
+    private bool isError;
+    private bool isToggling;
+
+    private record ImplantInfo(CharacterItem Item, List<ItemEffectDefinition> ToggleableEffects);
+
+    private List<ImplantInfo> GetToggleableImplants()
+    {
+        if (EquippedItems == null) return [];
+
+        return EquippedItems
+            .Where(i => i.EquippedSlot.IsImplant() &&
+                        i.Template?.ItemType == ItemType.Implant &&
+                        i.Template?.Effects?.Any(e => e.IsActive && e.IsToggleable) == true)
+            .Select(i => new ImplantInfo(
+                i,
+                i.Template!.Effects.Where(e => e.IsActive && e.IsToggleable).ToList()))
+            .ToList();
+    }
+
+    private bool IsEffectActive(Guid itemId, ItemEffectDefinition effectDef)
+    {
+        if (Character == null) return false;
+        return Character.Effects.Any(e => e.SourceItemId == itemId && e.Name == effectDef.Name);
+    }
+
+    private async Task ToggleOn(Guid itemId, ItemEffectDefinition effectDef)
+    {
+        if (Character == null) return;
+
+        isToggling = true;
+        statusMessage = null;
+
+        var result = await ImplantEffectService.ToggleImplantEffectOnAsync(Character, itemId, effectDef);
+        if (result.Success)
+        {
+            statusMessage = $"Activated: {effectDef.Name}";
+            isError = false;
+            await OnCharacterChanged.InvokeAsync();
+        }
+        else
+        {
+            statusMessage = result.ErrorMessage;
+            isError = true;
+        }
+
+        isToggling = false;
+        StateHasChanged();
+    }
+
+    private async Task ToggleOff(Guid itemId, ItemEffectDefinition effectDef)
+    {
+        if (Character == null) return;
+
+        isToggling = true;
+        statusMessage = null;
+
+        var result = ImplantEffectService.ToggleImplantEffectOff(Character, itemId, effectDef);
+        if (result.Success)
+        {
+            statusMessage = $"Deactivated: {effectDef.Name}";
+            isError = false;
+            await OnCharacterChanged.InvokeAsync();
+        }
+        else
+        {
+            statusMessage = result.ErrorMessage;
+            isError = true;
+        }
+
+        isToggling = false;
+        StateHasChanged();
+    }
+
+    private async Task Done()
+    {
+        await OnComplete.InvokeAsync();
+    }
+}

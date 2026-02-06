@@ -95,6 +95,26 @@
         }
     </RadzenFieldset>
 
+    <!-- Activation Settings Section -->
+    <RadzenFieldset Text="Activation Settings" class="mb-3">
+        <div class="row">
+            <div class="col-6">
+                <RadzenCheckBox @bind-Value="Effect.IsToggleable" Name="isToggleable" />
+                <RadzenLabel Text="Player can toggle this effect on/off" Component="isToggleable" Style="margin-left: 8px" />
+                <div><small class="text-muted">For activatable implants or similar equipment</small></div>
+            </div>
+            @if (Effect.IsToggleable)
+            {
+                <div class="col-6">
+                    <RadzenLabel Text="Toggle AP Cost" Component="toggleApCost" />
+                    <RadzenNumeric @bind-Value="Effect.ToggleApCost" Name="toggleApCost" Style="width: 100%"
+                                   Min="0" Placeholder="0" />
+                    <small class="text-muted">0 = free action, 1+ = AP cost per toggle</small>
+                </div>
+            }
+        </div>
+    </RadzenFieldset>
+
     <!-- Effect Modifiers Section -->
     <RadzenFieldset Text="Effect Modifiers" class="mb-3">
         <ItemEffectModifiersEditor @bind-BehaviorState="Effect.BehaviorState" />

@@ -112,6 +112,20 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
         set => SetProperty(PriorityProperty, value);
     }
 
+    public static readonly PropertyInfo<bool> IsToggleableProperty = RegisterProperty<bool>(nameof(IsToggleable));
+    public bool IsToggleable
+    {
+        get => GetProperty(IsToggleableProperty);
+        set => SetProperty(IsToggleableProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> ToggleApCostProperty = RegisterProperty<int>(nameof(ToggleApCost));
+    public int ToggleApCost
+    {
+        get => GetProperty(ToggleApCostProperty);
+        set => SetProperty(ToggleApCostProperty, value);
+    }
+
     /// <summary>
     /// Gets the display name for the trigger type.
     /// </summary>
@@ -133,6 +147,9 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
     private string BuildEffectSummary()
     {
         var parts = new System.Collections.Generic.List<string>();
+
+        if (IsToggleable)
+            parts.Add(ToggleApCost > 0 ? $"Toggleable ({ToggleApCost} AP)" : "Toggleable (Free)");
 
         if (IsCursed)
             parts.Add("Cursed");
@@ -208,6 +225,8 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             IconName = null;
             IsActive = true;
             Priority = 0;
+            IsToggleable = false;
+            ToggleApCost = 0;
         }
         BusinessRules.CheckRules();
     }
@@ -231,6 +250,8 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             IconName = dto.IconName;
             IsActive = dto.IsActive;
             Priority = dto.Priority;
+            IsToggleable = dto.IsToggleable;
+            ToggleApCost = dto.ToggleApCost;
         }
         BusinessRules.CheckRules();
     }
@@ -255,7 +276,9 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             BehaviorState = BehaviorState,
             IconName = IconName,
             IsActive = IsActive,
-            Priority = Priority
+            Priority = Priority,
+            IsToggleable = IsToggleable,
+            ToggleApCost = ToggleApCost
         };
     }
 

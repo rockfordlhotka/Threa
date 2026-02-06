@@ -48,6 +48,8 @@ namespace GameMechanics.Combat
         EquipmentSlot.ImplantArmRight => [HitLocation.RightArm],
         EquipmentSlot.ImplantLegLeft => [HitLocation.LeftLeg],
         EquipmentSlot.ImplantLegRight => [HitLocation.RightLeg],
+        EquipmentSlot.ImplantFootLeft => [HitLocation.LeftLeg],
+        EquipmentSlot.ImplantFootRight => [HitLocation.RightLeg],
 
         // Weapons, jewelry, and other slots don't provide armor coverage
         _ => []
@@ -71,9 +73,11 @@ namespace GameMechanics.Combat
         HitLocation.RightArm => [EquipmentSlot.ArmRight, EquipmentSlot.WristRight,
                                  EquipmentSlot.HandRight, EquipmentSlot.ImplantArmRight],
         HitLocation.LeftLeg => [EquipmentSlot.Legs, EquipmentSlot.AnkleLeft,
-                                EquipmentSlot.FootLeft, EquipmentSlot.ImplantLegLeft],
+                                EquipmentSlot.FootLeft, EquipmentSlot.ImplantLegLeft,
+                                EquipmentSlot.ImplantFootLeft],
         HitLocation.RightLeg => [EquipmentSlot.Legs, EquipmentSlot.AnkleRight,
-                                 EquipmentSlot.FootRight, EquipmentSlot.ImplantLegRight],
+                                 EquipmentSlot.FootRight, EquipmentSlot.ImplantLegRight,
+                                 EquipmentSlot.ImplantFootRight],
         _ => []
       };
     }

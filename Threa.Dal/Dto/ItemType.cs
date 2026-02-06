@@ -21,5 +21,6 @@ public enum ItemType
     Jewelry = 13,
     Shield = 14,
     Ammunition = 15,
-    AmmoContainer = 16
+    AmmoContainer = 16,
+    Implant = 17
 }

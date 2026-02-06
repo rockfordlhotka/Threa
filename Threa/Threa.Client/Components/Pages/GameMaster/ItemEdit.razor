@@ -151,7 +151,17 @@ else
                                         <select @bind="vm.Model.EquipmentSlot" class="form-control">
                                             @foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
                                             {
-                                                <option value="@slot">@slot</option>
+                                                @if (vm.Model.ItemType == ItemType.Implant)
+                                                {
+                                                    @if (slot == EquipmentSlot.None || slot.IsImplant())
+                                                    {
+                                                        <option value="@slot">@slot.GetDisplayName()</option>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <option value="@slot">@slot</option>
+                                                }
                                             }
                                         </select>
                                     </td>
@@ -449,6 +459,88 @@ else
                         }
                     </RadzenTabsItem>
                 }
+
+                    <!-- ========================== -->
+                    <!-- IMPLANT TAB -->
+                    <!-- ========================== -->
+                    @if (vm.Model.ItemType == ItemType.Implant)
+                    {
+                        <RadzenTabsItem Text="Implant">
+                            <div class="info-box mt-3">
+                                <strong>Implant Properties</strong>
+                            </div>
+                            <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Implant is a Weapon</td>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input"
+                                               checked="@(vm.Model.WeaponType != WeaponType.None)"
+                                               @onchange="OnImplantWeaponToggle" />
+                                        <small class="text-muted ms-2">Enable if this implant can be used as a weapon (e.g., retractable blade, built-in gun)</small>
+                                    </td>
+                                </tr>
+                                @if (vm.Model.WeaponType != WeaponType.None)
+                                {
+                                    <tr>
+                                        <td>Weapon Type</td>
+                                        <td>
+                                            <select @bind="vm.Model.WeaponType" class="form-control">
+                                                @foreach (WeaponType wtype in Enum.GetValues(typeof(WeaponType)))
+                                                {
+                                                    @if (wtype != WeaponType.None)
+                                                    {
+                                                        <option value="@wtype">@wtype</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Related Skill</td>
+                                        <td>
+                                            <select @bind="vm.Model.RelatedSkill" class="form-control">
+                                                <option value="">-- None --</option>
+                                                @if (availableSkills != null)
+                                                {
+                                                    @foreach (var skill in availableSkills)
+                                                    {
+                                                        <option value="@skill.Id">@skill.Name</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Damage Class (1-4)</td>
+                                        <td>
+                                            <select @bind="vm.Model.DamageClass" class="form-control">
+                                                <option value="1">1 - Normal weapons, human-scale combat</option>
+                                                <option value="2">2 - Vehicles, giant creatures (10x Class 1)</option>
+                                                <option value="3">3 - Armored vehicles, structures, dragons (10x Class 2)</option>
+                                                <option value="4">4 - Armored structures, high-end magic (10x Class 3)</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Damage Type</td>
+                                        <td>
+                                            <select @bind="vm.Model.DamageType" class="form-control">
+                                                <option value="">-- None --</option>
+                                                @foreach (DamageType type in Enum.GetValues(typeof(DamageType)))
+                                                {
+                                                    <option value="@type.ToString()">@type.ToString()</option>
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SVModifier)" />
+                                    <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.AVModifier)" />
+                                }
+                            </tbody>
+                        </table>
+                    </RadzenTabsItem>
+                    }
 
                     <!-- ========================== -->
                     <!-- ARMOR TAB -->
@@ -763,7 +855,7 @@ else
 
     // Computed properties for section visibility
     private bool ShowEquipmentSection => vm.Model?.ItemType is ItemType.Weapon or ItemType.Armor
-        or ItemType.Shield or ItemType.Jewelry or ItemType.Clothing;
+        or ItemType.Shield or ItemType.Jewelry or ItemType.Clothing or ItemType.Implant;
 
     private bool IsRangedWeaponType => vm.Model?.WeaponType is WeaponType.Bow or WeaponType.Crossbow
         or WeaponType.Pistol or WeaponType.Rifle or WeaponType.Shotgun or WeaponType.SMG
@@ -883,6 +975,25 @@ else
             vm.Model.MaxStackSize = 1;
         }
 
+        // Implants cannot be stackable; clear non-implant equipment slot
+        if (vm.Model.ItemType == ItemType.Implant)
+        {
+            vm.Model.IsStackable = false;
+            vm.Model.MaxStackSize = 1;
+            if (vm.Model.EquipmentSlot != EquipmentSlot.None && !vm.Model.EquipmentSlot.IsImplant())
+            {
+                vm.Model.EquipmentSlot = EquipmentSlot.None;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnImplantWeaponToggle(ChangeEventArgs e)
+    {
+        if (vm.Model == null) return;
+        var isWeapon = (bool)e.Value!;
+        vm.Model.WeaponType = isWeapon ? WeaponType.Dagger : WeaponType.None;
         StateHasChanged();
     }
 
