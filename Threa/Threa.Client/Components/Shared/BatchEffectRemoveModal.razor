@@ -1,0 +1,99 @@
+@* Modal for batch-removing effects from multiple selected characters *@
+
+@using GameMechanics.Batch
+@using Threa.Dal.Dto
+@using Radzen
+
+@inject DialogService DialogService
+
+<div class="p-3">
+    @if (EffectNames == null || EffectNames.Count == 0)
+    {
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            No removable effects found on selected characters.
+        </div>
+        <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Close</button>
+        </div>
+    }
+    else
+    {
+        <div class="mb-2 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Select effects to remove:</small>
+            <div>
+                <button type="button" class="btn btn-link btn-sm p-0 me-2" @onclick="SelectAll">Select All</button>
+                <button type="button" class="btn btn-link btn-sm p-0" @onclick="ClearSelection">Clear</button>
+            </div>
+        </div>
+        <div class="list-group mb-3" style="max-height: 300px; overflow-y: auto;">
+            @foreach (var effectInfo in EffectNames)
+            {
+                <label class="list-group-item d-flex align-items-center gap-2">
+                    <input type="checkbox" class="form-check-input mt-0"
+                           checked="@selectedNames.Contains(effectInfo.Name)"
+                           @onchange="() => ToggleSelection(effectInfo.Name)" />
+                    <i class="bi @GetEffectTypeIcon(effectInfo.EffectType)"></i>
+                    <span class="flex-grow-1">@effectInfo.Name</span>
+                    <span class="badge bg-secondary">@effectInfo.CharacterCount</span>
+                </label>
+            }
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            <button type="button" class="btn btn-warning" @onclick="Confirm" disabled="@(selectedNames.Count == 0)">
+                <i class="bi bi-x-circle me-1"></i>Remove @selectedNames.Count Effect(s)
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<EffectNameInfo> EffectNames { get; set; } = new();
+
+    [Parameter]
+    public int SelectedCount { get; set; }
+
+    private HashSet<string> selectedNames = new();
+
+    private void ToggleSelection(string name)
+    {
+        if (!selectedNames.Add(name))
+            selectedNames.Remove(name);
+    }
+
+    private void SelectAll()
+    {
+        selectedNames = new HashSet<string>(EffectNames.Select(e => e.Name));
+    }
+
+    private void ClearSelection()
+    {
+        selectedNames.Clear();
+    }
+
+    private string GetEffectTypeIcon(EffectType type) => type switch
+    {
+        EffectType.Buff => "bi-arrow-up-circle text-success",
+        EffectType.Debuff => "bi-arrow-down-circle text-danger",
+        EffectType.Condition => "bi-exclamation-circle text-warning",
+        EffectType.Poison => "bi-droplet text-success",
+        EffectType.Disease => "bi-virus text-warning",
+        EffectType.SpellEffect => "bi-magic text-primary",
+        EffectType.Environmental => "bi-cloud text-info",
+        EffectType.CombatStance => "bi-shield text-secondary",
+        EffectType.Concentration => "bi-hourglass text-info",
+        EffectType.ItemEffect => "bi-gem text-primary",
+        EffectType.ObjectEffect => "bi-box text-secondary",
+        _ => "bi-circle text-muted"
+    };
+
+    private void Cancel() => DialogService.Close(null);
+
+    private void Confirm()
+    {
+        if (selectedNames.Count == 0) return;
+        DialogService.Close(selectedNames.ToList());
+    }
+}
