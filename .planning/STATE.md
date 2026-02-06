@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 30 - Batch Visibility & Lifecycle (complete)
+**Current focus:** Phase 31 - Batch Effects (in progress)
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
-Phase: 30 of 31 (Batch Visibility & Lifecycle)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-05 - Completed 30-02-PLAN.md
+Phase: 31 of 31 (Batch Effects)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 31-01-PLAN.md
 
-Progress: [████████░░░░░░░░░░░░] 78% (7/9 plans)
+Progress: [████████████████░░░░] 89% (8/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 85
+- Total plans completed: 86
 - Average duration: 7.6 min
-- Total execution time: ~10.7 hours
+- Total execution time: ~10.8 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [████████░░░░░░░░░░░░] 78% (7/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 43 min | 6.1 min |
+| v1.6 | 4 | 9 | 50 min | 6.3 min |
 
 ## Accumulated Context
 
@@ -80,6 +80,13 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - After visibility toggle selection stays intact; after dismiss only dismissed IDs removed
 - NPC IDs pre-filtered at UI layer via GetSelectedNpcIds() before service calls
 
+**31-01 Decisions:**
+- Shared game timestamp from first character for batch effect consistency
+- BatchEffectConfig record as modal return value (parallels BatchInputResult pattern)
+- EffectAdd/EffectRemove keep selection intact (GM may apply multiple effects)
+- IChildDataPortal<EffectRecord> injected into BatchActionService constructor
+- Effect source set to "GM (Batch)" to distinguish from individual "GM" source
+
 ### Pending Todos
 
 None.
@@ -96,9 +103,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 30-02-PLAN.md (Phase 30 complete)
+Stopped at: Completed 31-01-PLAN.md
 Resume file: None
-Next action: Plan Phase 31
+Next action: Execute 31-02-PLAN.md (batch effect remove)
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
@@ -109,4 +116,5 @@ Next action: Plan Phase 31
 *29-03 completed 2026-02-05: Batch result feedback, selection cleanup, CSS styling*
 *30-01 completed 2026-02-05: BatchActionService visibility toggle and dismiss/archive methods*
 *30-02 completed 2026-02-05: SelectionBar visibility/dismiss buttons, confirmation modal, action-type-aware cleanup*
+*31-01 completed 2026-02-05: BatchActionService.AddEffectAsync, BatchEffectAddModal, SelectionBar "Add Effect" button*
 *Previous milestone archives: .planning/milestones/*
