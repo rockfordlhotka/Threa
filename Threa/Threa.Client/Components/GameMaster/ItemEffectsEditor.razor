@@ -1,3 +1,4 @@
+@using GameMechanics
 @using GameMechanics.Items
 @using Threa.Dal.Dto
 @using Csla
@@ -5,12 +6,15 @@
 @using Radzen.Blazor
 
 @inject IChildDataPortal<ItemEffectEdit> effectPortal
+@inject IDataPortal<EffectTemplateList> templateListPortal
 @inject Radzen.DialogService DialogService
 
 <div class="effects-editor">
-    <div class="effects-toolbar mb-3">
+    <div class="effects-toolbar mb-3 d-flex gap-2">
         <RadzenButton Text="Add Effect" Icon="add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
                       Click="@AddEffect" />
+        <RadzenButton Text="From Template" Icon="content_copy" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                      Click="@AddFromTemplate" />
     </div>
 
     @if (Item.Effects.Count == 0)
@@ -73,6 +77,41 @@
     {
         var newEffect = Item.Effects.AddNewEffect(Item.Id, effectPortal);
         await EditEffect(newEffect);
+    }
+
+    private async Task AddFromTemplate()
+    {
+        var result = await DialogService.OpenAsync<EffectTemplatePickerModal>(
+            "Select Effect Template",
+            null,
+            new DialogOptions
+            {
+                Width = "900px",
+                Height = "600px",
+                Resizable = true,
+                Draggable = true,
+                CloseDialogOnOverlayClick = true
+            });
+
+        if (result is EffectTemplate selectedTemplate)
+        {
+            var newEffect = Item.Effects.AddNewEffect(Item.Id, effectPortal);
+            ApplyTemplateToEffect(newEffect, selectedTemplate);
+            await EditEffect(newEffect);
+        }
+    }
+
+    private static void ApplyTemplateToEffect(ItemEffectEdit effect, EffectTemplate template)
+    {
+        effect.Name = template.Name;
+        effect.EffectType = template.EffectType;
+        effect.Description = template.Description;
+        effect.IconName = template.IconName;
+        effect.DurationRounds = template.DurationType == DurationType.Rounds
+            ? template.DefaultDurationValue
+            : null;
+        effect.BehaviorState = template.StateJson;
+        effect.EffectDefinitionId = template.Id;
     }
 
     private async Task EditEffect(ItemEffectEdit effect)

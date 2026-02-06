@@ -4,6 +4,7 @@
 @using Radzen.Blazor
 
 @inject Radzen.DialogService DialogService
+@inject IEffectTemplateDal EffectTemplateDal
 
 <div class="effect-edit-dialog">
     <!-- Basic Information Section -->
@@ -140,9 +141,21 @@
     </RadzenFieldset>
 
     <!-- Dialog Buttons -->
-    <div class="dialog-buttons d-flex justify-content-end gap-2 pt-2 border-top">
-        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
-        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="@Save" />
+    <div class="dialog-buttons d-flex justify-content-between pt-2 border-top">
+        <div>
+            <RadzenButton Text="@(isSavingTemplate ? "Saving..." : "Save as Template")"
+                          Icon="bookmark_add" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                          Click="@SaveAsTemplate"
+                          Disabled="@(string.IsNullOrWhiteSpace(Effect.Name) || isSavingTemplate)" />
+            @if (!string.IsNullOrEmpty(templateFeedback))
+            {
+                <span class="ms-2 small @templateFeedbackClass">@templateFeedback</span>
+            }
+        </div>
+        <div class="d-flex gap-2">
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="@Save" />
+        </div>
     </div>
 </div>
 
@@ -151,6 +164,9 @@
     public required ItemEffectEdit Effect { get; set; }
 
     private string? nameError;
+    private bool isSavingTemplate;
+    private string? templateFeedback;
+    private string templateFeedbackClass = "text-success";
 
     private readonly List<DropdownItem<ItemEffectTrigger>> _triggers =
     [
@@ -195,6 +211,46 @@
     private void Cancel()
     {
         DialogService.Close(false);
+    }
+
+    private async Task SaveAsTemplate()
+    {
+        if (string.IsNullOrWhiteSpace(Effect.Name)) return;
+
+        isSavingTemplate = true;
+        templateFeedback = null;
+
+        try
+        {
+            var templateDto = new EffectTemplateDto
+            {
+                Name = Effect.Name,
+                EffectType = Effect.EffectType,
+                Description = Effect.Description,
+                IconName = Effect.IconName,
+                DefaultDurationValue = Effect.DurationRounds,
+                DurationType = Effect.DurationRounds.HasValue ? DurationType.Rounds : DurationType.Permanent,
+                StateJson = Effect.BehaviorState,
+                Tags = "",
+                IsSystem = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var saved = await EffectTemplateDal.SaveTemplateAsync(templateDto);
+            Effect.EffectDefinitionId = saved.Id;
+            templateFeedback = "Template saved!";
+            templateFeedbackClass = "text-success";
+        }
+        catch (Exception ex)
+        {
+            templateFeedback = $"Error: {ex.Message}";
+            templateFeedbackClass = "text-danger";
+        }
+        finally
+        {
+            isSavingTemplate = false;
+        }
     }
 
     // Helper class for dropdown items
