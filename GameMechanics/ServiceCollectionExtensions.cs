@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
         // Register time advancement service for server-side time processing
         services.AddScoped<TimeAdvancementService>();
 
-        // Register batch action service for multi-character damage/healing
+        // Register batch action service for multi-character operations (damage/healing, visibility, dismiss)
         services.AddScoped<BatchActionService>();
 
         return services;
