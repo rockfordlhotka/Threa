@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-04)
 
 Milestone: v1.6 Batch Character Actions
 Phase: 29 of 31 (Batch Action Framework)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-05 - Completed 29-01-PLAN.md
+Last activity: 2026-02-05 - Completed 29-02-PLAN.md
 
-Progress: [███░░░░░░░░░░░░░░░░░] 33% (3/9 plans)
+Progress: [████░░░░░░░░░░░░░░░░] 44% (4/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 81
+- Total plans completed: 82
 - Average duration: 7.7 min
-- Total execution time: ~10.3 hours
+- Total execution time: ~10.4 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [███░░░░░░░░░░░░░░░░░] 33% (3/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 19 min | 6.3 min |
+| v1.6 | 4 | 9 | 26 min | 6.5 min |
 
 ## Accumulated Context
 
@@ -61,6 +61,9 @@ All decisions are logged in PROJECT.md Key Decisions table.
 **29-01 Decisions:**
 - BatchActionRequest as record type (not class) to support 'with' expression in service
 
+**29-02 Decisions:**
+- BatchInputResult in GameMechanics.Batch namespace (standalone .cs file, not in razor component)
+
 ### Pending Todos
 
 None.
@@ -77,13 +80,14 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 29-01-PLAN.md
+Stopped at: Completed 29-02-PLAN.md
 Resume file: None
-Next action: /gsd:execute-phase 29 (plan 02)
+Next action: /gsd:execute-phase 29 (plan 03)
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
 *28-01 completed 2026-02-04: Selection state and checkbox infrastructure*
 *28-02 completed 2026-02-04: Selection controls, Escape key, cleanup*
 *29-01 completed 2026-02-05: BatchActionService backend with sequential processing*
+*29-02 completed 2026-02-05: SelectionBar batch action buttons with DialogService modal*
 *Previous milestone archives: .planning/milestones/*
