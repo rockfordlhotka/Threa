@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 31 - Batch Effects (in progress)
+**Current focus:** Phase 31 - Batch Effects (complete) / Milestone v1.6 complete
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
 Phase: 31 of 31 (Batch Effects)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 31-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete / Milestone complete
+Last activity: 2026-02-05 - Completed 31-02-PLAN.md
 
-Progress: [████████████████░░░░] 89% (8/9 plans)
+Progress: [████████████████████] 100% (9/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 86
-- Average duration: 7.6 min
-- Total execution time: ~10.8 hours
+- Total plans completed: 87
+- Average duration: 7.5 min
+- Total execution time: ~10.9 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [████████████████░░░░] 89% (8/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 50 min | 6.3 min |
+| v1.6 | 4 | 9 | 55 min | 6.1 min |
 
 ## Accumulated Context
 
@@ -87,6 +87,12 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - IChildDataPortal<EffectRecord> injected into BatchActionService constructor
 - Effect source set to "GM (Batch)" to distinguish from individual "GM" source
 
+**31-02 Decisions:**
+- Union effect name list built by fetching all selected characters via IDataPortal
+- Exclude Wound type AND inactive effects from removal candidates
+- Sort effect list by EffectType then Name for consistent display ordering
+- Name-based removal (not ID-based) allows same effect removed from all characters in one pass
+
 ### Pending Todos
 
 None.
@@ -103,9 +109,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 31-01-PLAN.md
+Stopped at: Completed 31-02-PLAN.md (Phase 31 complete, Milestone v1.6 complete)
 Resume file: None
-Next action: Execute 31-02-PLAN.md (batch effect remove)
+Next action: Milestone v1.6 complete - awaiting next milestone planning
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
@@ -117,4 +123,5 @@ Next action: Execute 31-02-PLAN.md (batch effect remove)
 *30-01 completed 2026-02-05: BatchActionService visibility toggle and dismiss/archive methods*
 *30-02 completed 2026-02-05: SelectionBar visibility/dismiss buttons, confirmation modal, action-type-aware cleanup*
 *31-01 completed 2026-02-05: BatchActionService.AddEffectAsync, BatchEffectAddModal, SelectionBar "Add Effect" button*
+*31-02 completed 2026-02-05: BatchActionService.RemoveEffectsAsync, BatchEffectRemoveModal, SelectionBar "Remove Effects" button*
 *Previous milestone archives: .planning/milestones/*
