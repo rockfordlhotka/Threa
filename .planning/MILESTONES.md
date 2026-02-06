@@ -1,5 +1,34 @@
 # Project Milestones: Threa TTRPG Assistant
 
+## v1.6 Batch Character Actions (Shipped: 2026-02-05)
+
+**Delivered:** Batch character action system enabling GMs to select multiple characters and apply damage, healing, visibility toggles, dismiss/archive, and effect add/remove operations to all at once with partial-success feedback.
+
+**Phases completed:** 28-31 (9 plans total)
+
+**Key accomplishments:**
+
+- Multi-character selection with checkbox overlays on all card types, per-section Select All, and theme-aware highlighting
+- BatchActionService with sequential CSLA-safe processing for damage/healing batch operations
+- Batch visibility toggle and dismiss/archive for efficient NPC lifecycle management
+- Batch effect add via template picker and batch effect remove via union name list with character counts
+- Inline result feedback with expandable error details and smart selection cleanup per action type
+- Two-layer NPC protection (UI pre-filter + service-level skip) ensuring PCs never sent to NPC-only operations
+
+**Stats:**
+
+- 56 files modified
+- +11,097 lines of C#/Razor (11,097 insertions, 561 deletions)
+- 4 phases, 9 plans
+- 1 day from start to ship (2026-02-05)
+- 20/20 requirements shipped (100%)
+
+**Git range:** ae1207a → b7da5d7
+
+**What's next:** Consider initiative tracking, encounter balancing, or session logs
+
+---
+
 ## v1.5 NPC Management System (Shipped: 2026-02-03)
 
 **Delivered:** Complete NPC management system enabling GMs to create, manage, and run NPCs in combat encounters alongside player characters.

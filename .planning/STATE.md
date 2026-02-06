@@ -2,20 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-04)
+See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 31 - Batch Effects (complete) / Milestone v1.6 complete
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v1.6 Batch Character Actions
-Phase: 31 of 31 (Batch Effects)
-Plan: 2 of 2 in current phase
-Status: Phase complete / Milestone complete
-Last activity: 2026-02-05 - Completed 31-02-PLAN.md
+Milestone: v1.6 Batch Character Actions (SHIPPED)
+Phase: Complete
+Plan: Complete
+Status: Milestone shipped — awaiting next milestone planning
+Last activity: 2026-02-05 — v1.6 milestone archived
 
-Progress: [████████████████████] 100% (9/9 plans)
+Progress: [████████████████████] 100% (v1.6 complete)
 
 ## Performance Metrics
 
@@ -41,58 +41,6 @@ Progress: [████████████████████] 100% (9
 
 All decisions are logged in PROJECT.md Key Decisions table.
 
-**v1.6 Decisions (from research):**
-- Selection state as HashSet<int> in GmTable.razor (component-level)
-- Sequential processing pattern (mirrors TimeAdvancementService)
-- Single CharactersUpdatedMessage after batch completes (prevents message flooding)
-- Structured BatchActionResult for partial failure handling
-
-**28-01 Decisions:**
-- Checkbox container handles click with stopPropagation (not RadzenCheckBox directly)
-- Compact checkbox variant for HiddenNpcCard (smaller touch target)
-- IsMultiSelected/IsSelectable/OnSelectionChanged as standard selection parameters
-
-**28-02 Decisions:**
-- SelectionBar uses transform/opacity transition for slide-in animation
-- Hidden section Select All buttons only visible when section expanded
-- Escape key handling uses tabindex="0" on container (component scoped)
-- Selection cleanup uses HashSet.RemoveWhere for efficient stale removal
-
-**29-01 Decisions:**
-- BatchActionRequest as record type (not class) to support 'with' expression in service
-
-**29-02 Decisions:**
-- BatchInputResult in GameMechanics.Batch namespace (standalone .cs file, not in razor component)
-
-**29-03 Decisions:**
-- Result feedback uses HandleBatchResult public method pattern
-- Deselect All also dismisses any active result display
-
-**30-01 Decisions:**
-- ITableDal injected into BatchActionService for dismiss table-detach (existing DI registration)
-- Non-NPC characters silently skipped (not counted) for visibility and dismiss operations
-- VisibilityTarget defaults to true (reveal) when null
-
-**30-02 Decisions:**
-- Clear button at far left, Dismiss isolated at far right with pipe separator
-- Visibility toggle has no confirmation (non-destructive); Dismiss requires confirmation modal
-- VisibilityButtonLabel contextual: Reveal when any hidden, Hide when all visible
-- After visibility toggle selection stays intact; after dismiss only dismissed IDs removed
-- NPC IDs pre-filtered at UI layer via GetSelectedNpcIds() before service calls
-
-**31-01 Decisions:**
-- Shared game timestamp from first character for batch effect consistency
-- BatchEffectConfig record as modal return value (parallels BatchInputResult pattern)
-- EffectAdd/EffectRemove keep selection intact (GM may apply multiple effects)
-- IChildDataPortal<EffectRecord> injected into BatchActionService constructor
-- Effect source set to "GM (Batch)" to distinguish from individual "GM" source
-
-**31-02 Decisions:**
-- Union effect name list built by fetching all selected characters via IDataPortal
-- Exclude Wound type AND inactive effects from removal candidates
-- Sort effect list by EffectType then Name for consistent display ordering
-- Name-based removal (not ID-based) allows same effect removed from all characters in one pass
-
 ### Pending Todos
 
 None.
@@ -109,19 +57,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 31-02-PLAN.md (Phase 31 complete, Milestone v1.6 complete)
+Stopped at: v1.6 milestone archived
 Resume file: None
-Next action: Milestone v1.6 complete - awaiting next milestone planning
+Next action: /gsd:new-milestone to start next milestone
 
 ---
-*Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
-*28-01 completed 2026-02-04: Selection state and checkbox infrastructure*
-*28-02 completed 2026-02-04: Selection controls, Escape key, cleanup*
-*29-01 completed 2026-02-05: BatchActionService backend with sequential processing*
-*29-02 completed 2026-02-05: SelectionBar batch action buttons with DialogService modal*
-*29-03 completed 2026-02-05: Batch result feedback, selection cleanup, CSS styling*
-*30-01 completed 2026-02-05: BatchActionService visibility toggle and dismiss/archive methods*
-*30-02 completed 2026-02-05: SelectionBar visibility/dismiss buttons, confirmation modal, action-type-aware cleanup*
-*31-01 completed 2026-02-05: BatchActionService.AddEffectAsync, BatchEffectAddModal, SelectionBar "Add Effect" button*
-*31-02 completed 2026-02-05: BatchActionService.RemoveEffectsAsync, BatchEffectRemoveModal, SelectionBar "Remove Effects" button*
+*v1.6 Batch Character Actions shipped 2026-02-05*
 *Previous milestone archives: .planning/milestones/*

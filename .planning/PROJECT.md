@@ -2,30 +2,21 @@
 
 ## What This Is
 
-A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, concentration system for spell casting, and NPC management for running combat encounters.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, concentration system for spell casting, NPC management for running combat encounters, and batch character actions for efficient multi-character management.
 
 ## Core Value
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
-## Current Milestone: v1.6 Batch Character Actions
-
-**Goal:** Enable GMs to select multiple characters (NPCs and/or PCs) and apply actions to all at once for efficient encounter management.
-
-**Target features:**
-- Multi-select characters from GM dashboard
-- Batch damage/healing application
-- Batch effect add/remove
-- Batch visibility toggle
-- Batch dismiss/archive
-- Partial success with clear feedback (show what succeeded/failed)
-
-**Potential future directions:**
-- Initiative tracking with automatic turn order
-- Automated encounter balancing
-- Session logs/history within campaign
-
 ## Previous Achievements
+
+**v1.6 Batch Character Actions** (shipped 2026-02-05)
+- Multi-character selection with checkbox overlays, per-section Select All, and theme-aware highlighting
+- Batch damage/healing via BatchActionService with sequential CSLA-safe processing
+- Batch visibility toggle and dismiss/archive for NPC lifecycle management
+- Batch effect add via template picker and remove via union name list
+- Inline result feedback with expandable error details and smart selection cleanup
+- 20/20 requirements shipped (100%), 4 phases, 9 plans complete
 
 **v1.5 NPC Management System** (shipped 2026-02-03)
 - NPC template library with search, filter, category tags, and difficulty badges
@@ -146,15 +137,15 @@ These capabilities exist in the codebase:
 - ✓ Multiple item bonuses stack correctly according to design rules — v1.0
 - ✓ Seed database with 10-20 example items for testing (52 items shipped) — v1.0
 
-### Active
+**Delivered in v1.6 (2026-02-05):**
+- ✓ GM can multi-select characters from dashboard — v1.6
+- ✓ GM can apply damage/healing to selected characters in batch — v1.6
+- ✓ GM can add/remove effects to selected characters in batch — v1.6
+- ✓ GM can toggle visibility on selected characters in batch — v1.6
+- ✓ GM can dismiss/archive selected characters in batch — v1.6
+- ✓ Batch operations show clear feedback (partial success: what succeeded/failed) — v1.6
 
-**v1.6 Batch Character Actions:**
-- [ ] GM can multi-select characters from dashboard
-- [ ] GM can apply damage/healing to selected characters in batch
-- [ ] GM can add/remove effects to selected characters in batch
-- [ ] GM can toggle visibility on selected characters in batch
-- [ ] GM can dismiss/archive selected characters in batch
-- [ ] Batch operations show clear feedback (partial success: what succeeded/failed)
+### Active
 
 **Future milestones (to be defined):**
 - [ ] Initiative tracking with automatic turn order
@@ -181,8 +172,17 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.5 Shipped):**
-The Threa TTRPG Assistant now has complete NPC management capabilities enabling GMs to run full combat encounters with NPCs alongside player characters. Key components:
+**Current State (v1.6 Shipped):**
+The Threa TTRPG Assistant now has batch character action capabilities enabling GMs to select multiple characters and apply actions to all at once for efficient encounter management. Key components:
+
+**v1.6 Batch Character Actions (2026-02-05):**
+- Multi-character selection with checkbox overlays on all card types (PC, NPC, Hidden NPC)
+- SelectionBar with per-section Select All, Deselect All, and Escape key support
+- BatchActionService with 6 operations: damage, heal, visibility, dismiss, effect add, effect remove
+- Batch modals: damage/healing amount, dismiss confirmation, effect add (template picker), effect remove (union list)
+- Inline result feedback with expandable error details for partial failures
+- Smart selection cleanup per action type and two-layer NPC protection
+- Codebase: +11,097 lines across 56 files modified
 
 **v1.5 NPC Management System (2026-02-03):**
 - NPC template library with search, filter, category tags, difficulty badges, and clone functionality
@@ -241,7 +241,7 @@ The codebase already has a working TTRPG combat system with:
 - Radzen.Blazor 8.4.2 for UI components
 - SQLite database (Microsoft.Data.Sqlite 10.0.1)
 - Nullable reference types enabled project-wide
-- ~77,300 lines of C#/Razor code
+- ~88,400 lines of C#/Razor code
 
 **Known Technical Debt (from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
@@ -304,6 +304,14 @@ The codebase already has a working TTRPG combat system with:
 | VisibleToPlayers filter in targeting | Prevents hidden NPCs leaking to players | ✓ Good (v1.5) |
 | Archive vs delete option | Preserves useful NPCs while cleaning dashboard | ✓ Good (v1.5) |
 | Save-as-template resets health | Fresh NPC definition, not combat state | ✓ Good (v1.5) |
+| HashSet<int> for selection state | O(1) toggle and lookup performance for multi-select | ✓ Good (v1.6) |
+| Sequential batch processing | CSLA objects not thread-safe; mirrors TimeAdvancementService pattern | ✓ Good (v1.6) |
+| Single CharactersUpdatedMessage per batch | Prevents N refresh cycles from flooding dashboard | ✓ Good (v1.6) |
+| BatchActionRequest as record type | Supports 'with' expression for action type enforcement | ✓ Good (v1.6) |
+| Two-layer NPC protection | UI pre-filter + service-level skip ensures PCs never sent to NPC-only ops | ✓ Good (v1.6) |
+| Action-type-aware selection cleanup | Clear on damage/heal, preserve on visibility/effects, remove dismissed | ✓ Good (v1.6) |
+| Shared game timestamp for batch effects | All effects in batch have identical CreatedAt/ExpiresAt for consistency | ✓ Good (v1.6) |
+| Name-based effect removal | Allows same effect removed from all characters in one pass | ✓ Good (v1.6) |
 
 ---
-*Last updated: 2026-02-04 after v1.6 milestone started*
+*Last updated: 2026-02-05 after v1.6 milestone complete*
