@@ -9,24 +9,27 @@ using Threa.Dal;
 namespace GameMechanics.Batch;
 
 /// <summary>
-/// Service for applying batch actions (damage/healing, visibility toggle, dismiss/archive)
-/// to multiple characters. Follows TimeAdvancementService pattern: sequential processing,
-/// error aggregation, single notification after batch completes.
+/// Service for applying batch actions (damage/healing, visibility toggle, dismiss/archive,
+/// effect add/remove) to multiple characters. Follows TimeAdvancementService pattern:
+/// sequential processing, error aggregation, single notification after batch completes.
 /// </summary>
 public class BatchActionService
 {
     private readonly IDataPortal<CharacterEdit> _characterPortal;
     private readonly ITimeEventPublisher _timeEventPublisher;
     private readonly ITableDal _tableDal;
+    private readonly IChildDataPortal<EffectRecord> _effectPortal;
 
     public BatchActionService(
         IDataPortal<CharacterEdit> characterPortal,
         ITimeEventPublisher timeEventPublisher,
-        ITableDal tableDal)
+        ITableDal tableDal,
+        IChildDataPortal<EffectRecord> effectPortal)
     {
         _characterPortal = characterPortal;
         _timeEventPublisher = timeEventPublisher;
         _tableDal = tableDal;
+        _effectPortal = effectPortal;
     }
 
     /// <summary>
@@ -137,6 +140,83 @@ public class BatchActionService
             }
         }
 
+        if (result.SuccessIds.Count > 0)
+        {
+            await _timeEventPublisher.PublishCharactersUpdatedAsync(
+                new CharactersUpdatedMessage
+                {
+                    TableId = request.TableId,
+                    CharacterIds = result.SuccessIds,
+                    EventType = TimeEventType.EndOfRound,
+                    SourceId = "BatchActionService"
+                });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Adds an effect to multiple characters. All characters get the same effect configuration
+    /// with a shared game timestamp captured from the first character.
+    /// </summary>
+    /// <param name="request">The batch effect add request.</param>
+    /// <returns>Result with success/failure details.</returns>
+    public async Task<BatchActionResult> AddEffectAsync(BatchActionRequest request)
+    {
+        var result = new BatchActionResult
+        {
+            ActionType = BatchActionType.EffectAdd,
+            EffectName = request.EffectName
+        };
+
+        // Capture game time once before loop (CONTEXT decision: shared timestamp)
+        long? sharedGameTime = null;
+
+        foreach (var characterId in request.CharacterIds)
+        {
+            try
+            {
+                var character = await _characterPortal.FetchAsync(characterId);
+
+                // Capture game time from first character
+                sharedGameTime ??= character.CurrentGameTimeSeconds;
+
+                var effect = await _effectPortal.CreateChildAsync(
+                    request.EffectType!.Value,
+                    request.EffectName!,
+                    (string?)null,  // no location for batch effects
+                    request.DurationRounds,
+                    request.BehaviorStateJson
+                );
+
+                // Apply shared timestamp
+                if (sharedGameTime > 0)
+                {
+                    effect.CreatedAtEpochSeconds = sharedGameTime.Value;
+                    if (request.DurationSeconds.HasValue)
+                    {
+                        effect.ExpiresAtEpochSeconds = sharedGameTime.Value + request.DurationSeconds.Value;
+                    }
+                }
+
+                effect.Description = request.EffectDescription;
+                effect.Source = "GM (Batch)";
+
+                // Defer to EffectList.AddEffect stacking logic
+                character.Effects.AddEffect(effect);
+
+                await _characterPortal.UpdateAsync(character);
+                result.SuccessIds.Add(characterId);
+                result.SuccessNames.Add(character.Name);
+            }
+            catch (Exception ex)
+            {
+                result.FailedIds.Add(characterId);
+                result.Errors.Add($"Character {characterId}: {ex.Message}");
+            }
+        }
+
+        // Single notification after batch completes
         if (result.SuccessIds.Count > 0)
         {
             await _timeEventPublisher.PublishCharactersUpdatedAsync(

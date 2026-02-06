@@ -63,6 +63,16 @@ public class BatchActionResult
     public bool VisibilityAction { get; set; }
 
     /// <summary>
+    /// For effect add operations: the name of the effect applied.
+    /// </summary>
+    public string? EffectName { get; set; }
+
+    /// <summary>
+    /// For effect remove operations: total count of effects removed across all characters.
+    /// </summary>
+    public int TotalEffectsRemoved { get; set; }
+
+    /// <summary>
     /// Human-readable summary of the batch operation result.
     /// </summary>
     public string Summary => ActionType switch
@@ -73,6 +83,12 @@ public class BatchActionResult
         BatchActionType.Dismiss => HasFailures
             ? $"Dismissed {SuccessIds.Count} of {TotalCount} NPC(s)"
             : $"Dismissed {SuccessIds.Count} NPC(s)",
+        BatchActionType.EffectAdd => HasFailures
+            ? $"Added {EffectName} to {SuccessIds.Count} of {TotalCount} character(s)"
+            : $"Added {EffectName} to {SuccessIds.Count} character(s)",
+        BatchActionType.EffectRemove => HasFailures
+            ? $"Removed {TotalEffectsRemoved} effect(s) from {SuccessIds.Count} of {TotalCount} character(s)"
+            : $"Removed {TotalEffectsRemoved} effect(s) from {SuccessIds.Count} character(s)",
         _ => HasFailures
             ? $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} of {TotalCount} characters"
             : $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} character(s)"

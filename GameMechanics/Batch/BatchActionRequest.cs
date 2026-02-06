@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Threa.Dal.Dto;
 
 namespace GameMechanics.Batch;
 
 /// <summary>
-/// Request to apply a batch action (damage or healing) to multiple characters.
+/// Request to apply a batch action (damage, healing, visibility, dismiss, or effect add/remove)
+/// to multiple characters.
 /// </summary>
 public record BatchActionRequest
 {
@@ -39,6 +41,41 @@ public record BatchActionRequest
     /// Null for non-visibility actions.
     /// </summary>
     public bool? VisibilityTarget { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: the effect name to apply.
+    /// </summary>
+    public string? EffectName { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: the effect type.
+    /// </summary>
+    public EffectType? EffectType { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: the effect description.
+    /// </summary>
+    public string? EffectDescription { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: duration in seconds (null = permanent).
+    /// </summary>
+    public long? DurationSeconds { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: duration in rounds for legacy EffectRecord creation.
+    /// </summary>
+    public int? DurationRounds { get; set; }
+
+    /// <summary>
+    /// For EffectAdd: serialized EffectState JSON (modifiers, DoT, etc.).
+    /// </summary>
+    public string? BehaviorStateJson { get; set; }
+
+    /// <summary>
+    /// For EffectRemove: list of effect names to remove.
+    /// </summary>
+    public List<string> EffectNamesToRemove { get; set; } = new();
 }
 
 /// <summary>
@@ -56,5 +93,11 @@ public enum BatchActionType
     Visibility,
 
     /// <summary>Dismiss/archive NPCs and remove from table.</summary>
-    Dismiss
+    Dismiss,
+
+    /// <summary>Add an effect to selected characters.</summary>
+    EffectAdd,
+
+    /// <summary>Remove effect(s) from selected characters.</summary>
+    EffectRemove
 }
