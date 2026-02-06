@@ -1090,6 +1090,51 @@ h1, h2, h3, h4, h5, h6 {
     50% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
 }
 
+/* Batch result display in SelectionBar */
+.batch-result-container {
+    border-top: 1px solid var(--border-primary);
+    padding-top: 0.5rem;
+}
+
+.batch-result-container .alert {
+    font-size: 0.875rem;
+}
+
+.batch-result-container .btn-link {
+    font-size: 0.8rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.batch-result-container .btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Ensure alert colors work with both themes */
+[data-theme="fantasy"] .batch-result-container .alert-success {
+    background-color: rgba(25, 135, 84, 0.15);
+    border-color: rgba(25, 135, 84, 0.3);
+    color: var(--text-primary);
+}
+
+[data-theme="fantasy"] .batch-result-container .alert-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.3);
+    color: var(--text-primary);
+}
+
+[data-theme="scifi"] .batch-result-container .alert-success {
+    background-color: rgba(25, 135, 84, 0.2);
+    border-color: rgba(25, 135, 84, 0.4);
+    color: var(--text-primary);
+}
+
+[data-theme="scifi"] .batch-result-container .alert-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-color: rgba(255, 193, 7, 0.4);
+    color: var(--text-primary);
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    SCI-FI THEME TEXT READABILITY FIXES
    Ensuring all text is readable on dark backgrounds
