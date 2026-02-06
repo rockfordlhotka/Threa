@@ -58,9 +58,23 @@ public class BatchActionResult
     public bool AllSucceeded => FailedIds.Count == 0 && SuccessIds.Count > 0;
 
     /// <summary>
+    /// For visibility operations: true = revealed, false = hidden.
+    /// </summary>
+    public bool VisibilityAction { get; set; }
+
+    /// <summary>
     /// Human-readable summary of the batch operation result.
     /// </summary>
-    public string Summary => HasFailures
-        ? $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} of {TotalCount} characters"
-        : $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} character(s)";
+    public string Summary => ActionType switch
+    {
+        BatchActionType.Visibility => HasFailures
+            ? $"{SuccessIds.Count} of {TotalCount} NPC(s) {(VisibilityAction ? "revealed" : "hidden")}"
+            : $"{SuccessIds.Count} NPC(s) {(VisibilityAction ? "revealed" : "hidden")}",
+        BatchActionType.Dismiss => HasFailures
+            ? $"Dismissed {SuccessIds.Count} of {TotalCount} NPC(s)"
+            : $"Dismissed {SuccessIds.Count} NPC(s)",
+        _ => HasFailures
+            ? $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} of {TotalCount} characters"
+            : $"Applied {Amount} {Pool} {ActionType.ToString().ToLower()} to {SuccessIds.Count} character(s)"
+    };
 }
