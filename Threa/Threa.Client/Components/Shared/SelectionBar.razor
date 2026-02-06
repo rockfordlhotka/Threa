@@ -1,6 +1,7 @@
 @namespace Threa.Client.Components.Shared
 
 @using GameMechanics.Batch
+@using GameMechanics.GamePlay
 @using Radzen
 
 @inject DialogService DialogService
@@ -14,15 +15,33 @@
         </span>
 
         <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleDeselectAll">
+                <i class="bi bi-x-lg me-1"></i>Clear
+            </button>
+
+            <span class="text-muted">|</span>
+
             <button class="btn btn-sm btn-danger" @onclick="OpenDamageModal">
                 <i class="bi bi-heart-pulse me-1"></i>Damage
             </button>
             <button class="btn btn-sm btn-success" @onclick="OpenHealingModal">
                 <i class="bi bi-bandaid me-1"></i>Heal
             </button>
-            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleDeselectAll">
-                <i class="bi bi-x-lg me-1"></i>Clear
-            </button>
+
+            @if (HasSelectedNpcs)
+            {
+                <button class="btn btn-sm btn-outline-info" @onclick="ExecuteToggleVisibility">
+                    <i class="bi @(VisibilityTarget ? "bi-eye" : "bi-eye-slash") me-1"></i>@VisibilityButtonLabel
+                </button>
+            }
+
+            @if (HasSelectedNpcs)
+            {
+                <span class="text-muted">|</span>
+                <button class="btn btn-sm btn-outline-danger" @onclick="OpenDismissConfirmation">
+                    <i class="bi bi-archive me-1"></i>Dismiss
+                </button>
+            }
         </div>
     </div>
 
@@ -78,6 +97,9 @@
 
     [Parameter]
     public EventCallback<BatchActionResult> OnBatchActionCompleted { get; set; }
+
+    [Parameter]
+    public IEnumerable<TableCharacterInfo>? AllCharacters { get; set; }
 
     private BatchActionResult? lastResult;
     private bool showErrorDetails;
@@ -175,5 +197,96 @@
             : await BatchActionService.ApplyHealingAsync(request);
 
         await HandleBatchResult(batchResult);
+    }
+
+    // NPC filtering computed properties
+
+    private int SelectedNpcCount => AllCharacters?
+        .Where(c => c.IsNpc && SelectedCharacterIds.Contains(c.CharacterId))
+        .Count() ?? 0;
+
+    private bool HasSelectedNpcs => SelectedNpcCount > 0;
+
+    private List<int> GetSelectedNpcIds() => AllCharacters?
+        .Where(c => c.IsNpc && SelectedCharacterIds.Contains(c.CharacterId))
+        .Select(c => c.CharacterId)
+        .ToList() ?? new();
+
+    private string VisibilityButtonLabel
+    {
+        get
+        {
+            var selectedNpcs = AllCharacters?
+                .Where(c => c.IsNpc && SelectedCharacterIds.Contains(c.CharacterId));
+            if (selectedNpcs == null || !selectedNpcs.Any()) return "Reveal";
+
+            bool anyHidden = selectedNpcs.Any(c => !c.VisibleToPlayers);
+            return anyHidden ? "Reveal" : "Hide";
+        }
+    }
+
+    private bool VisibilityTarget
+    {
+        get
+        {
+            var selectedNpcs = AllCharacters?
+                .Where(c => c.IsNpc && SelectedCharacterIds.Contains(c.CharacterId));
+            if (selectedNpcs == null || !selectedNpcs.Any()) return true;
+            return selectedNpcs.Any(c => !c.VisibleToPlayers);
+        }
+    }
+
+    // Visibility toggle execution (no confirmation needed - non-destructive)
+    private async Task ExecuteToggleVisibility()
+    {
+        var npcIds = GetSelectedNpcIds();
+        if (npcIds.Count == 0) return;
+
+        var request = new BatchActionRequest
+        {
+            TableId = TableId,
+            CharacterIds = npcIds,
+            ActionType = BatchActionType.Visibility,
+            VisibilityTarget = VisibilityTarget
+        };
+
+        var result = await BatchActionService.ToggleVisibilityAsync(request);
+        await HandleBatchResult(result);
+    }
+
+    // Dismiss confirmation and execution
+    private async Task OpenDismissConfirmation()
+    {
+        var npcCount = SelectedNpcCount;
+        if (npcCount == 0) return;
+
+        var dialogResult = await DialogService.OpenAsync<BatchDismissConfirmModal>(
+            "Dismiss NPCs",
+            new Dictionary<string, object>
+            {
+                { "NpcCount", npcCount }
+            },
+            new DialogOptions { Width = "350px", CloseDialogOnOverlayClick = true });
+
+        if (dialogResult is bool confirmed && confirmed)
+        {
+            await ExecuteDismiss();
+        }
+    }
+
+    private async Task ExecuteDismiss()
+    {
+        var npcIds = GetSelectedNpcIds();
+        if (npcIds.Count == 0) return;
+
+        var request = new BatchActionRequest
+        {
+            TableId = TableId,
+            CharacterIds = npcIds,
+            ActionType = BatchActionType.Dismiss
+        };
+
+        var result = await BatchActionService.DismissAsync(request);
+        await HandleBatchResult(result);
     }
 }
