@@ -6,6 +6,7 @@
 
 @implements IDisposable
 
+@using GameMechanics.Batch
 @using GameMechanics.Messaging
 @using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
@@ -72,7 +73,10 @@ else
 
     <!-- Selection Bar - appears when characters are selected -->
     <SelectionBar SelectedCount="@selectedCharacterIds.Count"
-                  OnDeselectAll="DeselectAll" />
+                  OnDeselectAll="DeselectAll"
+                  TableId="@TableId"
+                  SelectedCharacterIds="@selectedCharacterIds"
+                  OnBatchActionCompleted="HandleBatchActionCompleted" />
 
     <div class="row" @onkeydown="HandleKeyDown" tabindex="0" style="outline: none;">
         <!-- Left Panel: Characters/NPCs -->
@@ -1484,5 +1488,28 @@ else
         {
             errorMessage = $"Failed to reveal NPC: {ex.Message}";
         }
+    }
+
+    // Batch action result handler - manages selection cleanup after batch operations
+    private async Task HandleBatchActionCompleted(BatchActionResult result)
+    {
+        if (result.AllSucceeded)
+        {
+            // Full success: clear entire selection
+            selectedCharacterIds.Clear();
+        }
+        else if (result.HasFailures && result.SuccessIds.Count > 0)
+        {
+            // Partial success: remove succeeded IDs, keep failed for retry
+            foreach (var successId in result.SuccessIds)
+            {
+                selectedCharacterIds.Remove(successId);
+            }
+        }
+        // If all failed, keep selection intact for investigation
+
+        // Refresh character list to show updated health values
+        await RefreshCharacterListAsync();
+        StateHasChanged();
     }
 }
