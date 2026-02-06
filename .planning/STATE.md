@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 29 - Batch Action Framework
+**Current focus:** Phase 30 - Batch Visibility & Lifecycle (next)
 
 ## Current Position
 
@@ -86,7 +86,7 @@ None.
 Last session: 2026-02-05
 Stopped at: Completed 29-03-PLAN.md (Phase 29 complete)
 Resume file: None
-Next action: /gsd:execute-phase 30
+Next action: /gsd:discuss-phase 30
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*

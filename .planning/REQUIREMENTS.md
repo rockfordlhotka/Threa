@@ -17,10 +17,10 @@ Requirements for Batch Character Actions milestone. Each maps to roadmap phases.
 
 ### Batch Damage/Healing
 
-- [ ] **DMG-01**: GM can apply damage to all selected characters at once
-- [ ] **DMG-02**: GM can apply healing to all selected characters at once
-- [ ] **DMG-03**: Batch damage/healing shows success count and any failures
-- [ ] **DMG-04**: Partial success allowed — characters that succeed are updated, failures reported
+- [x] **DMG-01**: GM can apply damage to all selected characters at once
+- [x] **DMG-02**: GM can apply healing to all selected characters at once
+- [x] **DMG-03**: Batch damage/healing shows success count and any failures
+- [x] **DMG-04**: Partial success allowed — characters that succeed are updated, failures reported
 
 ### Batch Visibility
 
@@ -40,10 +40,10 @@ Requirements for Batch Character Actions milestone. Each maps to roadmap phases.
 
 ### Feedback & UX
 
-- [ ] **UX-01**: Contextual action bar appears when characters are selected
-- [ ] **UX-02**: Action bar shows available batch actions
-- [ ] **UX-03**: Batch results display clear feedback (success/failure with details)
-- [ ] **UX-04**: Selection clears after successful batch operation (or user can retain)
+- [x] **UX-01**: Contextual action bar appears when characters are selected
+- [x] **UX-02**: Action bar shows available batch actions
+- [x] **UX-03**: Batch results display clear feedback (success/failure with details)
+- [x] **UX-04**: Selection clears after successful batch operation (or user can retain)
 
 ## Future Requirements
 
@@ -84,10 +84,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEL-03 | Phase 28 | Complete |
 | SEL-04 | Phase 28 | Complete |
 | SEL-05 | Phase 28 | Complete |
-| DMG-01 | Phase 29 | Pending |
-| DMG-02 | Phase 29 | Pending |
-| DMG-03 | Phase 29 | Pending |
-| DMG-04 | Phase 29 | Pending |
+| DMG-01 | Phase 29 | Complete |
+| DMG-02 | Phase 29 | Complete |
+| DMG-03 | Phase 29 | Complete |
+| DMG-04 | Phase 29 | Complete |
 | VIS-01 | Phase 30 | Pending |
 | VIS-02 | Phase 30 | Pending |
 | LIFE-01 | Phase 30 | Pending |
@@ -95,10 +95,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EFF-01 | Phase 31 | Pending |
 | EFF-02 | Phase 31 | Pending |
 | EFF-03 | Phase 31 | Pending |
-| UX-01 | Phase 29 | Pending |
-| UX-02 | Phase 29 | Pending |
-| UX-03 | Phase 29 | Pending |
-| UX-04 | Phase 29 | Pending |
+| UX-01 | Phase 29 | Complete |
+| UX-02 | Phase 29 | Complete |
+| UX-03 | Phase 29 | Complete |
+| UX-04 | Phase 29 | Complete |
 
 **Coverage:**
 - v1.6 requirements: 20 total
