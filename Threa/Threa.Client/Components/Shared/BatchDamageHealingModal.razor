@@ -1,0 +1,54 @@
+@* Modal for entering batch damage or healing amount and pool *@
+
+@using GameMechanics.Batch
+@using Radzen
+
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <RadzenNumeric @bind-Value="amount" Min="1" Max="999" class="w-100" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Pool</label>
+        <div class="btn-group w-100" role="group">
+            <button type="button"
+                    class="btn @(pool == "FAT" ? "btn-primary" : "btn-outline-primary")"
+                    @onclick='() => pool = "FAT"'>
+                FAT
+            </button>
+            <button type="button"
+                    class="btn @(pool == "VIT" ? "btn-primary" : "btn-outline-primary")"
+                    @onclick='() => pool = "VIT"'>
+                VIT
+            </button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">
+            Cancel
+        </button>
+        <button type="button"
+                class="btn @(Mode == BatchActionType.Damage ? "btn-danger" : "btn-success")"
+                @onclick="Confirm"
+                disabled="@(amount < 1)">
+            <i class="bi @(Mode == BatchActionType.Damage ? "bi-heart-pulse" : "bi-bandaid") me-1"></i>
+            Apply to @SelectedCount Character@(SelectedCount != 1 ? "s" : "")
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public BatchActionType Mode { get; set; }
+    [Parameter] public int SelectedCount { get; set; }
+
+    private int amount = 1;
+    private string pool = "FAT";
+
+    private void Cancel() => DialogService.Close(null);
+
+    private void Confirm() => DialogService.Close(new BatchInputResult(amount, pool));
+}
