@@ -1508,6 +1508,11 @@ else
                 }
                 break;
 
+            case BatchActionType.EffectAdd:
+            case BatchActionType.EffectRemove:
+                // Effects: keep selection intact (GM may want to apply multiple effects)
+                break;
+
             default:
                 // Damage/Healing: clear all on full success, remove succeeded on partial
                 if (result.AllSucceeded)

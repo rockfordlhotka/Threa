@@ -28,6 +28,11 @@
                 <i class="bi bi-bandaid me-1"></i>Heal
             </button>
 
+            <span class="text-muted">|</span>
+            <button class="btn btn-sm btn-outline-primary" @onclick="OpenBatchEffectAdd">
+                <i class="bi bi-stars me-1"></i>Add Effect
+            </button>
+
             @if (HasSelectedNpcs)
             {
                 <button class="btn btn-sm btn-outline-info" @onclick="ExecuteToggleVisibility">
@@ -179,6 +184,41 @@
         {
             await ExecuteBatchAction(BatchActionType.Healing, input.Amount, input.Pool);
         }
+    }
+
+    private async Task OpenBatchEffectAdd()
+    {
+        var result = await DialogService.OpenAsync<BatchEffectAddModal>(
+            "Add Effect to Selected Characters",
+            new Dictionary<string, object>
+            {
+                { "SelectedCount", SelectedCount }
+            },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result is BatchEffectConfig config)
+        {
+            await ExecuteBatchEffectAdd(config);
+        }
+    }
+
+    private async Task ExecuteBatchEffectAdd(BatchEffectConfig config)
+    {
+        var request = new BatchActionRequest
+        {
+            TableId = TableId,
+            CharacterIds = SelectedCharacterIds.ToList(),
+            ActionType = BatchActionType.EffectAdd,
+            EffectName = config.EffectName,
+            EffectType = config.EffectType,
+            EffectDescription = config.Description,
+            DurationSeconds = config.DurationSeconds,
+            DurationRounds = config.DurationRounds,
+            BehaviorStateJson = config.BehaviorStateJson
+        };
+
+        var batchResult = await BatchActionService.AddEffectAsync(request);
+        await HandleBatchResult(batchResult);
     }
 
     private async Task ExecuteBatchAction(BatchActionType actionType, int amount, string pool)
