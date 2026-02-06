@@ -76,6 +76,7 @@ else
                   OnDeselectAll="DeselectAll"
                   TableId="@TableId"
                   SelectedCharacterIds="@selectedCharacterIds"
+                  AllCharacters="@tableCharacters"
                   OnBatchActionCompleted="HandleBatchActionCompleted" />
 
     <div class="row" @onkeydown="HandleKeyDown" tabindex="0" style="outline: none;">
@@ -1493,22 +1494,37 @@ else
     // Batch action result handler - manages selection cleanup after batch operations
     private async Task HandleBatchActionCompleted(BatchActionResult result)
     {
-        if (result.AllSucceeded)
+        switch (result.ActionType)
         {
-            // Full success: clear entire selection
-            selectedCharacterIds.Clear();
-        }
-        else if (result.HasFailures && result.SuccessIds.Count > 0)
-        {
-            // Partial success: remove succeeded IDs, keep failed for retry
-            foreach (var successId in result.SuccessIds)
-            {
-                selectedCharacterIds.Remove(successId);
-            }
-        }
-        // If all failed, keep selection intact for investigation
+            case BatchActionType.Visibility:
+                // Visibility: keep selection intact (GM may chain actions)
+                break;
 
-        // Refresh character list to show updated health values
+            case BatchActionType.Dismiss:
+                // Dismiss: remove only dismissed NPC IDs from selection
+                foreach (var successId in result.SuccessIds)
+                {
+                    selectedCharacterIds.Remove(successId);
+                }
+                break;
+
+            default:
+                // Damage/Healing: clear all on full success, remove succeeded on partial
+                if (result.AllSucceeded)
+                {
+                    selectedCharacterIds.Clear();
+                }
+                else if (result.HasFailures && result.SuccessIds.Count > 0)
+                {
+                    foreach (var successId in result.SuccessIds)
+                    {
+                        selectedCharacterIds.Remove(successId);
+                    }
+                }
+                break;
+        }
+
+        // Refresh character list to show updated state (health, visibility, or removed NPCs)
         await RefreshCharacterListAsync();
         StateHasChanged();
     }
