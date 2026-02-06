@@ -7,7 +7,7 @@
 - v1.2 GM Table & Campaign Management - Phases 12-16 (shipped 2026-01-28)
 - v1.4 GM Character Manipulation + Concentration - Phases 17-22 (shipped 2026-01-29)
 - v1.5 NPC Management System - Phases 23-27 (shipped 2026-02-03)
-- **v1.6 Batch Character Actions** - Phases 28-31 (in progress)
+- **v1.6 Batch Character Actions** - Phases 28-31 (shipped 2026-02-05)
 
 ## Phases
 
@@ -24,14 +24,14 @@ See .planning/milestones/ for archived roadmaps and requirements from previous m
 
 </details>
 
-### v1.6 Batch Character Actions (In Progress)
+### v1.6 Batch Character Actions (Complete)
 
 **Milestone Goal:** Enable GMs to select multiple characters (NPCs and/or PCs) and apply actions to all at once for efficient encounter management.
 
 - [x] **Phase 28: Selection Infrastructure** - Multi-character selection UI and state management
 - [x] **Phase 29: Batch Action Framework** - Backend service and damage/healing batch operations
 - [x] **Phase 30: Batch Visibility & Lifecycle** - NPC visibility toggle and dismiss/archive operations
-- [ ] **Phase 31: Batch Effects** - Effect add/remove batch operations
+- [x] **Phase 31: Batch Effects** - Effect add/remove batch operations
 
 ## Phase Details
 
@@ -94,8 +94,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 31-01-PLAN.md - Backend effect add service + BatchEffectAddModal + SelectionBar wiring
-- [ ] 31-02-PLAN.md - Backend effect remove service + BatchEffectRemoveModal + SelectionBar wiring
+- [x] 31-01-PLAN.md - Backend effect add service + BatchEffectAddModal + SelectionBar wiring
+- [x] 31-02-PLAN.md - Backend effect remove service + BatchEffectRemoveModal + SelectionBar wiring
 
 ## Progress
 
@@ -107,7 +107,7 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31
 | 28. Selection Infrastructure | v1.6 | 2/2 | Complete | 2026-02-04 |
 | 29. Batch Action Framework | v1.6 | 3/3 | Complete | 2026-02-05 |
 | 30. Batch Visibility & Lifecycle | v1.6 | 2/2 | Complete | 2026-02-05 |
-| 31. Batch Effects | v1.6 | 0/2 | Not started | - |
+| 31. Batch Effects | v1.6 | 2/2 | Complete | 2026-02-05 |
 
 ---
 *Roadmap created: 2026-02-04*

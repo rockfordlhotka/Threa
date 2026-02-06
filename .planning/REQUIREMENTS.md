@@ -34,9 +34,9 @@ Requirements for Batch Character Actions milestone. Each maps to roadmap phases.
 
 ### Batch Effects
 
-- [ ] **EFF-01**: GM can add an effect to all selected characters at once
-- [ ] **EFF-02**: GM can remove an effect from all selected characters at once
-- [ ] **EFF-03**: Batch effect operations show success count and any failures
+- [x] **EFF-01**: GM can add an effect to all selected characters at once
+- [x] **EFF-02**: GM can remove an effect from all selected characters at once
+- [x] **EFF-03**: Batch effect operations show success count and any failures
 
 ### Feedback & UX
 
@@ -92,9 +92,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIS-02 | Phase 30 | Complete |
 | LIFE-01 | Phase 30 | Complete |
 | LIFE-02 | Phase 30 | Complete |
-| EFF-01 | Phase 31 | Pending |
-| EFF-02 | Phase 31 | Pending |
-| EFF-03 | Phase 31 | Pending |
+| EFF-01 | Phase 31 | Complete |
+| EFF-02 | Phase 31 | Complete |
+| EFF-03 | Phase 31 | Complete |
 | UX-01 | Phase 29 | Complete |
 | UX-02 | Phase 29 | Complete |
 | UX-03 | Phase 29 | Complete |
