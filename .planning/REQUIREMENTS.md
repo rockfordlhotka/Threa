@@ -24,13 +24,13 @@ Requirements for Batch Character Actions milestone. Each maps to roadmap phases.
 
 ### Batch Visibility
 
-- [ ] **VIS-01**: GM can toggle visibility on all selected NPCs at once (reveal/hide)
-- [ ] **VIS-02**: Batch visibility shows success count and any failures
+- [x] **VIS-01**: GM can toggle visibility on all selected NPCs at once (reveal/hide)
+- [x] **VIS-02**: Batch visibility shows success count and any failures
 
 ### Batch Lifecycle
 
-- [ ] **LIFE-01**: GM can dismiss/archive all selected NPCs at once
-- [ ] **LIFE-02**: Batch dismiss shows success count and any failures
+- [x] **LIFE-01**: GM can dismiss/archive all selected NPCs at once
+- [x] **LIFE-02**: Batch dismiss shows success count and any failures
 
 ### Batch Effects
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DMG-02 | Phase 29 | Complete |
 | DMG-03 | Phase 29 | Complete |
 | DMG-04 | Phase 29 | Complete |
-| VIS-01 | Phase 30 | Pending |
-| VIS-02 | Phase 30 | Pending |
-| LIFE-01 | Phase 30 | Pending |
-| LIFE-02 | Phase 30 | Pending |
+| VIS-01 | Phase 30 | Complete |
+| VIS-02 | Phase 30 | Complete |
+| LIFE-01 | Phase 30 | Complete |
+| LIFE-02 | Phase 30 | Complete |
 | EFF-01 | Phase 31 | Pending |
 | EFF-02 | Phase 31 | Pending |
 | EFF-03 | Phase 31 | Pending |

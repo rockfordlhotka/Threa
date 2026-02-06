@@ -30,7 +30,7 @@ See .planning/milestones/ for archived roadmaps and requirements from previous m
 
 - [x] **Phase 28: Selection Infrastructure** - Multi-character selection UI and state management
 - [x] **Phase 29: Batch Action Framework** - Backend service and damage/healing batch operations
-- [ ] **Phase 30: Batch Visibility & Lifecycle** - NPC visibility toggle and dismiss/archive operations
+- [x] **Phase 30: Batch Visibility & Lifecycle** - NPC visibility toggle and dismiss/archive operations
 - [ ] **Phase 31: Batch Effects** - Effect add/remove batch operations
 
 ## Phase Details
@@ -80,8 +80,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 30-01-PLAN.md - Backend: extend BatchActionService with visibility toggle and dismiss methods
-- [ ] 30-02-PLAN.md - Frontend: SelectionBar visibility/dismiss buttons, confirmation modal, GmTable wiring
+- [x] 30-01-PLAN.md - Backend: extend BatchActionService with visibility toggle and dismiss methods
+- [x] 30-02-PLAN.md - Frontend: SelectionBar visibility/dismiss buttons, confirmation modal, GmTable wiring
 
 ### Phase 31: Batch Effects
 **Goal**: GMs can add or remove effects to/from multiple characters at once
@@ -106,7 +106,7 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31
 |-------|-----------|----------------|--------|-----------|
 | 28. Selection Infrastructure | v1.6 | 2/2 | Complete | 2026-02-04 |
 | 29. Batch Action Framework | v1.6 | 3/3 | Complete | 2026-02-05 |
-| 30. Batch Visibility & Lifecycle | v1.6 | 0/2 | Not started | - |
+| 30. Batch Visibility & Lifecycle | v1.6 | 2/2 | Complete | 2026-02-05 |
 | 31. Batch Effects | v1.6 | 0/2 | Not started | - |
 
 ---
