@@ -8,10 +8,13 @@
 @using Threa.Client.Components.Shared
 @using Threa.Client.Components.Pages.GamePlay.Targeting
 
+@using GameMechanics.Effects
+
 @inject ICharacterItemDal CharacterItemDal
 @inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
 @inject Radzen.DialogService DialogService
+@inject ItemEffectService ImplantEffectService
 
 <div class="combat-tab-container">
     @if (combatMode == CombatMode.Default)
@@ -174,6 +177,17 @@
                         <small class="opacity-75">First-Aid, Nursing, Doctor</small>
                     </button>
 
+                    @if (hasToggleableImplantsEquipped)
+                    {
+                        <!-- Implants Button -->
+                        <button class="btn btn-lg btn-outline-info py-3"
+                                @onclick="StartActivateImplant">
+                            <i class="bi bi-cpu fs-4"></i>
+                            <div class="fw-bold">IMPLANTS</div>
+                            <small class="opacity-75">Activate / Deactivate</small>
+                        </button>
+                    }
+
                     <!-- Rest Card -->
                     <div class="card">
                         <div class="card-body text-center">
@@ -310,6 +324,14 @@
                      OnMedicalComplete="OnMedicalComplete"
                      OnCharacterChanged="OnCharacterChanged" />
     }
+    else if (combatMode == CombatMode.ActivateImplant)
+    {
+        <ActivateImplantMode Character="Character"
+                             EquippedItems="equippedItems"
+                             ImplantEffectService="ImplantEffectService"
+                             OnComplete="OnActivateImplantComplete"
+                             OnCharacterChanged="OnCharacterChanged" />
+    }
     else if (combatMode == CombatMode.SelectTarget)
     {
         <div class="card">
@@ -345,7 +367,7 @@
     [Parameter]
     public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -363,6 +385,7 @@
     private string weaponSkillName = "";
     private List<RangedWeaponInfo> rangedWeapons = new();
     private List<AmmoSourceInfo> availableAmmoSources = new();
+    private bool hasToggleableImplantsEquipped;
 
     // Weapon modifiers for melee attacks (from equipped weapon template)
     private int meleeWeaponAVModifier;
@@ -491,11 +514,18 @@
         // Set hasWeaponEquipped to true if EITHER melee or ranged weapons are equipped
         hasWeaponEquipped = meleeWeapons.Any() || rangedWeapons.Any();
 
-        // Get equipped weapon skill names (exclude shields from weapons)
+        // Detect equipped implants with toggleable effects
+        hasToggleableImplantsEquipped = equippedItems.Any(i =>
+            i.EquippedSlot.IsImplant() &&
+            i.Template?.ItemType == ItemType.Implant &&
+            i.Template?.Effects?.Any(e => e.IsActive && e.IsToggleable) == true);
+
+        // Get equipped weapon skill names (exclude shields from weapons, include implant weapons)
         var weaponItems = equippedItems
             .Where(i => i.EquippedSlot == EquipmentSlot.MainHand ||
                        i.EquippedSlot == EquipmentSlot.TwoHand ||
-                       (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield))
+                       (i.EquippedSlot == EquipmentSlot.OffHand && i.Template?.ItemType != ItemType.Shield) ||
+                       (i.EquippedSlot.IsImplant() && i.Template?.ItemType == ItemType.Implant && i.Template?.WeaponType != WeaponType.None))
             .ToList();
 
         // Collect skill names from both melee weapons (RelatedSkill) and ranged weapons (RangedSkill in CustomProperties)
@@ -685,6 +715,18 @@
         await LoadAvailableAmmoSources();
 
         combatMode = CombatMode.Reload;
+    }
+
+    private void StartActivateImplant()
+    {
+        combatMode = CombatMode.ActivateImplant;
+    }
+
+    private async Task OnActivateImplantComplete()
+    {
+        combatMode = CombatMode.Default;
+        await LoadEquipmentAndSkills();
+        StateHasChanged();
     }
 
     private void StartMedical()

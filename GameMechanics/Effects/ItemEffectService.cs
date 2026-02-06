@@ -198,7 +198,8 @@ public class ItemEffectService
     foreach (var effectDef in itemTemplate.Effects.Where(e => e.IsActive))
     {
       // Apply effects triggered by equipping
-      if (effectDef.Trigger == ItemEffectTrigger.WhileEquipped)
+      // Skip toggleable effects — those require explicit player activation
+      if (effectDef.Trigger == ItemEffectTrigger.WhileEquipped && !effectDef.IsToggleable)
       {
         var effect = await CreateAndApplyEffectAsync(character, item.Id, effectDef);
         if (effect != null)
@@ -229,9 +230,10 @@ public class ItemEffectService
     foreach (var effectDef in itemTemplate.Effects.Where(e => e.IsActive))
     {
       // Apply all relevant triggers
+      // Skip toggleable WhileEquipped effects — those require explicit player activation
       if (effectDef.Trigger == ItemEffectTrigger.WhilePossessed ||
           effectDef.Trigger == ItemEffectTrigger.OnPickup ||
-          effectDef.Trigger == ItemEffectTrigger.WhileEquipped)
+          (effectDef.Trigger == ItemEffectTrigger.WhileEquipped && !effectDef.IsToggleable))
       {
         var effect = await CreateAndApplyEffectAsync(character, item.Id, effectDef);
         if (effect != null)
@@ -391,6 +393,90 @@ public class ItemEffectService
       .Where(e => e.IsCursed && e.IsActive && e.SourceItemId.HasValue)
       .GroupBy(e => e.SourceItemId!.Value)
       .ToDictionary(g => g.Key, g => g.ToList());
+  }
+
+  #endregion
+
+  #region Implant Toggle
+
+  /// <summary>
+  /// Activates a toggleable implant effect on a character.
+  /// </summary>
+  /// <param name="character">The character.</param>
+  /// <param name="itemId">The equipped item's ID.</param>
+  /// <param name="effectDef">The toggleable effect definition to activate.</param>
+  /// <returns>Result of the toggle operation.</returns>
+  public async Task<ItemEffectApplicationResult> ToggleImplantEffectOnAsync(
+    CharacterEdit character,
+    Guid itemId,
+    ItemEffectDefinition effectDef)
+  {
+    if (!effectDef.IsToggleable)
+      return ItemEffectApplicationResult.Failed("This effect is not toggleable.");
+
+    // Check if already active
+    var existing = character.Effects
+      .FirstOrDefault(e => e.SourceItemId == itemId && e.Name == effectDef.Name);
+    if (existing != null)
+      return ItemEffectApplicationResult.Failed("This effect is already active.");
+
+    // Check and deduct AP cost
+    if (effectDef.ToggleApCost > 0)
+    {
+      if (character.ActionPoints.Available < effectDef.ToggleApCost)
+        return ItemEffectApplicationResult.Failed(
+          $"Insufficient AP. Need {effectDef.ToggleApCost}, have {character.ActionPoints.Available}.");
+
+      character.ActionPoints.Available -= effectDef.ToggleApCost;
+      character.ActionPoints.Spent += effectDef.ToggleApCost;
+    }
+
+    var effect = await CreateAndApplyEffectAsync(character, itemId, effectDef);
+    if (effect == null)
+      return ItemEffectApplicationResult.Failed("Failed to apply effect.");
+
+    return ItemEffectApplicationResult.Succeeded([effect]);
+  }
+
+  /// <summary>
+  /// Deactivates a toggleable implant effect on a character.
+  /// </summary>
+  /// <param name="character">The character.</param>
+  /// <param name="itemId">The equipped item's ID.</param>
+  /// <param name="effectDef">The toggleable effect definition to deactivate.</param>
+  /// <returns>Result of the toggle operation.</returns>
+  public ItemEffectApplicationResult ToggleImplantEffectOff(
+    CharacterEdit character,
+    Guid itemId,
+    ItemEffectDefinition effectDef)
+  {
+    if (!effectDef.IsToggleable)
+      return ItemEffectApplicationResult.Failed("This effect is not toggleable.");
+
+    // Find the active effect
+    var existing = character.Effects
+      .FirstOrDefault(e => e.SourceItemId == itemId && e.Name == effectDef.Name);
+    if (existing == null)
+      return ItemEffectApplicationResult.Failed("This effect is not currently active.");
+
+    // Check and deduct AP cost
+    if (effectDef.ToggleApCost > 0)
+    {
+      if (character.ActionPoints.Available < effectDef.ToggleApCost)
+        return ItemEffectApplicationResult.Failed(
+          $"Insufficient AP. Need {effectDef.ToggleApCost}, have {character.ActionPoints.Available}.");
+
+      character.ActionPoints.Available -= effectDef.ToggleApCost;
+      character.ActionPoints.Spent += effectDef.ToggleApCost;
+    }
+
+    character.Effects.RemoveEffect(existing.Id);
+
+    return new ItemEffectApplicationResult
+    {
+      Success = true,
+      RemovedEffectIds = [existing.Id]
+    };
   }
 
   #endregion

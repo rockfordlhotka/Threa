@@ -1003,6 +1003,113 @@ public class TestDataSeeder
                 MaxStackSize = 30,
                 Rarity = ItemRarity.Common,
                 Tags = "food,consumable"
+            },
+
+            // === IMPLANTS ===
+            new ItemTemplate
+            {
+                Id = 200,
+                Name = "Subdermal Armor Weave",
+                Description = "Woven carbon-fiber mesh implanted beneath the skin, providing passive ballistic protection.",
+                ShortDescription = "Subdermal armor +1",
+                ItemType = ItemType.Implant,
+                EquipmentSlot = EquipmentSlot.ImplantSubdermal,
+                Weight = 0.5m,
+                Volume = 0.01m,
+                Value = 15000,
+                Rarity = ItemRarity.Rare,
+                Tags = "implant,cybernetic,armor",
+                Effects =
+                [
+                    new ItemEffectDefinition
+                    {
+                        Id = 200,
+                        ItemTemplateId = 200,
+                        EffectType = EffectType.Buff,
+                        Name = "Subdermal Armor",
+                        Description = "+1 armor absorption (all types)",
+                        Trigger = ItemEffectTrigger.WhileEquipped,
+                        IsToggleable = false,
+                        BehaviorState = """{"EffectName":"Subdermal Armor","Description":"+1 armor absorption (all types)","ItemName":"Subdermal Armor Weave","Modifiers":[{"Type":0,"Target":"ArmorAbsorption","Value":1}]}"""
+                    }
+                ]
+            },
+            new ItemTemplate
+            {
+                Id = 201,
+                Name = "Wired Reflexes Mk.I",
+                Description = "Spinal neural accelerator that boosts reaction speed when activated. Draws significant power.",
+                ShortDescription = "Toggleable DEX +2",
+                ItemType = ItemType.Implant,
+                EquipmentSlot = EquipmentSlot.ImplantSpine,
+                Weight = 0.3m,
+                Volume = 0.01m,
+                Value = 25000,
+                Rarity = ItemRarity.Epic,
+                Tags = "implant,cybernetic,reflex",
+                Effects =
+                [
+                    new ItemEffectDefinition
+                    {
+                        Id = 201,
+                        ItemTemplateId = 201,
+                        EffectType = EffectType.Buff,
+                        Name = "Wired Reflexes",
+                        Description = "+2 DEX while active",
+                        Trigger = ItemEffectTrigger.WhileEquipped,
+                        IsToggleable = true,
+                        ToggleApCost = 1,
+                        BehaviorState = """{"EffectName":"Wired Reflexes","Description":"+2 DEX while active","ItemName":"Wired Reflexes Mk.I","Modifiers":[{"Type":0,"Target":"DEX","Value":2}]}"""
+                    }
+                ]
+            },
+            new ItemTemplate
+            {
+                Id = 202,
+                Name = "Retractable Mono-Blade",
+                Description = "A monomolecular-edged blade concealed in the forearm, extending from the back of the hand.",
+                ShortDescription = "Implant melee weapon",
+                ItemType = ItemType.Implant,
+                EquipmentSlot = EquipmentSlot.ImplantHandRight,
+                Weight = 0.8m,
+                Volume = 0.02m,
+                Value = 12000,
+                WeaponType = WeaponType.Dagger,
+                RelatedSkill = "Light Blades",
+                DamageClass = 2,
+                DamageType = "Cutting",
+                SVModifier = 1,
+                Rarity = ItemRarity.Rare,
+                Tags = "implant,cybernetic,weapon,melee"
+            },
+            new ItemTemplate
+            {
+                Id = 203,
+                Name = "Thermographic Optics",
+                Description = "Optical implant providing thermal vision overlay, enhancing awareness in darkness and through smoke.",
+                ShortDescription = "Toggleable ITT +2",
+                ItemType = ItemType.Implant,
+                EquipmentSlot = EquipmentSlot.ImplantOpticLeft,
+                Weight = 0.1m,
+                Volume = 0.001m,
+                Value = 18000,
+                Rarity = ItemRarity.Rare,
+                Tags = "implant,cybernetic,optic,awareness",
+                Effects =
+                [
+                    new ItemEffectDefinition
+                    {
+                        Id = 203,
+                        ItemTemplateId = 203,
+                        EffectType = EffectType.Buff,
+                        Name = "Thermographic Vision",
+                        Description = "+2 ITT (Awareness) while active",
+                        Trigger = ItemEffectTrigger.WhileEquipped,
+                        IsToggleable = true,
+                        ToggleApCost = 0,
+                        BehaviorState = """{"EffectName":"Thermographic Vision","Description":"+2 ITT (Awareness) while active","ItemName":"Thermographic Optics","Modifiers":[{"Type":0,"Target":"ITT","Value":2}]}"""
+                    }
+                ]
             }
         ];
     }

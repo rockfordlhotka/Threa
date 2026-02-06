@@ -78,4 +78,14 @@ public class ItemEffectDefinition
     /// Priority for effect application order (higher = applied first).
     /// </summary>
     public int Priority { get; set; }
+
+    /// <summary>
+    /// Whether this effect can be toggled on/off by the player (e.g., activatable implants).
+    /// </summary>
+    public bool IsToggleable { get; set; }
+
+    /// <summary>
+    /// AP cost to toggle this effect on or off. 0 = free action.
+    /// </summary>
+    public int ToggleApCost { get; set; }
 }

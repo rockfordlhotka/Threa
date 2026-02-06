@@ -104,6 +104,8 @@ public static class EquipmentSlotExtensions
             EquipmentSlot.ImplantOrgan => "Organ Implant",
             EquipmentSlot.ImplantHandLeft => "Left Hand Cybernetic",
             EquipmentSlot.ImplantHandRight => "Right Hand Cybernetic",
+            EquipmentSlot.ImplantFootLeft => "Left Foot Cybernetic",
+            EquipmentSlot.ImplantFootRight => "Right Foot Cybernetic",
             _ => slot.ToString()
         };
     }

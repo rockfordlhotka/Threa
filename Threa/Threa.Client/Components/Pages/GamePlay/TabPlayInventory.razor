@@ -167,6 +167,15 @@
         letter-spacing: 0.05em;
     }
 
+    .slot-category.cybernetics h6 {
+        color: var(--bs-info, #0dcaf0);
+    }
+
+    .slot-category.cybernetics .equipment-slot {
+        border-left: 2px solid var(--bs-info, #0dcaf0);
+        padding-left: 12px;
+    }
+
     .equipment-slot.clickable {
         cursor: pointer;
     }
@@ -500,8 +509,14 @@
                 <div class="card-body equipment-slots-container">
                     @foreach (var category in slotCategories)
                     {
-                        <div class="slot-category">
-                            <h6 class="text-muted">@category.Name</h6>
+                        <div class="slot-category @(category.Name.StartsWith("Cybernetics") ? "cybernetics" : "")">
+                            <h6 class="text-muted">
+                                @if (category.Name.StartsWith("Cybernetics"))
+                                {
+                                    <i class="bi bi-cpu me-1"></i>
+                                }
+                                @category.Name
+                            </h6>
                             @foreach (var slot in category.Slots)
                             {
                                 var equipped = GetEquippedItem(slot);
@@ -625,6 +640,23 @@
             EquipmentSlot.FingerRight1, EquipmentSlot.FingerRight2,
             EquipmentSlot.FingerRight3, EquipmentSlot.FingerRight4,
             EquipmentSlot.FingerRight5
+        }),
+        new SlotCategory("Cybernetics - Head", new[] {
+            EquipmentSlot.ImplantNeural,
+            EquipmentSlot.ImplantOpticLeft, EquipmentSlot.ImplantOpticRight,
+            EquipmentSlot.ImplantAuralLeft, EquipmentSlot.ImplantAuralRight
+        }),
+        new SlotCategory("Cybernetics - Body", new[] {
+            EquipmentSlot.ImplantCardiac, EquipmentSlot.ImplantSpine,
+            EquipmentSlot.ImplantSubdermal, EquipmentSlot.ImplantOrgan
+        }),
+        new SlotCategory("Cybernetics - Arms", new[] {
+            EquipmentSlot.ImplantArmLeft, EquipmentSlot.ImplantArmRight,
+            EquipmentSlot.ImplantHandLeft, EquipmentSlot.ImplantHandRight
+        }),
+        new SlotCategory("Cybernetics - Legs", new[] {
+            EquipmentSlot.ImplantLegLeft, EquipmentSlot.ImplantLegRight,
+            EquipmentSlot.ImplantFootLeft, EquipmentSlot.ImplantFootRight
         })
     };
 
