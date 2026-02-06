@@ -1,4 +1,5 @@
 using GameMechanics.Actions;
+using GameMechanics.Batch;
 using GameMechanics.Combat.Effects;
 using GameMechanics.Effects;
 using GameMechanics.Items;
@@ -36,6 +37,9 @@ public static class ServiceCollectionExtensions
 
         // Register time advancement service for server-side time processing
         services.AddScoped<TimeAdvancementService>();
+
+        // Register batch action service for multi-character damage/healing
+        services.AddScoped<BatchActionService>();
 
         return services;
     }
