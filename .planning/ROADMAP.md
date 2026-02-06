@@ -91,11 +91,11 @@ Plans:
   1. GM can select an effect from the effect picker and add it to all selected characters
   2. GM can select an effect type and remove it from all selected characters that have it
   3. Effect batch operations show success count and any failures with reasons
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 31-01: Batch effect add implementation
-- [ ] 31-02: Batch effect remove implementation
+- [ ] 31-01-PLAN.md - Backend effect add service + BatchEffectAddModal + SelectionBar wiring
+- [ ] 31-02-PLAN.md - Backend effect remove service + BatchEffectRemoveModal + SelectionBar wiring
 
 ## Progress
 
