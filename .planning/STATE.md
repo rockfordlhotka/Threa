@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 30 - Batch Visibility & Lifecycle
+**Current focus:** Phase 30 - Batch Visibility & Lifecycle (complete)
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
 Phase: 30 of 31 (Batch Visibility & Lifecycle)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 30-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 30-02-PLAN.md
 
-Progress: [███████░░░░░░░░░░░░░] 67% (6/9 plans)
+Progress: [████████░░░░░░░░░░░░] 78% (7/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 84
-- Average duration: 7.7 min
-- Total execution time: ~10.6 hours
+- Total plans completed: 85
+- Average duration: 7.6 min
+- Total execution time: ~10.7 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [███████░░░░░░░░░░░░░] 67% (6/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 39 min | 6.5 min |
+| v1.6 | 4 | 9 | 43 min | 6.1 min |
 
 ## Accumulated Context
 
@@ -73,6 +73,13 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Non-NPC characters silently skipped (not counted) for visibility and dismiss operations
 - VisibilityTarget defaults to true (reveal) when null
 
+**30-02 Decisions:**
+- Clear button at far left, Dismiss isolated at far right with pipe separator
+- Visibility toggle has no confirmation (non-destructive); Dismiss requires confirmation modal
+- VisibilityButtonLabel contextual: Reveal when any hidden, Hide when all visible
+- After visibility toggle selection stays intact; after dismiss only dismissed IDs removed
+- NPC IDs pre-filtered at UI layer via GetSelectedNpcIds() before service calls
+
 ### Pending Todos
 
 None.
@@ -89,9 +96,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 30-01-PLAN.md
+Stopped at: Completed 30-02-PLAN.md (Phase 30 complete)
 Resume file: None
-Next action: Execute 30-02-PLAN.md
+Next action: Plan Phase 31
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
@@ -101,4 +108,5 @@ Next action: Execute 30-02-PLAN.md
 *29-02 completed 2026-02-05: SelectionBar batch action buttons with DialogService modal*
 *29-03 completed 2026-02-05: Batch result feedback, selection cleanup, CSS styling*
 *30-01 completed 2026-02-05: BatchActionService visibility toggle and dismiss/archive methods*
+*30-02 completed 2026-02-05: SelectionBar visibility/dismiss buttons, confirmation modal, action-type-aware cleanup*
 *Previous milestone archives: .planning/milestones/*
