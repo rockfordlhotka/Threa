@@ -1,15 +1,66 @@
 @namespace Threa.Client.Components.Shared
 
+@using GameMechanics.Batch
+@using Radzen
+
+@inject DialogService DialogService
+@inject BatchActionService BatchActionService
+
 <div class="selection-bar @(SelectedCount > 0 ? "visible" : "")">
     <div class="d-flex justify-content-between align-items-center">
         <span class="selection-count">
             <i class="bi bi-check2-square me-2"></i>
             <strong>@SelectedCount</strong> selected
         </span>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="HandleDeselectAll">
-            <i class="bi bi-x-lg me-1"></i>Deselect All
-        </button>
+
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-sm btn-danger" @onclick="OpenDamageModal">
+                <i class="bi bi-heart-pulse me-1"></i>Damage
+            </button>
+            <button class="btn btn-sm btn-success" @onclick="OpenHealingModal">
+                <i class="bi bi-bandaid me-1"></i>Heal
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleDeselectAll">
+                <i class="bi bi-x-lg me-1"></i>Clear
+            </button>
+        </div>
     </div>
+
+    @if (lastResult != null)
+    {
+        <div class="batch-result-container mt-2">
+            <div class="alert @GetResultAlertClass() py-2 mb-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi @GetResultIcon() me-1"></i>
+                    @lastResult.Summary
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    @if (lastResult.HasFailures)
+                    {
+                        <button type="button" class="btn btn-sm btn-link p-0" @onclick="ToggleErrorDetails">
+                            @(showErrorDetails ? "Hide" : "Show") Details
+                        </button>
+                    }
+                    <button type="button" class="btn btn-sm btn-link p-0" @onclick="DismissResult">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+
+            @if (showErrorDetails && lastResult.HasFailures)
+            {
+                <div class="alert alert-secondary py-2 mt-1 small">
+                    <strong>Failed:</strong>
+                    <ul class="mb-0 ps-3">
+                        @foreach (var error in lastResult.Errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -19,8 +70,58 @@
     [Parameter]
     public EventCallback OnDeselectAll { get; set; }
 
+    [Parameter]
+    public Guid TableId { get; set; }
+
+    [Parameter]
+    public HashSet<int> SelectedCharacterIds { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<BatchActionResult> OnBatchActionCompleted { get; set; }
+
+    private BatchActionResult? lastResult;
+    private bool showErrorDetails;
+
+    /// <summary>
+    /// Called by child components or action handlers to display a batch result
+    /// and notify the parent via OnBatchActionCompleted.
+    /// </summary>
+    public async Task HandleBatchResult(BatchActionResult result)
+    {
+        lastResult = result;
+        showErrorDetails = false;
+        await OnBatchActionCompleted.InvokeAsync(result);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Clears any previous result display. Called before starting a new batch action.
+    /// </summary>
+    public void ClearResult()
+    {
+        lastResult = null;
+        showErrorDetails = false;
+    }
+
     private async Task HandleDeselectAll()
     {
+        DismissResult();
         await OnDeselectAll.InvokeAsync();
+    }
+
+    private string GetResultAlertClass() => lastResult?.AllSucceeded == true
+        ? "alert-success"
+        : "alert-warning";
+
+    private string GetResultIcon() => lastResult?.AllSucceeded == true
+        ? "bi-check-circle"
+        : "bi-exclamation-triangle";
+
+    private void ToggleErrorDetails() => showErrorDetails = !showErrorDetails;
+
+    private void DismissResult()
+    {
+        lastResult = null;
+        showErrorDetails = false;
     }
 }
