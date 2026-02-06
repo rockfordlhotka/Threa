@@ -124,4 +124,56 @@
         lastResult = null;
         showErrorDetails = false;
     }
+
+    private async Task OpenDamageModal()
+    {
+        var result = await DialogService.OpenAsync<BatchDamageHealingModal>(
+            "Apply Damage",
+            new Dictionary<string, object>
+            {
+                { "Mode", BatchActionType.Damage },
+                { "SelectedCount", SelectedCount }
+            },
+            new DialogOptions { Width = "350px", CloseDialogOnOverlayClick = true });
+
+        if (result is BatchInputResult input)
+        {
+            await ExecuteBatchAction(BatchActionType.Damage, input.Amount, input.Pool);
+        }
+    }
+
+    private async Task OpenHealingModal()
+    {
+        var result = await DialogService.OpenAsync<BatchDamageHealingModal>(
+            "Apply Healing",
+            new Dictionary<string, object>
+            {
+                { "Mode", BatchActionType.Healing },
+                { "SelectedCount", SelectedCount }
+            },
+            new DialogOptions { Width = "350px", CloseDialogOnOverlayClick = true });
+
+        if (result is BatchInputResult input)
+        {
+            await ExecuteBatchAction(BatchActionType.Healing, input.Amount, input.Pool);
+        }
+    }
+
+    private async Task ExecuteBatchAction(BatchActionType actionType, int amount, string pool)
+    {
+        var request = new BatchActionRequest
+        {
+            TableId = TableId,
+            CharacterIds = SelectedCharacterIds.ToList(),
+            ActionType = actionType,
+            Pool = pool,
+            Amount = amount
+        };
+
+        var batchResult = actionType == BatchActionType.Damage
+            ? await BatchActionService.ApplyDamageAsync(request)
+            : await BatchActionService.ApplyHealingAsync(request);
+
+        await HandleBatchResult(batchResult);
+    }
 }
