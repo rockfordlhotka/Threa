@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 30 - Batch Visibility & Lifecycle (next)
+**Current focus:** Phase 30 - Batch Visibility & Lifecycle
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
-Phase: 29 of 31 (Batch Action Framework)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-02-05 - Completed 29-03-PLAN.md
+Phase: 30 of 31 (Batch Visibility & Lifecycle)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 30-01-PLAN.md
 
-Progress: [██████░░░░░░░░░░░░░░] 56% (5/9 plans)
+Progress: [███████░░░░░░░░░░░░░] 67% (6/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 83
+- Total plans completed: 84
 - Average duration: 7.7 min
-- Total execution time: ~10.5 hours
+- Total execution time: ~10.6 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░░░░░░░░░░░] 56% (5/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 33 min | 6.6 min |
+| v1.6 | 4 | 9 | 39 min | 6.5 min |
 
 ## Accumulated Context
 
@@ -68,6 +68,11 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Result feedback uses HandleBatchResult public method pattern
 - Deselect All also dismisses any active result display
 
+**30-01 Decisions:**
+- ITableDal injected into BatchActionService for dismiss table-detach (existing DI registration)
+- Non-NPC characters silently skipped (not counted) for visibility and dismiss operations
+- VisibilityTarget defaults to true (reveal) when null
+
 ### Pending Todos
 
 None.
@@ -84,9 +89,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 29-03-PLAN.md (Phase 29 complete)
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
-Next action: /gsd:discuss-phase 30
+Next action: Execute 30-02-PLAN.md
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
@@ -95,4 +100,5 @@ Next action: /gsd:discuss-phase 30
 *29-01 completed 2026-02-05: BatchActionService backend with sequential processing*
 *29-02 completed 2026-02-05: SelectionBar batch action buttons with DialogService modal*
 *29-03 completed 2026-02-05: Batch result feedback, selection cleanup, CSS styling*
+*30-01 completed 2026-02-05: BatchActionService visibility toggle and dismiss/archive methods*
 *Previous milestone archives: .planning/milestones/*
