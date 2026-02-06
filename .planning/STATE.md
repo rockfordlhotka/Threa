@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-04)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Phase 29 - Batch Damage Application (next)
+**Current focus:** Phase 29 - Batch Action Framework
 
 ## Current Position
 
 Milestone: v1.6 Batch Character Actions
-Phase: 28 of 31 (Selection Infrastructure)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-04 - Completed 28-02-PLAN.md
+Phase: 29 of 31 (Batch Action Framework)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 29-01-PLAN.md
 
-Progress: [████░░░░░░░░░░░░░░░░] 22% (2/9 plans)
+Progress: [███░░░░░░░░░░░░░░░░░] 33% (3/9 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 80
+- Total plans completed: 81
 - Average duration: 7.7 min
-- Total execution time: ~10.2 hours
+- Total execution time: ~10.3 hours
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [████░░░░░░░░░░░░░░░░] 22% (2/
 | v1.2 | 5 | 14 | 121 min | 8.6 min |
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
-| v1.6 | 4 | 9 | 14 min | 7 min |
+| v1.6 | 4 | 9 | 19 min | 6.3 min |
 
 ## Accumulated Context
 
@@ -58,6 +58,9 @@ All decisions are logged in PROJECT.md Key Decisions table.
 - Escape key handling uses tabindex="0" on container (component scoped)
 - Selection cleanup uses HashSet.RemoveWhere for efficient stale removal
 
+**29-01 Decisions:**
+- BatchActionRequest as record type (not class) to support 'with' expression in service
+
 ### Pending Todos
 
 None.
@@ -73,13 +76,14 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-04
-Stopped at: Completed 28-02-PLAN.md (Phase 28 complete)
+Last session: 2026-02-05
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
-Next action: /gsd:plan-phase 29
+Next action: /gsd:execute-phase 29 (plan 02)
 
 ---
 *Milestone v1.6 Batch Character Actions roadmap created 2026-02-04*
 *28-01 completed 2026-02-04: Selection state and checkbox infrastructure*
 *28-02 completed 2026-02-04: Selection controls, Escape key, cleanup*
+*29-01 completed 2026-02-05: BatchActionService backend with sequential processing*
 *Previous milestone archives: .planning/milestones/*
