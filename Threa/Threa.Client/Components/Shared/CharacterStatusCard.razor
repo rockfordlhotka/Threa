@@ -12,7 +12,7 @@
                            class="selection-cb" />
         </div>
     }
-    <div class="card-body py-2 px-3">
+    <div class="card-body py-2 px-3" style="@(IsSelectable ? "padding-left: 2.2rem !important;" : "")">
         @* Header: Name and connection status *@
         <div class="d-flex justify-content-between align-items-center mb-2">
             <strong class="text-truncate" style="max-width: 140px;" title="@Character.CharacterName">
