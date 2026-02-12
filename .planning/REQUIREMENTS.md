@@ -9,11 +9,11 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 ### Layout
 
-- [ ] **LAY-01**: Combat tab displays three distinct button groups: Actions, Defense, and Other
-- [ ] **LAY-02**: All action buttons use compact style with icon + short label (replacing current large buttons)
-- [ ] **LAY-03**: Combat skills list is removed from permanent display on Combat tab (replaced by Use Skill modal)
-- [ ] **LAY-04**: Defense tab is removed from the play page tab list
-- [ ] **LAY-05**: Resource summary (AP/FAT/VIT) remains visible on the combined tab
+- [x] **LAY-01**: Combat tab displays three distinct button groups: Actions, Defense, and Other
+- [x] **LAY-02**: All action buttons use compact style with icon + short label (replacing current large buttons)
+- [x] **LAY-03**: Combat skills list is removed from permanent display on Combat tab (replaced by Use Skill modal)
+- [x] **LAY-04**: Defense tab is removed from the play page tab list
+- [x] **LAY-05**: Resource summary (AP/FAT/VIT) remains visible on the combined tab
 
 ### Actions Group
 
