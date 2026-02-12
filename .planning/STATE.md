@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
 Phase: 32 of 36 (Layout Restructuring)
-Plan: 01 of 02 (complete)
-Status: In progress
-Last activity: 2026-02-12 — Completed 32-01-PLAN.md (layout restructuring)
+Plan: 02 of 02 (complete)
+Status: Phase complete
+Last activity: 2026-02-12 — Completed 32-02-PLAN.md (activity log wiring)
 
-Progress: [█░░░░░░░░░░░░░░░░░░] ~5% (1/~18 plans estimated)
+Progress: [██░░░░░░░░░░░░░░░░░] ~11% (2/~18 plans estimated)
 
 ## Performance Metrics
 
@@ -57,9 +57,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 32-01-PLAN.md
+Stopped at: Completed 32-02-PLAN.md (Phase 32 complete)
 Resume file: None
-Next action: Execute 32-02-PLAN.md (activity log wiring)
+Next action: Begin Phase 33 planning or continue milestone v1.7
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
