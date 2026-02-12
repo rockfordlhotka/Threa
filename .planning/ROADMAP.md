@@ -34,10 +34,11 @@
   3. The combat skills list no longer appears on the Combat tab (empty space or placeholder where it was)
   4. Defense tab is gone from the play page tab bar
   5. AP, FAT, and VIT resource summary remains visible on the tab
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 32-01: TBD
+- [ ] 32-01-PLAN.md — Add combat tile CSS and restructure TabCombat Default mode (three groups, left panel, compact tiles)
+- [ ] 32-02-PLAN.md — Remove Defense tab from Play.razor, wire activity log to TabCombat, visual verification
 
 #### Phase 33: Attack Actions
 **Goal**: Player can initiate melee and ranged attacks from the Actions group, with verified AV display for solo melee and TV modifier support for solo ranged
@@ -103,7 +104,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 32. Layout Restructuring | v1.7 | 0/TBD | Not started | - |
+| 32. Layout Restructuring | v1.7 | 0/2 | Not started | - |
 | 33. Attack Actions | v1.7 | 0/TBD | Not started | - |
 | 34. New Action Types | v1.7 | 0/TBD | Not started | - |
 | 35. Defense Group | v1.7 | 0/TBD | Not started | - |
