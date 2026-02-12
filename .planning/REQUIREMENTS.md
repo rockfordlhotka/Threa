@@ -67,31 +67,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LAY-01 | — | Pending |
-| LAY-02 | — | Pending |
-| LAY-03 | — | Pending |
-| LAY-04 | — | Pending |
-| LAY-05 | — | Pending |
-| ACT-01 | — | Pending |
-| ACT-02 | — | Pending |
-| ACT-03 | — | Pending |
-| ACT-04 | — | Pending |
-| DEF-01 | — | Pending |
-| DEF-02 | — | Pending |
-| DEF-03 | — | Pending |
-| OTH-01 | — | Pending |
-| OTH-02 | — | Pending |
-| OTH-03 | — | Pending |
-| OTH-04 | — | Pending |
-| OTH-05 | — | Pending |
-| VER-01 | — | Pending |
-| VER-02 | — | Pending |
+| LAY-01 | Phase 32 | Pending |
+| LAY-02 | Phase 32 | Pending |
+| LAY-03 | Phase 32 | Pending |
+| LAY-04 | Phase 32 | Pending |
+| LAY-05 | Phase 32 | Pending |
+| ACT-01 | Phase 33 | Pending |
+| ACT-02 | Phase 33 | Pending |
+| ACT-03 | Phase 34 | Pending |
+| ACT-04 | Phase 34 | Pending |
+| DEF-01 | Phase 35 | Pending |
+| DEF-02 | Phase 35 | Pending |
+| DEF-03 | Phase 35 | Pending |
+| OTH-01 | Phase 36 | Pending |
+| OTH-02 | Phase 36 | Pending |
+| OTH-03 | Phase 36 | Pending |
+| OTH-04 | Phase 36 | Pending |
+| OTH-05 | Phase 36 | Pending |
+| VER-01 | Phase 33 | Pending |
+| VER-02 | Phase 33 | Pending |
 
 **Coverage:**
 - v1.7 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after initial definition*
+*Last updated: 2026-02-11 after roadmap creation*

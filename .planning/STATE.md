@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.7 Combat Tab Rework
+**Current focus:** v1.7 Combat Tab Rework - Phase 32 Layout Restructuring
 
 ## Current Position
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
-Phase: Not started (defining requirements)
+Phase: 32 of 36 (Layout Restructuring)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-11 — Milestone v1.7 started
+Status: Ready to plan
+Last activity: 2026-02-11 — Roadmap created with 5 phases, 18 requirements mapped
 
 Progress: [░░░░░░░░░░░░░░░░░░░] 0%
 
@@ -57,9 +57,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Requirements defined, creating roadmap
+Stopped at: Roadmap created, ready to plan Phase 32
 Resume file: None
-Next action: Create roadmap
+Next action: Plan Phase 32 (Layout Restructuring)
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
