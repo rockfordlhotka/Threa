@@ -2,20 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-05)
+See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** Planning next milestone
+**Current focus:** v1.7 Combat Tab Rework
 
 ## Current Position
 
-Milestone: v1.6 Batch Character Actions (SHIPPED)
-Phase: Complete
-Plan: Complete
-Status: Milestone shipped — awaiting next milestone planning
-Last activity: 2026-02-05 — v1.6 milestone archived
+Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-11 — Milestone v1.7 started
 
-Progress: [████████████████████] 100% (v1.6 complete)
+Progress: [░░░░░░░░░░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -56,11 +56,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: v1.6 milestone archived
+Last session: 2026-02-11
+Stopped at: Requirements defined, creating roadmap
 Resume file: None
-Next action: /gsd:new-milestone to start next milestone
+Next action: Create roadmap
 
 ---
-*v1.6 Batch Character Actions shipped 2026-02-05*
+*v1.7 Combat Tab Rework started 2026-02-11*
 *Previous milestone archives: .planning/milestones/*

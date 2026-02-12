@@ -147,6 +147,39 @@ These capabilities exist in the codebase:
 
 ### Active
 
+**Current Milestone: v1.7 Combat Tab Rework (Issues #104, #105)**
+
+**Goal:** Consolidate Combat and Defense tabs into a single compact tab with icon+label buttons organized in three groups (Actions, Defense, Other), add anonymous action and skill check features, and verify anonymous target attacks.
+
+**Layout:**
+- [ ] LAY-01: Combat tab displays three distinct button groups: Actions, Defense, and Other
+- [ ] LAY-02: All action buttons use compact style with icon + short label
+- [ ] LAY-03: Combat skills list removed from permanent display (replaced by Use Skill modal)
+- [ ] LAY-04: Defense tab removed from play page tab list
+- [ ] LAY-05: Resource summary (AP/FAT/VIT) remains visible
+
+**Actions Group:**
+- [ ] ACT-01: Player can initiate melee attack from Actions group
+- [ ] ACT-02: Player can initiate ranged attack from Actions group (when ranged weapon equipped)
+- [ ] ACT-03: Player can take anonymous action (pick attribute, enter TV, roll 4dF+, costs 1AP+1FAT or 2AP)
+- [ ] ACT-04: Player can open combat skill picker modal for skill check (AS + 4dF+ vs TV)
+
+**Defense Group:**
+- [ ] DEF-01: Player can initiate defense (passive/dodge/parry/shield block) from Defense group
+- [ ] DEF-02: Player can take arbitrary damage from Defense group
+- [ ] DEF-03: Player can set defensive stance from Defense group
+
+**Other Group:**
+- [ ] OTH-01: Player can initiate medical actions from Other group
+- [ ] OTH-02: Player can rest from Other group
+- [ ] OTH-03: Player can activate/deactivate implants from Other group
+- [ ] OTH-04: Player can reload ranged weapons from Other group
+- [ ] OTH-05: Player can unload ammo from Other group
+
+**Verification (#105):**
+- [ ] VER-01: Solo melee attack displays Attack Value (AV)
+- [ ] VER-02: Solo ranged attack allows TV modifiers and displays Success Value (SV)
+
 **Future milestones (to be defined):**
 - [ ] Initiative tracking with automatic turn order
 - [ ] Automated encounter balancing based on party composition
@@ -314,4 +347,4 @@ The codebase already has a working TTRPG combat system with:
 | Name-based effect removal | Allows same effect removed from all characters in one pass | ✓ Good (v1.6) |
 
 ---
-*Last updated: 2026-02-05 after v1.6 milestone complete*
+*Last updated: 2026-02-11 after v1.7 milestone started*
