@@ -19,233 +19,251 @@
 <div class="combat-tab-container">
     @if (combatMode == CombatMode.Default)
     {
-        <!-- Default Mode: Main combat actions and skill list -->
+        <!-- Default Mode: Left panel + three action groups + activity feed -->
         <div class="row">
-            <!-- Combat Skills Column -->
-            <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong><i class="bi bi-list-ul"></i> Combat Skills</strong>
-                        @if (Table?.IsInCombat == true)
-                        {
-                            <span class="badge bg-danger">Round @Table.CurrentRound</span>
-                        }
+            <!-- Left Panel: Health pools and armor (collapses on small screens) -->
+            <div class="col-lg-3 mb-3 mb-lg-0">
+                <!-- Health Pools Card -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <i class="bi bi-heart-pulse"></i>
+                        <strong>Health Pools</strong>
                     </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        @if (filteredSkills == null)
-                        {
-                            <p class="text-muted"><em>Loading skills...</em></p>
+                    <div class="card-body">
+                        @{
+                            var fatPercent = GetFatPercent();
+                            var vitPercent = GetVitPercent();
+                            var woundCount = GetWoundCount();
                         }
-                        else if (!filteredSkills.Any())
+                        <!-- Fatigue -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>FAT</span>
+                                <span class="fw-bold" style="color: @(fatPercent <= 25 ? "var(--color-accent-red)" : "var(--color-text-primary)")">
+                                    @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: @(fatPercent)%; background-color: var(--progress-fat-color);"
+                                     aria-valuenow="@(Character?.Fatigue.Value ?? 0)"
+                                     aria-valuemin="0"
+                                     aria-valuemax="@(Character?.Fatigue.BaseValue ?? 1)">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Vitality -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>VIT</span>
+                                <span class="fw-bold" style="color: @(vitPercent <= 25 ? "var(--color-accent-red)" : "var(--color-text-primary)")">
+                                    @Character?.Vitality.Value / @Character?.Vitality.BaseValue
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: @(vitPercent)%; background-color: var(--progress-vit-color);"
+                                     aria-valuenow="@(Character?.Vitality.Value ?? 0)"
+                                     aria-valuemin="0"
+                                     aria-valuemax="@(Character?.Vitality.BaseValue ?? 1)">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Wounds -->
+                        @if (woundCount > 0)
                         {
-                            <p class="text-muted"><em>No combat skills available. Equip a weapon to see weapon skills.</em></p>
+                            <div class="d-flex justify-content-between small mt-2" style="color: var(--color-accent-red);">
+                                <span><i class="bi bi-bandaid"></i> Wounds: @woundCount</span>
+                                <span class="fw-bold">@(woundCount * -2) AS</span>
+                            </div>
                         }
                         else
                         {
-                            @foreach (var group in GetGroupedSkills())
+                            <div class="small text-muted mt-2">
+                                <i class="bi bi-bandaid"></i> No wounds
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Armor Card -->
+                <div class="card">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <i class="bi bi-shield"></i>
+                        <strong>Armor</strong>
+                    </div>
+                    <div class="card-body">
+                        @{
+                            var armorPieces = equippedItems
+                                .Where(i => i.Template?.ItemType == ItemType.Armor || i.Template?.ItemType == ItemType.Shield)
+                                .ToList();
+                        }
+                        @if (armorPieces.Any())
+                        {
+                            @foreach (var piece in armorPieces)
                             {
-                                <div class="mb-3">
-                                    <h6 class="text-muted border-bottom pb-1 mb-2">
-                                        <i class="bi @GetSkillGroupIcon(group.Key)"></i> @group.Key
-                                    </h6>
-                                    <div class="d-flex flex-column gap-1">
-                                        @foreach (var skill in group)
-                                        {
-                                            <SkillRow SkillName="@skill.Name"
-                                                      Level="@skill.Level"
-                                                      AbilityScore="@skill.AbilityScore"
-                                                      PrimaryAttribute="@skill.PrimaryAttribute"
-                                                      OnUse="@(() => StartAttackWithSkill(skill))"
-                                                      CanUse="@(CanAct() && skill.CanUse)"
-                                                      DisabledReason="@skill.CannotUseReason" />
-                                        }
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="text-muted">@piece.EquippedSlot</span>
+                                        <span class="fw-bold">@(piece.Template?.Name ?? "Unknown")</span>
                                     </div>
+                                    @if (piece.CurrentDurability.HasValue && piece.Template?.MaxDurability.HasValue == true)
+                                    {
+                                        var durPercent = piece.Template.MaxDurability.Value > 0
+                                            ? (int)((double)piece.CurrentDurability.Value / piece.Template.MaxDurability.Value * 100)
+                                            : 0;
+                                        <div class="progress mt-1" style="height: 4px;">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: @(durPercent)%; background-color: @(durPercent > 50 ? "var(--color-accent-green)" : durPercent > 25 ? "var(--color-accent-gold)" : "var(--color-accent-red)");"
+                                                 aria-valuenow="@piece.CurrentDurability.Value"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="@piece.Template.MaxDurability.Value">
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             }
+                        }
+                        else
+                        {
+                            <p class="text-muted small mb-0"><em>No armor equipped</em></p>
                         }
                     </div>
                 </div>
             </div>
 
-            <!-- Action Buttons Column -->
-            <div class="col-md-5">
-                <div class="d-grid gap-3">
-                    <!-- Attack Button -->
-                    @if (HasTargetsAvailable())
-                    {
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-lg btn-danger py-3 flex-grow-1"
+            <!-- Right Panel: Action groups + activity feed -->
+            <div class="col-lg-9">
+                <!-- Actions Group -->
+                <div class="card combat-group-actions mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-lightning-charge"></i> <strong>Actions</strong></span>
+                        @if (Table?.IsInCombat == true)
+                        {
+                            <span class="badge bg-danger">Round @Table.CurrentRound</span>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn combat-tile combat-tile-actions"
                                     @onclick="StartAttack"
-                                    disabled="@(!CanAct())">
-                                <i class="bi bi-bullseye fs-4"></i>
-                                <div class="fw-bold">ATTACK</div>
-                                <small class="opacity-75">Solo (1 AP + 1 FAT)</small>
-                            </button>
-                            <button class="btn btn-lg btn-outline-danger py-3"
-                                    @onclick="() => StartTargetedAttack(TargetingActionType.MeleeAttack)"
                                     disabled="@(!CanAct())"
+                                    title="Melee attack (1 AP + 1 FAT)">
+                                <i class="bi bi-bullseye"></i>
+                                <span>Attack</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-actions"
+                                    @onclick="() => StartTargetedAttack(TargetingActionType.MeleeAttack)"
+                                    disabled="@(!CanAct() || !HasTargetsAvailable())"
                                     title="Attack a target at your table">
-                                <i class="bi bi-person-plus fs-4"></i>
-                                <div class="small">Target</div>
+                                <i class="bi bi-person-plus"></i>
+                                <span>Target</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-actions"
+                                    @onclick="StartRangedAttack"
+                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped)"
+                                    title="Ranged attack">
+                                <i class="bi bi-crosshair"></i>
+                                <span>Ranged</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-actions"
+                                    @onclick="() => StartTargetedAttack(TargetingActionType.RangedAttack)"
+                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped || !HasTargetsAvailable())"
+                                    title="Ranged attack on a target at your table">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Ranged Target</span>
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Defense Group -->
+                <div class="card combat-group-defense mb-3">
+                    <div class="card-header">
+                        <i class="bi bi-shield-shaded"></i> <strong>Defense</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn combat-tile combat-tile-defense"
+                                    @onclick="StartDefend"
+                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    title="Defend against an attack">
+                                <i class="bi bi-shield-shaded"></i>
+                                <span>Defend</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-defense"
+                                    @onclick="StartTakeDamage"
+                                    title="Resolve damage from falls, spells, or other sources">
+                                <i class="bi bi-bandaid"></i>
+                                <span>Take Damage</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Group -->
+                <div class="card combat-group-other mb-3">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i> <strong>Other</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartMedical"
+                                    disabled="@(!CanAct())"
+                                    title="First-Aid, Nursing, Doctor">
+                                <i class="bi bi-heart-pulse"></i>
+                                <span>Medical</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="Rest"
+                                    disabled="@(!CanRest())"
+                                    title="Spend 1 AP to recover 1 FAT">
+                                <i class="bi bi-cup-hot"></i>
+                                <span>Rest</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartActivateImplant"
+                                    disabled="@(!hasToggleableImplantsEquipped)"
+                                    title="Activate / Deactivate implants">
+                                <i class="bi bi-cpu"></i>
+                                <span>Implants</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartReload"
+                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped)"
+                                    title="Reload a ranged weapon (1 AP + 1 FAT)">
+                                <i class="bi bi-box-arrow-in-down"></i>
+                                <span>Reload</span>
+                            </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartUnload"
+                                    disabled="@(!CanAct() || !HasWeaponWithAmmo())"
+                                    title="Remove ammo from weapon">
+                                <i class="bi bi-box-arrow-up"></i>
+                                <span>Unload</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="activity-log activity-log-container">
+                    <h6>Activity</h6>
+                    @if (ActivityEntries == null || !ActivityEntries.Any())
+                    {
+                        <p class="text-muted small mb-0">No recent activity.</p>
                     }
                     else
                     {
-                        <button class="btn btn-lg btn-danger py-3"
-                                @onclick="StartAttack"
-                                disabled="@(!CanAct())">
-                            <i class="bi bi-bullseye fs-4"></i>
-                            <div class="fw-bold">ATTACK</div>
-                            <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
-                        </button>
-                    }
-
-                    <!-- Ranged Attack Button -->
-                    @if (hasRangedWeaponEquipped)
-                    {
-                        @if (HasTargetsAvailable())
+                        @foreach (var entry in ActivityEntries.TakeLast(10).Reverse())
                         {
-                            <div class="btn-group w-100" role="group">
-                                <button class="btn btn-lg btn-warning py-3 flex-grow-1"
-                                        @onclick="StartRangedAttack"
-                                        disabled="@(!CanAct())">
-                                    <i class="bi bi-crosshair fs-4"></i>
-                                    <div class="fw-bold">RANGED</div>
-                                    <small class="opacity-75">@GetRangedAmmoDisplay()</small>
-                                </button>
-                                <button class="btn btn-lg btn-outline-warning py-3"
-                                        @onclick="() => StartTargetedAttack(TargetingActionType.RangedAttack)"
-                                        disabled="@(!CanAct())"
-                                        title="Ranged attack on a target at your table">
-                                    <i class="bi bi-person-plus fs-4"></i>
-                                    <div class="small">Target</div>
-                                </button>
+                            <div class="small @(GetActivityCssClass?.Invoke(entry.Category) ?? "")">
+                                <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                                <strong>@entry.Source:</strong> @entry.Message
                             </div>
                         }
-                        else
-                        {
-                            <button class="btn btn-lg btn-warning py-3"
-                                    @onclick="StartRangedAttack"
-                                    disabled="@(!CanAct())">
-                                <i class="bi bi-crosshair fs-4"></i>
-                                <div class="fw-bold">RANGED ATTACK</div>
-                                <small class="opacity-75">@GetRangedAmmoDisplay()</small>
-                            </button>
-                        }
                     }
-
-                    <!-- Reload Button -->
-                    @if (hasRangedWeaponEquipped)
-                    {
-                        <button class="btn btn-lg btn-success py-3"
-                                @onclick="StartReload"
-                                disabled="@(!CanAct())">
-                            <i class="bi bi-box-arrow-in-down fs-4"></i>
-                            <div class="fw-bold">RELOAD</div>
-                            <small class="opacity-75">1 AP + 1 FAT or 2 AP</small>
-                        </button>
-                    }
-
-                    <!-- Unload Button -->
-                    @if (HasWeaponWithAmmo())
-                    {
-                        <button class="btn btn-lg btn-outline-warning py-3"
-                                @onclick="StartUnload"
-                                disabled="@(!CanAct())">
-                            <i class="bi bi-box-arrow-up fs-4"></i>
-                            <div class="fw-bold">UNLOAD</div>
-                            <small class="opacity-75">Remove ammo from weapon</small>
-                        </button>
-                    }
-
-                    <!-- Defend Button -->
-                    <button class="btn btn-lg btn-info py-3"
-                            @onclick="StartDefend"
-                            disabled="@(Character?.IsPassedOut ?? true)">
-                        <i class="bi bi-shield-shaded fs-4"></i>
-                        <div class="fw-bold">DEFEND</div>
-                        <small class="opacity-75">Passive always available</small>
-                    </button>
-
-                    <!-- Medical Button -->
-                    <button class="btn btn-lg btn-outline-success py-3"
-                            @onclick="StartMedical"
-                            disabled="@(!CanAct())">
-                        <i class="bi bi-heart-pulse fs-4"></i>
-                        <div class="fw-bold">MEDICAL</div>
-                        <small class="opacity-75">First-Aid, Nursing, Doctor</small>
-                    </button>
-
-                    @if (hasToggleableImplantsEquipped)
-                    {
-                        <!-- Implants Button -->
-                        <button class="btn btn-lg btn-outline-info py-3"
-                                @onclick="StartActivateImplant">
-                            <i class="bi bi-cpu fs-4"></i>
-                            <div class="fw-bold">IMPLANTS</div>
-                            <small class="opacity-75">Activate / Deactivate</small>
-                        </button>
-                    }
-
-                    <!-- Rest Card -->
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h6 class="card-title mb-2">
-                                <i class="bi bi-cup-hot"></i> Rest
-                            </h6>
-                            <p class="card-text small text-muted mb-2">
-                                Spend 1 AP to recover 1 FAT (added to pending healing).
-                            </p>
-                            <button class="btn btn-warning w-100"
-                                    @onclick="Rest"
-                                    disabled="@(!CanRest())">
-                                <i class="bi bi-pause-circle"></i> Rest
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Take Damage Card (for falls, spells, etc.) -->
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h6 class="card-title mb-2">
-                                <i class="bi bi-lightning-charge text-danger"></i> Take Damage
-                            </h6>
-                            <p class="card-text small text-muted mb-2">
-                                Resolve damage from falls, spells, or other sources.
-                            </p>
-                            <button class="btn btn-outline-danger w-100"
-                                    @onclick="StartTakeDamage">
-                                <i class="bi bi-bandaid"></i> Take Damage
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Resource Summary -->
-                    <div class="card">
-                        <div class="card-body py-2">
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <small class="text-muted">AP</small>
-                                    <div class="fw-bold @(Character?.ActionPoints.Available <= 0 ? "text-danger" : "")">
-                                        @Character?.ActionPoints.Available / @Character?.ActionPoints.Max
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <small class="text-muted">FAT</small>
-                                    <div class="fw-bold @(Character?.Fatigue.Value <= 0 ? "text-danger" : "")">
-                                        @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <small class="text-muted">VIT</small>
-                                    <div class="fw-bold @(GetVitPercent() <= 25 ? "text-danger" : "")">
-                                        @Character?.Vitality.Value / @Character?.Vitality.BaseValue
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -366,6 +384,26 @@
 
     [Parameter]
     public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+
+    /// <summary>
+    /// Activity log entries to display in the combat tab's activity feed.
+    /// Wired by Play.razor (Plan 02).
+    /// </summary>
+    [Parameter]
+    public List<ActivityLogEntry>? ActivityEntries { get; set; }
+
+    /// <summary>
+    /// CSS class resolver for activity log entry categories.
+    /// Wired by Play.razor (Plan 02).
+    /// </summary>
+    [Parameter]
+    public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
+
+    /// <summary>
+    /// Activity log entry record for display in combat tab.
+    /// Mirrors Play.razor's private record for parameter passing.
+    /// </summary>
+    public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant }
     private CombatMode combatMode = CombatMode.Default;
@@ -1221,6 +1259,11 @@
         // Return to default mode - the targeting modal will be shown by Play.razor
         combatMode = CombatMode.Default;
     }
+
+    private int GetWoundCount() => Character?.Effects?.Count(e => e.EffectType == Threa.Dal.Dto.EffectType.Wound) ?? 0;
+
+    private int GetFatPercent() => Character?.Fatigue.BaseValue > 0
+        ? (int)((double)Character.Fatigue.Value / Character.Fatigue.BaseValue * 100) : 0;
 
     private TargetingAttackerData BuildAttackerData(TargetingActionType actionType)
     {
