@@ -259,7 +259,9 @@ else
                         Table="table"
                         OnCharacterChanged="SaveCharacterAsync"
                         AvailableTargets="@GetAvailableTargets()"
-                        OnInitiateTargeting="HandleInitiateTargeting" />
+                        OnInitiateTargeting="HandleInitiateTargeting"
+                        ActivityEntries="@activityLog"
+                        GetActivityCssClass="GetActivityClass" />
         }
         else if (activeTab == "Skills")
         {
@@ -268,10 +270,6 @@ else
         else if (activeTab == "Magic")
         {
             <TabPlayMagic Character="character" Table="table" />
-        }
-        else if (activeTab == "Defense")
-        {
-            <TabDefense Character="character" Table="table" />
         }
         else if (activeTab == "Inventory")
         {
@@ -309,24 +307,27 @@ else
         </div>
     }
 
-    <!-- Activity Log -->
-    <div class="activity-log mt-3 activity-log-container">
-        <h6>Activity Log</h6>
-        @if (activityLog.Count == 0)
-        {
-            <p class="text-muted">No recent activity.</p>
-        }
-        else
-        {
-            @foreach (var entry in activityLog.TakeLast(10).Reverse())
+    <!-- Activity Log (hidden when Combat tab is active to avoid duplication) -->
+    @if (activeTab != "Combat")
+    {
+        <div class="activity-log mt-3 activity-log-container">
+            <h6>Activity Log</h6>
+            @if (activityLog.Count == 0)
             {
-                <div class="small @GetActivityClass(entry.Category)">
-                    <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
-                    <strong>@entry.Source:</strong> @entry.Message
-                </div>
+                <p class="text-muted">No recent activity.</p>
             }
-        }
-    </div>
+            else
+            {
+                @foreach (var entry in activityLog.TakeLast(10).Reverse())
+                {
+                    <div class="small @GetActivityClass(entry.Category)">
+                        <span class="text-muted">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                        <strong>@entry.Source:</strong> @entry.Message
+                    </div>
+                }
+            }
+        </div>
+    }
 }
 
 @code {
@@ -339,7 +340,7 @@ public int CharacterId { get; set; }
 public Guid TableId { get; set; }
 
 private bool isLoading = true;
-private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Defense", "Skills", "Magic", "Inventory" };
+private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory" };
 private string[] tabNames => GetTabNamesForTheme();
 private string activeTab = "Status";
 
@@ -381,7 +382,7 @@ private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 // Semaphore to prevent concurrent processing of time skip messages
 private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
 
-private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
+public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
 protected override async Task OnInitializedAsync()
 {

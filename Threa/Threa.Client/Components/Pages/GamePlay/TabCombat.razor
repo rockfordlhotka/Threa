@@ -387,23 +387,16 @@
 
     /// <summary>
     /// Activity log entries to display in the combat tab's activity feed.
-    /// Wired by Play.razor (Plan 02).
+    /// Uses Play.razor's public ActivityLogEntry record type.
     /// </summary>
     [Parameter]
-    public List<ActivityLogEntry>? ActivityEntries { get; set; }
+    public List<Play.ActivityLogEntry>? ActivityEntries { get; set; }
 
     /// <summary>
     /// CSS class resolver for activity log entry categories.
-    /// Wired by Play.razor (Plan 02).
     /// </summary>
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
-
-    /// <summary>
-    /// Activity log entry record for display in combat tab.
-    /// Mirrors Play.razor's private record for parameter passing.
-    /// </summary>
-    public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant }
     private CombatMode combatMode = CombatMode.Default;
