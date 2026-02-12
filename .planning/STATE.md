@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
 Phase: 32 of 36 (Layout Restructuring)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-11 — Roadmap created with 5 phases, 18 requirements mapped
+Plan: 01 of 02 (complete)
+Status: In progress
+Last activity: 2026-02-12 — Completed 32-01-PLAN.md (layout restructuring)
 
-Progress: [░░░░░░░░░░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░░░░░░░░░░] ~5% (1/~18 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 87
+- Total plans completed: 88
 - Average duration: 7.5 min
-- Total execution time: ~10.9 hours
+- Total execution time: ~11.0 hours
 
 **By Milestone:**
 
@@ -56,10 +56,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Roadmap created, ready to plan Phase 32
+Last session: 2026-02-12
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None
-Next action: Plan Phase 32 (Layout Restructuring)
+Next action: Execute 32-02-PLAN.md (activity log wiring)
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
