@@ -11,18 +11,18 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
 Phase: 33 of 36 (Attack Actions)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-13 — Completed 33-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase 33 complete
+Last activity: 2026-02-13 — Completed 33-02-PLAN.md
 
-Progress: [████░░░░░░░░░░░░░░░] 20% (1/5 phases complete, 1/2 plans in phase 33)
+Progress: [████████░░░░░░░░░░░] 40% (2/5 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 89
-- Average duration: 7.4 min
-- Total execution time: ~11.1 hours
+- Total plans completed: 91
+- Average duration: 7.3 min
+- Total execution time: ~11.2 hours
 
 **By Milestone:**
 
@@ -34,12 +34,17 @@ Progress: [████░░░░░░░░░░░░░░░] 20% (1/5 p
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
 | v1.6 | 4 | 9 | 55 min | 6.1 min |
+| v1.7 | 2 | 3 | 15 min | 5 min |
 
 ## Accumulated Context
 
 ### Decisions
 
 All decisions are logged in PROJECT.md Key Decisions table.
+
+| Decision | Phase | Rationale |
+|----------|-------|-----------|
+| Used FirearmAttackResolver with TVAdjustment offset for anonymous targets | 33-02 | Preserves resolver logic (ammo, hit detection, SV calc) while giving player TV control |
 
 ### Pending Todos
 
@@ -57,9 +62,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 33-01-PLAN.md
+Stopped at: Completed 33-02-PLAN.md (Phase 33 complete)
 Resume file: None
-Next action: Execute 33-02-PLAN.md
+Next action: Plan Phase 34
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
