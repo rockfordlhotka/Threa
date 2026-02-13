@@ -173,6 +173,13 @@
                                 <i class="bi bi-person-plus"></i>
                                 <span>Ranged Target</span>
                             </button>
+                            <button class="btn combat-tile combat-tile-actions"
+                                    @onclick="StartAnonymousAction"
+                                    disabled="@(!CanAct())"
+                                    title="Attribute-only roll vs TV (1 AP + 1 FAT)">
+                                <i class="bi bi-dice-5"></i>
+                                <span>Action</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -350,6 +357,13 @@
                              OnComplete="OnActivateImplantComplete"
                              OnCharacterChanged="OnCharacterChanged" />
     }
+    else if (combatMode == CombatMode.AnonymousAction)
+    {
+        <AnonymousActionMode Character="Character"
+                             Table="Table"
+                             OnCancel="ReturnToDefault"
+                             OnActionComplete="OnAnonymousActionComplete" />
+    }
     else if (combatMode == CombatMode.SelectTarget)
     {
         <div class="card">
@@ -398,7 +412,7 @@
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -758,6 +772,16 @@
         combatMode = CombatMode.Default;
         await LoadEquipmentAndSkills();
         StateHasChanged();
+    }
+
+    private void StartAnonymousAction()
+    {
+        // Anonymous actions end parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        combatMode = CombatMode.AnonymousAction;
     }
 
     private void StartMedical()
@@ -1137,6 +1161,19 @@
         combatMode = CombatMode.Default;
 
         // Notify parent to refresh character display (AP, FAT changes)
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnAnonymousActionComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+
         if (OnCharacterChanged.HasDelegate)
         {
             await OnCharacterChanged.InvokeAsync();
