@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.7 Combat Tab Rework - Phase 35 Defense Group complete
+**Current focus:** v1.7 Combat Tab Rework - Phase 36 Other Group in progress
 
 ## Current Position
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
-Phase: 35 of 36 (Defense Group)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-13 — Completed 35-02-PLAN.md
+Phase: 36 of 36 (Other Group)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 — Completed 36-01-PLAN.md
 
-Progress: [███████████░░░░░░░░] 58% (4/5 phases complete, phase 35 done)
+Progress: [████████████░░░░░░░] 63% (4/5 phases complete, 36-01 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 95
-- Average duration: 7.3 min
+- Total plans completed: 96
+- Average duration: 7.2 min
 - Total execution time: ~11.5 hours
 
 **By Milestone:**
@@ -34,7 +34,7 @@ Progress: [███████████░░░░░░░░] 58% (4/5 p
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
 | v1.6 | 4 | 9 | 55 min | 6.1 min |
-| v1.7 | 4 | 7 | 32 min | 4.6 min |
+| v1.7 | 4 | 8 | 35 min | 4.4 min |
 
 ## Accumulated Context
 
@@ -47,6 +47,7 @@ All decisions are logged in PROJECT.md Key Decisions table.
 | Used FirearmAttackResolver with TVAdjustment offset for anonymous targets | 33-02 | Preserves resolver logic (ammo, hit detection, SV calc) while giving player TV control |
 | OnAdding replaces ANY existing CombatStance (not just same-name) | 35-01 | Enforces single-stance mutual exclusivity across all stance types |
 | Pre-selection guarded by !hasRolled to avoid overriding player choice | 35-02 | Don't change defense type after roll; only set initial state |
+| StartRest checks only IsPassedOut, not CanRest(), to allow panel open with insufficient AP | 36-01 | Matches how other combat modes work; Confirm button handles validation |
 
 ### Pending Todos
 
@@ -64,9 +65,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 35-02-PLAN.md (Phase 35 complete)
+Stopped at: Completed 36-01-PLAN.md
 Resume file: None
-Next action: Execute phase 36 plans
+Next action: Execute 36-02-PLAN.md
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
