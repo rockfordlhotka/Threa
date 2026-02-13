@@ -15,6 +15,7 @@
 @inject IActivityLogService ActivityLog
 @inject Radzen.DialogService DialogService
 @inject ItemEffectService ImplantEffectService
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
 
 <div class="combat-tab-container">
     @if (combatMode == CombatMode.Default)
@@ -210,6 +211,32 @@
                                     title="Resolve damage from falls, spells, or other sources">
                                 <i class="bi bi-bandaid"></i>
                                 <span>Take Damage</span>
+                            </button>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                            <small class="text-muted me-1">Stance:</small>
+                            <button class="btn btn-sm stance-chip @(GetActiveStance() == "normal" ? "active" : "")"
+                                    @onclick="SetStanceNormal"
+                                    title="No special defensive focus">
+                                Normal
+                            </button>
+                            <button class="btn btn-sm stance-chip @(GetActiveStance() == "parry" ? "active" : "")"
+                                    @onclick="ActivateParryModeFromChip"
+                                    disabled="@(!hasWeaponEquipped || !CanPerformActiveDefenseForStance())"
+                                    title="@GetParryModeChipTooltip()">
+                                Parry Mode
+                            </button>
+                            <button class="btn btn-sm stance-chip @(GetActiveStance() == "dodge" ? "active" : "")"
+                                    @onclick="SetStanceDodgeFocus"
+                                    title="Pre-selects dodge when defending">
+                                Dodge Focus
+                            </button>
+                            <button class="btn btn-sm stance-chip @(GetActiveStance() == "block" ? "active" : "")"
+                                    @onclick="SetStanceBlockWithShield"
+                                    disabled="@(!hasShieldEquipped)"
+                                    title="@(!hasShieldEquipped ? "Requires shield equipped" : "Pre-selects shield block when defending")">
+                                Block
                             </button>
                         </div>
                     </div>
@@ -1394,5 +1421,124 @@
             CurrentLoadedAmmo = currentAmmo,
             UsePhysicality = actionType == TargetingActionType.MeleeAttack
         };
+    }
+
+    // ================================
+    // Stance Chip Methods
+    // ================================
+
+    private string GetActiveStance()
+    {
+        if (Character == null) return "normal";
+        var stanceName = CombatStanceBehavior.GetActiveStanceName(Character);
+        return stanceName switch
+        {
+            CombatStanceBehavior.ParryModeName => "parry",
+            CombatStanceBehavior.DodgeFocusName => "dodge",
+            CombatStanceBehavior.BlockWithShieldName => "block",
+            _ => "normal"
+        };
+    }
+
+    private async Task SetStanceNormal()
+    {
+        if (Character == null) return;
+        CombatStanceBehavior.ClearStance(Character);
+        if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task SetStanceDodgeFocus()
+    {
+        if (Character == null) return;
+        CombatStanceBehavior.ClearStance(Character);
+
+        var effect = EffectPortal.CreateChild(
+            EffectType.CombatStance,
+            CombatStanceBehavior.DodgeFocusName,
+            null, null,
+            CombatStanceBehavior.CreateDodgeFocusState());
+        effect.Description = CombatStanceBehavior.GetDodgeFocusDescription();
+        effect.Source = "Combat";
+        Character.Effects.AddEffect(effect);
+
+        if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task SetStanceBlockWithShield()
+    {
+        if (Character == null || !hasShieldEquipped) return;
+        CombatStanceBehavior.ClearStance(Character);
+
+        var effect = EffectPortal.CreateChild(
+            EffectType.CombatStance,
+            CombatStanceBehavior.BlockWithShieldName,
+            null, null,
+            CombatStanceBehavior.CreateBlockWithShieldState());
+        effect.Description = CombatStanceBehavior.GetBlockWithShieldDescription();
+        effect.Source = "Combat";
+        Character.Effects.AddEffect(effect);
+
+        if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task ActivateParryModeFromChip()
+    {
+        if (Character == null || !hasWeaponEquipped) return;
+        if (!CanPerformActiveDefenseForStance()) return;
+
+        CombatStanceBehavior.ClearStance(Character);
+
+        // Deduct cost: 1 AP + 1 FAT (or 2 AP if no FAT)
+        if (Character.Fatigue.Value >= 1)
+        {
+            Character.ActionPoints.Available -= 1;
+            Character.ActionPoints.ActionsTakenThisRound += 1;
+            Character.Fatigue.Value -= 1;
+        }
+        else
+        {
+            Character.ActionPoints.Available -= 2;
+            Character.ActionPoints.ActionsTakenThisRound += 1;
+        }
+
+        var effect = EffectPortal.CreateChild(
+            EffectType.CombatStance,
+            CombatStanceBehavior.ParryModeName,
+            null, null,
+            CombatStanceBehavior.CreateParryModeState(weaponSkillName, weaponSkillAS));
+        effect.Description = CombatStanceBehavior.GetParryModeDescription(weaponSkillName);
+        effect.Source = "Combat";
+        Character.Effects.AddEffect(effect);
+
+        if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
+
+        LogActivity($"{Character.Name} enters Parry Mode with {weaponSkillName}.", ActivityCategory.Combat);
+
+        if (OnCharacterChanged.HasDelegate)
+            await OnCharacterChanged.InvokeAsync();
+
+        StateHasChanged();
+    }
+
+    private bool CanPerformActiveDefenseForStance()
+    {
+        if (Character == null) return false;
+        return !Character.IsPassedOut &&
+               ((Character.ActionPoints.Available >= 1 && Character.Fatigue.Value >= 1) ||
+                Character.ActionPoints.Available >= 2);
+    }
+
+    private string GetParryModeChipTooltip()
+    {
+        if (!hasWeaponEquipped) return "Requires weapon equipped";
+        if (!CanPerformActiveDefenseForStance()) return "Not enough AP/FAT to enter Parry Mode";
+        return "Free parry defenses (costs 1 AP + 1 FAT to enter)";
     }
 }
