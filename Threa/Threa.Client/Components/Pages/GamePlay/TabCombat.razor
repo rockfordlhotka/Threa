@@ -180,6 +180,13 @@
                                 <i class="bi bi-dice-5"></i>
                                 <span>Action</span>
                             </button>
+                            <button class="btn combat-tile combat-tile-actions"
+                                    @onclick="StartSkillCheck"
+                                    disabled="@(!CanAct())"
+                                    title="Skill check from any skill">
+                                <i class="bi bi-journal-check"></i>
+                                <span>Use Skill</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -364,6 +371,13 @@
                              OnCancel="ReturnToDefault"
                              OnActionComplete="OnAnonymousActionComplete" />
     }
+    else if (combatMode == CombatMode.SkillCheck)
+    {
+        <SkillCheckMode Character="Character"
+                        Table="Table"
+                        OnCancel="ReturnToDefault"
+                        OnSkillCheckComplete="OnSkillCheckComplete" />
+    }
     else if (combatMode == CombatMode.SelectTarget)
     {
         <div class="card">
@@ -412,7 +426,7 @@
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -782,6 +796,16 @@
             CombatStanceBehavior.EndParryMode(Character);
         }
         combatMode = CombatMode.AnonymousAction;
+    }
+
+    private void StartSkillCheck()
+    {
+        // Skill checks end parry mode
+        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+        combatMode = CombatMode.SkillCheck;
     }
 
     private void StartMedical()
@@ -1170,6 +1194,19 @@
     }
 
     private async Task OnAnonymousActionComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+
+        if (OnCharacterChanged.HasDelegate)
+        {
+            await OnCharacterChanged.InvokeAsync();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSkillCheckComplete(string resultMessage)
     {
         LogActivity(resultMessage, ActivityCategory.Combat);
         combatMode = CombatMode.Default;
