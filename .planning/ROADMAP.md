@@ -63,10 +63,11 @@ Plans:
   1. Player clicks Anonymous Action, selects an attribute from a dropdown, enters a TV, rolls 4dF+, and sees the result with cost applied (1AP+1FAT or 2AP)
   2. Player clicks Use Skill, sees a modal listing combat skills, selects one, enters a TV, rolls AS + 4dF+ vs TV, and sees the success/failure result
   3. The skill check modal does not trigger an attack -- it is a standalone skill resolution
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 34-01: TBD
+- [ ] 34-01-PLAN.md — Create AnonymousActionMode component and integrate into TabCombat Actions group
+- [ ] 34-02-PLAN.md — Create CombatSkillPickerModal + SkillCheckMode and integrate into TabCombat Actions group
 
 #### Phase 35: Defense Group
 **Goal**: Player can defend, take damage, and set stances from the Defense group on the Combat tab
