@@ -93,10 +93,11 @@ Plans:
   3. Player clicks Implants in the Other group (visible only when toggleable implants equipped) and enters the existing implant activation flow
   4. Player clicks Reload in the Other group (visible only when ranged weapon equipped) and enters the existing reload flow
   5. Player clicks Unload in the Other group (visible only when weapon has ammo loaded) and enters the existing unload flow
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 36-01: TBD
+- [ ] 36-01-PLAN.md — Wire Other group button visibility, add Rest confirmation flow, create dimming CSS class
+- [ ] 36-02-PLAN.md — Apply cost-aware dimming across all three combat tile groups with cost tooltips
 
 ## Progress
 
@@ -111,7 +112,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 | 33. Attack Actions | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
 | 34. New Action Types | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
 | 35. Defense Group | v1.7 | 2/2 | ✓ Complete | 2026-02-13 |
-| 36. Other Group | v1.7 | 0/TBD | Not started | - |
+| 36. Other Group | v1.7 | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-11*
