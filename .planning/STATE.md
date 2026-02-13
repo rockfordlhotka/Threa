@@ -2,20 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-11)
+See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.7 Combat Tab Rework - Phase 36 Other Group complete
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
-Phase: 36 of 36 (Other Group)
-Plan: 2 of 2 in current phase
-Status: Phase complete - Milestone complete
-Last activity: 2026-02-13 — Completed 36-02-PLAN.md
+Milestone: v1.7 Combat Tab Rework — SHIPPED
+Phase: Complete (5/5 phases)
+Plan: Complete (10/10 plans)
+Status: Milestone shipped, ready for next milestone
+Last activity: 2026-02-13 — v1.7 milestone complete
 
-Progress: [████████████████████] 100% (5/5 phases complete)
+Progress: [████████████████████] 100% (v1.7 shipped)
 
 ## Performance Metrics
 
@@ -42,14 +42,6 @@ Progress: [████████████████████] 100% (5
 
 All decisions are logged in PROJECT.md Key Decisions table.
 
-| Decision | Phase | Rationale |
-|----------|-------|-----------|
-| Used FirearmAttackResolver with TVAdjustment offset for anonymous targets | 33-02 | Preserves resolver logic (ammo, hit detection, SV calc) while giving player TV control |
-| OnAdding replaces ANY existing CombatStance (not just same-name) | 35-01 | Enforces single-stance mutual exclusivity across all stance types |
-| Pre-selection guarded by !hasRolled to avoid overriding player choice | 35-02 | Don't change defense type after roll; only set initial state |
-| StartRest checks only IsPassedOut, not CanRest(), to allow panel open with insufficient AP | 36-01 | Matches how other combat modes work; Confirm button handles validation |
-| Disabled attribute reserved for hard blocks only; CSS dimming for resource insufficiency | 36-02 | Keeps buttons clickable for feedback; two-tier visual system |
-
 ### Pending Todos
 
 None.
@@ -63,13 +55,17 @@ None.
 - Weapon filtering logic in UI layer
 - Case sensitivity inconsistencies
 
+**v1.7 Technical Debt (non-blocking):**
+- Unused skill filtering methods (filteredSkills, GetGroupedSkills, GetCategoryOrder) — dead code from old skills list
+- TabDefense.razor retained but unreferenced — kept for pattern reference
+
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 36-02-PLAN.md (Phase 36 complete, Milestone v1.7 complete)
+Stopped at: v1.7 milestone archived and tagged
 Resume file: None
-Next action: None - v1.7 Combat Tab Rework milestone complete
+Next action: `/gsd:new-milestone` — start next milestone (questioning → research → requirements → roadmap)
 
 ---
-*v1.7 Combat Tab Rework started 2026-02-11*
+*v1.7 Combat Tab Rework shipped 2026-02-13*
 *Previous milestone archives: .planning/milestones/*

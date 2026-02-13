@@ -2,13 +2,22 @@
 
 ## What This Is
 
-A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, concentration system for spell casting, NPC management for running combat encounters, and batch character actions for efficient multi-character management.
+A web-based TTRPG assistant for the Threa game system that helps players manage characters and Game Masters run games. Features include character creation, combat resolution with 4dF+ dice mechanics, inventory and equipment management, user authentication with role-based access control, campaign table management, real-time GM dashboard with comprehensive time control, full GM character manipulation powers, concentration system for spell casting, NPC management for running combat encounters, batch character actions for efficient multi-character management, and a consolidated combat tab with anonymous actions, skill checks, and defensive stances.
 
 ## Core Value
 
 Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
 
 ## Previous Achievements
+
+**v1.7 Combat Tab Rework** (shipped 2026-02-13)
+- Consolidated Combat and Defense tabs into single compact three-group tab (Actions, Defense, Other) with icon+label tiles
+- Anonymous target support for melee (AV display) and ranged (TV input + SV display) attacks
+- Anonymous action mode for attribute-only rolls with cost/boost/concentration handling
+- Combat skill picker modal and skill check mode (AS + 4dF+ vs TV) as standalone resolution
+- Defensive stance system with toggleable chips and DefendMode pre-selection
+- Cost-aware dimming across all 12 combat buttons with explanatory tooltips
+- 18/18 requirements shipped (100%), 5 phases, 10 plans complete
 
 **v1.6 Batch Character Actions** (shipped 2026-02-05)
 - Multi-character selection with checkbox overlays, per-section Select All, and theme-aware highlighting
@@ -145,42 +154,32 @@ These capabilities exist in the codebase:
 - ✓ GM can dismiss/archive selected characters in batch — v1.6
 - ✓ Batch operations show clear feedback (partial success: what succeeded/failed) — v1.6
 
+**Delivered in v1.7 (2026-02-13):**
+- ✓ Combat tab displays three distinct button groups: Actions, Defense, and Other — v1.7
+- ✓ All action buttons use compact style with icon + short label — v1.7
+- ✓ Combat skills list removed from permanent display (replaced by Use Skill modal) — v1.7
+- ✓ Defense tab removed from play page tab list — v1.7
+- ✓ Resource summary (AP/FAT/VIT) remains visible — v1.7
+- ✓ Player can initiate melee attack from Actions group — v1.7
+- ✓ Player can initiate ranged attack from Actions group — v1.7
+- ✓ Player can take anonymous action (attribute + TV + 4dF+) — v1.7
+- ✓ Player can open combat skill picker modal for skill check — v1.7
+- ✓ Player can initiate defense from Defense group — v1.7
+- ✓ Player can take arbitrary damage from Defense group — v1.7
+- ✓ Player can set defensive stance from Defense group — v1.7
+- ✓ Player can initiate medical actions from Other group — v1.7
+- ✓ Player can rest from Other group — v1.7
+- ✓ Player can activate/deactivate implants from Other group — v1.7
+- ✓ Player can reload ranged weapons from Other group — v1.7
+- ✓ Player can unload ammo from Other group — v1.7
+- ✓ Solo melee attack displays Attack Value (AV) — v1.7
+- ✓ Solo ranged attack allows TV modifiers and displays Success Value (SV) — v1.7
+
 ### Active
 
-**Current Milestone: v1.7 Combat Tab Rework (Issues #104, #105)**
+**Next milestone to be defined via `/gsd:new-milestone`**
 
-**Goal:** Consolidate Combat and Defense tabs into a single compact tab with icon+label buttons organized in three groups (Actions, Defense, Other), add anonymous action and skill check features, and verify anonymous target attacks.
-
-**Layout:**
-- [ ] LAY-01: Combat tab displays three distinct button groups: Actions, Defense, and Other
-- [ ] LAY-02: All action buttons use compact style with icon + short label
-- [ ] LAY-03: Combat skills list removed from permanent display (replaced by Use Skill modal)
-- [ ] LAY-04: Defense tab removed from play page tab list
-- [ ] LAY-05: Resource summary (AP/FAT/VIT) remains visible
-
-**Actions Group:**
-- [ ] ACT-01: Player can initiate melee attack from Actions group
-- [ ] ACT-02: Player can initiate ranged attack from Actions group (when ranged weapon equipped)
-- [ ] ACT-03: Player can take anonymous action (pick attribute, enter TV, roll 4dF+, costs 1AP+1FAT or 2AP)
-- [ ] ACT-04: Player can open combat skill picker modal for skill check (AS + 4dF+ vs TV)
-
-**Defense Group:**
-- [ ] DEF-01: Player can initiate defense (passive/dodge/parry/shield block) from Defense group
-- [ ] DEF-02: Player can take arbitrary damage from Defense group
-- [ ] DEF-03: Player can set defensive stance from Defense group
-
-**Other Group:**
-- [ ] OTH-01: Player can initiate medical actions from Other group
-- [ ] OTH-02: Player can rest from Other group
-- [ ] OTH-03: Player can activate/deactivate implants from Other group
-- [ ] OTH-04: Player can reload ranged weapons from Other group
-- [ ] OTH-05: Player can unload ammo from Other group
-
-**Verification (#105):**
-- [ ] VER-01: Solo melee attack displays Attack Value (AV)
-- [ ] VER-02: Solo ranged attack allows TV modifiers and displays Success Value (SV)
-
-**Future milestones (to be defined):**
+**Candidates for future milestones:**
 - [ ] Initiative tracking with automatic turn order
 - [ ] Automated encounter balancing based on party composition
 
@@ -205,8 +204,17 @@ Explicitly excluded (may be considered for future milestones):
 
 ## Context
 
-**Current State (v1.6 Shipped):**
-The Threa TTRPG Assistant now has batch character action capabilities enabling GMs to select multiple characters and apply actions to all at once for efficient encounter management. Key components:
+**Current State (v1.7 Shipped):**
+The Threa TTRPG Assistant now has a consolidated combat tab with all player actions organized in three groups, anonymous action/skill check capabilities, and a defensive stance system. Key components:
+
+**v1.7 Combat Tab Rework (2026-02-13):**
+- Consolidated Combat and Defense tabs into single compact three-group tab (Actions, Defense, Other)
+- Anonymous target support for melee (AV display) and ranged (TV input + SV display) attacks
+- Anonymous action mode for attribute-only rolls (no skill, no attack workflow)
+- Combat skill picker modal grouped by attribute with standalone skill check resolution
+- Defensive stance system with 4 toggleable chips and DefendMode pre-selection
+- Cost-aware dimming (CSS dimming for resource insufficiency, disabled for hard blocks only)
+- Codebase: +9,076 lines across 50 files modified
 
 **v1.6 Batch Character Actions (2026-02-05):**
 - Multi-character selection with checkbox overlays on all card types (PC, NPC, Hidden NPC)
@@ -274,7 +282,7 @@ The codebase already has a working TTRPG combat system with:
 - Radzen.Blazor 8.4.2 for UI components
 - SQLite database (Microsoft.Data.Sqlite 10.0.1)
 - Nullable reference types enabled project-wide
-- ~88,400 lines of C#/Razor code
+- ~96,900 lines of C#/Razor code
 
 **Known Technical Debt (from v1.0):**
 - ArmorInfoFactory.cs orphaned (duplicate logic in DamageResolution.razor)
@@ -345,6 +353,12 @@ The codebase already has a working TTRPG combat system with:
 | Action-type-aware selection cleanup | Clear on damage/heal, preserve on visibility/effects, remove dismissed | ✓ Good (v1.6) |
 | Shared game timestamp for batch effects | All effects in batch have identical CreatedAt/ExpiresAt for consistency | ✓ Good (v1.6) |
 | Name-based effect removal | Allows same effect removed from all characters in one pass | ✓ Good (v1.6) |
+| All buttons always rendered (disabled not hidden) | Better discoverability — players see all available actions | ✓ Good (v1.7) |
+| Anonymous Target as first-class option | Not a fallback; explicit choice in target selection list | ✓ Good (v1.7) |
+| TVAdjustment offset for anonymous ranged targets | Preserves resolver logic (ammo, hit detection, SV calc) while giving player TV control | ✓ Good (v1.7) |
+| OnAdding replaces ANY existing CombatStance | Enforces single-stance mutual exclusivity across all stance types | ✓ Good (v1.7) |
+| Pre-selection guarded by !hasRolled | Don't change defense type after roll; only set initial state | ✓ Good (v1.7) |
+| Two-tier visual feedback (dimmed vs disabled) | CSS dimming for resource issues (clickable), disabled for hard blocks (not clickable) | ✓ Good (v1.7) |
 
 ---
-*Last updated: 2026-02-11 after v1.7 milestone started*
+*Last updated: 2026-02-13 after v1.7 milestone*

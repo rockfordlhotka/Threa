@@ -1,5 +1,34 @@
 # Project Milestones: Threa TTRPG Assistant
 
+## v1.7 Combat Tab Rework (Shipped: 2026-02-13)
+
+**Delivered:** Consolidated Combat and Defense tabs into a single compact three-group tab with icon+label buttons, added anonymous action and skill check features, and implemented defensive stance system with cost-aware dimming.
+
+**Phases completed:** 32-36 (10 plans total)
+
+**Key accomplishments:**
+
+- Consolidated two-tab Combat/Defense layout into single compact tab with three button groups (Actions, Defense, Other) using icon+label tiles
+- Added anonymous target support for both melee and ranged attacks with AV display and simplified TV/SV workflow
+- Created anonymous action mode for attribute-only rolls with cost selection, boost, and concentration handling
+- Created combat skill picker modal and skill check mode (AS + 4dF+ vs TV) as standalone resolution
+- Implemented defensive stance system with toggleable chips (Normal, Parry Mode, Dodge Focus, Block with Shield) and DefendMode pre-selection
+- Applied consistent cost-aware dimming across all 12 combat buttons with cost-explaining tooltips
+
+**Stats:**
+
+- 50 files modified
+- +9,076 lines of C#/Razor (9,076 insertions, 606 deletions)
+- 5 phases, 10 plans, ~18 tasks
+- 2 days from start to ship (2026-02-11 to 2026-02-13)
+- 18/18 requirements shipped (100%)
+
+**Git range:** abcc91b → bd9f692
+
+**What's next:** Consider initiative tracking, encounter balancing, or other combat enhancements
+
+---
+
 ## v1.6 Batch Character Actions (Shipped: 2026-02-05)
 
 **Delivered:** Batch character action system enabling GMs to select multiple characters and apply damage, healing, visibility toggles, dismiss/archive, and effect add/remove operations to all at once with partial-success feedback.
