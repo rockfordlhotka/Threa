@@ -49,10 +49,11 @@ Plans:
   2. Player clicks the ranged attack button in Actions group (visible only when ranged weapon equipped) and enters the existing ranged attack mode flow
   3. Solo melee attack against anonymous target displays the Attack Value (AV) to the player
   4. Solo ranged attack against anonymous target allows entering TV modifiers and displays the resulting Success Value (SV)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 33-01: TBD
+- [ ] 33-01-PLAN.md — Add ranged button tooltip and wire anonymous target selection into melee AttackMode
+- [ ] 33-02-PLAN.md — Add anonymous target support to RangedAttackMode with simplified TV input and SV-only result
 
 #### Phase 34: New Action Types
 **Goal**: Player can perform attribute-only anonymous actions and skill checks from the Actions group without using the attack workflow
@@ -105,7 +106,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 32. Layout Restructuring | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
-| 33. Attack Actions | v1.7 | 0/TBD | Not started | - |
+| 33. Attack Actions | v1.7 | 0/2 | Not started | - |
 | 34. New Action Types | v1.7 | 0/TBD | Not started | - |
 | 35. Defense Group | v1.7 | 0/TBD | Not started | - |
 | 36. Other Group | v1.7 | 0/TBD | Not started | - |
