@@ -257,7 +257,7 @@
                                 <span>Medical</span>
                             </button>
                             <button class="btn combat-tile combat-tile-other"
-                                    @onclick="Rest"
+                                    @onclick="StartRest"
                                     disabled="@(!CanRest())"
                                     title="Spend 1 AP to recover 1 FAT">
                                 <i class="bi bi-cup-hot"></i>
@@ -431,6 +431,25 @@
             </div>
         </div>
     }
+    else if (combatMode == CombatMode.Rest)
+    {
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-cup-hot"></i> <strong>Rest</strong>
+            </div>
+            <div class="card-body text-center">
+                <p>Spend 1 AP to recover 1 FAT</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-success" @onclick="ConfirmRest" disabled="@(!CanRest())">
+                        <i class="bi bi-check"></i> Confirm
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ReturnToDefault">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -462,7 +481,7 @@
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck, Rest }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -1273,7 +1292,13 @@
     }
 
 
-    private async Task Rest()
+    private void StartRest()
+    {
+        if (Character?.IsPassedOut ?? true) return;
+        combatMode = CombatMode.Rest;
+    }
+
+    private async Task ConfirmRest()
     {
         if (!CanRest() || Character == null) return;
 
@@ -1293,12 +1318,12 @@
             await savable.SaveAsync();
         }
 
-        // Notify parent to refresh character display
         if (OnCharacterChanged.HasDelegate)
         {
             await OnCharacterChanged.InvokeAsync();
         }
 
+        combatMode = CombatMode.Default;
         StateHasChanged();
     }
 
