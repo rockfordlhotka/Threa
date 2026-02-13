@@ -2185,12 +2185,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 0 5px var(--color-accent-blue);
 }
 
-/* Subtle hint when only passive defense is available */
-.combat-tile-passive-only {
-    opacity: 0.65;
-}
-
-/* Cost-aware dimming for combat tiles (insufficient AP/FAT) */
+/* Cost-aware dimming for combat tiles (insufficient AP/FAT or passive-only defense) */
 .combat-tile-dimmed {
     opacity: 0.65;
 }
