@@ -12,36 +12,52 @@
 
 <PageTitle>Threa - Login</PageTitle>
 
-<h1>Login</h1>
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+        <h1 class="mb-4">Login</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                @if (Registered)
+                {
+                    <div class="alert alert-success">Registration successful! Please log in with your new account.</div>
+                }
 
-@if (Registered)
-{
-    <div class="alert alert-success">Registration successful! Please log in with your new account.</div>
-}
+                @if (PasswordReset)
+                {
+                    <div class="alert alert-success">Password reset successful! Please log in with your new password.</div>
+                }
 
-@if (PasswordReset)
-{
-    <div class="alert alert-success">Password reset successful! Please log in with your new password.</div>
-}
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <div class="alert alert-danger">@Message</div>
+                }
 
-@if (!string.IsNullOrEmpty(Message))
-{
-    <div class="alert alert-danger">@Message</div>
-}
-
-<EditForm Model="UserInfoModel" OnSubmit="LoginUser" FormName="loginform">
-    <div class="mb-3">
-        <label class="form-label">Username</label>
-        <InputText class="form-control" @bind-Value="UserInfoModel!.Username" />
+                <EditForm Model="UserInfoModel" OnSubmit="LoginUser" FormName="loginform">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <InputText class="form-control" @bind-Value="UserInfoModel!.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <InputText type="password" class="form-control" @bind-Value="UserInfoModel!.Password" />
+                    </div>
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                    <div class="text-center">
+                        <p class="mb-2">
+                            <a href="/register">Don't have an account? Register</a>
+                        </p>
+                        <p class="mb-0">
+                            <a href="/forgot-password">Forgot password?</a>
+                        </p>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <InputText type="password" class="form-control" @bind-Value="UserInfoModel!.Password" />
-    </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-    <a href="/register" class="btn btn-link">Don't have an account? Register</a>
-    <a href="/forgot-password" class="btn btn-link">Forgot password?</a>
-</EditForm>
+</div>
 
 @code {
     [SupplyParameterFromQuery]
