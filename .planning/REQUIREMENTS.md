@@ -24,9 +24,9 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 ### Defense Group
 
-- [ ] **DEF-01**: Player can initiate defense (passive/dodge/parry/shield block) from the Defense group
-- [ ] **DEF-02**: Player can take arbitrary damage from the Defense group
-- [ ] **DEF-03**: Player can set defensive stance (Normal, Parry Mode, Dodge Focus, Block with Shield) from the Defense group
+- [x] **DEF-01**: Player can initiate defense (passive/dodge/parry/shield block) from the Defense group
+- [x] **DEF-02**: Player can take arbitrary damage from the Defense group
+- [x] **DEF-03**: Player can set defensive stance (Normal, Parry Mode, Dodge Focus, Block with Shield) from the Defense group
 
 ### Other Group
 
@@ -76,9 +76,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACT-02 | Phase 33 | Complete |
 | ACT-03 | Phase 34 | Complete |
 | ACT-04 | Phase 34 | Complete |
-| DEF-01 | Phase 35 | Pending |
-| DEF-02 | Phase 35 | Pending |
-| DEF-03 | Phase 35 | Pending |
+| DEF-01 | Phase 35 | Complete |
+| DEF-02 | Phase 35 | Complete |
+| DEF-03 | Phase 35 | Complete |
 | OTH-01 | Phase 36 | Pending |
 | OTH-02 | Phase 36 | Pending |
 | OTH-03 | Phase 36 | Pending |
