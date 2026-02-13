@@ -199,10 +199,10 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-2">
-                            <button class="btn combat-tile combat-tile-defense"
+                            <button class="btn combat-tile combat-tile-defense @(CanPerformActiveDefenseForStance() ? "" : "combat-tile-passive-only")"
                                     @onclick="StartDefend"
                                     disabled="@(Character?.IsPassedOut ?? true)"
-                                    title="Defend against an attack">
+                                    title="@(CanPerformActiveDefenseForStance() ? "Defend against an attack" : "Passive defense only (no AP for active defense)")">
                                 <i class="bi bi-shield-shaded"></i>
                                 <span>Defend</span>
                             </button>
@@ -330,6 +330,7 @@
                     WeaponSkillAS="weaponSkillAS"
                     WeaponSkillName="weaponSkillName"
                     ShieldSkillAS="shieldSkillAS"
+                    ActiveStance="@GetActiveStance()"
                     OnCancel="ReturnToDefault"
                     OnDefenseComplete="OnDefenseComplete"
                     OnHit="OnDefenseHit" />
