@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Players and Game Masters can easily access the system, manage their content securely, and focus on gameplay rather than administration.
-**Current focus:** v1.7 Combat Tab Rework - Phase 34 New Action Types
+**Current focus:** v1.7 Combat Tab Rework - Phase 35 Defense Group
 
 ## Current Position
 
 Milestone: v1.7 Combat Tab Rework (Issues #104, #105)
-Phase: 34 of 36 (New Action Types)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-13 — Completed 34-02-PLAN.md
+Phase: 35 of 36 (Defense Group)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 — Completed 35-01-PLAN.md
 
-Progress: [██████████░░░░░░░░░] 50% (3/5 phases complete, phase 34 done)
+Progress: [██████████░░░░░░░░░] 53% (3/5 phases complete, phase 35 plan 1/2 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 93
+- Total plans completed: 94
 - Average duration: 7.3 min
-- Total execution time: ~11.4 hours
+- Total execution time: ~11.5 hours
 
 **By Milestone:**
 
@@ -34,7 +34,7 @@ Progress: [██████████░░░░░░░░░] 50% (3/5 p
 | v1.4 | 6 | 21 | 48 min | 6 min |
 | v1.5 | 5 | 20 | 105 min | 5.3 min |
 | v1.6 | 4 | 9 | 55 min | 6.1 min |
-| v1.7 | 3 | 5 | 25 min | 5 min |
+| v1.7 | 4 | 6 | 29 min | 4.8 min |
 
 ## Accumulated Context
 
@@ -45,6 +45,7 @@ All decisions are logged in PROJECT.md Key Decisions table.
 | Decision | Phase | Rationale |
 |----------|-------|-----------|
 | Used FirearmAttackResolver with TVAdjustment offset for anonymous targets | 33-02 | Preserves resolver logic (ammo, hit detection, SV calc) while giving player TV control |
+| OnAdding replaces ANY existing CombatStance (not just same-name) | 35-01 | Enforces single-stance mutual exclusivity across all stance types |
 
 ### Pending Todos
 
@@ -62,9 +63,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 34-02-PLAN.md (Phase 34 complete)
+Stopped at: Completed 35-01-PLAN.md
 Resume file: None
-Next action: Begin Phase 35
+Next action: Execute 35-02-PLAN.md
 
 ---
 *v1.7 Combat Tab Rework started 2026-02-11*
