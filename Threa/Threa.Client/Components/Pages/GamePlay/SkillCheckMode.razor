@@ -1,0 +1,489 @@
+@using GameMechanics.Effects.Behaviors
+@using Threa.Dal.Dto
+@using Threa.Client.Components.Shared
+
+@inject Radzen.DialogService DialogService
+
+<div class="skill-check-mode">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-journal-check text-primary"></i> Skill Check</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (selectedSkill == null)
+    {
+        <!-- Waiting for modal to open / no skill selected -->
+        <div class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2 mb-0">Selecting skill...</p>
+        </div>
+    }
+    else if (!hasRolled)
+    {
+        <!-- Setup Phase -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- 1. Selected Skill -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Selected Skill</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">@selectedSkill.Name</h5>
+                                <div class="small text-muted">
+                                    @selectedSkill.PrimaryAttribute | AS <strong>@selectedSkill.AbilityScore</strong>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm" @onclick="ChangeSkill">
+                                <i class="bi bi-arrow-repeat"></i> Change
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Action Cost -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>2. Action Cost</strong>
+                    </div>
+                    <div class="card-body">
+                        <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
+                                            Fat="@(Character?.Fatigue.Value ?? 0)"
+                                            OnCostTypeSelected="OnCostTypeChanged" />
+                    </div>
+                </div>
+
+                <!-- 3. Target Value -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>3. Target Value</strong>
+                    </div>
+                    <div class="card-body">
+                        <input type="number" class="form-control" @bind="targetValue" min="1"
+                               placeholder="Enter TV" />
+                    </div>
+                </div>
+
+                <!-- 4. Boost -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>4. Boost (Optional)</strong>
+                    </div>
+                    <div class="card-body">
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@costType"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <!-- Summary Card -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <strong><i class="bi bi-info-circle"></i> Skill Check Summary</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (targetValue > 0)
+                        {
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td>Skill:</td>
+                                        <td class="fw-bold">@selectedSkill.Name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ability Score:</td>
+                                        <td class="fw-bold">@selectedSkill.AbilityScore</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target Value:</td>
+                                        <td class="fw-bold">@targetValue</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><hr class="my-1" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cost:</td>
+                                        <td>@GetCostDisplay()</td>
+                                    </tr>
+                                    @if (boostValue > 0)
+                                    {
+                                        <tr>
+                                            <td>Boost:</td>
+                                            <td class="text-success fw-bold">+@boostValue</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Enter a target value to see check details.</p>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary btn-lg w-100"
+                                @onclick="ExecuteSkillCheck"
+                                disabled="@(!CanRoll())">
+                            <i class="bi bi-dice-5"></i> Roll Check
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resource Summary -->
+                <div class="card mt-3">
+                    <div class="card-body py-2">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted">AP</small>
+                                <div class="fw-bold @(Character?.ActionPoints.Available <= 0 ? "text-danger" : "")">
+                                    @Character?.ActionPoints.Available / @Character?.ActionPoints.Max
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">FAT</small>
+                                <div class="fw-bold @(Character?.Fatigue.Value <= 0 ? "text-danger" : "")">
+                                    @Character?.Fatigue.Value / @Character?.Fatigue.BaseValue
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">VIT</small>
+                                <div class="fw-bold">
+                                    @Character?.Vitality.Value / @Character?.Vitality.BaseValue
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Result Phase -->
+        <div class="card">
+            <div class="card-header @(resultSV >= 0 ? "bg-success" : "bg-danger") text-white">
+                <strong>
+                    <i class="bi @(resultSV >= 0 ? "bi-check-circle" : "bi-x-circle")"></i>
+                    @(resultSV >= 0 ? "Success!" : "Failure")
+                </strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Skill:</td>
+                            <td class="fw-bold">@selectedSkill.Name</td>
+                        </tr>
+                        <tr>
+                            <td>Base AS:</td>
+                            <td class="fw-bold">@resultBaseAS</td>
+                        </tr>
+                        @if (boostValue > 0)
+                        {
+                            <tr>
+                                <td>Boost:</td>
+                                <td class="fw-bold text-success">+@boostValue</td>
+                            </tr>
+                        }
+                        @if (resultWoundPenalty > 0)
+                        {
+                            <tr>
+                                <td>Wounds:</td>
+                                <td class="fw-bold text-danger">-@resultWoundPenalty</td>
+                            </tr>
+                        }
+                        @if (resultMultiActionPenalty > 0)
+                        {
+                            <tr>
+                                <td>Multi-Action Penalty:</td>
+                                <td class="fw-bold text-danger">-@resultMultiActionPenalty</td>
+                            </tr>
+                        }
+                        <tr>
+                            <td>Effective AS:</td>
+                            <td class="fw-bold">@resultEffectiveAS</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr class="my-1" /></td>
+                        </tr>
+                        <tr>
+                            <td>Dice Roll:</td>
+                            <td class="fw-bold @(resultDiceRoll >= 0 ? "text-success" : "text-danger")">
+                                @(resultDiceRoll >= 0 ? "+" : "")@resultDiceRoll
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total Roll:</td>
+                            <td class="fw-bold">@resultTotalRoll</td>
+                        </tr>
+                        <tr>
+                            <td>Target Value:</td>
+                            <td class="fw-bold">@targetValue</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr class="my-1" /></td>
+                        </tr>
+                        <tr>
+                            <td>Success Value:</td>
+                            <td class="fw-bold @(resultSV >= 0 ? "text-success" : "text-danger")">
+                                @(resultSV >= 0 ? "+" : "")@resultSV
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-outline-secondary" @onclick="Complete">
+                    <i class="bi bi-check-lg"></i> Done
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GameMechanics.CharacterEdit? Character { get; set; }
+
+    [Parameter]
+    public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSkillCheckComplete { get; set; }
+
+    // Skill selection state
+    private GameMechanics.SkillEdit? selectedSkill;
+    private bool modalOpened;
+
+    // Setup state
+    private int targetValue;
+    private ActionCostType costType = ActionCostType.OneAPOneFat;
+    private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
+
+    // Roll state
+    private bool hasRolled;
+    private int resultBaseAS;
+    private int resultEffectiveAS;
+    private int resultDiceRoll;
+    private int resultTotalRoll;
+    private int resultSV;
+    private int resultWoundPenalty;
+    private int resultMultiActionPenalty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !modalOpened)
+        {
+            modalOpened = true;
+            await OpenSkillPicker();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenSkillPicker()
+    {
+        var result = await DialogService.OpenAsync<CombatSkillPickerModal>(
+            "Select Skill",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! }
+            },
+            new Radzen.DialogOptions
+            {
+                Width = "500px",
+                Height = "600px"
+            });
+
+        if (result is GameMechanics.SkillEdit skill)
+        {
+            selectedSkill = skill;
+        }
+        else
+        {
+            // User cancelled the modal - return to default
+            await OnCancel.InvokeAsync();
+        }
+    }
+
+    private async Task ChangeSkill()
+    {
+        var result = await DialogService.OpenAsync<CombatSkillPickerModal>(
+            "Select Skill",
+            new Dictionary<string, object>
+            {
+                { "Character", Character! }
+            },
+            new Radzen.DialogOptions
+            {
+                Width = "500px",
+                Height = "600px"
+            });
+
+        if (result is GameMechanics.SkillEdit skill)
+        {
+            selectedSkill = skill;
+            // Reset boost when changing skill
+            boostValue = 0;
+            boostAPCost = 0;
+            boostFATCost = 0;
+        }
+        // If cancelled, keep current skill
+    }
+
+    private void OnCostTypeChanged(ActionCostType type)
+    {
+        costType = type;
+    }
+
+    private void OnBoostChanged(int totalBoost)
+    {
+        boostValue = totalBoost;
+    }
+
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
+    }
+
+    private string GetCostDisplay()
+    {
+        return costType switch
+        {
+            ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
+            ActionCostType.TwoAP => "2 AP",
+            _ => "Unknown"
+        };
+    }
+
+    private bool CanRoll()
+    {
+        if (Character == null || Character.IsPassedOut) return false;
+        if (selectedSkill == null) return false;
+        if (targetValue <= 0) return false;
+
+        var apNeeded = (costType == ActionCostType.TwoAP ? 2 : 1) + boostAPCost;
+        var fatNeeded = (costType == ActionCostType.OneAPOneFat ? 1 : 0) + boostFATCost;
+
+        return Character.ActionPoints.Available >= apNeeded &&
+               Character.Fatigue.Value >= fatNeeded;
+    }
+
+    private async Task ExecuteSkillCheck()
+    {
+        if (!CanRoll() || Character == null || selectedSkill == null) return;
+
+        // Check concentration - prompt to break if active
+        var concentrationEffect = Character.GetConcentrationEffect();
+        if (concentrationEffect != null)
+        {
+            var state = ConcentrationState.FromJson(concentrationEffect.BehaviorState);
+            if (state != null)
+            {
+                var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                    DialogService,
+                    state,
+                    concentrationEffect.Name);
+                if (!confirmed)
+                    return;
+
+                ConcentrationBehavior.BreakConcentration(Character, "Took action");
+            }
+        }
+
+        // End parry mode if active
+        if (CombatStanceBehavior.IsInParryMode(Character))
+        {
+            CombatStanceBehavior.EndParryMode(Character);
+        }
+
+        // Deduct costs
+        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+        Character.ActionPoints.Available -= (apCost + boostAPCost);
+        Character.ActionPoints.ActionsTakenThisRound += 1;
+        if ((fatCost + boostFATCost) > 0)
+            Character.Fatigue.Value -= (fatCost + boostFATCost);
+
+        // Calculate effective AS
+        // IMPORTANT: selectedSkill.AbilityScore already includes attribute value,
+        // skill level, -5 offset, item bonuses, effect modifiers, and fatigue penalty.
+        int baseAS = selectedSkill.AbilityScore;
+        int effectiveAS = baseAS + boostValue;
+
+        // Apply wound penalty BEFORE rolling
+        int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
+        int woundPenalty = woundCount * 2;
+        effectiveAS -= woundPenalty;
+
+        // Apply multi-action penalty BEFORE rolling (ActionsTakenThisRound already incremented)
+        int multiActionPenalty = 0;
+        if (Character.ActionPoints.ActionsTakenThisRound > 1)
+        {
+            multiActionPenalty = (Character.ActionPoints.ActionsTakenThisRound - 1) * 2;
+            effectiveAS -= multiActionPenalty;
+        }
+
+        // Roll and calculate result
+        int diceRoll = GameMechanics.Dice.Roll4dFPlus();
+        int totalRoll = effectiveAS + diceRoll;
+        int sv = totalRoll - targetValue;
+
+        // Store results for display
+        resultBaseAS = baseAS;
+        resultEffectiveAS = effectiveAS;
+        resultDiceRoll = diceRoll;
+        resultTotalRoll = totalRoll;
+        resultSV = sv;
+        resultWoundPenalty = woundPenalty;
+        resultMultiActionPenalty = multiActionPenalty;
+        hasRolled = true;
+
+        // Save character state
+        if (Character is Csla.Core.ISavable savable)
+        {
+            await savable.SaveAsync();
+        }
+    }
+
+    private async Task Complete()
+    {
+        if (selectedSkill == null) return;
+
+        // Build result message per CONTEXT.md format
+        var message = $"{Character?.Name}: {selectedSkill.Name} " +
+                      $"AS {resultEffectiveAS} + 4dF+ ({(resultDiceRoll >= 0 ? "+" : "")}{resultDiceRoll}) = " +
+                      $"{resultTotalRoll} vs TV {targetValue} -> SV {(resultSV >= 0 ? "+" : "")}{resultSV}";
+
+        await OnSkillCheckComplete.InvokeAsync(message);
+    }
+}
