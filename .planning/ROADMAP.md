@@ -8,7 +8,7 @@
 - [x] **v1.4 GM Manipulation & Concentration** - Phases 17-22 (shipped 2026-01-29)
 - [x] **v1.5 NPC Management** - Phases 23-27 (shipped 2026-02-03)
 - [x] **v1.6 Batch Character Actions** - Phases 28-31 (shipped 2026-02-05)
-- [ ] **v1.7 Combat Tab Rework** - Phases 32-36 (in progress)
+- [ ] **v1.7 Combat Tab Rework** - Phases 32-36 (shipped 2026-02-13)
 
 ## Phases
 
@@ -16,7 +16,7 @@
 - [x] **Phase 33: Attack Actions** - Wire melee and ranged attack buttons into Actions group with anonymous target verification
 - [x] **Phase 34: New Action Types** - Add anonymous action and combat skill check modal
 - [x] **Phase 35: Defense Group** - Wire defend, take damage, and defensive stances into Defense group
-- [ ] **Phase 36: Other Group** - Wire medical, rest, implants, reload, and unload into Other group
+- [x] **Phase 36: Other Group** - Wire medical, rest, implants, reload, and unload into Other group
 
 ## Phase Details
 
@@ -96,8 +96,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 36-01-PLAN.md — Wire Other group button visibility, add Rest confirmation flow, create dimming CSS class
-- [ ] 36-02-PLAN.md — Apply cost-aware dimming across all three combat tile groups with cost tooltips
+- [x] 36-01-PLAN.md — Wire Other group button visibility, add Rest confirmation flow, create dimming CSS class
+- [x] 36-02-PLAN.md — Apply cost-aware dimming across all three combat tile groups with cost tooltips
 
 ## Progress
 
@@ -112,7 +112,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 | 33. Attack Actions | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
 | 34. New Action Types | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
 | 35. Defense Group | v1.7 | 2/2 | ✓ Complete | 2026-02-13 |
-| 36. Other Group | v1.7 | 0/2 | Not started | - |
+| 36. Other Group | v1.7 | 2/2 | ✓ Complete | 2026-02-13 |
 
 ---
 *Roadmap created: 2026-02-11*

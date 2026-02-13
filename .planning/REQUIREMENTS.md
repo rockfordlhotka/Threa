@@ -30,11 +30,11 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 ### Other Group
 
-- [ ] **OTH-01**: Player can initiate medical actions from the Other group
-- [ ] **OTH-02**: Player can rest (spend 1 AP to recover 1 FAT) from the Other group
-- [ ] **OTH-03**: Player can activate/deactivate implants from the Other group (when toggleable implants equipped)
-- [ ] **OTH-04**: Player can reload ranged weapons from the Other group (when ranged weapon equipped)
-- [ ] **OTH-05**: Player can unload ammo from weapons from the Other group (when weapon has ammo)
+- [x] **OTH-01**: Player can initiate medical actions from the Other group
+- [x] **OTH-02**: Player can rest (spend 1 AP to recover 1 FAT) from the Other group
+- [x] **OTH-03**: Player can activate/deactivate implants from the Other group (when toggleable implants equipped)
+- [x] **OTH-04**: Player can reload ranged weapons from the Other group (when ranged weapon equipped)
+- [x] **OTH-05**: Player can unload ammo from weapons from the Other group (when weapon has ammo)
 
 ### Verification (Issue #105)
 
@@ -79,11 +79,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEF-01 | Phase 35 | Complete |
 | DEF-02 | Phase 35 | Complete |
 | DEF-03 | Phase 35 | Complete |
-| OTH-01 | Phase 36 | Pending |
-| OTH-02 | Phase 36 | Pending |
-| OTH-03 | Phase 36 | Pending |
-| OTH-04 | Phase 36 | Pending |
-| OTH-05 | Phase 36 | Pending |
+| OTH-01 | Phase 36 | Complete |
+| OTH-02 | Phase 36 | Complete |
+| OTH-03 | Phase 36 | Complete |
+| OTH-04 | Phase 36 | Complete |
+| OTH-05 | Phase 36 | Complete |
 | VER-01 | Phase 33 | Complete |
 | VER-02 | Phase 33 | Complete |
 
