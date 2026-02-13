@@ -2189,3 +2189,8 @@ h1, h2, h3, h4, h5, h6 {
 .combat-tile-passive-only {
     opacity: 0.65;
 }
+
+/* Cost-aware dimming for combat tiles (insufficient AP/FAT) */
+.combat-tile-dimmed {
+    opacity: 0.65;
+}

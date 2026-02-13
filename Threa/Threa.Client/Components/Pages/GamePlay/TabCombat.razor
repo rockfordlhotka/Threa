@@ -263,27 +263,35 @@
                                 <i class="bi bi-cup-hot"></i>
                                 <span>Rest</span>
                             </button>
-                            <button class="btn combat-tile combat-tile-other"
-                                    @onclick="StartActivateImplant"
-                                    disabled="@(!hasToggleableImplantsEquipped)"
-                                    title="Activate / Deactivate implants">
-                                <i class="bi bi-cpu"></i>
-                                <span>Implants</span>
-                            </button>
-                            <button class="btn combat-tile combat-tile-other"
-                                    @onclick="StartReload"
-                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped)"
-                                    title="Reload a ranged weapon (1 AP + 1 FAT)">
-                                <i class="bi bi-box-arrow-in-down"></i>
-                                <span>Reload</span>
-                            </button>
-                            <button class="btn combat-tile combat-tile-other"
-                                    @onclick="StartUnload"
-                                    disabled="@(!CanAct() || !HasWeaponWithAmmo())"
-                                    title="Remove ammo from weapon">
-                                <i class="bi bi-box-arrow-up"></i>
-                                <span>Unload</span>
-                            </button>
+                            @if (hasToggleableImplantsEquipped)
+                            {
+                                <button class="btn combat-tile combat-tile-other"
+                                        @onclick="StartActivateImplant"
+                                        title="Activate / Deactivate implants">
+                                    <i class="bi bi-cpu"></i>
+                                    <span>Implants</span>
+                                </button>
+                            }
+                            @if (hasRangedWeaponEquipped)
+                            {
+                                <button class="btn combat-tile combat-tile-other"
+                                        @onclick="StartReload"
+                                        disabled="@(Character?.IsPassedOut ?? true)"
+                                        title="Reload a ranged weapon (1 AP + 1 FAT)">
+                                    <i class="bi bi-box-arrow-in-down"></i>
+                                    <span>Reload</span>
+                                </button>
+                            }
+                            @if (HasWeaponWithAmmo())
+                            {
+                                <button class="btn combat-tile combat-tile-other"
+                                        @onclick="StartUnload"
+                                        disabled="@(Character?.IsPassedOut ?? true)"
+                                        title="Remove ammo from weapon">
+                                    <i class="bi bi-box-arrow-up"></i>
+                                    <span>Unload</span>
+                                </button>
+                            }
                         </div>
                     </div>
                 </div>
