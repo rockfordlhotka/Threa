@@ -13,7 +13,7 @@
 ## Phases
 
 - [x] **Phase 32: Layout Restructuring** - Replace two-tab combat/defense layout with single compact three-group tab
-- [ ] **Phase 33: Attack Actions** - Wire melee and ranged attack buttons into Actions group with anonymous target verification
+- [x] **Phase 33: Attack Actions** - Wire melee and ranged attack buttons into Actions group with anonymous target verification
 - [ ] **Phase 34: New Action Types** - Add anonymous action and combat skill check modal
 - [ ] **Phase 35: Defense Group** - Wire defend, take damage, and defensive stances into Defense group
 - [ ] **Phase 36: Other Group** - Wire medical, rest, implants, reload, and unload into Other group
@@ -52,8 +52,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 33-01-PLAN.md — Add ranged button tooltip and wire anonymous target selection into melee AttackMode
-- [ ] 33-02-PLAN.md — Add anonymous target support to RangedAttackMode with simplified TV input and SV-only result
+- [x] 33-01-PLAN.md — Add ranged button tooltip and wire anonymous target selection into melee AttackMode
+- [x] 33-02-PLAN.md — Add anonymous target support to RangedAttackMode with simplified TV input and SV-only result
 
 #### Phase 34: New Action Types
 **Goal**: Player can perform attribute-only anonymous actions and skill checks from the Actions group without using the attack workflow
@@ -106,7 +106,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 32. Layout Restructuring | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
-| 33. Attack Actions | v1.7 | 1/2 | In progress | - |
+| 33. Attack Actions | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
 | 34. New Action Types | v1.7 | 0/TBD | Not started | - |
 | 35. Defense Group | v1.7 | 0/TBD | Not started | - |
 | 36. Other Group | v1.7 | 0/TBD | Not started | - |

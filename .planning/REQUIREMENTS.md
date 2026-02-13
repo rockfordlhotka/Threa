@@ -17,8 +17,8 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 ### Actions Group
 
-- [ ] **ACT-01**: Player can initiate a melee attack from the Actions group
-- [ ] **ACT-02**: Player can initiate a ranged attack from the Actions group (when ranged weapon equipped)
+- [x] **ACT-01**: Player can initiate a melee attack from the Actions group
+- [x] **ACT-02**: Player can initiate a ranged attack from the Actions group (when ranged weapon equipped)
 - [ ] **ACT-03**: Player can take an anonymous action by selecting an attribute, entering a TV, and rolling 4dF+ (costs 1AP+1FAT or 2AP, no skill applied)
 - [ ] **ACT-04**: Player can open a combat skill picker modal to perform a skill check (AS + 4dF+ vs TV entered by player)
 
@@ -38,8 +38,8 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 ### Verification (Issue #105)
 
-- [ ] **VER-01**: Solo melee attack against anonymous target displays the Attack Value (AV)
-- [ ] **VER-02**: Solo ranged attack against anonymous target allows entering TV modifiers and displays the Success Value (SV)
+- [x] **VER-01**: Solo melee attack against anonymous target displays the Attack Value (AV)
+- [x] **VER-02**: Solo ranged attack against anonymous target allows entering TV modifiers and displays the Success Value (SV)
 
 ## Future Requirements
 
@@ -67,13 +67,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LAY-01 | Phase 32 | Pending |
-| LAY-02 | Phase 32 | Pending |
-| LAY-03 | Phase 32 | Pending |
-| LAY-04 | Phase 32 | Pending |
-| LAY-05 | Phase 32 | Pending |
-| ACT-01 | Phase 33 | Pending |
-| ACT-02 | Phase 33 | Pending |
+| LAY-01 | Phase 32 | Complete |
+| LAY-02 | Phase 32 | Complete |
+| LAY-03 | Phase 32 | Complete |
+| LAY-04 | Phase 32 | Complete |
+| LAY-05 | Phase 32 | Complete |
+| ACT-01 | Phase 33 | Complete |
+| ACT-02 | Phase 33 | Complete |
 | ACT-03 | Phase 34 | Pending |
 | ACT-04 | Phase 34 | Pending |
 | DEF-01 | Phase 35 | Pending |
@@ -84,8 +84,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OTH-03 | Phase 36 | Pending |
 | OTH-04 | Phase 36 | Pending |
 | OTH-05 | Phase 36 | Pending |
-| VER-01 | Phase 33 | Pending |
-| VER-02 | Phase 33 | Pending |
+| VER-01 | Phase 33 | Complete |
+| VER-02 | Phase 33 | Complete |
 
 **Coverage:**
 - v1.7 requirements: 18 total
