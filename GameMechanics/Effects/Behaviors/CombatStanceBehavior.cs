@@ -61,18 +61,21 @@ public class CombatStanceBehavior : IEffectBehavior
 {
     public const string ParryStance = "Parry";
     public const string ParryModeName = "Parry Mode";
+    public const string DodgeFocusStance = "DodgeFocus";
+    public const string DodgeFocusName = "Dodge Focus";
+    public const string BlockWithShieldStance = "BlockWithShield";
+    public const string BlockWithShieldName = "Block with Shield";
 
     public EffectType EffectType => EffectType.CombatStance;
 
     public EffectAddResult OnAdding(EffectRecord effect, CharacterEdit character)
     {
-        // Remove any existing combat stance of the same type
+        // Only one stance can be active at a time -- replace ANY existing CombatStance
         var existingStance = character.Effects.GetEffectsByType(EffectType.CombatStance)
-            .FirstOrDefault(e => e.Name == effect.Name);
+            .FirstOrDefault();
 
         if (existingStance != null)
         {
-            // Replace the existing stance
             return EffectAddResult.Replace(existingStance.Id);
         }
 
@@ -204,5 +207,91 @@ public class CombatStanceBehavior : IEffectBehavior
 
         var state = CombatStanceState.Deserialize(parryEffect.BehaviorState);
         return state.SkillName;
+    }
+
+    /// <summary>
+    /// Checks if the character is in Dodge Focus stance.
+    /// </summary>
+    public static bool IsInDodgeFocus(CharacterEdit character)
+    {
+        return character.Effects.GetEffectsByType(EffectType.CombatStance)
+            .Any(e => e.Name == DodgeFocusName && e.IsActive);
+    }
+
+    /// <summary>
+    /// Checks if the character is in Block with Shield stance.
+    /// </summary>
+    public static bool IsInBlockWithShield(CharacterEdit character)
+    {
+        return character.Effects.GetEffectsByType(EffectType.CombatStance)
+            .Any(e => e.Name == BlockWithShieldName && e.IsActive);
+    }
+
+    /// <summary>
+    /// Gets the name of the active CombatStance effect, or null if none (Normal stance).
+    /// </summary>
+    public static string? GetActiveStanceName(CharacterEdit character)
+    {
+        var activeStance = character.Effects.GetEffectsByType(EffectType.CombatStance)
+            .FirstOrDefault(e => e.IsActive);
+        return activeStance?.Name;
+    }
+
+    /// <summary>
+    /// Removes any active CombatStance effect (switches to Normal stance).
+    /// </summary>
+    public static void ClearStance(CharacterEdit character)
+    {
+        var stances = character.Effects.GetEffectsByType(EffectType.CombatStance).ToList();
+        foreach (var stance in stances)
+        {
+            character.Effects.RemoveEffect(stance.Id);
+        }
+    }
+
+    /// <summary>
+    /// Creates serialized CombatStanceState for Dodge Focus stance.
+    /// </summary>
+    public static string CreateDodgeFocusState()
+    {
+        var state = new CombatStanceState
+        {
+            StanceType = DodgeFocusStance,
+            SkillName = "",
+            SkillAS = 0,
+            DefensesThisRound = 0
+        };
+        return state.Serialize();
+    }
+
+    /// <summary>
+    /// Creates serialized CombatStanceState for Block with Shield stance.
+    /// </summary>
+    public static string CreateBlockWithShieldState()
+    {
+        var state = new CombatStanceState
+        {
+            StanceType = BlockWithShieldStance,
+            SkillName = "",
+            SkillAS = 0,
+            DefensesThisRound = 0
+        };
+        return state.Serialize();
+    }
+
+    /// <summary>
+    /// Gets the description for a Dodge Focus effect.
+    /// </summary>
+    public static string GetDodgeFocusDescription()
+    {
+        return "Dodge Focus: Pre-selects dodge defense when defending.";
+    }
+
+    /// <summary>
+    /// Gets the description for a Block with Shield effect.
+    /// </summary>
+    public static string GetBlockWithShieldDescription()
+    {
+        return "Block with Shield: Pre-selects shield block defense when defending.";
     }
 }

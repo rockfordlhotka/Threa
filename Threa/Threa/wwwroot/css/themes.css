@@ -2150,3 +2150,37 @@ h1, h2, h3, h4, h5, h6 {
 .combat-group-other .card-header {
   border-left: 3px solid var(--color-accent-secondary);
 }
+
+/* Stance toggle chips - smaller than combat tiles, pill-shaped */
+.stance-chip {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    border: 1px solid var(--color-border-primary);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-display);
+    letter-spacing: 0.03em;
+}
+
+.stance-chip.active {
+    background: var(--color-accent-blue);
+    color: white;
+    border-color: var(--color-accent-blue);
+}
+
+.stance-chip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.stance-chip:not(:disabled):not(.active):hover {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-accent-blue);
+}
+
+[data-theme="scifi"] .stance-chip.active {
+    box-shadow: 0 0 5px var(--color-accent-blue);
+}
