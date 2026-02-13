@@ -117,7 +117,7 @@
                                     @breakdown.Total
                                 </span>
                                 <small class="text-muted">
-                                    (@breakdown.BaseValue base@if (breakdown.ItemBonus != 0)
+                                    (@breakdown.BaseValue<text> base</text>@if (breakdown.ItemBonus != 0)
                                     {<text> </text><span class="@(breakdown.ItemBonus > 0 ? "text-success" : "text-danger")">@(breakdown.ItemBonus > 0 ? "+" : "")@breakdown.ItemBonus items</span>}@if (breakdown.EffectBonus != 0)
                                     {<text> </text><span class="@(breakdown.EffectBonus > 0 ? "text-success" : "text-danger")">@(breakdown.EffectBonus > 0 ? "+" : "")@breakdown.EffectBonus effects</span>})
                                 </small>
