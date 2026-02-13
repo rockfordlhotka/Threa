@@ -106,7 +106,7 @@ Note: Phases 33, 34, 35, 36 all depend on Phase 32 but are independent of each o
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 32. Layout Restructuring | v1.7 | 2/2 | ✓ Complete | 2026-02-12 |
-| 33. Attack Actions | v1.7 | 0/2 | Not started | - |
+| 33. Attack Actions | v1.7 | 1/2 | In progress | - |
 | 34. New Action Types | v1.7 | 0/TBD | Not started | - |
 | 35. Defense Group | v1.7 | 0/TBD | Not started | - |
 | 36. Other Group | v1.7 | 0/TBD | Not started | - |
