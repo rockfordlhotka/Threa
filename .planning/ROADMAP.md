@@ -77,10 +77,11 @@ Plans:
   1. Player clicks Defend in the Defense group and enters the existing defense mode flow (passive/dodge/parry/shield block options)
   2. Player clicks Take Damage in the Defense group and enters the existing take-damage mode flow
   3. Player can select a defensive stance (Normal, Parry Mode, Dodge Focus, Block with Shield) from the Defense group
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 35-01: TBD
+- [ ] 35-01-PLAN.md — Add stance chip CSS, extend CombatStanceBehavior, and add stance toggle chips to Defense group
+- [ ] 35-02-PLAN.md — Wire ActiveStance pre-selection to DefendMode and add Defend button AP hint
 
 #### Phase 36: Other Group
 **Goal**: Player can access all utility actions (medical, rest, implants, reload, unload) from the Other group
