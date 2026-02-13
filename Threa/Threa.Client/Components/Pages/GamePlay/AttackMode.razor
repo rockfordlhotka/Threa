@@ -14,7 +14,28 @@
         </button>
     </div>
 
-    @if (!hasRolled)
+    @if (!targetSelected)
+    {
+        <!-- Target Selection -->
+        <div class="card">
+            <div class="card-header">
+                <strong><i class="bi bi-crosshair"></i> Select Target</strong>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+                            @onclick="SelectAnonymousTarget">
+                        <i class="bi bi-question-circle text-muted"></i>
+                        <div>
+                            <strong>Anonymous Target</strong>
+                            <small class="text-muted d-block">Solo attack — AV displayed after rolling</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!hasRolled)
     {
         <!-- Attack Setup -->
         <div class="row">
@@ -252,6 +273,9 @@
                 <button class="btn btn-outline-secondary" @onclick="ResetAttack">
                     <i class="bi bi-arrow-repeat"></i> New Attack
                 </button>
+                <button class="btn btn-outline-secondary" @onclick="ChangeTarget">
+                    <i class="bi bi-people"></i> Change Target
+                </button>
             </div>
         </div>
     }
@@ -293,6 +317,8 @@
     private bool includePhysicality = true;
     private bool hasRolled;
     private AttackResultData? attackResult;
+    private bool targetSelected;
+    private bool isAnonymousTarget;
 
     protected override void OnParametersSet()
     {
@@ -504,6 +530,19 @@
         attackResult = null;
     }
 
+    private void SelectAnonymousTarget()
+    {
+        targetSelected = true;
+        isAnonymousTarget = true;
+    }
+
+    private void ChangeTarget()
+    {
+        targetSelected = false;
+        isAnonymousTarget = false;
+        ResetAttack();
+    }
+
     private async Task CompleteAttack()
     {
         if (attackResult == null || Character == null) return;
@@ -535,7 +574,9 @@
             }
         }
 
-        var message = $"{Character?.Name} attacks with {attackResult.SkillName}: AV {attackResult.AV}";
+        var message = isAnonymousTarget
+            ? $"{Character?.Name} attacks with {attackResult.SkillName} vs anonymous target: AV {attackResult.AV}"
+            : $"{Character?.Name} attacks with {attackResult.SkillName}: AV {attackResult.AV}";
         if (includePhysicality && attackResult.PhysicalityDamageBonus > 0)
         {
             message += $" (+{attackResult.PhysicalityDamageBonus} physicality bonus)";

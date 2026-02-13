@@ -162,7 +162,7 @@
                             <button class="btn combat-tile combat-tile-actions"
                                     @onclick="StartRangedAttack"
                                     disabled="@(!CanAct() || !hasRangedWeaponEquipped)"
-                                    title="Ranged attack">
+                                    title="@(!hasRangedWeaponEquipped ? "No ranged weapon equipped" : "Ranged attack")">
                                 <i class="bi bi-crosshair"></i>
                                 <span>Ranged</span>
                             </button>
