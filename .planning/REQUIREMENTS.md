@@ -19,8 +19,8 @@ Requirements for Combat Tab Rework milestone (Issues #104, #105).
 
 - [x] **ACT-01**: Player can initiate a melee attack from the Actions group
 - [x] **ACT-02**: Player can initiate a ranged attack from the Actions group (when ranged weapon equipped)
-- [ ] **ACT-03**: Player can take an anonymous action by selecting an attribute, entering a TV, and rolling 4dF+ (costs 1AP+1FAT or 2AP, no skill applied)
-- [ ] **ACT-04**: Player can open a combat skill picker modal to perform a skill check (AS + 4dF+ vs TV entered by player)
+- [x] **ACT-03**: Player can take an anonymous action by selecting an attribute, entering a TV, and rolling 4dF+ (costs 1AP+1FAT or 2AP, no skill applied)
+- [x] **ACT-04**: Player can open a combat skill picker modal to perform a skill check (AS + 4dF+ vs TV entered by player)
 
 ### Defense Group
 
@@ -74,8 +74,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LAY-05 | Phase 32 | Complete |
 | ACT-01 | Phase 33 | Complete |
 | ACT-02 | Phase 33 | Complete |
-| ACT-03 | Phase 34 | Pending |
-| ACT-04 | Phase 34 | Pending |
+| ACT-03 | Phase 34 | Complete |
+| ACT-04 | Phase 34 | Complete |
 | DEF-01 | Phase 35 | Pending |
 | DEF-02 | Phase 35 | Pending |
 | DEF-03 | Phase 35 | Pending |
