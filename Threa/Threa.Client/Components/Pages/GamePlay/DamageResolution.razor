@@ -69,9 +69,8 @@
                             @if (isCalledShot)
                             {
                                 <select class="form-select" @bind="selectedCalledShotLocation">
-                                    <option value="">-- Select Location --</option>
-                                    <option value="@HitLocation.Head">Head (4.17% normally)</option>
                                     <option value="@HitLocation.Torso">Torso (45.83% normally)</option>
+                                    <option value="@HitLocation.Head">Head (4.17% normally)</option>
                                     <option value="@HitLocation.LeftArm">Left Arm (8.33% normally)</option>
                                     <option value="@HitLocation.RightArm">Right Arm (8.33% normally)</option>
                                     <option value="@HitLocation.LeftLeg">Left Leg (16.67% normally)</option>
@@ -157,9 +156,10 @@
                                 </tr>
                                 @if (InitialCalledShotLocation.HasValue || (isCalledShot && selectedCalledShotLocation.HasValue))
                                 {
+                                    var displayLocation = InitialCalledShotLocation ?? selectedCalledShotLocation ?? HitLocation.Torso;
                                     <tr class="table-warning">
                                         <td>Called Shot:</td>
-                                        <td class="fw-bold"><i class="bi bi-geo-alt"></i> @(InitialCalledShotLocation.HasValue ? InitialCalledShotLocation.Value : selectedCalledShotLocation!.Value)</td>
+                                        <td class="fw-bold"><i class="bi bi-geo-alt"></i> @displayLocation</td>
                                     </tr>
                                 }
                                 @if (shieldBlockResult?.Success == true)
@@ -383,7 +383,7 @@
     private DamageType selectedDamageType = DamageType.Bashing;
     private int selectedDamageClass = 1;
     private bool isCalledShot = false;
-    private HitLocation? selectedCalledShotLocation = null;
+    private HitLocation? selectedCalledShotLocation = HitLocation.Torso;
     private List<EquippedArmorInfo> equippedArmor = new();
     private EquippedArmorInfo? equippedShield;
 
