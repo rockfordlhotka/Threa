@@ -26,6 +26,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="defenseType" id="defPassive"
                                    checked="@(defenseType == DefenseType.Passive)"
+                                   disabled="@IsReadOnly"
                                    @onchange="() => SetDefenseType(DefenseType.Passive)">
                             <label class="form-check-label" for="defPassive">
                                 <strong>Passive</strong>
@@ -36,7 +37,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="defenseType" id="defDodge"
                                    checked="@(defenseType == DefenseType.Dodge)"
-                                   disabled="@(!CanActiveDefense)"
+                                   disabled="@(IsReadOnly || !CanActiveDefense)"
                                    @onchange="() => SetDefenseType(DefenseType.Dodge)">
                             <label class="form-check-label @(!CanActiveDefense ? "text-muted" : "")" for="defDodge">
                                 <strong>Dodge</strong>
@@ -51,7 +52,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="defenseType" id="defParry"
                                        checked="@(defenseType == DefenseType.Parry)"
-                                       disabled="@(!CanParry)"
+                                       disabled="@(IsReadOnly || !CanParry)"
                                        @onchange="() => SetDefenseType(DefenseType.Parry)">
                                 <label class="form-check-label @(!CanParry ? "text-muted" : "")" for="defParry">
                                     <strong>Parry</strong>
@@ -71,21 +72,27 @@
                         <label class="form-label fw-bold">Your Conditions (affect attacker's TV)</label>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderMoving" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isMoving" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderMoving">
                                 Moving (+2 TV)
                             </label>
                         </div>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderProne" @bind="isProne" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderProne" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isProne" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderProne">
                                 Prone (+2 TV)
                             </label>
                         </div>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderCrouching" @bind="isCrouching" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderCrouching" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isCrouching" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderCrouching">
                                 Crouching (+2 TV)
                             </label>
@@ -93,7 +100,9 @@
 
                         <div class="mt-2">
                             <label class="form-label">Cover</label>
-                            <select class="form-select form-select-sm" @bind="cover" @bind:after="OnDataChanged">
+                            <select class="form-select form-select-sm" 
+                                    disabled="@IsReadOnly"
+                                    @bind="cover" @bind:after="OnDataChanged">
                                 <option value="@CoverType.None">None</option>
                                 <option value="@CoverType.Half">Half Cover (+1 TV)</option>
                                 <option value="@CoverType.ThreeQuarters">3/4 Cover (+2 TV)</option>
@@ -111,6 +120,7 @@
                         <label class="form-label fw-bold">Defense Cost</label>
                         <ActionCostSelector AP="@MaxAPBoost" 
                                             Fat="@MaxFATBoost" 
+                                            IsReadOnly="@IsReadOnly"
                                             OnCostTypeSelected="OnDefenseCostTypeChanged" />
                         <small class="text-muted">Choose how to pay for active defense</small>
                     </div>
@@ -120,6 +130,7 @@
                         <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
                                        AvailableFAT="@GetAvailableFATForBoost()"
                                        CostType="@defenseCostType"
+                                       IsReadOnly="@IsReadOnly"
                                        OnBoostChanged="OnBoostChanged"
                                        OnBoostCostChanged="OnBoostCostChanged" />
                     </div>

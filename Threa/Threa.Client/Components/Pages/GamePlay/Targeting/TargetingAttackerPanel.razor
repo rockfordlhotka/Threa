@@ -15,6 +15,7 @@
                 <label class="form-label fw-bold">Action Cost</label>
                 <ActionCostSelector AP="@MaxAPBoost" 
                                     Fat="@MaxFATBoost" 
+                                    IsReadOnly="@IsReadOnly"
                                     OnCostTypeSelected="OnActionCostTypeChanged" />
                 <small class="text-muted">Choose how to pay for this attack</small>
             </div>
@@ -44,7 +45,9 @@
                 <!-- Ranged Attack Options -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Range</label>
-                    <select class="form-select form-select-sm" @bind="range" @bind:after="OnDataChanged">
+                    <select class="form-select form-select-sm" 
+                            disabled="@IsReadOnly"
+                            @bind="range" @bind:after="OnDataChanged">
                         <option value="@RangeCategory.Short">Short (TV 6)</option>
                         <option value="@RangeCategory.Medium">Medium (TV 8)</option>
                         <option value="@RangeCategory.Long">Long (TV 10)</option>
@@ -56,7 +59,9 @@
                 {
                     <div class="mb-3">
                         <label class="form-label fw-bold">Fire Mode</label>
-                        <select class="form-select form-select-sm" @bind="fireMode" @bind:after="OnDataChanged">
+                        <select class="form-select form-select-sm" 
+                                disabled="@IsReadOnly"
+                                @bind="fireMode" @bind:after="OnDataChanged">
                             <option value="@FireMode.Single">Single Shot</option>
                             <option value="@FireMode.Burst">Burst (3 rounds)</option>
                             <option value="@FireMode.Suppression">Suppression (10 rounds)</option>
@@ -67,7 +72,9 @@
 
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="attackerMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                    <input class="form-check-input" type="checkbox" id="attackerMoving" 
+                           disabled="@IsReadOnly"
+                           @bind="isMoving" @bind:after="OnDataChanged">
                     <label class="form-check-label" for="attackerMoving">
                         Moving (-2 AV)
                     </label>
@@ -76,14 +83,18 @@
 
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="calledShot" @bind="isCalledShot" @bind:after="OnDataChanged">
+                    <input class="form-check-input" type="checkbox" id="calledShot" 
+                           disabled="@IsReadOnly"
+                           @bind="isCalledShot" @bind:after="OnDataChanged">
                     <label class="form-check-label" for="calledShot">
                         Called Shot (-2 AV)
                     </label>
                 </div>
                 @if (isCalledShot)
                 {
-                    <select class="form-select form-select-sm mt-2" @bind="calledShotLocation" @bind:after="OnDataChanged">
+                    <select class="form-select form-select-sm mt-2" 
+                            disabled="@IsReadOnly"
+                            @bind="calledShotLocation" @bind:after="OnDataChanged">
                         <option value="@HitLocation.Head">Head</option>
                         <option value="@HitLocation.Torso">Torso</option>
                         <option value="@HitLocation.LeftArm">Left Arm</option>
@@ -101,7 +112,9 @@
             {
                 <div class="mb-3">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="usePhysicality" @bind="usePhysicality" @bind:after="OnDataChanged">
+                        <input class="form-check-input" type="checkbox" id="usePhysicality" 
+                               disabled="@IsReadOnly"
+                               @bind="usePhysicality" @bind:after="OnDataChanged">
                         <label class="form-check-label" for="usePhysicality">
                             Use Physicality Bonus
                         </label>
@@ -116,6 +129,7 @@
                 <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
                                AvailableFAT="@GetAvailableFATForBoost()"
                                CostType="@actionCostType"
+                               IsReadOnly="@IsReadOnly"
                                OnBoostChanged="OnBoostChanged"
                                OnBoostCostChanged="OnBoostCostChanged" />
             </div>

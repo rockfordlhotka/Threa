@@ -4,9 +4,13 @@
 <div class="boost-selector">
     <div class="boost-control d-flex align-items-center gap-2">
         <label class="mb-0">Boost:</label>
-        <button class="btn btn-sm btn-secondary" @onclick="DecrementBoost" disabled="@(Boost == 0)">-</button>
+        <button class="btn btn-sm btn-secondary" 
+                @onclick="DecrementBoost" 
+                disabled="@(IsReadOnly || Boost == 0)">-</button>
         <span class="fw-bold">+@Boost</span>
-        <button class="btn btn-sm btn-secondary" @onclick="IncrementBoost" disabled="@(Boost >= MaxBoost)">+</button>
+        <button class="btn btn-sm btn-secondary" 
+                @onclick="IncrementBoost" 
+                disabled="@(IsReadOnly || Boost >= MaxBoost)">+</button>
         <span class="text-muted small ms-2">(max +@MaxBoost)</span>
     </div>
     @if (Boost > 0)

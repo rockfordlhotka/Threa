@@ -7,6 +7,7 @@ public class ActionCostSelectorBase : ComponentBase
 {
     [Parameter] public int AP { get; set; }
     [Parameter] public int Fat { get; set; }
+    [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public EventCallback<ActionCostType> OnCostTypeSelected { get; set; }
 
     protected ActionCostType SelectedCostType { get; set; }
@@ -26,6 +27,7 @@ public class ActionCostSelectorBase : ComponentBase
 
     protected async Task SetCostType(ActionCostType costType)
     {
+        if (IsReadOnly) return;
         SelectedCostType = costType;
         await OnCostTypeSelected.InvokeAsync(SelectedCostType);
     }
