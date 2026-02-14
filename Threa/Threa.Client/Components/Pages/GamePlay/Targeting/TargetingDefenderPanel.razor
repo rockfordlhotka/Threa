@@ -1,6 +1,7 @@
 @using Threa.Client.Components.Shared
 @using GameMechanics.Combat
 @using GameMechanics.Messaging
+@using GameMechanics
 
 <div class="targeting-defender-panel">
     <div class="card h-100">
@@ -25,6 +26,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="defenseType" id="defPassive"
                                    checked="@(defenseType == DefenseType.Passive)"
+                                   disabled="@IsReadOnly"
                                    @onchange="() => SetDefenseType(DefenseType.Passive)">
                             <label class="form-check-label" for="defPassive">
                                 <strong>Passive</strong>
@@ -35,7 +37,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="defenseType" id="defDodge"
                                    checked="@(defenseType == DefenseType.Dodge)"
-                                   disabled="@(!CanActiveDefense)"
+                                   disabled="@(IsReadOnly || !CanActiveDefense)"
                                    @onchange="() => SetDefenseType(DefenseType.Dodge)">
                             <label class="form-check-label @(!CanActiveDefense ? "text-muted" : "")" for="defDodge">
                                 <strong>Dodge</strong>
@@ -50,7 +52,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="defenseType" id="defParry"
                                        checked="@(defenseType == DefenseType.Parry)"
-                                       disabled="@(!CanParry)"
+                                       disabled="@(IsReadOnly || !CanParry)"
                                        @onchange="() => SetDefenseType(DefenseType.Parry)">
                                 <label class="form-check-label @(!CanParry ? "text-muted" : "")" for="defParry">
                                     <strong>Parry</strong>
@@ -70,21 +72,27 @@
                         <label class="form-label fw-bold">Your Conditions (affect attacker's TV)</label>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderMoving" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isMoving" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderMoving">
                                 Moving (+2 TV)
                             </label>
                         </div>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderProne" @bind="isProne" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderProne" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isProne" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderProne">
                                 Prone (+2 TV)
                             </label>
                         </div>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="defenderCrouching" @bind="isCrouching" @bind:after="OnDataChanged">
+                            <input class="form-check-input" type="checkbox" id="defenderCrouching" 
+                                   disabled="@IsReadOnly"
+                                   @bind="isCrouching" @bind:after="OnDataChanged">
                             <label class="form-check-label" for="defenderCrouching">
                                 Crouching (+2 TV)
                             </label>
@@ -92,7 +100,9 @@
 
                         <div class="mt-2">
                             <label class="form-label">Cover</label>
-                            <select class="form-select form-select-sm" @bind="cover" @bind:after="OnDataChanged">
+                            <select class="form-select form-select-sm" 
+                                    disabled="@IsReadOnly"
+                                    @bind="cover" @bind:after="OnDataChanged">
                                 <option value="@CoverType.None">None</option>
                                 <option value="@CoverType.Half">Half Cover (+1 TV)</option>
                                 <option value="@CoverType.ThreeQuarters">3/4 Cover (+2 TV)</option>
@@ -104,23 +114,25 @@
                 @if (defenseType != DefenseType.Passive)
                 {
                     <hr />
+                    
+                    <!-- Defense Cost Selection -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Defense Boost</label>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">AP</span>
-                                    <input type="number" class="form-control" min="0" max="@MaxAPBoost" @bind="apBoost" @bind:after="OnDataChanged">
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">FAT</span>
-                                    <input type="number" class="form-control" min="0" max="@MaxFATBoost" @bind="fatBoost" @bind:after="OnDataChanged">
-                                </div>
-                            </div>
-                        </div>
-                        <small class="text-muted">+1 TV per boost point spent</small>
+                        <label class="form-label fw-bold">Defense Cost</label>
+                        <ActionCostSelector AP="@MaxAPBoost" 
+                                            Fat="@MaxFATBoost" 
+                                            IsReadOnly="@IsReadOnly"
+                                            OnCostTypeSelected="OnDefenseCostTypeChanged" />
+                        <small class="text-muted">Choose how to pay for active defense</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Defense Boost (Optional)</label>
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@defenseCostType"
+                                       IsReadOnly="@IsReadOnly"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
                     </div>
                 }
             }
@@ -207,6 +219,8 @@
     private CoverType cover = CoverType.None;
     private int apBoost;
     private int fatBoost;
+    private int defenseTVBoost;
+    private ActionCostType defenseCostType = ActionCostType.OneAPOneFat;
 
     protected override void OnParametersSet()
     {
@@ -219,18 +233,62 @@
             cover = InitialData.Cover;
             apBoost = InitialData.APBoost;
             fatBoost = InitialData.FATBoost;
+            defenseCostType = InitialData.DefenseCostType;
         }
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = defenseCostType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, MaxAPBoost - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = defenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, MaxFATBoost - baseCost);
+    }
+
+    private async Task OnDefenseCostTypeChanged(ActionCostType type)
+    {
+        defenseCostType = type;
+        // Reset boost when cost type changes
+        defenseTVBoost = 0;
+        apBoost = 0;
+        fatBoost = 0;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostChanged(int totalBoost)
+    {
+        defenseTVBoost = totalBoost;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        defenseTVBoost = cost.Boost;
+        apBoost = cost.APCost;
+        fatBoost = cost.FATCost;
+        await OnDataChanged();
     }
 
     private async Task SetDefenseType(DefenseType type)
     {
         defenseType = type;
+        // Reset boost when switching defense types
+        if (type == DefenseType.Passive)
+        {
+            defenseTVBoost = 0;
+            apBoost = 0;
+            fatBoost = 0;
+        }
         await OnDataChanged();
     }
 
     private int GetTotalTVModifier()
     {
-        int modifier = apBoost + fatBoost;
+        int modifier = defenseTVBoost;
         if (isMoving) modifier += 2;
         if (isProne) modifier += 2;
         if (isCrouching) modifier += 2;
@@ -266,6 +324,7 @@
             IsProne = isProne,
             IsCrouching = isCrouching,
             Cover = cover,
+            DefenseCostType = defenseCostType,
             APBoost = apBoost,
             FATBoost = fatBoost,
             DodgeAS = DodgeAS,
