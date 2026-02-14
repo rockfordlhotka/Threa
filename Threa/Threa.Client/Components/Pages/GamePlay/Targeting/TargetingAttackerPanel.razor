@@ -21,6 +21,24 @@
 
             <hr />
 
+            @if (ActionType == TargetingActionType.MeleeAttack)
+            {
+                <!-- Melee Attack Info -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Weapon</label>
+                    <div class="alert alert-info py-2 mb-0">
+                        <strong>@(InitialData?.WeaponName ?? "Unarmed")</strong>
+                        @if (WeaponAVModifier != 0)
+                        {
+                            <span class="ms-2 badge @(WeaponAVModifier >= 0 ? "bg-success" : "bg-danger")">
+                                AV @(WeaponAVModifier >= 0 ? "+" : "")@WeaponAVModifier
+                            </span>
+                        }
+                    </div>
+                    <small class="text-muted">Weapon is selected based on equipped items</small>
+                </div>
+            }
+
             @if (ActionType == TargetingActionType.RangedAttack)
             {
                 <!-- Ranged Attack Options -->
