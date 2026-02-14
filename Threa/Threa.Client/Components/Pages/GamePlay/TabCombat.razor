@@ -148,42 +148,42 @@
                         <div class="d-flex flex-wrap gap-2">
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="StartAttack"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanAct())"
                                     title="@(CanAct() ? "Melee attack (1 AP + 1 FAT)" : "Attack requires 1 AP + 1 FAT")">
                                 <i class="bi bi-bullseye"></i>
                                 <span>Attack</span>
                             </button>
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="() => StartTargetedAttack(TargetingActionType.MeleeAttack)"
-                                    disabled="@((Character?.IsPassedOut ?? true) || !HasTargetsAvailable())"
+                                    disabled="@(!CanAct() || !HasTargetsAvailable())"
                                     title="@(CanAct() ? "Attack a target at your table" : "Attack requires 1 AP + 1 FAT")">
                                 <i class="bi bi-person-plus"></i>
                                 <span>Target</span>
                             </button>
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="StartRangedAttack"
-                                    disabled="@((Character?.IsPassedOut ?? true) || !hasRangedWeaponEquipped)"
+                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped)"
                                     title="@(!hasRangedWeaponEquipped ? "No ranged weapon equipped" : !CanAct() ? "Ranged attack requires 1 AP + 1 FAT" : "Ranged attack")">
                                 <i class="bi bi-crosshair"></i>
                                 <span>Ranged</span>
                             </button>
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="() => StartTargetedAttack(TargetingActionType.RangedAttack)"
-                                    disabled="@((Character?.IsPassedOut ?? true) || !hasRangedWeaponEquipped || !HasTargetsAvailable())"
+                                    disabled="@(!CanAct() || !hasRangedWeaponEquipped || !HasTargetsAvailable())"
                                     title="@(!hasRangedWeaponEquipped ? "No ranged weapon equipped" : !CanAct() ? "Ranged attack requires 1 AP + 1 FAT" : "Ranged attack on a target at your table")">
                                 <i class="bi bi-person-plus"></i>
                                 <span>Ranged Target</span>
                             </button>
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="StartAnonymousAction"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanAct())"
                                     title="@(CanAct() ? "Attribute-only roll vs TV (1 AP + 1 FAT)" : "Action requires 1 AP + 1 FAT")">
                                 <i class="bi bi-dice-5"></i>
                                 <span>Action</span>
                             </button>
                             <button class="btn combat-tile combat-tile-actions @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="StartSkillCheck"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanAct())"
                                     title="@(CanAct() ? "Skill check from any skill" : "Skill check requires 1 AP + 1 FAT")">
                                 <i class="bi bi-journal-check"></i>
                                 <span>Use Skill</span>
@@ -201,7 +201,7 @@
                         <div class="d-flex flex-wrap gap-2">
                             <button class="btn combat-tile combat-tile-defense @(CanPerformActiveDefenseForStance() ? "" : "combat-tile-dimmed")"
                                     @onclick="StartDefend"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanPerformActiveDefenseForStance())"
                                     title="@(CanPerformActiveDefenseForStance() ? "Defend against an attack" : "Passive defense only (no AP for active defense)")">
                                 <i class="bi bi-shield-shaded"></i>
                                 <span>Defend</span>
@@ -272,24 +272,24 @@
                         <div class="d-flex flex-wrap gap-2">
                             <button class="btn combat-tile combat-tile-other @(!CanAct() ? "combat-tile-dimmed" : "")"
                                     @onclick="StartMedical"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanAct())"
                                     title="@(CanAct() ? "First-Aid, Nursing, Doctor (1 AP + 1 FAT)" : "Medical requires 1 AP + 1 FAT")">
                                 <i class="bi bi-heart-pulse"></i>
                                 <span>Medical</span>
                             </button>
                             <button class="btn combat-tile combat-tile-other @(!CanRest() && !(Character?.IsPassedOut ?? true) ? "combat-tile-dimmed" : "")"
                                     @onclick="StartRest"
-                                    disabled="@(Character?.IsPassedOut ?? true)"
+                                    disabled="@(!CanRest())"
                                     title="@(CanRest() ? "Spend 1 AP to recover 1 FAT" : Character?.Fatigue.Value >= Character?.Fatigue.BaseValue ? "Fatigue is already at maximum" : "Rest requires 1 AP")">
                                 <i class="bi bi-cup-hot"></i>
                                 <span>Rest</span>
                             </button>
                             @if (hasToggleableImplantsEquipped)
                             {
-                                <button class="btn combat-tile combat-tile-other @(Character?.ActionPoints.Available < 1 ? "combat-tile-dimmed" : "")"
+                                <button class="btn combat-tile combat-tile-other @(!CanActivateImplant() ? "combat-tile-dimmed" : "")"
                                         @onclick="StartActivateImplant"
-                                        disabled="@(Character?.IsPassedOut ?? true)"
-                                        title="@(Character?.ActionPoints.Available >= 1 ? "Activate / Deactivate implants" : "Implant activation requires AP")">
+                                        disabled="@(!CanActivateImplant())"
+                                        title="@(CanActivateImplant() ? "Activate / Deactivate implants" : "Implant activation requires AP")">
                                     <i class="bi bi-cpu"></i>
                                     <span>Implants</span>
                                 </button>
@@ -298,7 +298,7 @@
                             {
                                 <button class="btn combat-tile combat-tile-other @(!CanAct() ? "combat-tile-dimmed" : "")"
                                         @onclick="StartReload"
-                                        disabled="@(Character?.IsPassedOut ?? true)"
+                                        disabled="@(!CanAct())"
                                         title="@(CanAct() ? "Reload a ranged weapon (1 AP + 1 FAT)" : "Reload requires 1 AP + 1 FAT")">
                                     <i class="bi bi-box-arrow-in-down"></i>
                                     <span>Reload</span>
@@ -308,7 +308,7 @@
                             {
                                 <button class="btn combat-tile combat-tile-other @(!CanAct() ? "combat-tile-dimmed" : "")"
                                         @onclick="StartUnload"
-                                        disabled="@(Character?.IsPassedOut ?? true)"
+                                        disabled="@(!CanAct())"
                                         title="@(CanAct() ? "Remove ammo from weapon (1 AP + 1 FAT)" : "Unload requires 1 AP + 1 FAT")">
                                     <i class="bi bi-box-arrow-up"></i>
                                     <span>Unload</span>
@@ -1373,6 +1373,10 @@
     private bool CanRest() =>
         Character?.ActionPoints.Available >= 1 &&
         Character?.Fatigue.Value < Character?.Fatigue.BaseValue &&
+        !Character.IsPassedOut;
+
+    private bool CanActivateImplant() =>
+        Character?.ActionPoints.Available >= 1 &&
         !Character.IsPassedOut;
 
     private int GetVitPercent() => Character?.Vitality.BaseValue > 0
