@@ -210,6 +210,25 @@ else
                         </div>
                     </div>
                 }
+                else
+                {
+                    <!-- Local Time Management (no table) -->
+                    <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
+                        <div style="font-family: var(--font-display); font-size: 0.85rem;">Solo Play</div>
+                        <small style="color: var(--color-text-muted);">
+                            <GameTimeDisplay EpochSeconds="localTimeSeconds"
+                                             Theme="@(character.Setting ?? "fantasy")"
+                                             DefaultCalendarId="null" />
+                        </small>
+                        <div class="mt-1">
+                            @if (localIsInCombat)
+                            {
+                                <span class="badge bg-danger">In Rounds</span>
+                                <span class="badge bg-info ms-1">Round @localCurrentRound</span>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Active Effects Row -->
@@ -229,6 +248,73 @@ else
             }
         </div>
     </div>
+
+    <!-- Local Time Management Panel (only visible when no table) -->
+    @if (table == null)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-clock-history me-2"></i>Time Management</strong>
+                <a href="/player/browse-campaigns" class="btn btn-sm btn-primary">
+                    <i class="bi bi-door-open me-1"></i>Join a Table
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <!-- Combat Mode Toggle -->
+                    <div class="col-12 mb-2">
+                        @if (!localIsInCombat)
+                        {
+                            <button class="btn btn-danger w-100" @onclick="LocalEnterCombat">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Enter Combat / Rounds
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success w-100" @onclick="LocalExitCombat">
+                                <i class="bi bi-check-circle-fill me-1"></i>Exit Combat / Rounds
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Round Advancement (only in combat) -->
+                    @if (localIsInCombat)
+                    {
+                        <div class="col-12 mb-2">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(1)">
+                                    <i class="bi bi-skip-forward-fill"></i> +1 Round
+                                </button>
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(10)">
+                                    +10 Rounds
+                                </button>
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(20)">
+                                    +1 Minute
+                                </button>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Time Advancement (narrative time) -->
+                    @if (!localIsInCombat)
+                    {
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Advance Time</label>
+                            <div class="btn-group w-100 mb-2" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(60)">+1 Min</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(600)">+10 Min</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(3600)">+1 Hour</button>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(86400)">+1 Day</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(604800)">+1 Week</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Targeting Notification Badge -->
     @if (pendingTargetingRequests.Any())
@@ -379,6 +465,11 @@ private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
 private bool timeEventSubscribed;
 private bool _disposed;
+
+// Local time management (for no-table characters)
+private long localTimeSeconds = 0;
+private int localCurrentRound = 0;
+private bool localIsInCombat = false;
 
 // Targeting state
 private List<TargetingRequestMessage> pendingTargetingRequests = new();
@@ -1662,5 +1753,71 @@ private async Task LoadTableCharactersAsync()
                 errorMessage = $"Failed to save character image: {ex.Message}";
             }
         }
+    }
+
+    // ================================
+    // Local Time Management (No Table)
+    // ================================
+
+    /// <summary>
+    /// Enters combat mode for local (no-table) play.
+    /// </summary>
+    private void LocalEnterCombat()
+    {
+        if (table != null) return; // Only for no-table scenarios
+
+        localIsInCombat = true;
+        localCurrentRound = 1;
+        AddLogEntry("Entered combat mode", ActivityCategory.Combat);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Exits combat mode for local (no-table) play.
+    /// </summary>
+    private void LocalExitCombat()
+    {
+        if (table != null) return; // Only for no-table scenarios
+
+        localIsInCombat = false;
+        AddLogEntry("Exited combat mode", ActivityCategory.Combat);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Advances rounds for local (no-table) play.
+    /// </summary>
+    private void LocalAdvanceRounds(int count)
+    {
+        if (table != null || !localIsInCombat || count <= 0) return;
+
+        localCurrentRound += count;
+        localTimeSeconds += count * 3; // Each round is 3 seconds
+
+        AddLogEntry($"Advanced {count} round(s) (Round {localCurrentRound})", ActivityCategory.Time);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Advances narrative time for local (no-table) play.
+    /// </summary>
+    private void LocalAdvanceTime(int seconds)
+    {
+        if (table != null || localIsInCombat || seconds <= 0) return;
+
+        localTimeSeconds += seconds;
+
+        string timeDesc = seconds switch
+        {
+            60 => "1 minute",
+            600 => "10 minutes",
+            3600 => "1 hour",
+            86400 => "1 day",
+            604800 => "1 week",
+            _ => $"{seconds} seconds"
+        };
+
+        AddLogEntry($"Advanced time by {timeDesc}", ActivityCategory.Time);
+        StateHasChanged();
     }
 }
