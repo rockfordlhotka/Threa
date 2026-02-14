@@ -1,12 +1,7 @@
 using Microsoft.AspNetCore.Components;
+using GameMechanics;
 
 namespace Threa.Client.Components.Shared;
-
-public enum ActionCostType
-{
-    OneAPOneFat,
-    TwoAP
-}
 
 public class ActionCostSelectorBase : ComponentBase
 {

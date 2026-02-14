@@ -1,6 +1,7 @@
 @using Threa.Client.Components.Shared
 @using GameMechanics.Combat
 @using GameMechanics.Messaging
+@using GameMechanics
 
 <div class="targeting-defender-panel">
     <div class="card h-100">
@@ -104,23 +105,23 @@
                 @if (defenseType != DefenseType.Passive)
                 {
                     <hr />
+                    
+                    <!-- Defense Cost Selection -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Defense Boost</label>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">AP</span>
-                                    <input type="number" class="form-control" min="0" max="@MaxAPBoost" @bind="apBoost" @bind:after="OnDataChanged">
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">FAT</span>
-                                    <input type="number" class="form-control" min="0" max="@MaxFATBoost" @bind="fatBoost" @bind:after="OnDataChanged">
-                                </div>
-                            </div>
-                        </div>
-                        <small class="text-muted">+1 TV per boost point spent</small>
+                        <label class="form-label fw-bold">Defense Cost</label>
+                        <ActionCostSelector AP="@MaxAPBoost" 
+                                            Fat="@MaxFATBoost" 
+                                            OnCostTypeSelected="OnDefenseCostTypeChanged" />
+                        <small class="text-muted">Choose how to pay for active defense</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Defense Boost (Optional)</label>
+                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                       AvailableFAT="@GetAvailableFATForBoost()"
+                                       CostType="@defenseCostType"
+                                       OnBoostChanged="OnBoostChanged"
+                                       OnBoostCostChanged="OnBoostCostChanged" />
                     </div>
                 }
             }
@@ -207,6 +208,8 @@
     private CoverType cover = CoverType.None;
     private int apBoost;
     private int fatBoost;
+    private int boostValue;
+    private ActionCostType defenseCostType = ActionCostType.OneAPOneFat;
 
     protected override void OnParametersSet()
     {
@@ -219,18 +222,62 @@
             cover = InitialData.Cover;
             apBoost = InitialData.APBoost;
             fatBoost = InitialData.FATBoost;
+            defenseCostType = InitialData.DefenseCostType;
         }
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = defenseCostType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, MaxAPBoost - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = defenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, MaxFATBoost - baseCost);
+    }
+
+    private async Task OnDefenseCostTypeChanged(ActionCostType type)
+    {
+        defenseCostType = type;
+        // Reset boost when cost type changes
+        boostValue = 0;
+        apBoost = 0;
+        fatBoost = 0;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostChanged(int totalBoost)
+    {
+        boostValue = totalBoost;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        boostValue = cost.Boost;
+        apBoost = cost.APCost;
+        fatBoost = cost.FATCost;
+        await OnDataChanged();
     }
 
     private async Task SetDefenseType(DefenseType type)
     {
         defenseType = type;
+        // Reset boost when switching defense types
+        if (type == DefenseType.Passive)
+        {
+            boostValue = 0;
+            apBoost = 0;
+            fatBoost = 0;
+        }
         await OnDataChanged();
     }
 
     private int GetTotalTVModifier()
     {
-        int modifier = apBoost + fatBoost;
+        int modifier = boostValue;
         if (isMoving) modifier += 2;
         if (isProne) modifier += 2;
         if (isCrouching) modifier += 2;
@@ -266,6 +313,7 @@
             IsProne = isProne,
             IsCrouching = isCrouching,
             Cover = cover,
+            DefenseCostType = defenseCostType,
             APBoost = apBoost,
             FATBoost = fatBoost,
             DodgeAS = DodgeAS,

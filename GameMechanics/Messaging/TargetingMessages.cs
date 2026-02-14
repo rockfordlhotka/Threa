@@ -86,6 +86,11 @@ public class TargetingAttackerData
     public bool IsMoving { get; init; }
 
     /// <summary>
+    /// Action cost type for the attack (1 AP + 1 FAT or 2 AP).
+    /// </summary>
+    public ActionCostType ActionCostType { get; init; } = ActionCostType.OneAPOneFat;
+
+    /// <summary>
     /// AP boost being applied.
     /// </summary>
     public int APBoost { get; init; }
@@ -202,6 +207,11 @@ public class TargetingDefenderData
     /// Target size modifier for ranged attacks.
     /// </summary>
     public TargetSize Size { get; init; } = TargetSize.Normal;
+
+    /// <summary>
+    /// Action cost type for active defense (1 AP + 1 FAT or 2 AP). Only applies to active defense.
+    /// </summary>
+    public ActionCostType DefenseCostType { get; init; } = ActionCostType.OneAPOneFat;
 
     /// <summary>
     /// AP boost for active defense.
