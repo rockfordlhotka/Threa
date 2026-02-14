@@ -253,7 +253,7 @@
                             {
                                 <button class="btn combat-tile combat-tile-skills @(!CanAct() ? "combat-tile-dimmed" : "")"
                                         @onclick="() => StartSkillCheckWithSkill(skill)"
-                                        disabled="@(Character?.IsPassedOut ?? true)"
+                                        disabled="@(!CanAct())"
                                         title="@(CanAct() ? $"{skill.Name} (AS {skill.AbilityScore}) - 1 AP + 1 FAT" : $"{skill.Name} requires 1 AP + 1 FAT")">
                                     <i class="bi bi-check-circle"></i>
                                     <span>@skill.Name</span>
