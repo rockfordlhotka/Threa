@@ -9,7 +9,7 @@ public class StandardFantasyCalendar : IGameCalendar
     public string Id => "standard-fantasy";
     public string Name => "Standard Fantasy";
     public string Theme => "fantasy";
-    public bool IsThemeDefault => true;
+    public bool IsThemeDefault => false;
 
     // Calendar constants (same as DefaultGameTimeFormatService)
     private const long SecondsPerMinute = 60;

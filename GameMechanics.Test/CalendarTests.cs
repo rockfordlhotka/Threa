@@ -63,7 +63,7 @@ public class CalendarTests
         Assert.AreEqual("standard-fantasy", calendar.Id);
         Assert.AreEqual("Standard Fantasy", calendar.Name);
         Assert.AreEqual("fantasy", calendar.Theme);
-        Assert.IsTrue(calendar.IsThemeDefault);
+        Assert.IsFalse(calendar.IsThemeDefault); // CommonCalendar is now the fantasy default
     }
 
     [TestMethod]
@@ -419,8 +419,7 @@ public class CalendarTests
         var provider = CreateProvider();
 
         var fantasyCalendars = provider.GetCalendars("fantasy");
-        Assert.AreEqual(1, fantasyCalendars.Count);
-        Assert.AreEqual("standard-fantasy", fantasyCalendars[0].Id);
+        Assert.AreEqual(3, fantasyCalendars.Count); // Common, Triumvirate, StandardFantasy
 
         var scifiCalendars = provider.GetCalendars("scifi");
         Assert.AreEqual(2, scifiCalendars.Count);
@@ -432,7 +431,7 @@ public class CalendarTests
         var provider = CreateProvider();
 
         var fantasyDefault = provider.GetDefaultCalendar("fantasy");
-        Assert.AreEqual("standard-fantasy", fantasyDefault.Id);
+        Assert.AreEqual("common", fantasyDefault.Id);
 
         var scifiDefault = provider.GetDefaultCalendar("scifi");
         Assert.AreEqual("confederate", scifiDefault.Id);
@@ -445,7 +444,7 @@ public class CalendarTests
 
         var calendar = provider.GetCalendar("fantasy", null);
         Assert.IsNotNull(calendar);
-        Assert.AreEqual("standard-fantasy", calendar.Id);
+        Assert.AreEqual("common", calendar.Id);
     }
 
     [TestMethod]
@@ -455,7 +454,7 @@ public class CalendarTests
 
         var calendar = provider.GetCalendar("fantasy", "nonexistent");
         Assert.IsNotNull(calendar);
-        Assert.AreEqual("standard-fantasy", calendar.Id);
+        Assert.AreEqual("common", calendar.Id);
     }
 
     [TestMethod]
@@ -466,6 +465,16 @@ public class CalendarTests
         var calendar = provider.GetCalendar("scifi", "imperial");
         Assert.IsNotNull(calendar);
         Assert.AreEqual("imperial", calendar.Id);
+    }
+
+    [TestMethod]
+    public void Provider_GetCalendar_ReturnsTriumvirate()
+    {
+        var provider = CreateProvider();
+
+        var calendar = provider.GetCalendar("fantasy", "triumvirate");
+        Assert.IsNotNull(calendar);
+        Assert.AreEqual("triumvirate", calendar.Id);
     }
 
     [TestMethod]
@@ -494,7 +503,7 @@ public class CalendarTests
         var provider = CreateProvider();
 
         var calendar = provider.GetDefaultCalendar("unknown");
-        Assert.AreEqual("standard-fantasy", calendar.Id);
+        Assert.AreEqual("common", calendar.Id);
     }
 
     #endregion
@@ -706,10 +715,334 @@ public class CalendarTests
 
     #endregion
 
+    #region Common Calendar Tests
+
+    [TestMethod]
+    public void Common_Properties()
+    {
+        var calendar = new CommonCalendar();
+        Assert.AreEqual("common", calendar.Id);
+        Assert.AreEqual("Common Calendar", calendar.Name);
+        Assert.AreEqual("fantasy", calendar.Theme);
+        Assert.IsTrue(calendar.IsThemeDefault);
+        Assert.AreEqual(0L, calendar.EpochOffset);
+        Assert.AreEqual("AR", calendar.YearSuffix);
+    }
+
+    [TestMethod]
+    public void Common_FormatDate_EpochZero()
+    {
+        var calendar = new CommonCalendar();
+        // Epoch 0 = Day 1 of Seedmont, Year 1 AR
+        Assert.AreEqual("1 Seedmont 1 AR", calendar.FormatDate(0));
+    }
+
+    [TestMethod]
+    public void Common_FormatDate_OneDay()
+    {
+        var calendar = new CommonCalendar();
+        Assert.AreEqual("2 Seedmont 1 AR", calendar.FormatDate(86_400));
+    }
+
+    [TestMethod]
+    public void Common_FormatDate_SecondMonth()
+    {
+        var calendar = new CommonCalendar();
+        // Floodmont starts at day 29 = 28 * 86400 = 2,419,200
+        Assert.AreEqual("1 Floodmont 1 AR", calendar.FormatDate(2_419_200));
+    }
+
+    [TestMethod]
+    public void Common_FormatDate_Year2()
+    {
+        var calendar = new CommonCalendar();
+        // Year 2 starts at 31,449,600
+        Assert.AreEqual("1 Seedmont 2 AR", calendar.FormatDate(31_449_600));
+    }
+
+    [TestMethod]
+    public void Common_FormatDate_Darkmont()
+    {
+        var calendar = new CommonCalendar();
+        // Darkmont (13th month) starts at day 337 = 336 * 86400 = 29,030,400
+        Assert.AreEqual("1 Darkmont 1 AR", calendar.FormatDate(29_030_400));
+    }
+
+    [TestMethod]
+    public void Common_FormatDateTime_IncludesDayOfWeek()
+    {
+        var calendar = new CommonCalendar();
+        // Epoch 0 = Melday (index 0)
+        var result = calendar.FormatDateTime(0);
+        Assert.IsTrue(result.StartsWith("Melday,"), $"Expected day name, got: {result}");
+        Assert.IsTrue(result.Contains("Seedmont"));
+        Assert.IsTrue(result.Contains("1 AR"));
+    }
+
+    [TestMethod]
+    public void Common_FormatCompact()
+    {
+        var calendar = new CommonCalendar();
+        Assert.AreEqual("1AR/Sed/01 00:00:00", calendar.FormatCompact(0));
+    }
+
+    [TestMethod]
+    public void Common_DayOfWeekProgression()
+    {
+        var calendar = new CommonCalendar();
+        // Day 0 = Melday, Day 1 = Abday, ... Day 6 = Infday, Day 7 = Melday again
+        Assert.IsTrue(calendar.FormatDateTime(0).StartsWith("Melday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400).StartsWith("Abday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 2).StartsWith("Ozday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 3).StartsWith("Lothday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 4).StartsWith("Fathday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 5).StartsWith("Thralday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 6).StartsWith("Infday"));
+        Assert.IsTrue(calendar.FormatDateTime(86_400 * 7).StartsWith("Melday")); // week wraps
+    }
+
+    [TestMethod]
+    [DataRow(0L)]
+    [DataRow(86_400L)]
+    [DataRow(2_419_200L)]
+    [DataRow(31_449_600L)]
+    [DataRow(62_899_200L)]
+    [DataRow(100_000_000L)]
+    public void Common_Decompose_Compose_Roundtrip(long epochSeconds)
+    {
+        var calendar = new CommonCalendar();
+        var (year, month, day, _, hour, minute, second) = calendar.DecomposeDateTime(epochSeconds);
+        var recomposed = calendar.ComposeDateTime(year, month, day, hour, minute, second);
+        Assert.AreEqual(epochSeconds, recomposed, $"Roundtrip failed for epoch {epochSeconds}");
+    }
+
+    [TestMethod]
+    public void Common_Compose_Decompose_Roundtrip()
+    {
+        var calendar = new CommonCalendar();
+        long year = 97;
+        int month = 7, day = 14, hour = 14, minute = 30, second = 45; // 15 Veilmont 97 AR
+        var epoch = calendar.ComposeDateTime(year, month, day, hour, minute, second);
+        var (y, m, d, _, h, min, s) = calendar.DecomposeDateTime(epoch);
+        Assert.AreEqual(year, y);
+        Assert.AreEqual(month, m);
+        Assert.AreEqual(day, d);
+        Assert.AreEqual(hour, h);
+        Assert.AreEqual(minute, min);
+        Assert.AreEqual(second, s);
+    }
+
+    [TestMethod]
+    public void Common_YearEndBoundary()
+    {
+        var calendar = new CommonCalendar();
+        // Last day of year 1: Day 28 of Darkmont = day 364 (index 363)
+        // = 363 * 86400 = 31,363,200
+        var (year, month, day, _, _, _, _) = calendar.DecomposeDateTime(31_363_200);
+        Assert.AreEqual(1L, year);
+        Assert.AreEqual(12, month); // Darkmont (0-indexed)
+        Assert.AreEqual(27, day);   // Day 28 (0-indexed)
+    }
+
+    [TestMethod]
+    public void Common_13Months()
+    {
+        var calendar = new CommonCalendar();
+        Assert.AreEqual(13, calendar.MonthNamesFull.Length);
+        Assert.AreEqual("Seedmont", calendar.MonthNamesFull[0]);
+        Assert.AreEqual("Darkmont", calendar.MonthNamesFull[12]);
+    }
+
+    [TestMethod]
+    public void Common_7DayNames()
+    {
+        var calendar = new CommonCalendar();
+        Assert.AreEqual(7, calendar.DayNames.Length);
+        Assert.AreEqual("Melday", calendar.DayNames[0]);
+        Assert.AreEqual("Infday", calendar.DayNames[6]);
+    }
+
+    [TestMethod]
+    public void Common_CheatSheet_IsNotEmpty()
+    {
+        var calendar = new CommonCalendar();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(calendar.CheatSheet));
+        Assert.IsTrue(calendar.CheatSheet.Contains("Seedmont"));
+        Assert.IsTrue(calendar.CheatSheet.Contains("Belerdar"));
+        Assert.IsTrue(calendar.CheatSheet.Contains("Round"));
+    }
+
+    #endregion
+
+    #region Triumvirate Calendar Tests
+
+    [TestMethod]
+    public void Triumvirate_Properties()
+    {
+        var calendar = new TriumvirateCalendar();
+        Assert.AreEqual("triumvirate", calendar.Id);
+        Assert.AreEqual("Triumvirate Reckoning", calendar.Name);
+        Assert.AreEqual("fantasy", calendar.Theme);
+        Assert.IsFalse(calendar.IsThemeDefault);
+        Assert.AreEqual(817_689_600L, calendar.EpochOffset);
+        Assert.AreEqual("YD", calendar.YearSuffix);
+    }
+
+    [TestMethod]
+    public void Triumvirate_FormatDate_Year1()
+    {
+        var calendar = new TriumvirateCalendar();
+        // Triumvirate Year 1 = Common Year 27 AR = epoch 817,689,600
+        Assert.AreEqual("1 The Awakening, 1 YD", calendar.FormatDate(817_689_600));
+    }
+
+    [TestMethod]
+    public void Triumvirate_FormatDate_Year70()
+    {
+        var calendar = new TriumvirateCalendar();
+        // Year 70 YD = epoch 817,689,600 + (69 * 31,449,600) = 817,689,600 + 2,169,922,400
+        var epoch = 817_689_600L + 69L * 31_449_600L;
+        Assert.AreEqual("1 The Awakening, 70 YD", calendar.FormatDate(epoch));
+    }
+
+    [TestMethod]
+    public void Triumvirate_FormatDateTime_IncludesDayOfWeek()
+    {
+        var calendar = new TriumvirateCalendar();
+        var result = calendar.FormatDateTime(817_689_600);
+        Assert.IsTrue(result.StartsWith("Throneday,"), $"Expected Throneday, got: {result}");
+        Assert.IsTrue(result.Contains("The Awakening"));
+        Assert.IsTrue(result.Contains("1 YD"));
+    }
+
+    [TestMethod]
+    public void Triumvirate_DayOfWeekProgression()
+    {
+        var calendar = new TriumvirateCalendar();
+        long baseEpoch = 817_689_600; // Start of Triumvirate
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch).StartsWith("Throneday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400).StartsWith("Chainday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 2).StartsWith("Flameday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 3).StartsWith("Duskday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 4).StartsWith("Veilday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 5).StartsWith("Crownday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 6).StartsWith("Ashday"));
+        Assert.IsTrue(calendar.FormatDateTime(baseEpoch + 86_400 * 7).StartsWith("Throneday"));
+    }
+
+    [TestMethod]
+    [DataRow(817_689_600L)]               // Triumvirate epoch start
+    [DataRow(817_689_600L + 86_400L)]     // Day 2
+    [DataRow(817_689_600L + 2_419_200L)]  // Second month
+    [DataRow(817_689_600L + 31_449_600L)] // Year 2
+    [DataRow(900_000_000L)]
+    public void Triumvirate_Decompose_Compose_Roundtrip(long epochSeconds)
+    {
+        var calendar = new TriumvirateCalendar();
+        var (year, month, day, _, hour, minute, second) = calendar.DecomposeDateTime(epochSeconds);
+        var recomposed = calendar.ComposeDateTime(year, month, day, hour, minute, second);
+        Assert.AreEqual(epochSeconds, recomposed, $"Roundtrip failed for epoch {epochSeconds}");
+    }
+
+    [TestMethod]
+    public void Triumvirate_Compose_Decompose_Roundtrip()
+    {
+        var calendar = new TriumvirateCalendar();
+        long year = 70;
+        int month = 7, day = 14, hour = 10, minute = 15, second = 30; // 15 The Reckoning, 70 YD
+        var epoch = calendar.ComposeDateTime(year, month, day, hour, minute, second);
+        var (y, m, d, _, h, min, s) = calendar.DecomposeDateTime(epoch);
+        Assert.AreEqual(year, y);
+        Assert.AreEqual(month, m);
+        Assert.AreEqual(day, d);
+        Assert.AreEqual(hour, h);
+        Assert.AreEqual(minute, min);
+        Assert.AreEqual(second, s);
+    }
+
+    [TestMethod]
+    public void Triumvirate_CommonConversion()
+    {
+        // 70 YD = 96 AR (70 + 26 = 96)
+        var common = new CommonCalendar();
+        var triumvirate = new TriumvirateCalendar();
+
+        var triEpoch = triumvirate.ComposeDateTime(70, 0, 0, 0, 0, 0);
+        var (commonYear, _, _, _, _, _, _) = common.DecomposeDateTime(triEpoch);
+        Assert.AreEqual(96L, commonYear, "70 YD should equal 96 AR");
+    }
+
+    [TestMethod]
+    public void Triumvirate_SameDayDifferentNames()
+    {
+        // Same epoch should show same astronomical day but different names
+        var common = new CommonCalendar();
+        var triumvirate = new TriumvirateCalendar();
+
+        long epoch = 817_689_600; // Start of Triumvirate = 1 Seedmont 27 AR
+
+        var commonDate = common.FormatDate(epoch);
+        var triDate = triumvirate.FormatDate(epoch);
+
+        Assert.AreEqual("1 Seedmont 27 AR", commonDate);
+        Assert.AreEqual("1 The Awakening, 1 YD", triDate);
+    }
+
+    [TestMethod]
+    public void Triumvirate_13Months()
+    {
+        var calendar = new TriumvirateCalendar();
+        Assert.AreEqual(13, calendar.MonthNamesFull.Length);
+        Assert.AreEqual("The Awakening", calendar.MonthNamesFull[0]);
+        Assert.AreEqual("The Eternal", calendar.MonthNamesFull[12]);
+    }
+
+    [TestMethod]
+    public void Triumvirate_CheatSheet_IsNotEmpty()
+    {
+        var calendar = new TriumvirateCalendar();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(calendar.CheatSheet));
+        Assert.IsTrue(calendar.CheatSheet.Contains("Throneday"));
+        Assert.IsTrue(calendar.CheatSheet.Contains("The Awakening"));
+    }
+
+    #endregion
+
+    #region Cross-Calendar Consistency Tests
+
+    [TestMethod]
+    public void Common_Triumvirate_ShareAstronomicalConstants()
+    {
+        // Both share 364-day year, 28-day months, 7-day weeks
+        var common = new CommonCalendar();
+        var tri = new TriumvirateCalendar();
+
+        // Same epoch should decompose to same day-of-month and day-of-week
+        long epoch = 900_000_000;
+        var (_, cMonth, cDay, cDow, cHour, _, _) = common.DecomposeDateTime(epoch);
+        var (_, tMonth, tDay, tDow, tHour, _, _) = tri.DecomposeDateTime(epoch);
+
+        // Same month index and day within month (since both have 13×28)
+        Assert.AreEqual(cMonth, tMonth);
+        Assert.AreEqual(cDay, tDay);
+        Assert.AreEqual(cDow, tDow);
+        Assert.AreEqual(cHour, tHour);
+    }
+
+    [TestMethod]
+    public void Triumvirate_EpochOffset_Is26CommonYears()
+    {
+        Assert.AreEqual(26L * ThreanCalendarBase.SecondsPerYear, TriumvirateCalendar.TriumvirateEpochOffset);
+    }
+
+    #endregion
+
     private static GameCalendarProvider CreateProvider()
     {
         IGameCalendar[] calendars =
         [
+            new CommonCalendar(),
+            new TriumvirateCalendar(),
             new StandardFantasyCalendar(),
             new ConfederateCalendar(),
             new ImperialCalendar()

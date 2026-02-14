@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGameTimeFormatService, DefaultGameTimeFormatService>();
 
         // Register calendar systems
+        services.AddSingleton<IGameCalendar, CommonCalendar>();
+        services.AddSingleton<IGameCalendar, TriumvirateCalendar>();
         services.AddSingleton<IGameCalendar, StandardFantasyCalendar>();
         services.AddSingleton<IGameCalendar, ConfederateCalendar>();
         services.AddSingleton<IGameCalendar, ImperialCalendar>();

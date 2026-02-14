@@ -18,7 +18,11 @@
         }
     </div>
     <div class="card-body">
-        @if (selectedCalendar is StandardFantasyCalendar)
+        @if (selectedCalendar is ThreanCalendarBase threanCal)
+        {
+            <ThreanTimeFields EpochSeconds="@currentEpoch" Calendar="threanCal" OnChanged="HandleFieldChanged" />
+        }
+        else if (selectedCalendar is StandardFantasyCalendar)
         {
             <FantasyTimeFields EpochSeconds="@currentEpoch" OnChanged="HandleFieldChanged" />
         }

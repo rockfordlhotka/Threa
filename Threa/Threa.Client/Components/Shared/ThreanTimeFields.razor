@@ -1,0 +1,73 @@
+@namespace Threa.Client.Components.Shared
+
+@using GameMechanics.Time.Calendars
+
+<div class="row g-2">
+    <div class="col-4">
+        <label class="form-label small">Year</label>
+        <input type="number" class="form-control" value="@year" @onchange="e => SetYear(e)" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Month</label>
+        <select class="form-select" value="@month" @onchange="e => SetMonth(e)">
+            @for (int i = 0; i < Calendar.MonthNamesFull.Length; i++)
+            {
+                <option value="@i">@(i + 1) - @Calendar.MonthNamesFull[i]</option>
+            }
+        </select>
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Day (1-28)</label>
+        <input type="number" class="form-control" value="@(day + 1)" @onchange="e => SetDay(e)" min="1" max="28" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Hour (0-23)</label>
+        <input type="number" class="form-control" value="@hour" @onchange="e => SetHour(e)" min="0" max="23" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Minute (0-59)</label>
+        <input type="number" class="form-control" value="@minute" @onchange="e => SetMinute(e)" min="0" max="59" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Second (0-59)</label>
+        <input type="number" class="form-control" value="@second" @onchange="e => SetSecond(e)" min="0" max="59" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public long EpochSeconds { get; set; }
+
+    [Parameter, EditorRequired]
+    public ThreanCalendarBase Calendar { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<long> OnChanged { get; set; }
+
+    private long year;
+    private int month, day, hour, minute, second;
+
+    protected override void OnParametersSet()
+    {
+        (year, month, day, _, hour, minute, second) = Calendar.DecomposeDateTime(EpochSeconds);
+    }
+
+    private async Task SetYear(ChangeEventArgs e) { year = ParseLong(e); await Recompose(); }
+    private async Task SetMonth(ChangeEventArgs e) { month = ParseInt(e); await Recompose(); }
+    private async Task SetDay(ChangeEventArgs e) { day = ParseInt(e) - 1; await Recompose(); }
+    private async Task SetHour(ChangeEventArgs e) { hour = ParseInt(e); await Recompose(); }
+    private async Task SetMinute(ChangeEventArgs e) { minute = ParseInt(e); await Recompose(); }
+    private async Task SetSecond(ChangeEventArgs e) { second = ParseInt(e); await Recompose(); }
+
+    private async Task Recompose()
+    {
+        var epoch = Calendar.ComposeDateTime(year, month, day, hour, minute, second);
+        await OnChanged.InvokeAsync(epoch);
+    }
+
+    private static long ParseLong(ChangeEventArgs e) =>
+        long.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+
+    private static int ParseInt(ChangeEventArgs e) =>
+        int.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+}
