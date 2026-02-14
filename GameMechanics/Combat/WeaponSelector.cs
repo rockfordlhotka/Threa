@@ -53,6 +53,45 @@ public static class WeaponSelector
         return rangedProps?.IsRangedWeapon == true;
     }
 
+    /// <summary>
+    /// Gets available unarmed (virtual) weapon templates based on the character's equipment state.
+    /// Per design: Punches require empty hand (no MainHand/TwoHand weapon), kicks are always available.
+    /// </summary>
+    /// <param name="virtualWeaponTemplates">All virtual weapon templates from the database.</param>
+    /// <param name="equippedItems">The character's currently equipped items.</param>
+    /// <returns>Virtual weapon templates available for the character's current equipment state.</returns>
+    public static IEnumerable<ItemTemplate> GetAvailableUnarmedWeapons(
+        IEnumerable<ItemTemplate> virtualWeaponTemplates,
+        IEnumerable<EquippedItemInfo> equippedItems)
+    {
+        var equipped = equippedItems.ToList();
+        bool hasMainHandWeapon = equipped.Any(i =>
+            i.Template.ItemType == ItemType.Weapon &&
+            (i.Item.EquippedSlot == EquipmentSlot.MainHand || i.Item.EquippedSlot == EquipmentSlot.TwoHand));
+
+        foreach (var template in virtualWeaponTemplates)
+        {
+            if (!template.IsVirtual || template.ItemType != ItemType.Weapon)
+                continue;
+
+            // Kicks (AVModifier < 0) are always available - they use legs
+            // Punches (AVModifier >= 0) require at least one empty hand
+            bool isPunchType = template.AVModifier >= 0;
+            if (isPunchType && hasMainHandWeapon)
+                continue;
+
+            yield return template;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether any hand weapon slots (MainHand/OffHand/TwoHand) have a weapon equipped.
+    /// </summary>
+    public static bool HasMeleeWeaponEquipped(IEnumerable<EquippedItemInfo> equippedItems)
+    {
+        return GetMeleeWeapons(equippedItems).Any();
+    }
+
     private static bool IsWeaponSlot(EquipmentSlot slot) =>
         slot == EquipmentSlot.MainHand ||
         slot == EquipmentSlot.OffHand ||
