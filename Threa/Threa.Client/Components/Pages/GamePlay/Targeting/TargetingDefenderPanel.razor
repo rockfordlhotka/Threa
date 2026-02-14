@@ -219,7 +219,7 @@
     private CoverType cover = CoverType.None;
     private int apBoost;
     private int fatBoost;
-    private int boostValue;
+    private int defenseTVBoost;
     private ActionCostType defenseCostType = ActionCostType.OneAPOneFat;
 
     protected override void OnParametersSet()
@@ -253,7 +253,7 @@
     {
         defenseCostType = type;
         // Reset boost when cost type changes
-        boostValue = 0;
+        defenseTVBoost = 0;
         apBoost = 0;
         fatBoost = 0;
         await OnDataChanged();
@@ -261,13 +261,13 @@
 
     private async Task OnBoostChanged(int totalBoost)
     {
-        boostValue = totalBoost;
+        defenseTVBoost = totalBoost;
         await OnDataChanged();
     }
 
     private async Task OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
     {
-        boostValue = cost.Boost;
+        defenseTVBoost = cost.Boost;
         apBoost = cost.APCost;
         fatBoost = cost.FATCost;
         await OnDataChanged();
@@ -279,7 +279,7 @@
         // Reset boost when switching defense types
         if (type == DefenseType.Passive)
         {
-            boostValue = 0;
+            defenseTVBoost = 0;
             apBoost = 0;
             fatBoost = 0;
         }
@@ -288,7 +288,7 @@
 
     private int GetTotalTVModifier()
     {
-        int modifier = boostValue;
+        int modifier = defenseTVBoost;
         if (isMoving) modifier += 2;
         if (isProne) modifier += 2;
         if (isCrouching) modifier += 2;
