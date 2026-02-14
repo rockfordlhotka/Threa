@@ -114,6 +114,20 @@ else
 
                             <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.IsActive)" />
 
+                            @if (vm.Model.ItemType == ItemType.Weapon)
+                            {
+                                <tr>
+                                    <td>Virtual Weapon</td>
+                                    <td>
+                                        <RadzenCheckBox @bind-Value="vm.Model.IsVirtual" />
+                                        <small class="text-muted ms-2">
+                                            Virtual weapons (e.g., Punch, Kick) are innate abilities that appear as combat options
+                                            but are not shown in inventory or equipment UI.
+                                        </small>
+                                    </td>
+                                </tr>
+                            }
+
                             <tr>
                                 <td>Tags</td>
                                 <td>
