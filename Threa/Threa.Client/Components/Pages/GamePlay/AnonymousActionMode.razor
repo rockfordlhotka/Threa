@@ -382,23 +382,29 @@
         if ((fatCost + boostFATCost) > 0)
             Character.Fatigue.Value -= (fatCost + boostFATCost);
 
-        // Calculate effective value
+        // Calculate effective value using standard AS formula
         int attributeValue = Character.GetEffectiveAttribute(selectedAttribute);
-        // Anonymous actions use RAW attribute value, NOT the AS formula (no skill level, no -5)
-        int effectiveValue = attributeValue + boostValue;
-
-        // Apply wound penalty BEFORE rolling
-        int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
-        int woundPenalty = woundCount * 2;
-        effectiveValue -= woundPenalty;
-
-        // Apply multi-action penalty BEFORE rolling (ActionsTakenThisRound already incremented)
+        // Anonymous actions use skill level 0: AS = Attribute + 0 - 5 = Attribute - 5
+        // GetEffectiveAttribute already includes item bonuses and effect attribute modifiers
+        int baseAS = attributeValue - 5;
+        
+        // Apply ability score modifiers from active effects (wounds, buffs, debuffs, etc.)
+        // Use empty string for skill name since this is an anonymous action
+        var effectASModifier = Character.Effects.GetAbilityScoreModifier("", selectedAttribute, baseAS);
+        
+        // Calculate multi-action penalty (ActionsTakenThisRound already incremented)
         int multiActionPenalty = 0;
         if (Character.ActionPoints.ActionsTakenThisRound > 1)
         {
             multiActionPenalty = (Character.ActionPoints.ActionsTakenThisRound - 1) * 2;
-            effectiveValue -= multiActionPenalty;
         }
+        
+        // Apply all modifiers: boost, effects, and multi-action penalty
+        int effectiveValue = baseAS + boostValue + effectASModifier - multiActionPenalty;
+        
+        // Track wound penalty for display (wounds are included in effectASModifier)
+        int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
+        int woundPenalty = woundCount * 2;
 
         // Roll and calculate result
         int diceRoll = GameMechanics.Dice.Roll4dFPlus();
