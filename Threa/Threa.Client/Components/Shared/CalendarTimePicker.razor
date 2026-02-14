@@ -1,0 +1,105 @@
+@namespace Threa.Client.Components.Shared
+
+@using GameMechanics.Time.Calendars
+
+@inject IGameCalendarProvider CalendarProvider
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong><i class="bi bi-calendar3 me-1"></i>Set Date / Time</strong>
+        @if (availableCalendars.Count > 1)
+        {
+            <select class="form-select form-select-sm w-auto" value="@selectedCalendarId" @onchange="OnCalendarChanged">
+                @foreach (var cal in availableCalendars)
+                {
+                    <option value="@cal.Id">@cal.Name</option>
+                }
+            </select>
+        }
+    </div>
+    <div class="card-body">
+        @if (selectedCalendar is StandardFantasyCalendar)
+        {
+            <FantasyTimeFields EpochSeconds="@currentEpoch" OnChanged="HandleFieldChanged" />
+        }
+        else if (selectedCalendar is ConfederateCalendar)
+        {
+            <ConfederateTimeFields EpochSeconds="@currentEpoch" OnChanged="HandleFieldChanged" />
+        }
+        else if (selectedCalendar is ImperialCalendar)
+        {
+            <ImperialTimeFields EpochSeconds="@currentEpoch" OnChanged="HandleFieldChanged" />
+        }
+
+        <!-- Live Preview -->
+        <div class="mt-3 p-2 rounded text-center" style="background: var(--color-bg-tertiary);">
+            <small style="color: var(--color-text-muted);">Preview</small>
+            <div class="fw-bold" style="font-family: var(--font-display);">
+                @(selectedCalendar?.FormatDateTime(currentEpoch) ?? currentEpoch.ToString())
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary flex-grow-1" @onclick="HandleSet">
+                <i class="bi bi-check-lg me-1"></i>Set
+            </button>
+            <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public long EpochSeconds { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Theme { get; set; } = "fantasy";
+
+    [Parameter]
+    public string? DefaultCalendarId { get; set; }
+
+    [Parameter]
+    public EventCallback<long> OnTimeSet { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private long currentEpoch;
+    private string selectedCalendarId = "";
+    private IGameCalendar? selectedCalendar;
+    private IReadOnlyList<IGameCalendar> availableCalendars = [];
+
+    protected override void OnParametersSet()
+    {
+        currentEpoch = EpochSeconds;
+        availableCalendars = CalendarProvider.GetCalendars(Theme);
+
+        if (string.IsNullOrEmpty(selectedCalendarId))
+        {
+            selectedCalendarId = DefaultCalendarId ?? CalendarProvider.GetDefaultCalendar(Theme).Id;
+        }
+
+        selectedCalendar = CalendarProvider.GetCalendar(Theme, selectedCalendarId);
+    }
+
+    private void OnCalendarChanged(ChangeEventArgs e)
+    {
+        selectedCalendarId = e.Value?.ToString() ?? "";
+        selectedCalendar = CalendarProvider.GetCalendar(Theme, selectedCalendarId);
+    }
+
+    private void HandleFieldChanged(long newEpoch)
+    {
+        currentEpoch = newEpoch;
+    }
+
+    private async Task HandleSet()
+    {
+        await OnTimeSet.InvokeAsync(currentEpoch);
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

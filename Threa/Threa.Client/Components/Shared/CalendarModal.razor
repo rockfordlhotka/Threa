@@ -1,0 +1,115 @@
+@namespace Threa.Client.Components.Shared
+
+@using GameMechanics.Time.Calendars
+@using Markdig
+
+@inject IGameCalendarProvider CalendarProvider
+
+<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @onclick="HandleBackdropClick">
+    <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar3 me-2"></i>Calendar Systems
+                </h5>
+                <button type="button" class="btn-close" @onclick="Close"></button>
+            </div>
+            <div class="modal-body">
+                @foreach (var calendar in CalendarProvider.GetCalendars(Theme))
+                {
+                    var isDefault = IsCurrentDefault(calendar);
+                    <div class="card mb-2 @(isDefault ? "border-primary" : "")">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@calendar.Name</strong>
+                                    @if (isDefault)
+                                    {
+                                        <span class="badge bg-primary ms-2">Default</span>
+                                    }
+                                </div>
+                                @if (IsGm && !isDefault)
+                                {
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            @onclick="() => SetDefault(calendar.Id)">
+                                        Set as Default
+                                    </button>
+                                }
+                            </div>
+                            <div class="mt-1" style="font-family: monospace;">
+                                @calendar.FormatDateTime(EpochSeconds)
+                            </div>
+                        </div>
+                    </div>
+                }
+                @{ var defaultCalendar = GetDefaultCalendar(); }
+                @if (defaultCalendar is not null && !string.IsNullOrWhiteSpace(defaultCalendar.CheatSheet))
+                {
+                    <div class="card mt-3 border-info">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <strong><i class="bi bi-clock-history me-1"></i>@defaultCalendar.Name - Time Reference</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            @((MarkupString)Markdown.ToHtml(defaultCalendar.CheatSheet, _markdownPipeline))
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public long EpochSeconds { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Theme { get; set; } = "fantasy";
+
+    [Parameter]
+    public string? DefaultCalendarId { get; set; }
+
+    [Parameter]
+    public bool IsGm { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnDefaultChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private static readonly MarkdownPipeline _markdownPipeline =
+        new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+    private IGameCalendar? GetDefaultCalendar()
+    {
+        var calendars = CalendarProvider.GetCalendars(Theme);
+        return calendars.FirstOrDefault(c => IsCurrentDefault(c));
+    }
+
+    private bool IsCurrentDefault(IGameCalendar calendar)
+    {
+        if (string.IsNullOrEmpty(DefaultCalendarId))
+            return calendar.IsThemeDefault;
+        return calendar.Id == DefaultCalendarId;
+    }
+
+    private async Task SetDefault(string calendarId)
+    {
+        DefaultCalendarId = calendarId;
+        await OnDefaultChanged.InvokeAsync(calendarId);
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

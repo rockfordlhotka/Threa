@@ -196,7 +196,11 @@ else
                 {
                     <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
                         <div style="font-family: var(--font-display); font-size: 0.85rem;">@table.Name</div>
-                        <small style="color: var(--color-text-muted);">@TimeFormat.FormatCompact(table.CurrentTimeSeconds)</small>
+                        <small style="color: var(--color-text-muted);">
+                            <GameTimeDisplay EpochSeconds="table.CurrentTimeSeconds"
+                                             Theme="@table.Theme"
+                                             DefaultCalendarId="@table.DefaultCalendarId" />
+                        </small>
                         <div class="mt-1">
                             @if (table.IsInCombat)
                             {

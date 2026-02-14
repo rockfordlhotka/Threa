@@ -132,6 +132,17 @@ public class TableEdit : BusinessBase<TableEdit>
         set => SetProperty(DescriptionProperty, value);
     }
 
+    public static readonly PropertyInfo<string> DefaultCalendarIdProperty = RegisterProperty<string>(nameof(DefaultCalendarId));
+    /// <summary>
+    /// The GM-selected default calendar ID for time display.
+    /// Null/empty means use the theme's natural default.
+    /// </summary>
+    public string DefaultCalendarId
+    {
+        get => GetProperty(DefaultCalendarIdProperty);
+        set => SetProperty(DefaultCalendarIdProperty, value);
+    }
+
     public string StatusDisplay => Status switch
     {
         TableStatus.Lobby => "Lobby",
@@ -245,6 +256,23 @@ public class TableEdit : BusinessBase<TableEdit>
         }
     }
 
+    /// <summary>
+    /// Sets the current game time to the specified epoch seconds.
+    /// Adjusts StartTimeSeconds to account for the current round offset.
+    /// </summary>
+    public void SetTime(long epochSeconds)
+    {
+        if (Status == TableStatus.Active)
+        {
+            StartTimeSeconds = epochSeconds - (CurrentRound * 3L);
+            LastTimeAdvance = DateTime.UtcNow;
+        }
+        else if (Status == TableStatus.Lobby)
+        {
+            StartTimeSeconds = epochSeconds;
+        }
+    }
+
     [Create]
     [RunLocal]
     private void Create([Inject] ApplicationContext applicationContext)
@@ -323,6 +351,7 @@ public class TableEdit : BusinessBase<TableEdit>
         StartTimeSeconds = dto.StartTimeSeconds;
         Theme = dto.Theme ?? "fantasy";
         Description = dto.Description ?? string.Empty;
+        DefaultCalendarId = dto.DefaultCalendarId ?? string.Empty;
     }
 
     private void MapToDto(GameTable dto)
@@ -341,5 +370,6 @@ public class TableEdit : BusinessBase<TableEdit>
         dto.StartTimeSeconds = StartTimeSeconds;
         dto.Theme = Theme;
         dto.Description = Description;
+        dto.DefaultCalendarId = string.IsNullOrEmpty(DefaultCalendarId) ? null : DefaultCalendarId;
     }
 }
