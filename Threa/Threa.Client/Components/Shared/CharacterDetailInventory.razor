@@ -297,7 +297,7 @@
             <div class="card-body">
                 @if (isEditingCurrency)
                 {
-                    var editProvider = CurrencyProviderFactory.GetProvider(Character?.Setting);
+                    var editProvider = CurrencyProviderFactory.GetProvider(TableTheme ?? Character?.Setting);
                     <div class="row g-2 align-items-end">
                         @foreach (var denom in editProvider.Denominations)
                         {
@@ -321,7 +321,7 @@
                 }
                 else
                 {
-                    var displayProvider = CurrencyProviderFactory.GetProvider(Character?.Setting);
+                    var displayProvider = CurrencyProviderFactory.GetProvider(TableTheme ?? Character?.Setting);
                     <div class="d-flex gap-3">
                         @if (Character?.Wallet != null)
                         {
@@ -347,6 +347,9 @@
 
     [Parameter]
     public Guid TableId { get; set; }
+
+    [Parameter]
+    public string? TableTheme { get; set; }
 
     private List<CharacterItem>? items;
     private Dictionary<int, ItemTemplate>? templates;

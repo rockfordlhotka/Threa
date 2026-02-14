@@ -414,7 +414,7 @@
             </div>
             <div class="card-body">
                 @{
-                    var playProvider = CurrencyProviderFactory.GetProvider(Character?.Setting);
+                    var playProvider = CurrencyProviderFactory.GetProvider(Table?.Theme ?? Character?.Setting);
                 }
                 <table class="table table-sm mb-0">
                     <tbody>

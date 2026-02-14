@@ -18,6 +18,9 @@ public interface IGameCalendar
     /// <summary>Whether this is the natural default for its theme</summary>
     bool IsThemeDefault { get; }
 
+    /// <summary>Number of seconds in one calendar year (used for age calculations)</summary>
+    long SecondsPerYear { get; }
+
     /// <summary>Full date/time display (e.g., "3rd of Harvest Moon, Year 2, 14:30")</summary>
     string FormatDateTime(long epochSeconds);
 

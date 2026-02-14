@@ -127,7 +127,11 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 return;
             }
 
-            // 2. Create new character DTO by copying template
+            // 2. Determine setting from table theme (preferred) or template
+            var gameTable = await tableDal.GetTableAsync(TableId);
+            var setting = gameTable?.Theme ?? template.Setting;
+
+            // 3. Create new character DTO by copying template
             var npc = new Character
             {
                 // Id = 0 means insert (SaveCharacterAsync handles this)
@@ -171,8 +175,10 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 XPTotal = template.XPTotal,
                 XPBanked = template.XPBanked,
 
-                // Currency
-                Wallet = template.Wallet.Select(w => new WalletEntry { CurrencyCode = w.CurrencyCode, Amount = w.Amount }).ToList(),
+                // Currency - use table's setting to determine wallet type
+                Wallet = setting == template.Setting
+                    ? template.Wallet.Select(w => new WalletEntry { CurrencyCode = w.CurrencyCode, Amount = w.Amount }).ToList()
+                    : CurrencyProviderFactory.GetProvider(setting).CreateEmptyWallet(),
 
                 // NPC flags - this is the key part
                 IsNpc = true,
@@ -193,8 +199,8 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 SourceTemplateId = TemplateId,
                 SourceTemplateName = template.Name,
 
-                // Setting (fantasy/scifi)
-                Setting = template.Setting,
+                // Setting (fantasy/scifi) - use table's theme
+                Setting = setting,
 
                 // Session notes
                 Notes = SessionNotes ?? string.Empty,
@@ -203,7 +209,7 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 CurrentGameTimeSeconds = 0
             };
 
-            // 3. Copy attributes
+            // 4. Copy attributes
             npc.AttributeList = template.AttributeList
                 .Select(a => new CharacterAttribute
                 {
@@ -212,7 +218,7 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 })
                 .ToList();
 
-            // 4. Copy skills (CharacterSkill extends Skill, so we copy all Skill properties plus Level)
+            // 5. Copy skills (CharacterSkill extends Skill, so we copy all Skill properties plus Level)
             npc.Skills = template.Skills
                 .Select(s => new CharacterSkill
                 {
@@ -256,10 +262,10 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 })
                 .ToList();
 
-            // 5. Save the new NPC character (returns character with new Id)
+            // 6. Save the new NPC character (returns character with new Id)
             var saved = await characterDal.SaveCharacterAsync(npc);
 
-            // 6. Attach to table
+            // 7. Attach to table
             var tableChar = new TableCharacter
             {
                 TableId = TableId,

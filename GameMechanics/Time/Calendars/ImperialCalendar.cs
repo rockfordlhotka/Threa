@@ -13,6 +13,8 @@ public class ImperialCalendar : IGameCalendar
     public string Theme => "scifi";
     public bool IsThemeDefault => false;
 
+    long IGameCalendar.SecondsPerYear => SecondsPerYear;
+
     // Imperial time in seconds
     // 1 bell (Imperial hour) = 62.75 Earth minutes = 3,765 seconds
     // 1 Imperial day = 24 bells = 90,360 seconds (~25.1 Earth hours)
@@ -107,6 +109,7 @@ public class ImperialCalendar : IGameCalendar
 
         long year = remaining / SecondsPerYear;
         remaining %= SecondsPerYear;
+        if (remaining < 0) { year--; remaining += SecondsPerYear; }
 
         int dayOfYear = (int)(remaining / SecondsPerDay);
         remaining %= SecondsPerDay;

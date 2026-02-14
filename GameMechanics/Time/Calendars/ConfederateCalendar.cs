@@ -14,6 +14,8 @@ public class ConfederateCalendar : IGameCalendar
     public string Theme => "scifi";
     public bool IsThemeDefault => true;
 
+    long IGameCalendar.SecondsPerYear => SecondsPerYear;
+
     // Confederate time converted to seconds (1 tick = 7.04 seconds)
     private const long SecondsPerWatch = 17_600;       // 2,500 ticks (~4.9 hours)
     private const long SecondsPerDay = 88_000;         // 12,500 ticks (civil day, ~24.4 hours)
@@ -100,6 +102,7 @@ public class ConfederateCalendar : IGameCalendar
 
         long year = remaining / SecondsPerYear;
         remaining %= SecondsPerYear;
+        if (remaining < 0) { year--; remaining += SecondsPerYear; }
 
         long pentade = remaining / SecondsPerPentade;
         remaining %= SecondsPerPentade;

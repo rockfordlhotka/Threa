@@ -1,9 +1,14 @@
 @* Character Detail Narrative - Appearance, backstory, and editable GM notes *@
 
 @using GameMechanics
+@using GameMechanics.Messaging
+@using GameMechanics.Time.Calendars
 @using Threa.Dal
 
 @inject ITableDal tableDal
+@inject IDataPortal<CharacterEdit> characterPortal
+@inject ITimeEventPublisher TimeEventPublisher
+@inject IGameCalendarProvider CalendarProvider
 
 <div class="row">
     <!-- Left: Appearance -->
@@ -34,10 +39,40 @@
                             <td class="text-muted">Hair</td>
                             <td>@(string.IsNullOrEmpty(Character?.HairDescription) ? "-" : Character.HairDescription)</td>
                         </tr>
+                        <tr>
+                            <td class="text-muted">Age</td>
+                            <td>
+                                @if (Character != null && Character.Birthdate.HasValue)
+                                {
+                                    var calendar = CalendarProvider.GetDefaultCalendar(TableTheme);
+                                    long ageSeconds = CurrentTimeSeconds - Character.Birthdate.Value;
+                                    long ageYears = ageSeconds / calendar.SecondsPerYear;
+                                    <span class="text-primary" style="cursor: pointer; text-decoration: underline dotted;"
+                                          title="Click to change birthdate"
+                                          @onclick="ToggleBirthdatePicker">@ageYears year@(ageYears != 1 ? "s" : "")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="cursor: pointer;"
+                                          title="Click to set birthdate"
+                                          @onclick="ToggleBirthdatePicker"><em>Not set</em></span>
+                                }
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        @if (showBirthdatePicker)
+        {
+            <div class="mt-3">
+                <CalendarTimePicker EpochSeconds="@(Character?.Birthdate ?? CurrentTimeSeconds)"
+                                   Theme="@TableTheme"
+                                   OnTimeSet="OnBirthdateSet"
+                                   OnCancel="() => showBirthdatePicker = false" />
+            </div>
+        }
 
         <!-- Aliases -->
         @if (!string.IsNullOrEmpty(Character?.Aliases))
@@ -116,8 +151,18 @@
     [Parameter]
     public EventCallback<string?> OnGmNotesChanged { get; set; }
 
+    [Parameter]
+    public long CurrentTimeSeconds { get; set; }
+
+    [Parameter]
+    public string TableTheme { get; set; } = "fantasy";
+
+    [Parameter]
+    public EventCallback OnCharacterUpdated { get; set; }
+
     private string? gmNotes;
     private bool isSaving;
+    private bool showBirthdatePicker;
 
     protected override void OnInitialized()
     {
@@ -128,6 +173,38 @@
     {
         // Update gmNotes when InitialGmNotes changes (e.g., when switching characters)
         gmNotes = InitialGmNotes;
+    }
+
+    private void ToggleBirthdatePicker()
+    {
+        showBirthdatePicker = !showBirthdatePicker;
+    }
+
+    private async Task OnBirthdateSet(long newBirthdate)
+    {
+        showBirthdatePicker = false;
+        if (Character == null) return;
+
+        try
+        {
+            var character = await characterPortal.FetchAsync(CharacterId);
+            character.Birthdate = newBirthdate;
+            await characterPortal.UpdateAsync(character);
+
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = CharacterId,
+                UpdateType = CharacterUpdateType.General,
+                CampaignId = TableId.ToString(),
+                Description = "Birthdate updated"
+            });
+
+            await OnCharacterUpdated.InvokeAsync();
+        }
+        catch
+        {
+            // Silently fail - character will reload on next refresh
+        }
     }
 
     private async Task SaveGmNotes()

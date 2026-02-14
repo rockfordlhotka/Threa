@@ -22,7 +22,7 @@ public class Character
     public string SkinDescription { get; set; } = string.Empty;
     public string HairDescription { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public long Birthdate { get; set; }
+    public long? Birthdate { get; set; }
     public int XPTotal { get; set; }
     public int XPBanked { get; set; }
     public int ActionPointMax { get; set; }

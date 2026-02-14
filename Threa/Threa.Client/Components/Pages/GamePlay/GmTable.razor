@@ -1341,6 +1341,15 @@ else
             try
             {
                 expandedCharacter = await characterPortal.FetchAsync(characterId);
+
+                // Sync character setting with table theme (rebuilds wallet if needed)
+                if (expandedCharacter != null && table != null
+                    && !string.IsNullOrEmpty(table.Theme)
+                    && expandedCharacter.Setting != table.Theme)
+                {
+                    expandedCharacter.Setting = table.Theme;
+                    expandedCharacter = await expandedCharacter.SaveAsync();
+                }
             }
             catch
             {

@@ -177,9 +177,9 @@ namespace GameMechanics
       set => SetProperty(WeightProperty, value);
     }
 
-    public static readonly PropertyInfo<long> BirthdateProperty = RegisterProperty<long>(nameof(Birthdate));
+    public static readonly PropertyInfo<long?> BirthdateProperty = RegisterProperty<long?>(nameof(Birthdate));
     [Display(Name = "Birth date")]
-    public long Birthdate
+    public long? Birthdate
     {
       get => GetProperty(BirthdateProperty);
       set => SetProperty(BirthdateProperty, value);
@@ -396,8 +396,28 @@ namespace GameMechanics
     public string Setting
     {
       get => GetProperty(SettingProperty);
-      set => SetProperty(SettingProperty, value);
+      set
+      {
+        var oldSetting = GetProperty(SettingProperty);
+        SetProperty(SettingProperty, value);
+        if (value != oldSetting)
+          RebuildWalletForSetting(value);
+      }
     }
+
+    /// <summary>
+    /// Rebuilds the wallet entries when the character's setting changes.
+    /// Replaces current wallet with empty entries for the new setting's currencies.
+    /// </summary>
+    private void RebuildWalletForSetting(string setting)
+    {
+      if (_walletPortal == null) return;
+      Wallet = _walletPortal.CreateChild(setting);
+    }
+
+    [NonSerialized]
+    [NotUndoable]
+    private IChildDataPortal<WalletEditList>? _walletPortal;
 
     // Template organization properties (for NPC templates)
 
@@ -958,6 +978,7 @@ namespace GameMechanics
       IChildDataPortal<Vitality> vitPortal,
       IChildDataPortal<WalletEditList> walletPortal)
     {
+      _walletPortal = walletPortal;
       using (BypassPropertyChecks)
       {
         DamageClass = 1;
@@ -1031,6 +1052,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<WalletEditList> walletPortal,
       [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
+      _walletPortal = walletPortal;
       var existing = await dal.GetCharacterAsync(id);
       using (BypassPropertyChecks)
       {
@@ -1047,15 +1069,17 @@ namespace GameMechanics
 
         Skills = skillPortal.FetchChild(existing.Skills);
 
-        // Load wallet with legacy migration
+        // Load wallet with legacy migration (setting-aware)
 #pragma warning disable CS0612 // Obsolete member usage for migration
         if (existing.Wallet.Count > 0)
           Wallet = walletPortal.FetchChild(existing.Wallet);
-        else
+        else if (existing.Setting == GameSettings.Fantasy)
           Wallet = walletPortal.FetchChild(
             FantasyCurrencyProvider.FromLegacyCoins(
               existing.CopperCoins, existing.SilverCoins,
               existing.GoldCoins, existing.PlatinumCoins));
+        else
+          Wallet = walletPortal.CreateChild(existing.Setting);
 #pragma warning restore CS0612
       }
       BusinessRules.CheckRules();

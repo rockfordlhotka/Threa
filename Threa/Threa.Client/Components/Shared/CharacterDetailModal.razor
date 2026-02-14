@@ -160,7 +160,10 @@
                                           TableId="TableId"
                                           CharacterId="selectedCharacterId"
                                           InitialGmNotes="@currentGmNotes"
-                                          OnGmNotesChanged="@((notes) => currentGmNotes = notes)" />
+                                          OnGmNotesChanged="@((notes) => currentGmNotes = notes)"
+                                          CurrentTimeSeconds="currentTimeSeconds"
+                                          TableTheme="@tableTheme"
+                                          OnCharacterUpdated="OnCharacterUpdated" />
             }
             else if (activeTab == "Admin")
             {
@@ -199,16 +202,19 @@
     private bool subscribed;
     private bool isEditMode;
     private string tableTheme = "fantasy";
+    private long currentTimeSeconds;
 
     protected override async Task OnInitializedAsync()
     {
         selectedCharacterId = CharacterId;
 
-        // Fetch table theme
+        // Fetch table theme and current time
         try
         {
             var table = await tableDal.GetTableAsync(TableId);
             tableTheme = table?.Theme ?? "fantasy";
+            if (table != null)
+                currentTimeSeconds = table.StartTimeSeconds + (table.CurrentRound * 3L);
         }
         catch
         {
