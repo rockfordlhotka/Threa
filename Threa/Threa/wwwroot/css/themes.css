@@ -772,6 +772,48 @@ body::before {
   );
 }
 
+/* Calendar cheat sheet markdown - compact font sizing */
+.calendar-cheatsheet {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.calendar-cheatsheet h1 {
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.calendar-cheatsheet h2 {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.calendar-cheatsheet h3 {
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.calendar-cheatsheet h4,
+.calendar-cheatsheet h5,
+.calendar-cheatsheet h6 {
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.calendar-cheatsheet p {
+  margin-bottom: 0.3rem;
+}
+
+.calendar-cheatsheet ul,
+.calendar-cheatsheet ol {
+  margin-bottom: 0.3rem;
+  padding-left: 1.2rem;
+}
+
+.calendar-cheatsheet table {
+  font-size: 0.7rem;
+}
+
 /* Radzen Dialog Styles */
 .rz-dialog {
   background: var(--color-card-bg) !important;

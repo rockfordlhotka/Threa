@@ -5,7 +5,7 @@
 
 @inject IGameCalendarProvider CalendarProvider
 
-<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @onclick="HandleBackdropClick">
+<div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1050;" @onclick="HandleBackdropClick">
     <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
         <div class="modal-content">
             <div class="modal-header">
@@ -49,7 +49,7 @@
                         <div class="card-header bg-info bg-opacity-10">
                             <strong><i class="bi bi-clock-history me-1"></i>@defaultCalendar.Name - Time Reference</strong>
                         </div>
-                        <div class="card-body py-2">
+                        <div class="card-body py-2 calendar-cheatsheet">
                             @((MarkupString)Markdown.ToHtml(defaultCalendar.CheatSheet, _markdownPipeline))
                         </div>
                     </div>
