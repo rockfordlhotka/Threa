@@ -5,14 +5,21 @@
 @using Radzen
 @using Threa.Dal
 @using Threa.Client.Components.Shared
+@using Threa.Client.Components.Pages.GamePlay
+@using Threa.Client.Components.Pages.GamePlay.Targeting
 
 @implements IAsyncDisposable
 
 @inject IDataPortal<CharacterEdit> characterPortal
+@inject IDataPortal<TableEdit> tablePortal
+@inject IDataPortal<TableCharacterList> characterListPortal
 @inject DialogService DialogService
 @inject ITableDal tableDal
 @inject ITimeEventSubscriber TimeEventSubscriber
 @inject ITimeEventPublisher TimeEventPublisher
+@inject ICharacterItemDal CharacterItemDal
+@inject IItemTemplateDal ItemTemplateDal
+@inject IActivityLogService ActivityLog
 
 <div class="character-detail-modal">
     <!-- Header with character switcher, summary, and close -->
@@ -137,6 +144,19 @@
                                           TableId="TableId"
                                           OnCharacterUpdated="OnCharacterUpdated" />
             }
+            else if (activeTab == "Combat")
+            {
+                <CombatContent Character="character"
+                               Table="table"
+                               AvailableTargets="GetAvailableTargets()"
+                               ActivityEntries="activityLog"
+                               GetActivityCssClass="GetActivityClass"
+                               CharacterItemDal="CharacterItemDal"
+                               ItemTemplateDal="ItemTemplateDal"
+                               ActivityLog="ActivityLog"
+                               OnCharacterChanged="SaveCharacterAsync"
+                               OnInitiateTargeting="HandleInitiateTargeting" />
+            }
             else if (activeTab == "Character Sheet")
             {
                 <CharacterDetailSheet Character="character"
@@ -193,7 +213,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["GM Actions", "Character Sheet", "Inventory", "Narrative", "Admin"];
+    private static readonly string[] tabNames = ["GM Actions", "Combat", "Character Sheet", "Inventory", "Narrative", "Admin"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;
@@ -203,18 +223,25 @@
     private bool isEditMode;
     private string tableTheme = "fantasy";
     private long currentTimeSeconds;
+    private TableEdit? table;
+    private List<TableCharacterInfo> tableCharacters = new();
+    private List<Play.ActivityLogEntry> activityLog = new();
+    private IDisposable? activityLogSubscription;
 
     protected override async Task OnInitializedAsync()
     {
         selectedCharacterId = CharacterId;
 
-        // Fetch table theme and current time
+        // Load table, characters, and theme
         try
         {
-            var table = await tableDal.GetTableAsync(TableId);
+            table = await tablePortal.FetchAsync(TableId);
             tableTheme = table?.Theme ?? "fantasy";
             if (table != null)
                 currentTimeSeconds = table.StartTimeSeconds + (table.CurrentRound * 3L);
+            
+            await LoadTableCharactersAsync();
+            SubscribeToActivityLog(TableId);
         }
         catch
         {
@@ -340,6 +367,94 @@
         StateHasChanged();
     }
 
+    private async Task LoadTableCharactersAsync()
+    {
+        if (table == null) return;
+        var charList = await characterListPortal.FetchAsync(table.Id);
+        tableCharacters = charList.ToList();
+    }
+
+    private void SubscribeToActivityLog(Guid tableId)
+    {
+        // Unsubscribe from any previous subscription
+        activityLogSubscription?.Dispose();
+
+        activityLogSubscription = ActivityLog.Subscribe(tableId, msg =>
+        {
+            InvokeAsync(() =>
+            {
+                activityLog.Add(new Play.ActivityLogEntry(msg.Timestamp, msg.Message, msg.Source, msg.Category));
+                if (activityLog.Count > 100) activityLog.RemoveAt(0);
+                StateHasChanged();
+            });
+        });
+    }
+
+    private List<TargetSelectionModal.TargetInfo> GetAvailableTargets()
+    {
+        if (table == null || character == null)
+            return new List<TargetSelectionModal.TargetInfo>();
+
+        return tableCharacters
+            .Where(c => c.CharacterId != character.Id)
+            .Where(c => !c.IsNpc || c.VisibleToPlayers) // PCs always visible, NPCs only if revealed
+            .Select(c => new TargetSelectionModal.TargetInfo
+            {
+                CharacterId = c.CharacterId,
+                CharacterName = c.CharacterName,
+                PlayerName = c.IsNpc ? null : "Player",
+                IsNPC = c.IsNpc,
+                Disposition = c.Disposition
+            })
+            .ToList();
+    }
+
+    private Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
+    {
+        // For now, targeting in modal is not supported
+        // This would require implementing the full targeting modal UI from Play.razor
+        // TODO: Implement targeting modal support in CharacterDetailModal
+        return Task.CompletedTask;
+    }
+
+    private string GetActivityClass(ActivityCategory category) =>
+        category switch
+        {
+            ActivityCategory.Combat => "text-danger",
+            ActivityCategory.Announcement => "text-primary fw-bold",
+            ActivityCategory.Health => "text-success",
+            ActivityCategory.Effect => "text-warning",
+            ActivityCategory.Time => "text-info",
+            ActivityCategory.Session => "text-secondary fst-italic",
+            ActivityCategory.Player => "text-muted",
+            _ => ""
+        };
+
+    private async Task SaveCharacterAsync()
+    {
+        if (character == null) return;
+        
+        try
+        {
+            character = await character.SaveAsync();
+            
+            // Publish update for real-time sync
+            await TimeEventPublisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+            {
+                CharacterId = character.Id,
+                UpdateType = CharacterUpdateType.General,
+                CampaignId = TableId.ToString(),
+                Description = "Character updated"
+            });
+            
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            // Handle save errors silently
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (subscribed)
@@ -348,5 +463,7 @@
             await TimeEventSubscriber.UnsubscribeAsync();
             subscribed = false;
         }
+        
+        activityLogSubscription?.Dispose();
     }
 }
