@@ -264,6 +264,9 @@
     [Parameter]
     public EventCallback<string> OnSkillCheckComplete { get; set; }
 
+    [Parameter]
+    public GameMechanics.SkillEdit? PreselectedSkill { get; set; }
+
     // Skill selection state
     private GameMechanics.SkillEdit? selectedSkill;
     private bool modalOpened;
@@ -290,7 +293,17 @@
         if (firstRender && !modalOpened)
         {
             modalOpened = true;
-            await OpenSkillPicker();
+            
+            // If a skill is preselected, use it; otherwise open the picker
+            if (PreselectedSkill != null)
+            {
+                selectedSkill = PreselectedSkill;
+            }
+            else
+            {
+                await OpenSkillPicker();
+            }
+            
             StateHasChanged();
         }
     }
