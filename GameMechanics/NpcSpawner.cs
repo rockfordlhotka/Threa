@@ -172,10 +172,7 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 XPBanked = template.XPBanked,
 
                 // Currency
-                CopperCoins = template.CopperCoins,
-                SilverCoins = template.SilverCoins,
-                GoldCoins = template.GoldCoins,
-                PlatinumCoins = template.PlatinumCoins,
+                Wallet = template.Wallet.Select(w => new WalletEntry { CurrencyCode = w.CurrencyCode, Amount = w.Amount }).ToList(),
 
                 // NPC flags - this is the key part
                 IsNpc = true,

@@ -44,6 +44,9 @@
     </div>
 }
 
+@{
+    var currencyProvider = CurrencyProviderFactory.GetProvider(vm.Model.Setting);
+}
 <h4>Currency</h4>
 <div style="margin-bottom: 2rem;">
     <table class="table table-sm" style="max-width: 500px;">
@@ -51,67 +54,39 @@
             <tr>
                 <th>Denomination</th>
                 <th>Amount</th>
-                <th>Value (cp)</th>
+                @if (currencyProvider.HasFixedExchangeRates)
+                {
+                    <th>Value (cp)</th>
+                }
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Platinum (pp)</td>
-                <td>
-                    <input type="number"
-                           class="form-control form-control-sm"
-                           style="width: 100px;"
-                           min="0"
-                           @bind="vm.Model.PlatinumCoins"
-                           disabled="@vm.Model.IsPlayable" />
-                </td>
-                <td>@(vm.Model.PlatinumCoins * 8000)</td>
-            </tr>
-            <tr>
-                <td>Gold (gp)</td>
-                <td>
-                    <input type="number"
-                           class="form-control form-control-sm"
-                           style="width: 100px;"
-                           min="0"
-                           @bind="vm.Model.GoldCoins"
-                           disabled="@vm.Model.IsPlayable" />
-                </td>
-                <td>@(vm.Model.GoldCoins * 400)</td>
-            </tr>
-            <tr>
-                <td>Silver (sp)</td>
-                <td>
-                    <input type="number"
-                           class="form-control form-control-sm"
-                           style="width: 100px;"
-                           min="0"
-                           @bind="vm.Model.SilverCoins"
-                           disabled="@vm.Model.IsPlayable" />
-                </td>
-                <td>@(vm.Model.SilverCoins * 20)</td>
-            </tr>
-            <tr>
-                <td>Copper (cp)</td>
-                <td>
-                    <input type="number"
-                           class="form-control form-control-sm"
-                           style="width: 100px;"
-                           min="0"
-                           @bind="vm.Model.CopperCoins"
-                           disabled="@vm.Model.IsPlayable" />
-                </td>
-                <td>@vm.Model.CopperCoins</td>
-            </tr>
-            <tr class="table-summary-row">
-                <td colspan="2">Total Value</td>
-                <td>@vm.Model.TotalCopperValue cp</td>
-            </tr>
-            <tr class="hint-text">
-                <td colspan="3">
-                    Exchange rates: 1 pp = 8,000 cp | 1 gp = 400 cp | 1 sp = 20 cp
-                </td>
-            </tr>
+            @foreach (var entry in vm.Model.Wallet)
+            {
+                var denom = currencyProvider.Denominations.FirstOrDefault(d => d.Code == entry.CurrencyCode);
+                <tr>
+                    <td>@(denom?.Name ?? entry.CurrencyCode) (@(denom?.Abbreviation ?? entry.CurrencyCode))</td>
+                    <td>
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               style="width: 100px;"
+                               min="0"
+                               @bind="entry.Amount"
+                               disabled="@vm.Model.IsPlayable" />
+                    </td>
+                    @if (currencyProvider.HasFixedExchangeRates)
+                    {
+                        <td>@((long)entry.Amount * (denom?.BaseUnitValue ?? 0))</td>
+                    }
+                </tr>
+            }
+            @if (currencyProvider.HasFixedExchangeRates)
+            {
+                <tr class="table-summary-row">
+                    <td colspan="2">Total Value</td>
+                    <td>@(vm.Model.TotalBaseValue ?? 0) cp</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
@@ -687,31 +662,7 @@ else
 
     private string FormatCurrency(int copperValue)
     {
-        if (copperValue >= 8000)
-        {
-            var pp = copperValue / 8000;
-            var remainder = copperValue % 8000;
-            if (remainder == 0)
-                return $"{pp} pp";
-            return $"{pp} pp, {FormatCurrency(remainder)}";
-        }
-        if (copperValue >= 400)
-        {
-            var gp = copperValue / 400;
-            var remainder = copperValue % 400;
-            if (remainder == 0)
-                return $"{gp} gp";
-            return $"{gp} gp, {FormatCurrency(remainder)}";
-        }
-        if (copperValue >= 20)
-        {
-            var sp = copperValue / 20;
-            var remainder = copperValue % 20;
-            if (remainder == 0)
-                return $"{sp} sp";
-            return $"{sp} sp, {FormatCurrency(remainder)}";
-        }
-        return $"{copperValue} cp";
+        return GameMechanics.MoneyChanger.FormatCopper(copperValue);
     }
 
     private static AmmoContainerProperties? GetAmmoContainerProperties(ItemTemplate template)

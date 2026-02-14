@@ -152,10 +152,7 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
                 XPBanked = source.XPBanked,
 
                 // Currency
-                CopperCoins = source.CopperCoins,
-                SilverCoins = source.SilverCoins,
-                GoldCoins = source.GoldCoins,
-                PlatinumCoins = source.PlatinumCoins,
+                Wallet = source.Wallet.Select(w => new WalletEntry { CurrencyCode = w.CurrencyCode, Amount = w.Amount }).ToList(),
 
                 // NPC/Template flags
                 IsNpc = true,

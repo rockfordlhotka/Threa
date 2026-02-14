@@ -629,43 +629,26 @@ namespace GameMechanics
       set => SetProperty(DamageClassProperty, value);
     }
 
-    public static readonly PropertyInfo<int> CopperCoinsProperty = RegisterProperty<int>(nameof(CopperCoins));
-    [Display(Name = "Copper coins")]
-    public int CopperCoins
+    public static readonly PropertyInfo<WalletEditList> WalletProperty = RegisterProperty<WalletEditList>(nameof(Wallet));
+    public WalletEditList Wallet
     {
-      get => GetProperty(CopperCoinsProperty);
-      set => SetProperty(CopperCoinsProperty, value);
-    }
-
-    public static readonly PropertyInfo<int> SilverCoinsProperty = RegisterProperty<int>(nameof(SilverCoins));
-    [Display(Name = "Silver coins")]
-    public int SilverCoins
-    {
-      get => GetProperty(SilverCoinsProperty);
-      set => SetProperty(SilverCoinsProperty, value);
-    }
-
-    public static readonly PropertyInfo<int> GoldCoinsProperty = RegisterProperty<int>(nameof(GoldCoins));
-    [Display(Name = "Gold coins")]
-    public int GoldCoins
-    {
-      get => GetProperty(GoldCoinsProperty);
-      set => SetProperty(GoldCoinsProperty, value);
-    }
-
-    public static readonly PropertyInfo<int> PlatinumCoinsProperty = RegisterProperty<int>(nameof(PlatinumCoins));
-    [Display(Name = "Platinum coins")]
-    public int PlatinumCoins
-    {
-      get => GetProperty(PlatinumCoinsProperty);
-      set => SetProperty(PlatinumCoinsProperty, value);
+      get => GetProperty(WalletProperty);
+      private set => LoadProperty(WalletProperty, value);
     }
 
     /// <summary>
-    /// Gets the total currency value in copper pieces.
-    /// 1 sp = 20 cp, 1 gp = 400 cp, 1 pp = 8000 cp
+    /// Gets the total base value using the setting-appropriate currency provider.
+    /// Returns null for settings without fixed exchange rates (e.g., sci-fi).
     /// </summary>
-    public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
+    public long? TotalBaseValue
+    {
+      get
+      {
+        var provider = CurrencyProviderFactory.GetProvider(Setting);
+        var entries = Wallet.Select(e => new WalletEntry { CurrencyCode = e.CurrencyCode, Amount = e.Amount });
+        return provider.CalculateBaseValue(entries);
+      }
+    }
 
     /// <summary>
     /// Gets the raw/base attribute value without effect modifiers.
@@ -914,16 +897,6 @@ namespace GameMechanics
       BusinessRules.AddRule(new ActionPointsMax());
       BusinessRules.AddRule(new ActionPointsRecovery());
       BusinessRules.AddRule(new AttributeSumValidation());
-
-      // Currency validation - coins cannot be negative
-      BusinessRules.AddRule(new MinValue<int>(CopperCoinsProperty, 0) 
-        { MessageText = "Copper coins cannot be negative." });
-      BusinessRules.AddRule(new MinValue<int>(SilverCoinsProperty, 0) 
-        { MessageText = "Silver coins cannot be negative." });
-      BusinessRules.AddRule(new MinValue<int>(GoldCoinsProperty, 0) 
-        { MessageText = "Gold coins cannot be negative." });
-      BusinessRules.AddRule(new MinValue<int>(PlatinumCoinsProperty, 0) 
-        { MessageText = "Platinum coins cannot be negative." });
     }
 
     [Create]
@@ -934,25 +907,27 @@ namespace GameMechanics
       [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal)
     {
-      var ci = (System.Security.Claims.ClaimsIdentity?)applicationContext.User.Identity ?? 
+      var ci = (System.Security.Claims.ClaimsIdentity?)applicationContext.User.Identity ??
         throw new InvalidOperationException("User not authenticated");
       var playerId = int.Parse(ci.Claims.Where(r => r.Type == ClaimTypes.NameIdentifier).First().Value);
-      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal, walletPortal);
     }
 
     [Create]
     [RunLocal]
-    private void Create(int playerId, 
+    private void Create(int playerId,
       [Inject] IChildDataPortal<AttributeEditList> attributePortal,
       [Inject] IChildDataPortal<SkillEditList> skillPortal,
       [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal)
     {
-      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, null, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal, walletPortal);
     }
 
     /// <summary>
@@ -968,9 +943,10 @@ namespace GameMechanics
       [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<Fatigue> fatPortal,
-      [Inject] IChildDataPortal<Vitality> vitPortal)
+      [Inject] IChildDataPortal<Vitality> vitPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal)
     {
-      CreateInternal(playerId, species, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal);
+      CreateInternal(playerId, species, attributePortal, skillPortal, effectPortal, actionPointsPortal, fatPortal, vitPortal, walletPortal);
     }
 
     private void CreateInternal(int playerId, Reference.SpeciesInfo? species,
@@ -979,7 +955,8 @@ namespace GameMechanics
       IChildDataPortal<EffectList> effectPortal,
       IChildDataPortal<ActionPoints> actionPointsPortal,
       IChildDataPortal<Fatigue> fatPortal,
-      IChildDataPortal<Vitality> vitPortal)
+      IChildDataPortal<Vitality> vitPortal,
+      IChildDataPortal<WalletEditList> walletPortal)
     {
       using (BypassPropertyChecks)
       {
@@ -987,22 +964,23 @@ namespace GameMechanics
         PlayerId = playerId;
         Species = species?.Id ?? "Human";
         Setting = GameSettings.Default;
-        
+
         // Apply species modifiers to attributes during creation
         if (species != null)
           AttributeList = attributePortal.CreateChild(species);
         else
           AttributeList = attributePortal.CreateChild();
-        
+
         Skills = skillPortal.CreateChild();
         Effects = effectPortal.CreateChild();
         Fatigue = fatPortal.CreateChild(this);
         Vitality = vitPortal.CreateChild(this);
         ActionPoints = actionPointsPortal.CreateChild(this);
+        Wallet = walletPortal.CreateChild(Setting);
         VisibleToPlayers = true;
       }
       BusinessRules.CheckRules();
-      
+
       // Capture the baseline skill levels for this new character
       CaptureOriginalSkillLevels();
     }
@@ -1015,10 +993,12 @@ namespace GameMechanics
         nameof(Fatigue),
         nameof(Vitality),
         nameof(Effects),
+        nameof(Wallet),
         nameof(IsPassedOut),
         nameof(IsBeingSaved),
         nameof(LastConcentrationResult),
         nameof(OriginalSkillLevels),
+        nameof(TotalBaseValue),
         nameof(Threa.Dal.Dto.Character.ActionPointAvailable),
         nameof(Threa.Dal.Dto.Character.ActionPointMax),
         nameof(Threa.Dal.Dto.Character.ActionPointRecovery),
@@ -1032,8 +1012,12 @@ namespace GameMechanics
         nameof(Threa.Dal.Dto.Character.VitPendingHealing),
         nameof(Threa.Dal.Dto.Character.Items),
         nameof(Threa.Dal.Dto.Character.Effects),
-        nameof(TotalCopperValue),
-        nameof(Threa.Dal.Dto.Character.TotalCopperValue),
+        nameof(Threa.Dal.Dto.Character.Wallet),
+        "CopperCoins",
+        "SilverCoins",
+        "GoldCoins",
+        "PlatinumCoins",
+        "TotalCopperValue",
       ];
 
     [Fetch]
@@ -1044,6 +1028,7 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<EffectList> effectPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal,
       [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
     {
       var existing = await dal.GetCharacterAsync(id);
@@ -1054,13 +1039,24 @@ namespace GameMechanics
         Vitality = vitPortal.FetchChild(existing);
         ActionPoints = actionPointsPortal.FetchChild(existing);
         Effects = effectPortal.FetchChild(existing.Effects);
-        
+
         // Load species info to pass modifiers to AttributeList
         var speciesList = await speciesPortal.FetchAsync();
         var speciesInfo = speciesList.FirstOrDefault(s => s.Id == existing.Species);
         AttributeList = attributePortal.FetchChild(existing.AttributeList, speciesInfo);
-        
+
         Skills = skillPortal.FetchChild(existing.Skills);
+
+        // Load wallet with legacy migration
+#pragma warning disable CS0612 // Obsolete member usage for migration
+        if (existing.Wallet.Count > 0)
+          Wallet = walletPortal.FetchChild(existing.Wallet);
+        else
+          Wallet = walletPortal.FetchChild(
+            FantasyCurrencyProvider.FromLegacyCoins(
+              existing.CopperCoins, existing.SilverCoins,
+              existing.GoldCoins, existing.PlatinumCoins));
+#pragma warning restore CS0612
       }
       BusinessRules.CheckRules();
 
@@ -1078,7 +1074,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
-      [Inject] IChildDataPortal<EffectList> effectPortal)
+      [Inject] IChildDataPortal<EffectList> effectPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal)
     {
       var toSave = dal.GetBlank();
       using (BypassPropertyChecks)
@@ -1090,6 +1087,7 @@ namespace GameMechanics
         effectPortal.UpdateChild(Effects, toSave.Effects);
         attributePortal.UpdateChild(AttributeList, toSave.AttributeList);
         skillPortal.UpdateChild(Skills, toSave.Skills);
+        walletPortal.UpdateChild(Wallet, toSave.Wallet);
       }
       var result = await dal.SaveCharacterAsync(toSave);
       Id = result.Id;
@@ -1102,7 +1100,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<Fatigue> fatPortal,
       [Inject] IChildDataPortal<Vitality> vitPortal,
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
-      [Inject] IChildDataPortal<EffectList> effectPortal)
+      [Inject] IChildDataPortal<EffectList> effectPortal,
+      [Inject] IChildDataPortal<WalletEditList> walletPortal)
     {
       using (BypassPropertyChecks)
       {
@@ -1128,6 +1127,7 @@ namespace GameMechanics
         effectPortal.UpdateChild(Effects, existing.Effects);
         attributePortal.UpdateChild(AttributeList, existing.AttributeList);
         skillPortal.UpdateChild(Skills, existing.Skills);
+        walletPortal.UpdateChild(Wallet, existing.Wallet);
         await dal.SaveCharacterAsync(existing);
       }
     }
