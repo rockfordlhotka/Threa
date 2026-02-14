@@ -286,10 +286,10 @@
                             </button>
                             @if (hasToggleableImplantsEquipped)
                             {
-                                <button class="btn combat-tile combat-tile-other @(Character?.ActionPoints.Available < 1 ? "combat-tile-dimmed" : "")"
+                                <button class="btn combat-tile combat-tile-other @(!CanActivateImplant() ? "combat-tile-dimmed" : "")"
                                         @onclick="StartActivateImplant"
-                                        disabled="@((Character?.ActionPoints.Available ?? 0) < 1 || (Character?.IsPassedOut ?? true))"
-                                        title="@(Character?.ActionPoints.Available >= 1 ? "Activate / Deactivate implants" : "Implant activation requires AP")">
+                                        disabled="@(!CanActivateImplant())"
+                                        title="@(CanActivateImplant() ? "Activate / Deactivate implants" : "Implant activation requires AP")">
                                     <i class="bi bi-cpu"></i>
                                     <span>Implants</span>
                                 </button>
@@ -1373,6 +1373,10 @@
     private bool CanRest() =>
         Character?.ActionPoints.Available >= 1 &&
         Character?.Fatigue.Value < Character?.Fatigue.BaseValue &&
+        !Character.IsPassedOut;
+
+    private bool CanActivateImplant() =>
+        Character?.ActionPoints.Available >= 1 &&
         !Character.IsPassedOut;
 
     private int GetVitPercent() => Character?.Vitality.BaseValue > 0
