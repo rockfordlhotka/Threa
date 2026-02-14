@@ -40,9 +40,62 @@
         <!-- Attack Setup -->
         <div class="row">
             <div class="col-md-6">
+                @if (HasMultipleWeapons())
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>1. Select Weapon</strong>
+                        </div>
+                        <div class="card-body">
+                            <select class="form-select" value="@selectedWeaponIndex" @onchange="OnWeaponSelectionChanged">
+                                @for (int i = 0; i < AvailableWeapons!.Count; i++)
+                                {
+                                    var weapon = AvailableWeapons[i];
+                                    <option value="@i">
+                                        @weapon.Name
+                                        @if (weapon.WeaponAVModifier != 0)
+                                        {
+                                            @($" (AV: {(weapon.WeaponAVModifier >= 0 ? "+" : "")}{weapon.WeaponAVModifier}")
+                                            @($", SV: +{weapon.WeaponSVModifier})")
+                                        }
+                                        else
+                                        {
+                                            @($" (SV: +{weapon.WeaponSVModifier})")
+                                        }
+                                    </option>
+                                }
+                            </select>
+                            @{
+                                var selectedWpn = GetSelectedWeapon();
+                            }
+                            @if (selectedWpn != null && !string.IsNullOrEmpty(selectedWpn.Description))
+                            {
+                                <small class="text-muted d-block mt-1">@selectedWpn.Description</small>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (AvailableWeapons?.Count == 1)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>Weapon: @AvailableWeapons[0].Name</strong>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted">
+                                @if (AvailableWeapons[0].WeaponAVModifier != 0)
+                                {
+                                    <span>AV: @(AvailableWeapons[0].WeaponAVModifier >= 0 ? "+" : "")@AvailableWeapons[0].WeaponAVModifier | </span>
+                                }
+                                SV: +@AvailableWeapons[0].WeaponSVModifier | DC: @AvailableWeapons[0].WeaponDamageClass
+                            </small>
+                        </div>
+                    </div>
+                }
+
                 <div class="card mb-3">
                     <div class="card-header">
-                        <strong>1. Select Skill</strong>
+                        <strong>@(HasMultipleWeapons() ? "2" : "1"). Select Skill</strong>
                     </div>
                     <div class="card-body">
                         @if (AvailableSkills == null || !AvailableSkills.Any())
@@ -64,7 +117,7 @@
 
                 <div class="card mb-3">
                     <div class="card-header">
-                        <strong>2. Action Cost</strong>
+                        <strong>@(HasMultipleWeapons() ? "3" : "2"). Action Cost</strong>
                     </div>
                     <div class="card-body">
                         <ActionCostSelector AP="@(Character?.ActionPoints.Available ?? 0)"
@@ -75,7 +128,7 @@
 
                 <div class="card mb-3">
                     <div class="card-header">
-                        <strong>3. Boost (Optional)</strong>
+                        <strong>@(HasMultipleWeapons() ? "4" : "3"). Boost (Optional)</strong>
                     </div>
                     <div class="card-body">
                         <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
@@ -88,7 +141,7 @@
 
                 <div class="card mb-3">
                     <div class="card-header">
-                        <strong>4. Options</strong>
+                        <strong>@(HasMultipleWeapons() ? "5" : "4"). Options</strong>
                     </div>
                     <div class="card-body">
                         <div class="form-check">
@@ -123,13 +176,20 @@
                                     <td>Boost:</td>
                                     <td class="fw-bold text-success">+@boostValue</td>
                                 </tr>
-                                @if (WeaponAVModifier != 0)
+                                @if (GetActiveAVModifier() != 0)
                                 {
                                     <tr>
-                                        <td>Weapon Modifier:</td>
-                                        <td class="fw-bold @(WeaponAVModifier >= 0 ? "text-success" : "text-danger")">
-                                            @(WeaponAVModifier >= 0 ? "+" : "")@WeaponAVModifier
+                                        <td>@(GetActiveWeaponName()) Modifier:</td>
+                                        <td class="fw-bold @(GetActiveAVModifier() >= 0 ? "text-success" : "text-danger")">
+                                            @(GetActiveAVModifier() >= 0 ? "+" : "")@GetActiveAVModifier()
                                         </td>
+                                    </tr>
+                                }
+                                @if (GetActiveSVModifier() != 0)
+                                {
+                                    <tr>
+                                        <td>@(GetActiveWeaponName()) SV Bonus:</td>
+                                        <td class="fw-bold text-success">+@GetActiveSVModifier()</td>
                                     </tr>
                                 }
                                 @if (GetMultiActionPenalty() != 0)
@@ -309,7 +369,14 @@
     [Parameter]
     public int WeaponDamageClass { get; set; } = 1;
 
+    [Parameter]
+    public List<MeleeWeaponInfo>? AvailableWeapons { get; set; }
+
+    [Parameter]
+    public EventCallback<MeleeWeaponInfo> OnWeaponChanged { get; set; }
+
     private int selectedSkillIndex;
+    private int selectedWeaponIndex;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
     private int boostValue;
     private int boostAPCost;
@@ -326,6 +393,51 @@
         {
             selectedSkillIndex = AvailableSkills.IndexOf(SelectedSkill);
             if (selectedSkillIndex < 0) selectedSkillIndex = 0;
+        }
+    }
+
+    private MeleeWeaponInfo? GetSelectedWeapon()
+    {
+        if (AvailableWeapons == null || selectedWeaponIndex < 0 || selectedWeaponIndex >= AvailableWeapons.Count)
+            return null;
+        return AvailableWeapons[selectedWeaponIndex];
+    }
+
+    private int GetActiveAVModifier()
+    {
+        return GetSelectedWeapon()?.WeaponAVModifier ?? WeaponAVModifier;
+    }
+
+    private int GetActiveSVModifier()
+    {
+        return GetSelectedWeapon()?.WeaponSVModifier ?? WeaponSVModifier;
+    }
+
+    private int GetActiveDamageClass()
+    {
+        return GetSelectedWeapon()?.WeaponDamageClass ?? WeaponDamageClass;
+    }
+
+    private string GetActiveWeaponName()
+    {
+        return GetSelectedWeapon()?.Name ?? "weapon";
+    }
+
+    private bool HasMultipleWeapons()
+    {
+        return AvailableWeapons != null && AvailableWeapons.Count > 1;
+    }
+
+    private async Task OnWeaponSelectionChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var index))
+        {
+            selectedWeaponIndex = index;
+            var weapon = GetSelectedWeapon();
+            if (weapon != null && OnWeaponChanged.HasDelegate)
+            {
+                await OnWeaponChanged.InvokeAsync(weapon);
+            }
         }
     }
 
@@ -374,7 +486,7 @@
     {
         var skill = GetSelectedSkill();
         if (skill == null) return 0;
-        return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier() + WeaponAVModifier;
+        return skill.AbilityScore + boostValue + GetMultiActionPenalty() + GetEffectModifier() + GetActiveAVModifier();
     }
 
     private int GetAvailableAPForBoost()
@@ -501,6 +613,8 @@
         attackResult = new AttackResultData
         {
             SkillName = skill.Name,
+            WeaponName = GetActiveWeaponName(),
+            WeaponSVModifier = GetActiveSVModifier(),
             EffectiveAS = effectiveAS,
             DiceRoll = diceRoll,
             AV = av,
@@ -574,9 +688,16 @@
             }
         }
 
+        var weaponLabel = !string.IsNullOrEmpty(attackResult.WeaponName) && attackResult.WeaponName != "weapon"
+            ? $"{attackResult.WeaponName} ({attackResult.SkillName})"
+            : attackResult.SkillName;
         var message = isAnonymousTarget
-            ? $"{Character?.Name} attacks with {attackResult.SkillName} vs anonymous target: AV {attackResult.AV}"
-            : $"{Character?.Name} attacks with {attackResult.SkillName}: AV {attackResult.AV}";
+            ? $"{Character?.Name} attacks with {weaponLabel} vs anonymous target: AV {attackResult.AV}"
+            : $"{Character?.Name} attacks with {weaponLabel}: AV {attackResult.AV}";
+        if (attackResult.WeaponSVModifier > 0)
+        {
+            message += $" (+{attackResult.WeaponSVModifier} SV)";
+        }
         if (includePhysicality && attackResult.PhysicalityDamageBonus > 0)
         {
             message += $" (+{attackResult.PhysicalityDamageBonus} physicality bonus)";
@@ -588,6 +709,8 @@
     private class AttackResultData
     {
         public string SkillName { get; set; } = "";
+        public string WeaponName { get; set; } = "";
+        public int WeaponSVModifier { get; set; }
         public int EffectiveAS { get; set; }
         public int DiceRoll { get; set; }
         public int AV { get; set; }

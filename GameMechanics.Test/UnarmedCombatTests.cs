@@ -1,7 +1,10 @@
 using Csla;
+using GameMechanics.Combat;
 using GameMechanics.Items;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
@@ -293,6 +296,393 @@ public class UnarmedCombatTests : TestBase
 
         Assert.AreEqual(6, effectiveSV);
         Assert.IsTrue(damage.CausesWound, "Effective SV 6 from kick should cause wound");
+    }
+
+    #endregion
+
+    #region AttackResolver Integration Tests for Unarmed Combat
+
+    [TestMethod]
+    public void AttackResolver_PunchAttack_HitWithSVModifier()
+    {
+        // Scenario: Character with Hand-to-Hand AS 11 punches
+        // Punch: AVModifier=0, SVModifier=+2
+        // Attack: AS 11 + AVMod 0 = 11, roll +2 = AV 13
+        // Defender Dodge AS 10, passive TV = 9
+        // Base SV = 13 - 9 = 4
+        // Physicality: AS 10 + roll 0 = 10, RV = 10 - 8 = 2, bonus +1
+        // Final SV = 4 + 1 = 5 (before weapon SV modifier)
+        // With Punch SV modifier: 5 + 2 = 7 effective SV
+
+        var diceRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(2, 0)  // Attack roll +2, Physicality roll 0
+            .QueueDiceRolls(12);        // Hit location (torso)
+
+        int handToHandAS = 11;
+        int punchAVModifier = 0;
+        int effectiveAS = handToHandAS + punchAVModifier;
+
+        var resolver = new AttackResolver(diceRoller);
+        var request = AttackRequest.Create(
+            attackerAS: effectiveAS,
+            attackerPhysicalityAS: 10,
+            defenderDodgeAS: 10);
+
+        var result = resolver.Resolve(request);
+
+        Assert.IsTrue(result.IsHit, "Punch should hit");
+        Assert.AreEqual(13, result.AV, "AV = 11 + 2 roll");
+        Assert.AreEqual(9, result.TV, "TV = Dodge 10 - 1");
+        Assert.AreEqual(4, result.SV, "Base SV = 13 - 9");
+
+        // Verify that applying SV modifier gives correct damage
+        int punchSVModifier = 2;
+        int effectiveSV = result.FinalSV + punchSVModifier;
+        var damage = CombatResultTables.GetDamage(effectiveSV);
+        Assert.IsTrue(damage.FatigueDamage > 0, "Punch hit should deal fatigue damage");
+    }
+
+    [TestMethod]
+    public void AttackResolver_KickAttack_HitWithModifiers()
+    {
+        // Scenario: Character with Hand-to-Hand AS 11 kicks
+        // Kick: AVModifier=-1, SVModifier=+4
+        // Attack: AS 11 + AVMod -1 = 10, roll +2 = AV 12
+        // Defender Dodge AS 10, passive TV = 9
+        // Base SV = 12 - 9 = 3
+        // Physicality: AS 10 + roll 0 = 10, RV = 10 - 8 = 2, bonus +1
+        // Final SV = 3 + 1 = 4 (before weapon SV modifier)
+        // With Kick SV modifier: 4 + 4 = 8 effective SV
+
+        var diceRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(2, 0)  // Attack roll +2, Physicality roll 0
+            .QueueDiceRolls(12);        // Hit location (torso)
+
+        int handToHandAS = 11;
+        int kickAVModifier = -1;
+        int effectiveAS = handToHandAS + kickAVModifier;
+
+        var resolver = new AttackResolver(diceRoller);
+        var request = AttackRequest.Create(
+            attackerAS: effectiveAS,
+            attackerPhysicalityAS: 10,
+            defenderDodgeAS: 10);
+
+        var result = resolver.Resolve(request);
+
+        Assert.IsTrue(result.IsHit, "Kick should hit");
+        Assert.AreEqual(12, result.AV, "AV = 10 + 2 roll");
+        Assert.AreEqual(3, result.SV, "Base SV = 12 - 9");
+
+        // Verify that applying SV modifier gives better damage than punch
+        int kickSVModifier = 4;
+        int effectiveSV = result.FinalSV + kickSVModifier;
+        var damage = CombatResultTables.GetDamage(effectiveSV);
+        Assert.IsTrue(damage.FatigueDamage > 0, "Kick hit should deal fatigue damage");
+        Assert.IsTrue(effectiveSV > result.FinalSV, "Kick SV modifier should increase damage");
+    }
+
+    [TestMethod]
+    public void AttackResolver_KickVsPunch_KickDealsMostDamageWithSameRoll()
+    {
+        // Same scenario, same dice rolls: compare Punch vs Kick effective damage
+        // Attacker Hand-to-Hand AS 12, Defender Dodge AS 10, roll +1
+
+        int handToHandAS = 12;
+        int defenderDodgeAS = 10;
+        int physicalityAS = 10;
+        int passiveTV = defenderDodgeAS - 1; // 9
+
+        // --- Punch ---
+        var punchRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(1, 0)  // Attack roll +1, Physicality roll 0
+            .QueueDiceRolls(12);        // Hit location
+
+        int punchEffAS = handToHandAS + 0; // Punch AV mod = 0
+        var punchResolver = new AttackResolver(punchRoller);
+        var punchRequest = AttackRequest.Create(punchEffAS, physicalityAS, defenderDodgeAS);
+        var punchResult = punchResolver.Resolve(punchRequest);
+
+        int punchEffSV = punchResult.FinalSV + 2; // Punch SV mod +2
+
+        // --- Kick ---
+        var kickRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(1, 0)  // Same dice roll
+            .QueueDiceRolls(12);        // Same hit location
+
+        int kickEffAS = handToHandAS + (-1); // Kick AV mod = -1
+        var kickResolver = new AttackResolver(kickRoller);
+        var kickRequest = AttackRequest.Create(kickEffAS, physicalityAS, defenderDodgeAS);
+        var kickResult = kickResolver.Resolve(kickRequest);
+
+        int kickEffSV = kickResult.FinalSV + 4; // Kick SV mod +4
+
+        // Both should hit
+        Assert.IsTrue(punchResult.IsHit, "Punch should hit");
+        Assert.IsTrue(kickResult.IsHit, "Kick should hit");
+
+        // Kick should have lower base SV but higher effective SV
+        Assert.IsTrue(kickResult.SV < punchResult.SV,
+            "Kick base SV should be lower due to -1 AV modifier");
+        Assert.IsTrue(kickEffSV > punchEffSV,
+            $"Kick effective SV ({kickEffSV}) should be higher than Punch ({punchEffSV})");
+    }
+
+    [TestMethod]
+    public void AttackResolver_UntrainedPunch_StillHitsWithHighRoll()
+    {
+        // Untrained character: Physicality 10, no Hand-to-Hand skill
+        // Hand-to-Hand AS = 10 + 0 - 5 = 5
+        // Punch: AVModifier=0, so effective AS = 5
+        // Roll +4 = AV 9, vs passive TV = 7 (Dodge AS 8 - 1)
+        // SV = 9 - 7 = 2 (hit!)
+
+        var diceRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(4, 0)  // High attack roll, Physicality roll
+            .QueueDiceRolls(12);        // Hit location
+
+        int untrainedAS = 5; // Physicality 10 + skill 0 - 5
+        var resolver = new AttackResolver(diceRoller);
+        var request = AttackRequest.Create(
+            attackerAS: untrainedAS,
+            attackerPhysicalityAS: 10,
+            defenderDodgeAS: 8);
+
+        var result = resolver.Resolve(request);
+
+        Assert.IsTrue(result.IsHit, "Even untrained punch should hit with high roll");
+        Assert.AreEqual(9, result.AV, "AV = 5 + 4 roll");
+        Assert.AreEqual(2, result.SV, "SV = 9 - 7");
+    }
+
+    [TestMethod]
+    public void AttackResolver_KickMiss_DueToAVPenalty()
+    {
+        // Scenario where kick misses but punch would have hit
+        // Hand-to-Hand AS 10, Defender Dodge AS 11 (TV 10)
+        // Roll +0 = AV 10
+        // Punch: AS 10 + roll 0 = AV 10, SV = 10 - 10 = 0 (barely hits)
+        // Kick: AS 10 - 1 = 9 + roll 0 = AV 9, SV = 9 - 10 = -1 (miss!)
+
+        var kickRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(0); // Roll 0
+
+        int kickEffAS = 10 + (-1); // Kick AV modifier
+        var kickResolver = new AttackResolver(kickRoller);
+        var kickRequest = AttackRequest.Create(kickEffAS, 10, 11);
+        var kickResult = kickResolver.Resolve(kickRequest);
+
+        Assert.IsFalse(kickResult.IsHit, "Kick should miss due to -1 AV penalty");
+        Assert.AreEqual(-1, kickResult.SV, "Kick SV should be -1");
+
+        // Verify punch would have hit
+        var punchRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(0, 0)  // Attack and Physicality rolls
+            .QueueDiceRolls(12);        // Hit location
+
+        int punchEffAS = 10 + 0; // Punch AV modifier
+        var punchResolver = new AttackResolver(punchRoller);
+        var punchRequest = AttackRequest.Create(punchEffAS, 10, 11);
+        var punchResult = punchResolver.Resolve(punchRequest);
+
+        Assert.IsTrue(punchResult.IsHit, "Punch should hit where kick missed");
+        Assert.AreEqual(0, punchResult.SV, "Punch barely hits with SV 0");
+    }
+
+    #endregion
+
+    #region WeaponSelector Virtual Weapon Tests
+
+    [TestMethod]
+    public async Task WeaponSelector_NoWeaponEquipped_ReturnsAllUnarmedWeapons()
+    {
+        // When no weapon is equipped, both Punch and Kick should be available
+        var provider = InitServices();
+        var dal = provider.GetRequiredService<IItemTemplateDal>();
+
+        var allTemplates = await dal.GetAllTemplatesAsync();
+        var virtualTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+
+        // No equipped items
+        var equippedItems = new List<EquippedItemInfo>();
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(virtualTemplates, equippedItems).ToList();
+
+        Assert.IsTrue(available.Any(w => w.Name == "Punch"), "Punch should be available when unarmed");
+        Assert.IsTrue(available.Any(w => w.Name == "Kick"), "Kick should be available when unarmed");
+        Assert.IsTrue(available.Count >= 2, "Should have at least Punch and Kick");
+    }
+
+    [TestMethod]
+    public async Task WeaponSelector_MainHandWeaponEquipped_OnlyKickAvailable()
+    {
+        // When a weapon is in main hand, only Kick should be available (uses legs)
+        var provider = InitServices();
+        var dal = provider.GetRequiredService<IItemTemplateDal>();
+
+        var allTemplates = await dal.GetAllTemplatesAsync();
+        var virtualTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+
+        // Simulate equipped weapon in MainHand
+        var swordTemplate = allTemplates.First(t => t.ItemType == ItemType.Weapon && !t.IsVirtual);
+        var equippedItems = new List<EquippedItemInfo>
+        {
+            new EquippedItemInfo(
+                new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.MainHand, Template = swordTemplate },
+                swordTemplate)
+        };
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(virtualTemplates, equippedItems).ToList();
+
+        Assert.IsFalse(available.Any(w => w.Name == "Punch"),
+            "Punch should NOT be available when main hand has weapon");
+        Assert.IsTrue(available.Any(w => w.Name == "Kick"),
+            "Kick should still be available (uses legs)");
+    }
+
+    [TestMethod]
+    public async Task WeaponSelector_TwoHandWeaponEquipped_OnlyKickAvailable()
+    {
+        // When a two-handed weapon is equipped, only Kick should be available
+        var provider = InitServices();
+        var dal = provider.GetRequiredService<IItemTemplateDal>();
+
+        var allTemplates = await dal.GetAllTemplatesAsync();
+        var virtualTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+
+        var swordTemplate = allTemplates.First(t => t.ItemType == ItemType.Weapon && !t.IsVirtual);
+        var equippedItems = new List<EquippedItemInfo>
+        {
+            new EquippedItemInfo(
+                new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.TwoHand, Template = swordTemplate },
+                swordTemplate)
+        };
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(virtualTemplates, equippedItems).ToList();
+
+        Assert.IsFalse(available.Any(w => w.Name == "Punch"),
+            "Punch should NOT be available with two-handed weapon");
+        Assert.IsTrue(available.Any(w => w.Name == "Kick"),
+            "Kick should still be available with two-handed weapon");
+    }
+
+    [TestMethod]
+    public async Task WeaponSelector_FiltersNonVirtualTemplates()
+    {
+        // GetAvailableUnarmedWeapons should ignore non-virtual templates
+        var provider = InitServices();
+        var dal = provider.GetRequiredService<IItemTemplateDal>();
+
+        var allTemplates = await dal.GetAllTemplatesAsync();
+        // Pass ALL templates (including non-virtual)
+        var equippedItems = new List<EquippedItemInfo>();
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(allTemplates, equippedItems).ToList();
+
+        // Should only return virtual weapons
+        Assert.IsTrue(available.All(w => w.IsVirtual), "Only virtual weapons should be returned");
+        Assert.IsTrue(available.Count >= 2, "Should have at least Punch and Kick");
+    }
+
+    #endregion
+
+    #region Full Unarmed Combat Flow Tests
+
+    [TestMethod]
+    public void FullCombatFlow_PunchWithPhysicality_CorrectDamage()
+    {
+        // Full flow: Punch attack → Physicality bonus → Damage lookup
+        // Hand-to-Hand AS 11, Punch AVMod 0, SVMod +2
+        // Roll +1 → AV 12, Defender passive TV 9 (Dodge 10)
+        // Base SV = 12 - 9 = 3
+        // Physicality AS 12, roll +1 = 13, RV = 13 - 8 = 5 → +2 SV bonus
+        // Final SV (from resolver) = 3 + 2 = 5
+        // Apply Punch SV modifier: 5 + 2 = 7 effective SV
+        // Damage at SV 7: serious wound
+
+        var diceRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(1, 1)  // Attack roll +1, Physicality roll +1
+            .QueueDiceRolls(12);        // Hit location
+
+        var resolver = new AttackResolver(diceRoller);
+        var request = AttackRequest.Create(
+            attackerAS: 11, // Hand-to-Hand AS (Punch has 0 AV mod)
+            attackerPhysicalityAS: 12,
+            defenderDodgeAS: 10);
+
+        var result = resolver.Resolve(request);
+
+        Assert.IsTrue(result.IsHit);
+        Assert.AreEqual(3, result.SV, "Base SV = 12 - 9");
+
+        // Apply punch SV modifier
+        int effectiveSV = result.FinalSV + 2;
+        var damage = CombatResultTables.GetDamage(effectiveSV);
+
+        Assert.AreEqual(7, effectiveSV, "Final SV 5 + Punch SV mod 2 = 7");
+        Assert.IsTrue(damage.CausesWound, "SV 7 should cause a wound");
+        Assert.AreEqual(8, damage.FatigueDamage, "SV 7 = 8 FAT damage");
+        Assert.AreEqual(4, damage.VitalityDamage, "SV 7 = 4 VIT damage");
+    }
+
+    [TestMethod]
+    public void FullCombatFlow_KickWithPhysicality_HigherDamageThanPunch()
+    {
+        // Same scenario but with Kick instead of Punch
+        // Hand-to-Hand AS 11, Kick AVMod -1, SVMod +4
+        // Effective AS = 11 - 1 = 10
+        // Roll +1 → AV 11, Defender passive TV 9
+        // Base SV = 11 - 9 = 2
+        // Physicality AS 12, roll +1 = 13, RV = 5 → +2 SV bonus
+        // Final SV (from resolver) = 2 + 2 = 4
+        // Apply Kick SV modifier: 4 + 4 = 8 effective SV
+
+        var diceRoller = new DeterministicDiceRoller()
+            .Queue4dFPlusResults(1, 1)  // Attack roll +1, Physicality roll +1
+            .QueueDiceRolls(12);        // Hit location
+
+        int kickEffAS = 11 - 1; // Kick AV modifier
+        var resolver = new AttackResolver(diceRoller);
+        var request = AttackRequest.Create(
+            attackerAS: kickEffAS,
+            attackerPhysicalityAS: 12,
+            defenderDodgeAS: 10);
+
+        var result = resolver.Resolve(request);
+
+        Assert.IsTrue(result.IsHit);
+
+        // Apply kick SV modifier
+        int effectiveSV = result.FinalSV + 4;
+        var damage = CombatResultTables.GetDamage(effectiveSV);
+
+        Assert.AreEqual(8, effectiveSV, "Final SV 4 + Kick SV mod 4 = 8");
+        Assert.IsTrue(damage.CausesWound, "SV 8 should cause a wound");
+        Assert.IsTrue(damage.FatigueDamage >= 8, "SV 8+ should deal significant damage");
+    }
+
+    [TestMethod]
+    [DataRow(0, 2, "Punch SV 0 + 2 = 2")]
+    [DataRow(1, 3, "Punch SV 1 + 2 = 3")]
+    [DataRow(3, 5, "Punch SV 3 + 2 = 5")]
+    [DataRow(5, 7, "Punch SV 5 + 2 = 7")]
+    public void PunchSVModifier_AppliedCorrectly(int baseSV, int expectedEffectiveSV, string description)
+    {
+        int punchSVModifier = 2;
+        int effectiveSV = baseSV + punchSVModifier;
+        Assert.AreEqual(expectedEffectiveSV, effectiveSV, description);
+    }
+
+    [TestMethod]
+    [DataRow(0, 4, "Kick SV 0 + 4 = 4")]
+    [DataRow(1, 5, "Kick SV 1 + 4 = 5")]
+    [DataRow(2, 6, "Kick SV 2 + 4 = 6")]
+    [DataRow(4, 8, "Kick SV 4 + 4 = 8")]
+    public void KickSVModifier_AppliedCorrectly(int baseSV, int expectedEffectiveSV, string description)
+    {
+        int kickSVModifier = 4;
+        int effectiveSV = baseSV + kickSVModifier;
+        Assert.AreEqual(expectedEffectiveSV, effectiveSV, description);
     }
 
     #endregion

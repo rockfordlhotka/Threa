@@ -348,6 +348,8 @@
                     WeaponAVModifier="meleeWeaponAVModifier"
                     WeaponSVModifier="meleeWeaponSVModifier"
                     WeaponDamageClass="meleeWeaponDamageClass"
+                    AvailableWeapons="meleeWeaponOptions"
+                    OnWeaponChanged="OnMeleeWeaponChanged"
                     OnCancel="ReturnToDefault"
                     OnAttackComplete="OnAttackComplete" />
     }
@@ -525,10 +527,12 @@
     private List<AmmoSourceInfo> availableAmmoSources = new();
     private bool hasToggleableImplantsEquipped;
 
-    // Weapon modifiers for melee attacks (from equipped weapon template)
+    // Melee weapon options (equipped weapons + virtual weapons like Punch/Kick)
+    private List<MeleeWeaponInfo> meleeWeaponOptions = new();
     private int meleeWeaponAVModifier;
     private int meleeWeaponSVModifier;
     private int meleeWeaponDamageClass = 1;
+    private string meleeWeaponName = "";
 
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
@@ -571,13 +575,54 @@
 
         // Detect melee weapons using WeaponSelector
         var meleeWeapons = WeaponSelector.GetMeleeWeapons(equippedItemInfos).ToList();
-        // Note: hasWeaponEquipped will be set after ranged weapons are detected (line ~365)
+        // Note: hasWeaponEquipped will be set after ranged weapons are detected
 
-        // Extract first melee weapon's modifiers for attack mode
-        var selectedMeleeWeapon = meleeWeapons.FirstOrDefault();
-        meleeWeaponAVModifier = selectedMeleeWeapon?.Template.AVModifier ?? 0;
-        meleeWeaponSVModifier = selectedMeleeWeapon?.Template.SVModifier ?? 0;
-        meleeWeaponDamageClass = selectedMeleeWeapon?.Template.DamageClass ?? 1;
+        // Build melee weapon options list (equipped weapons + virtual unarmed weapons)
+        meleeWeaponOptions = new List<MeleeWeaponInfo>();
+
+        // Add equipped melee weapons
+        foreach (var w in meleeWeapons)
+        {
+            meleeWeaponOptions.Add(new MeleeWeaponInfo
+            {
+                TemplateId = w.Template.Id,
+                Name = w.Template.Name,
+                SkillName = w.Template.RelatedSkill ?? "",
+                WeaponAVModifier = w.Template.AVModifier,
+                WeaponSVModifier = w.Template.SVModifier,
+                WeaponDamageClass = w.Template.DamageClass,
+                DamageType = w.Template.DamageType ?? "Bashing",
+                IsVirtual = false,
+                Description = w.Template.ShortDescription
+            });
+        }
+
+        // Load virtual weapons (unarmed attacks: Punch, Kick) based on equipment state
+        var allTemplates = await ItemTemplateDal.GetAllTemplatesAsync();
+        var virtualWeaponTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+        var availableUnarmed = WeaponSelector.GetAvailableUnarmedWeapons(virtualWeaponTemplates, equippedItemInfos);
+        foreach (var vw in availableUnarmed)
+        {
+            meleeWeaponOptions.Add(new MeleeWeaponInfo
+            {
+                TemplateId = vw.Id,
+                Name = vw.Name,
+                SkillName = vw.RelatedSkill ?? "",
+                WeaponAVModifier = vw.AVModifier,
+                WeaponSVModifier = vw.SVModifier,
+                WeaponDamageClass = vw.DamageClass,
+                DamageType = vw.DamageType ?? "Bludgeoning",
+                IsVirtual = true,
+                Description = vw.ShortDescription
+            });
+        }
+
+        // Set default weapon modifiers from first available option
+        var defaultWeapon = meleeWeaponOptions.FirstOrDefault();
+        meleeWeaponAVModifier = defaultWeapon?.WeaponAVModifier ?? 0;
+        meleeWeaponSVModifier = defaultWeapon?.WeaponSVModifier ?? 0;
+        meleeWeaponDamageClass = defaultWeapon?.WeaponDamageClass ?? 1;
+        meleeWeaponName = defaultWeapon?.Name ?? "Unarmed";
 
         // Detect shields
         var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
@@ -666,7 +711,8 @@
                        (i.EquippedSlot.IsImplant() && i.Template?.ItemType == ItemType.Implant && i.Template?.WeaponType != WeaponType.None))
             .ToList();
 
-        // Collect skill names from both melee weapons (RelatedSkill) and ranged weapons (RangedSkill in CustomProperties)
+        // Collect skill names from melee weapons (RelatedSkill), ranged weapons (RangedSkill),
+        // and virtual weapons (RelatedSkill) for attack skill filtering
         var equippedWeaponSkillNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in weaponItems)
@@ -683,6 +729,13 @@
                 equippedWeaponSkillNames.Add(meleeSkill);
             if (!string.IsNullOrWhiteSpace(rangedSkill))
                 equippedWeaponSkillNames.Add(rangedSkill);
+        }
+
+        // Add virtual weapon skills (e.g., Hand-to-Hand for Punch/Kick)
+        foreach (var vw in meleeWeaponOptions.Where(w => w.IsVirtual))
+        {
+            if (!string.IsNullOrWhiteSpace(vw.SkillName))
+                equippedWeaponSkillNames.Add(vw.SkillName);
         }
 
         var skills = Character.Skills.ToList();
@@ -1012,6 +1065,27 @@
     {
         combatMode = CombatMode.Default;
         selectedSkill = null;
+    }
+
+    private void OnMeleeWeaponChanged(MeleeWeaponInfo weapon)
+    {
+        meleeWeaponAVModifier = weapon.WeaponAVModifier;
+        meleeWeaponSVModifier = weapon.WeaponSVModifier;
+        meleeWeaponDamageClass = weapon.WeaponDamageClass;
+        meleeWeaponName = weapon.Name;
+
+        // If the weapon uses a different skill, try to select it
+        if (!string.IsNullOrEmpty(weapon.SkillName) && Character != null)
+        {
+            var matchingSkill = attackSkills.FirstOrDefault(s =>
+                s.Id.Equals(weapon.SkillName, StringComparison.OrdinalIgnoreCase));
+            if (matchingSkill != null)
+            {
+                selectedSkill = matchingSkill;
+            }
+        }
+
+        StateHasChanged();
     }
 
     private async Task OnAttackComplete(string resultMessage)
@@ -1461,10 +1535,14 @@
             weaponAV = meleeWeaponAVModifier;
             weaponSV = meleeWeaponSVModifier;
             weaponDC = meleeWeaponDamageClass;
+            weaponName = meleeWeaponName;
 
-            // Get weapon name from equipped items
-            var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
-            weaponName = mainHand?.Template?.Name ?? "Unarmed";
+            // Fall back to equipped weapon name if no selection
+            if (string.IsNullOrEmpty(weaponName))
+            {
+                var mainHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.MainHand);
+                weaponName = mainHand?.Template?.Name ?? "Unarmed";
+            }
         }
         else if (actionType == TargetingActionType.Medical)
         {
