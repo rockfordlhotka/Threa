@@ -9,6 +9,28 @@
 
 <div class="row">
     <div class="col-md-8">
+        <!-- Standard Skills Group -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-person-gear"></i> <strong>Standard Skills</strong>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var skill in GetStandardSkills())
+                    {
+                        <button class="btn btn-outline-primary"
+                                disabled="@(!CanUseSkill())"
+                                title="@(CanUseSkill() ? $"{skill.Name} (AS {skill.AbilityScore})" : $"{skill.Name} requires 1 AP")"
+                                @onclick="() => UseSkill(skill)">
+                            <i class="bi bi-check-circle me-1"></i>
+                            <strong>@skill.Name</strong>
+                            <span class="badge bg-primary ms-2">@skill.AbilityScore</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <strong>Available Skills</strong>
@@ -303,13 +325,25 @@
             // Filter out magic skills (shown in Magic tab)
             .Where(s => !s.IsSpell && !s.IsManaSkill)
             // Filter out combat-only skills (shown in Combat tab)
-            .Where(s => !s.IsCombatSkill);
+            .Where(s => !s.IsCombatSkill)
+            // Filter out standard skills (shown in Standard Skills section above)
+            .Where(s => s.Category != Threa.Dal.Dto.SkillCategory.Standard);
 
         if (!string.IsNullOrWhiteSpace(searchFilter))
         {
             skills = skills.Where(s => s.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
         }
         return skills.OrderBy(s => s.Name);
+    }
+
+    private List<GameMechanics.SkillEdit> GetStandardSkills()
+    {
+        if (Character?.Skills == null) return new List<GameMechanics.SkillEdit>();
+        
+        return Character.Skills
+            .Where(s => s.Category == Threa.Dal.Dto.SkillCategory.Standard)
+            .OrderBy(s => s.Name)
+            .ToList();
     }
 
     private bool CanUseSkill()

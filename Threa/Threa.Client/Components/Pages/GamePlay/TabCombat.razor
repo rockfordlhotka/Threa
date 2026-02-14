@@ -242,6 +242,27 @@
                     </div>
                 </div>
 
+                <!-- Standard Skills Group -->
+                <div class="card combat-group-skills mb-3">
+                    <div class="card-header">
+                        <i class="bi bi-person-gear"></i> <strong>Standard Skills</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var skill in GetStandardSkills())
+                            {
+                                <button class="btn combat-tile combat-tile-skills @(!CanAct() ? "combat-tile-dimmed" : "")"
+                                        @onclick="() => StartSkillCheckWithSkill(skill)"
+                                        disabled="@(!CanAct())"
+                                        title="@(CanAct() ? $"{skill.Name} (AS {skill.AbilityScore}) - 1 AP + 1 FAT" : $"{skill.Name} requires 1 AP + 1 FAT")">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>@skill.Name</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Other Group -->
                 <div class="card combat-group-other mb-3">
                     <div class="card-header">
@@ -412,6 +433,7 @@
     {
         <SkillCheckMode Character="Character"
                         Table="Table"
+                        PreselectedSkill="preselectedSkillForCheck"
                         OnCancel="ReturnToDefault"
                         OnSkillCheckComplete="OnSkillCheckComplete" />
     }
@@ -488,6 +510,7 @@
     private List<GameMechanics.SkillEdit> filteredSkills = new();
     private List<GameMechanics.SkillEdit> attackSkills = new();
     private GameMechanics.SkillEdit? selectedSkill;
+    private GameMechanics.SkillEdit? preselectedSkillForCheck;
     private List<CharacterItem> equippedItems = new();
 
     // Equipment state
@@ -856,11 +879,17 @@
 
     private void StartSkillCheck()
     {
+        StartSkillCheckWithSkill(null);
+    }
+
+    private void StartSkillCheckWithSkill(GameMechanics.SkillEdit? skill)
+    {
         // Skill checks end parry mode
         if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
         {
             CombatStanceBehavior.EndParryMode(Character);
         }
+        preselectedSkillForCheck = skill;
         combatMode = CombatMode.SkillCheck;
     }
 
@@ -1575,5 +1604,15 @@
         if (!hasWeaponEquipped) return "Requires weapon equipped";
         if (!CanPerformActiveDefenseForStance()) return "Not enough AP/FAT to enter Parry Mode";
         return "Free parry defenses (costs 1 AP + 1 FAT to enter)";
+    }
+
+    private List<GameMechanics.SkillEdit> GetStandardSkills()
+    {
+        if (Character?.Skills == null) return new List<GameMechanics.SkillEdit>();
+        
+        return Character.Skills
+            .Where(s => s.Category == Threa.Dal.Dto.SkillCategory.Standard)
+            .OrderBy(s => s.Name)
+            .ToList();
     }
 }

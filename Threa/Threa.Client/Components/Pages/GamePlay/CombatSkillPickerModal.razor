@@ -63,6 +63,9 @@
     {
         var skills = Character?.Skills?.AsEnumerable() ?? Enumerable.Empty<GameMechanics.SkillEdit>();
 
+        // Filter out standard skills
+        skills = skills.Where(s => s.Category != Threa.Dal.Dto.SkillCategory.Standard);
+
         if (!string.IsNullOrWhiteSpace(searchFilter))
         {
             skills = skills.Where(s => s.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
