@@ -54,6 +54,33 @@
                                 <option value="4">Class 4 (Starships, high magic) - 1000x</option>
                             </select>
                         </div>
+
+                        @if (!InitialCalledShotLocation.HasValue)
+                        {
+                            <!-- Called Shot -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="calledShotCheck"
+                                       @bind="isCalledShot">
+                                <label class="form-check-label" for="calledShotCheck">
+                                    <strong>Called Shot</strong>
+                                    <small class="text-muted d-block">Target a specific body location</small>
+                                </label>
+                            </div>
+                            @if (isCalledShot)
+                            {
+                                <select class="form-select" @bind="selectedCalledShotLocation">
+                                    <option value="@HitLocation.Head">Head (4.17% normally)</option>
+                                    <option value="@HitLocation.Torso">Torso (45.83% normally)</option>
+                                    <option value="@HitLocation.LeftArm">Left Arm (8.33% normally)</option>
+                                    <option value="@HitLocation.RightArm">Right Arm (8.33% normally)</option>
+                                    <option value="@HitLocation.LeftLeg">Left Leg (16.67% normally)</option>
+                                    <option value="@HitLocation.RightLeg">Right Leg (16.67% normally)</option>
+                                </select>
+                                <small class="text-info d-block mt-1">
+                                    <i class="bi bi-info-circle"></i> Damage will be applied to the selected location.
+                                </small>
+                            }
+                        }
                     </div>
                 </div>
 
@@ -127,11 +154,11 @@
                                     <td>Dice Roll:</td>
                                     <td class="fw-bold">@GetDicePreview()</td>
                                 </tr>
-                                @if (InitialCalledShotLocation.HasValue)
+                                @if (InitialCalledShotLocation.HasValue || (isCalledShot && selectedCalledShotLocation.HasValue))
                                 {
                                     <tr class="table-warning">
                                         <td>Called Shot:</td>
-                                        <td class="fw-bold"><i class="bi bi-geo-alt"></i> @InitialCalledShotLocation.Value</td>
+                                        <td class="fw-bold"><i class="bi bi-geo-alt"></i> @(InitialCalledShotLocation ?? selectedCalledShotLocation!.Value)</td>
                                     </tr>
                                 }
                                 @if (shieldBlockResult?.Success == true)
@@ -151,6 +178,10 @@
                             @if (InitialCalledShotLocation.HasValue)
                             {
                                 <text>Apply Damage to @InitialCalledShotLocation.Value</text>
+                            }
+                            else if (isCalledShot && selectedCalledShotLocation.HasValue)
+                            {
+                                <text>Apply Damage to @selectedCalledShotLocation.Value</text>
                             }
                             else
                             {
@@ -350,6 +381,8 @@
     private int inputSV;
     private DamageType selectedDamageType = DamageType.Bashing;
     private int selectedDamageClass = 1;
+    private bool isCalledShot = false;
+    private HitLocation? selectedCalledShotLocation = HitLocation.Torso;
     private List<EquippedArmorInfo> equippedArmor = new();
     private EquippedArmorInfo? equippedShield;
 
@@ -473,6 +506,10 @@
         if (InitialCalledShotLocation.HasValue)
         {
             hitLocation = InitialCalledShotLocation.Value;
+        }
+        else if (isCalledShot && selectedCalledShotLocation.HasValue)
+        {
+            hitLocation = selectedCalledShotLocation.Value;
         }
         else
         {
