@@ -879,16 +879,10 @@
 
     private void StartSkillCheck()
     {
-        // Skill checks end parry mode
-        if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
-        {
-            CombatStanceBehavior.EndParryMode(Character);
-        }
-        preselectedSkillForCheck = null;
-        combatMode = CombatMode.SkillCheck;
+        StartSkillCheckWithSkill(null);
     }
 
-    private void StartSkillCheckWithSkill(GameMechanics.SkillEdit skill)
+    private void StartSkillCheckWithSkill(GameMechanics.SkillEdit? skill)
     {
         // Skill checks end parry mode
         if (Character != null && CombatStanceBehavior.IsInParryMode(Character))
