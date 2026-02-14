@@ -62,6 +62,13 @@ public class NpcTemplateInfo : ReadOnlyBase<NpcTemplateInfo>
         private set => LoadProperty(DifficultyRatingProperty, value);
     }
 
+    public static readonly PropertyInfo<string> SettingProperty = RegisterProperty<string>(nameof(Setting));
+    public string Setting
+    {
+        get => GetProperty(SettingProperty);
+        private set => LoadProperty(SettingProperty, value);
+    }
+
     public static readonly PropertyInfo<bool> IsActiveProperty = RegisterProperty<bool>(nameof(IsActive));
     public bool IsActive
     {
@@ -96,6 +103,7 @@ public class NpcTemplateInfo : ReadOnlyBase<NpcTemplateInfo>
         LoadProperty(TagsProperty, dto.Tags);
         LoadProperty(DefaultDispositionProperty, dto.DefaultDisposition);
         LoadProperty(DifficultyRatingProperty, dto.DifficultyRating);
+        LoadProperty(SettingProperty, dto.Setting);
         // IsActive based on VisibleToPlayers - true = active template
         LoadProperty(IsActiveProperty, dto.VisibleToPlayers);
     }

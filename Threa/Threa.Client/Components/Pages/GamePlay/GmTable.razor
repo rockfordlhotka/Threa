@@ -1439,7 +1439,9 @@ else
             try
             {
                 var list = await templateListPortal.FetchAsync();
-                availableTemplates = list.AsEnumerable();
+                // Filter templates by the table's theme so fantasy tables only show fantasy templates
+                var theme = table?.Theme ?? "fantasy";
+                availableTemplates = list.Where(t => t.Setting == theme);
             }
             catch (Exception ex)
             {

@@ -35,6 +35,13 @@ namespace GameMechanics.Player
       private set => LoadProperty(IsPlayableProperty, value);
     }
 
+    public static readonly PropertyInfo<string> SettingProperty = RegisterProperty<string>(nameof(Setting));
+    public string Setting
+    {
+      get => GetProperty(SettingProperty);
+      private set => LoadProperty(SettingProperty, value);
+    }
+
     public static readonly PropertyInfo<Guid?> TableIdProperty = RegisterProperty<Guid?>(nameof(TableId));
     public Guid? TableId
     {
@@ -58,6 +65,7 @@ namespace GameMechanics.Player
       Name = character.Name;
       Species = character.Species;
       IsPlayable = character.IsPlayable;
+      Setting = character.Setting;
       
       if (table != null)
       {

@@ -67,6 +67,29 @@ else
                                 <TextInputRow Property="vm.GetPropertyInfo<string>(() => vm.Model.Name)" />
 
                                 <tr>
+                                    <td>Setting</td>
+                                    <td>
+                                        @if (IsNewTemplate || isCloning)
+                                        {
+                                            <select @bind="vm.Model.Setting" class="form-control">
+                                                @foreach (var s in GameSettings.All)
+                                                {
+                                                    <option value="@s">@GameSettings.DisplayName(s)</option>
+                                                }
+                                            </select>
+                                            <small class="text-muted">Determines which features (magic, implants) are available</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge @(vm.Model.Setting == GameSettings.SciFi ? "bg-info" : "bg-primary")">
+                                                @GameSettings.DisplayName(vm.Model.Setting)
+                                            </span>
+                                            <small class="text-muted d-block mt-1">Setting cannot be changed after creation</small>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <tr>
                                     <td>Species</td>
                                     <td>
                                         @if (speciesList != null)
@@ -347,6 +370,7 @@ else
                 template.VisibleToPlayers = true;
                 template.Name = $"{source.Name} (Template)";
                 template.Species = source.Species;
+                template.Setting = source.Setting;
 
                 // Copy attributes from source
                 foreach (var sourceAttr in source.AttributeList)

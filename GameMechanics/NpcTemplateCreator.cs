@@ -164,6 +164,9 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
                 VisibleToPlayers = true, // Templates visible in library
                 IsArchived = false,
 
+                // Setting (fantasy/scifi)
+                Setting = source.Setting,
+
                 // Template organization
                 Category = Category,
                 Tags = Tags,

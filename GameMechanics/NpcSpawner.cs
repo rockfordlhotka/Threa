@@ -196,6 +196,9 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 SourceTemplateId = TemplateId,
                 SourceTemplateName = template.Name,
 
+                // Setting (fantasy/scifi)
+                Setting = template.Setting,
+
                 // Session notes
                 Notes = SessionNotes ?? string.Empty,
 

@@ -12,6 +12,7 @@ public class Character
     public bool IsPlayable { get; set; }
     public bool IsNpc { get; set; }
     public bool IsTemplate { get; set; }
+    public string Setting { get; set; } = "fantasy";
     public bool VisibleToPlayers { get; set; } = true;
     public string Species { get; set; } = string.Empty;
     public int DamageClass { get; set; }

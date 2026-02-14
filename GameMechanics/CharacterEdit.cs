@@ -392,6 +392,13 @@ namespace GameMechanics
       set => SetProperty(IsArchivedProperty, value);
     }
 
+    public static readonly PropertyInfo<string> SettingProperty = RegisterProperty<string>(nameof(Setting));
+    public string Setting
+    {
+      get => GetProperty(SettingProperty);
+      set => SetProperty(SettingProperty, value);
+    }
+
     // Template organization properties (for NPC templates)
 
     public static readonly PropertyInfo<string?> CategoryProperty = RegisterProperty<string?>(nameof(Category));
@@ -979,6 +986,7 @@ namespace GameMechanics
         DamageClass = 1;
         PlayerId = playerId;
         Species = species?.Id ?? "Human";
+        Setting = GameSettings.Default;
         
         // Apply species modifiers to attributes during creation
         if (species != null)

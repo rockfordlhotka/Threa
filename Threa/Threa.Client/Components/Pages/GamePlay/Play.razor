@@ -350,10 +350,10 @@ private string activeTab = "Status";
 
 private string[] GetTabNamesForTheme()
 {
-    var theme = table?.Theme ?? "fantasy";
-    if (theme == "scifi")
+    // Hide Magic tab based on character's setting (preferred) or table theme as fallback
+    var setting = character?.Setting ?? table?.Theme ?? "fantasy";
+    if (setting == GameMechanics.GameSettings.SciFi)
     {
-        // Hide Magic tab for sci-fi theme
         return AllTabNames.Where(t => t != "Magic").ToArray();
     }
     return AllTabNames;
