@@ -151,7 +151,8 @@
             {
                 <CharacterDetailInventory Character="character"
                                          CharacterId="selectedCharacterId"
-                                         TableId="TableId" />
+                                         TableId="TableId"
+                                         TableTheme="@tableTheme" />
             }
             else if (activeTab == "Narrative")
             {
@@ -264,6 +265,13 @@
         try
         {
             character = await characterPortal.FetchAsync(selectedCharacterId);
+
+            // Sync character setting with table theme (rebuilds wallet if needed)
+            if (character != null && !string.IsNullOrEmpty(tableTheme) && character.Setting != tableTheme)
+            {
+                character.Setting = tableTheme;
+                character = await character.SaveAsync();
+            }
 
             // Load GM notes directly from DAL to ensure we get the latest saved value
             currentGmNotes = await tableDal.GetGmNotesAsync(TableId, selectedCharacterId);
