@@ -18,7 +18,7 @@
                 <div class="d-flex flex-wrap gap-2">
                     @foreach (var skill in GetStandardSkills())
                     {
-                        <button class="btn btn-outline-primary @(!CanUseSkill() ? "disabled" : "")"
+                        <button class="btn btn-outline-primary"
                                 disabled="@(!CanUseSkill())"
                                 title="@(CanUseSkill() ? $"{skill.Name} (AS {skill.AbilityScore})" : $"{skill.Name} requires 1 AP")"
                                 @onclick="() => UseSkill(skill)">
