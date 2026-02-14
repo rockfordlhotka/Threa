@@ -402,7 +402,8 @@
         // Apply all modifiers: boost, effects, and multi-action penalty
         int effectiveValue = baseAS + boostValue + effectASModifier - multiActionPenalty;
         
-        // Track wound penalty for display (wounds are included in effectASModifier)
+        // Track wound penalty for display separately (wounds are already included in effectASModifier)
+        // This is needed for the result breakdown shown to the player
         int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
         int woundPenalty = woundCount * 2;
 
