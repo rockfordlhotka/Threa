@@ -279,6 +279,10 @@ else
         {
             <TabPlayInventory Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
+        else if (activeTab == "Narrative")
+        {
+            <TabPlayNarrative Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
+        }
     </div>
 
     @* RadzenDialog must be in the interactive context for DialogService to work *@
@@ -344,7 +348,7 @@ public int CharacterId { get; set; }
 public Guid TableId { get; set; }
 
 private bool isLoading = true;
-private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory" };
+private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory", "Narrative" };
 private string[] tabNames => GetTabNamesForTheme();
 private string activeTab = "Status";
 
