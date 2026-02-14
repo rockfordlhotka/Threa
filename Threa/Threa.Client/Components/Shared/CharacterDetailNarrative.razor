@@ -75,15 +75,19 @@
         }
 
         <!-- Aliases -->
-        @if (!string.IsNullOrEmpty(Character?.Aliases))
-        {
-            <div class="card mt-3">
-                <div class="card-header"><strong>Aliases</strong></div>
-                <div class="card-body">
+        <div class="card mt-3">
+            <div class="card-header"><strong>Aliases</strong></div>
+            <div class="card-body">
+                @if (string.IsNullOrEmpty(Character?.Aliases))
+                {
+                    <p class="text-muted mb-0"><em>None</em></p>
+                }
+                else
+                {
                     <p class="mb-0">@Character.Aliases</p>
-                </div>
+                }
             </div>
-        }
+        </div>
     </div>
 
     <!-- Right: Backstory and Notes -->
@@ -104,15 +108,19 @@
         </div>
 
         <!-- Player Notes (read-only) -->
-        @if (!string.IsNullOrEmpty(Character?.Notes))
-        {
-            <div class="card mt-3">
-                <div class="card-header"><strong>Player Notes</strong></div>
-                <div class="card-body" style="max-height: 150px; overflow-y: auto;">
+        <div class="card mt-3">
+            <div class="card-header"><strong>Player Notes</strong></div>
+            <div class="card-body" style="max-height: 150px; overflow-y: auto;">
+                @if (string.IsNullOrEmpty(Character?.Notes))
+                {
+                    <p class="text-muted mb-0"><em>No player notes.</em></p>
+                }
+                else
+                {
                     <p class="mb-0" style="white-space: pre-wrap;">@Character.Notes</p>
-                </div>
+                }
             </div>
-        }
+        </div>
 
         <!-- GM Notes (editable) -->
         <div class="card mt-3 border-warning">
