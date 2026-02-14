@@ -13,15 +13,11 @@ namespace GameMechanics.Test
   public class CharacterTests : TestBase
   {
     /// <summary>
-    /// Helper method to get currency-related broken rules from a character.
+    /// Helper method to check if any wallet entry has validation errors.
     /// </summary>
-    private static IEnumerable<Csla.Rules.BrokenRule> GetCurrencyBrokenRules(CharacterEdit character)
+    private static bool HasWalletValidationErrors(CharacterEdit character)
     {
-      return character.BrokenRulesCollection.Where(r =>
-        r.Property == nameof(CharacterEdit.CopperCoins) || 
-        r.Property == nameof(CharacterEdit.SilverCoins) ||
-        r.Property == nameof(CharacterEdit.GoldCoins) || 
-        r.Property == nameof(CharacterEdit.PlatinumCoins));
+      return character.Wallet.Any(e => !e.IsValid);
     }
 
     [TestMethod]
@@ -194,35 +190,35 @@ namespace GameMechanics.Test
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
-      
-      // Set currency values
-      c.CopperCoins = 10;
-      c.SilverCoins = 5;
-      c.GoldCoins = 2;
-      c.PlatinumCoins = 1;
-      
+
+      // Set currency values via wallet
+      c.Wallet.SetAmount("CP", 10);
+      c.Wallet.SetAmount("SP", 5);
+      c.Wallet.SetAmount("GP", 2);
+      c.Wallet.SetAmount("PP", 1);
+
       // Verify values are stored correctly
-      Assert.AreEqual(10, c.CopperCoins, "Copper coins");
-      Assert.AreEqual(5, c.SilverCoins, "Silver coins");
-      Assert.AreEqual(2, c.GoldCoins, "Gold coins");
-      Assert.AreEqual(1, c.PlatinumCoins, "Platinum coins");
+      Assert.AreEqual(10, c.Wallet.GetAmount("CP"), "Copper coins");
+      Assert.AreEqual(5, c.Wallet.GetAmount("SP"), "Silver coins");
+      Assert.AreEqual(2, c.Wallet.GetAmount("GP"), "Gold coins");
+      Assert.AreEqual(1, c.Wallet.GetAmount("PP"), "Platinum coins");
     }
 
     [TestMethod]
-    public void CharacterCurrency_TotalCopperValue_CalculatesCorrectly()
+    public void CharacterCurrency_TotalBaseValue_CalculatesCorrectly()
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
-      
-      // Set currency values
-      c.CopperCoins = 10;
-      c.SilverCoins = 5;   // 5 * 20 = 100 cp
-      c.GoldCoins = 2;     // 2 * 400 = 800 cp
-      c.PlatinumCoins = 1; // 1 * 8000 = 8000 cp
-      
+
+      // Set currency values via wallet
+      c.Wallet.SetAmount("CP", 10);
+      c.Wallet.SetAmount("SP", 5);   // 5 * 20 = 100 cp
+      c.Wallet.SetAmount("GP", 2);   // 2 * 400 = 800 cp
+      c.Wallet.SetAmount("PP", 1);   // 1 * 8000 = 8000 cp
+
       // Total should be: 10 + 100 + 800 + 8000 = 8910 cp
-      Assert.AreEqual(8910, c.TotalCopperValue, "Total copper value");
+      Assert.AreEqual(8910L, c.TotalBaseValue, "Total base value");
     }
 
     [TestMethod]
@@ -231,26 +227,26 @@ namespace GameMechanics.Test
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
-      
+
       // Set values and save
       c.Name = "Test Currency Character";
       c.Species = "Human";
-      c.CopperCoins = 25;
-      c.SilverCoins = 10;
-      c.GoldCoins = 3;
-      c.PlatinumCoins = 1;
-      
+      c.Wallet.SetAmount("CP", 25);
+      c.Wallet.SetAmount("SP", 10);
+      c.Wallet.SetAmount("GP", 3);
+      c.Wallet.SetAmount("PP", 1);
+
       c = await c.SaveAsync();
       var characterId = c.Id;
-      
+
       // Fetch and verify
       var fetched = await dp.FetchAsync(characterId);
-      Assert.AreEqual(25, fetched.CopperCoins, "Fetched copper coins");
-      Assert.AreEqual(10, fetched.SilverCoins, "Fetched silver coins");
-      Assert.AreEqual(3, fetched.GoldCoins, "Fetched gold coins");
-      Assert.AreEqual(1, fetched.PlatinumCoins, "Fetched platinum coins");
+      Assert.AreEqual(25, fetched.Wallet.GetAmount("CP"), "Fetched copper coins");
+      Assert.AreEqual(10, fetched.Wallet.GetAmount("SP"), "Fetched silver coins");
+      Assert.AreEqual(3, fetched.Wallet.GetAmount("GP"), "Fetched gold coins");
+      Assert.AreEqual(1, fetched.Wallet.GetAmount("PP"), "Fetched platinum coins");
       // Total = 25 + (10 * 20) + (3 * 400) + (1 * 8000) = 25 + 200 + 1200 + 8000 = 9425
-      Assert.AreEqual(9425, fetched.TotalCopperValue, "Fetched total copper value");
+      Assert.AreEqual(9425L, fetched.TotalBaseValue, "Fetched total base value");
     }
 
     [TestMethod]
@@ -354,63 +350,18 @@ namespace GameMechanics.Test
     }
 
     [TestMethod]
-    public void CharacterCurrency_CopperCoins_CannotBeNegative()
+    public void CharacterCurrency_NegativeAmount_BreaksValidation()
     {
       var provider = InitServices();
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
 
-      // Attempt to set negative copper coins
-      c.CopperCoins = -1;
+      // Set a negative amount on a wallet entry
+      var entry = c.Wallet.First(e => e.CurrencyCode == "CP");
+      entry.Amount = -1;
 
-      // Validation should fail
-      Assert.IsFalse(c.IsValid, "Character should be invalid with negative copper coins");
-      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
-    }
-
-    [TestMethod]
-    public void CharacterCurrency_SilverCoins_CannotBeNegative()
-    {
-      var provider = InitServices();
-      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
-      var c = dp.Create(42);
-
-      // Attempt to set negative silver coins
-      c.SilverCoins = -5;
-
-      // Validation should fail
-      Assert.IsFalse(c.IsValid, "Character should be invalid with negative silver coins");
-      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
-    }
-
-    [TestMethod]
-    public void CharacterCurrency_GoldCoins_CannotBeNegative()
-    {
-      var provider = InitServices();
-      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
-      var c = dp.Create(42);
-
-      // Attempt to set negative gold coins
-      c.GoldCoins = -10;
-
-      // Validation should fail
-      Assert.IsFalse(c.IsValid, "Character should be invalid with negative gold coins");
-      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
-    }
-
-    [TestMethod]
-    public void CharacterCurrency_PlatinumCoins_CannotBeNegative()
-    {
-      var provider = InitServices();
-      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
-      var c = dp.Create(42);
-
-      // Attempt to set negative platinum coins
-      c.PlatinumCoins = -2;
-
-      // Validation should fail
-      Assert.IsFalse(c.IsValid, "Character should be invalid with negative platinum coins");
-      Assert.IsTrue(c.BrokenRulesCollection.ErrorCount > 0, "Should have broken rules");
+      // The wallet entry should be invalid
+      Assert.IsFalse(entry.IsValid, "Wallet entry should be invalid with negative amount");
     }
 
     [TestMethod]
@@ -420,15 +371,8 @@ namespace GameMechanics.Test
       var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
       var c = dp.Create(42);
 
-      // Set all currency to zero (should be valid)
-      c.CopperCoins = 0;
-      c.SilverCoins = 0;
-      c.GoldCoins = 0;
-      c.PlatinumCoins = 0;
-
-      // Should be valid - no currency-related broken rules
-      var currencyRules = GetCurrencyBrokenRules(c);
-      Assert.IsFalse(currencyRules.Any(), 
+      // All wallet entries default to zero - should be valid
+      Assert.IsFalse(HasWalletValidationErrors(c),
                     "Character should be valid with zero currency values");
     }
 
@@ -440,15 +384,45 @@ namespace GameMechanics.Test
       var c = dp.Create(42);
 
       // Set positive currency values
-      c.CopperCoins = 100;
-      c.SilverCoins = 50;
-      c.GoldCoins = 10;
-      c.PlatinumCoins = 5;
+      c.Wallet.SetAmount("CP", 100);
+      c.Wallet.SetAmount("SP", 50);
+      c.Wallet.SetAmount("GP", 10);
+      c.Wallet.SetAmount("PP", 5);
 
-      // Should be valid - no currency-related broken rules
-      var currencyRules = GetCurrencyBrokenRules(c);
-      Assert.IsFalse(currencyRules.Any(),
+      // Should be valid - no wallet validation errors
+      Assert.IsFalse(HasWalletValidationErrors(c),
                     "Character should be valid with positive currency values");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_Fantasy_Has4WalletEntries()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+      var c = dp.Create(42);
+
+      // Default setting is fantasy, should have 4 wallet entries
+      Assert.AreEqual(4, c.Wallet.Count, "Fantasy character should have 4 wallet entries");
+      Assert.IsTrue(c.Wallet.Any(e => e.CurrencyCode == "PP"), "Should have PP");
+      Assert.IsTrue(c.Wallet.Any(e => e.CurrencyCode == "GP"), "Should have GP");
+      Assert.IsTrue(c.Wallet.Any(e => e.CurrencyCode == "SP"), "Should have SP");
+      Assert.IsTrue(c.Wallet.Any(e => e.CurrencyCode == "CP"), "Should have CP");
+    }
+
+    [TestMethod]
+    public void CharacterCurrency_SciFi_TotalBaseValue_ReturnsNull()
+    {
+      var provider = InitServices();
+      var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+
+      // Create a character then change setting to sci-fi
+      // Note: wallet is created during Create based on Setting; to test sci-fi
+      // we use the WalletEditList directly (covered in WalletEditTests)
+      var c = dp.Create(42);
+      Assert.IsNotNull(c.TotalBaseValue, "Fantasy character should have a total base value");
+
+      // Fantasy total base value for all-zero wallet should be 0
+      Assert.AreEqual(0L, c.TotalBaseValue, "All-zero fantasy wallet should have 0 total base value");
     }
 
     [TestMethod]

@@ -21,6 +21,8 @@ public abstract class ThreanCalendarBase : IGameCalendar
     public const int MonthsPerYear = 13;
     public const int DaysPerYear = 364;
 
+    long IGameCalendar.SecondsPerYear => SecondsPerYear;
+
     // Abstract properties for concrete calendars
     public abstract string Id { get; }
     public abstract string Name { get; }

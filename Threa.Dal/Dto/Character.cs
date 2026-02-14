@@ -22,7 +22,7 @@ public class Character
     public string SkinDescription { get; set; } = string.Empty;
     public string HairDescription { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public long Birthdate { get; set; }
+    public long? Birthdate { get; set; }
     public int XPTotal { get; set; }
     public int XPBanked { get; set; }
     public int ActionPointMax { get; set; }
@@ -55,18 +55,50 @@ public class Character
     public List<CharacterEffect> Effects { get; set; } = [];
 
     /// <summary>
+    /// Setting-aware currency wallet. Each entry is a currency code + amount pair.
+    /// </summary>
+    public List<WalletEntry> Wallet { get; set; } = [];
+
+    /// <summary>
     /// Currency held by this character (in copper pieces for easy calculation).
     /// </summary>
+    [Obsolete("Use Wallet instead. Kept for backward compatibility with existing JSON data.")]
     public int CopperCoins { get; set; }
+    [Obsolete("Use Wallet instead. Kept for backward compatibility with existing JSON data.")]
     public int SilverCoins { get; set; }
+    [Obsolete("Use Wallet instead. Kept for backward compatibility with existing JSON data.")]
     public int GoldCoins { get; set; }
+    [Obsolete("Use Wallet instead. Kept for backward compatibility with existing JSON data.")]
     public int PlatinumCoins { get; set; }
 
     /// <summary>
     /// Gets the total currency value in copper pieces.
-    /// 1 sp = 20 cp, 1 gp = 400 cp, 1 pp = 8000 cp
+    /// Uses Wallet when available, falls back to legacy fields.
     /// </summary>
-    public int TotalCopperValue => CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
+    [Obsolete("Use ICurrencyProvider.CalculateBaseValue() instead.")]
+    public int TotalCopperValue
+    {
+        get
+        {
+            if (Wallet.Count > 0)
+            {
+                long total = 0;
+                foreach (var entry in Wallet)
+                {
+                    total += entry.CurrencyCode switch
+                    {
+                        "PP" => (long)entry.Amount * 8000,
+                        "GP" => (long)entry.Amount * 400,
+                        "SP" => (long)entry.Amount * 20,
+                        "CP" => entry.Amount,
+                        _ => 0
+                    };
+                }
+                return (int)total;
+            }
+            return CopperCoins + (SilverCoins * 20) + (GoldCoins * 400) + (PlatinumCoins * 8000);
+        }
+    }
 
     /// <summary>
     /// Current game time in seconds from epoch 0.

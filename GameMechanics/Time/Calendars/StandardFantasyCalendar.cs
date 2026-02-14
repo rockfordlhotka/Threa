@@ -11,6 +11,8 @@ public class StandardFantasyCalendar : IGameCalendar
     public string Theme => "fantasy";
     public bool IsThemeDefault => false;
 
+    long IGameCalendar.SecondsPerYear => SecondsPerYear;
+
     // Calendar constants (same as DefaultGameTimeFormatService)
     private const long SecondsPerMinute = 60;
     private const long SecondsPerHour = 3600;
@@ -75,6 +77,7 @@ public class StandardFantasyCalendar : IGameCalendar
 
         long years = remaining / SecondsPerYear;
         remaining %= SecondsPerYear;
+        if (remaining < 0) { years--; remaining += SecondsPerYear; }
 
         long months = remaining / SecondsPerMonth;
         remaining %= SecondsPerMonth;

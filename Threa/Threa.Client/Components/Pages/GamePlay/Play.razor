@@ -350,8 +350,8 @@ private string activeTab = "Status";
 
 private string[] GetTabNamesForTheme()
 {
-    // Hide Magic tab based on character's setting (preferred) or table theme as fallback
-    var setting = character?.Setting ?? table?.Theme ?? "fantasy";
+    // Use table theme as authoritative setting during gameplay (character.Setting may be stale)
+    var setting = table?.Theme ?? character?.Setting ?? "fantasy";
     if (setting == GameMechanics.GameSettings.SciFi)
     {
         return AllTabNames.Where(t => t != "Magic").ToArray();
@@ -431,6 +431,13 @@ protected override async Task OnInitializedAsync()
                     if (table != null)
                     {
                         await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+
+                        // Sync character setting with table theme (rebuilds wallet if needed)
+                        if (character != null && !string.IsNullOrEmpty(table.Theme) && character.Setting != table.Theme)
+                        {
+                            character.Setting = table.Theme;
+                            character = await character.SaveAsync();
+                        }
                     }
                 }
                 catch (Exception ex)

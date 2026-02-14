@@ -297,23 +297,18 @@
             <div class="card-body">
                 @if (isEditingCurrency)
                 {
+                    var editProvider = CurrencyProviderFactory.GetProvider(TableTheme ?? Character?.Setting);
                     <div class="row g-2 align-items-end">
-                        <div class="col">
-                            <label class="form-label small text-muted mb-0">Platinum</label>
-                            <input type="number" class="form-control form-control-sm" @bind="editPlatinum" min="0" />
-                        </div>
-                        <div class="col">
-                            <label class="form-label small text-muted mb-0">Gold</label>
-                            <input type="number" class="form-control form-control-sm" @bind="editGold" min="0" />
-                        </div>
-                        <div class="col">
-                            <label class="form-label small text-muted mb-0">Silver</label>
-                            <input type="number" class="form-control form-control-sm" @bind="editSilver" min="0" />
-                        </div>
-                        <div class="col">
-                            <label class="form-label small text-muted mb-0">Copper</label>
-                            <input type="number" class="form-control form-control-sm" @bind="editCopper" min="0" />
-                        </div>
+                        @foreach (var denom in editProvider.Denominations)
+                        {
+                            <div class="col">
+                                <label class="form-label small text-muted mb-0">@denom.Name</label>
+                                <input type="number" class="form-control form-control-sm"
+                                       value="@(editCurrency.GetValueOrDefault(denom.Code))"
+                                       @onchange="@(e => editCurrency[denom.Code] = int.TryParse(e.Value?.ToString(), out var v) ? v : 0)"
+                                       min="0" />
+                            </div>
+                        }
                     </div>
                     <div class="mt-2 d-flex gap-2">
                         <button class="btn btn-sm btn-success" @onclick="SaveCurrency" disabled="@isProcessing">
@@ -326,11 +321,16 @@
                 }
                 else
                 {
+                    var displayProvider = CurrencyProviderFactory.GetProvider(TableTheme ?? Character?.Setting);
                     <div class="d-flex gap-3">
-                        <span><strong>@(Character?.PlatinumCoins ?? 0)</strong> pp</span>
-                        <span><strong>@(Character?.GoldCoins ?? 0)</strong> gp</span>
-                        <span><strong>@(Character?.SilverCoins ?? 0)</strong> sp</span>
-                        <span><strong>@(Character?.CopperCoins ?? 0)</strong> cp</span>
+                        @if (Character?.Wallet != null)
+                        {
+                            @foreach (var entry in Character.Wallet)
+                            {
+                                var denom = displayProvider.Denominations.FirstOrDefault(d => d.Code == entry.CurrencyCode);
+                                <span><strong>@entry.Amount</strong> @(denom?.Abbreviation ?? entry.CurrencyCode)</span>
+                            }
+                        }
                     </div>
                 }
             </div>
@@ -348,6 +348,9 @@
     [Parameter]
     public Guid TableId { get; set; }
 
+    [Parameter]
+    public string? TableTheme { get; set; }
+
     private List<CharacterItem>? items;
     private Dictionary<int, ItemTemplate>? templates;
     private bool isLoading = true;
@@ -358,7 +361,7 @@
 
     // Currency editing state
     private bool isEditingCurrency = false;
-    private int editPlatinum, editGold, editSilver, editCopper;
+    private Dictionary<string, int> editCurrency = new();
 
     // Quantity editing state (for existing items in inventory)
     private Guid? editingQuantityItemId = null;
@@ -1003,10 +1006,14 @@
 
     private void StartEditCurrency()
     {
-        editPlatinum = Character?.PlatinumCoins ?? 0;
-        editGold = Character?.GoldCoins ?? 0;
-        editSilver = Character?.SilverCoins ?? 0;
-        editCopper = Character?.CopperCoins ?? 0;
+        editCurrency.Clear();
+        if (Character?.Wallet != null)
+        {
+            foreach (var entry in Character.Wallet)
+            {
+                editCurrency[entry.CurrencyCode] = entry.Amount;
+            }
+        }
         isEditingCurrency = true;
     }
 
@@ -1024,10 +1031,11 @@
         {
             var character = await characterPortal.FetchAsync(CharacterId);
 
-            character.PlatinumCoins = Math.Max(0, editPlatinum);
-            character.GoldCoins = Math.Max(0, editGold);
-            character.SilverCoins = Math.Max(0, editSilver);
-            character.CopperCoins = Math.Max(0, editCopper);
+            foreach (var entry in character.Wallet)
+            {
+                if (editCurrency.TryGetValue(entry.CurrencyCode, out var amount))
+                    entry.Amount = Math.Max(0, amount);
+            }
 
             character = await character.SaveAsync();
 
