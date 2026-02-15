@@ -600,6 +600,49 @@ public class TableDal : ITableDal
         }
     }
 
+    public async Task ResetAllConnectionStatusesAsync()
+    {
+        try
+        {
+            var sql = "SELECT TableId, CharacterId, Json FROM TableCharacters";
+            using var command = Connection.CreateCommand();
+            command.CommandText = sql;
+            using var reader = await command.ExecuteReaderAsync();
+
+            var updates = new List<(string tableId, int charId, string json)>();
+            while (reader.Read())
+            {
+                string tableId = reader.GetString(0);
+                int charId = reader.GetInt32(1);
+                string json = reader.GetString(2);
+                var tableChar = JsonSerializer.Deserialize<TableCharacter>(json);
+                if (tableChar != null && tableChar.ConnectionStatus != ConnectionStatus.Disconnected)
+                {
+                    tableChar.ConnectionStatus = ConnectionStatus.Disconnected;
+                    updates.Add((tableId, charId, JsonSerializer.Serialize(tableChar)));
+                }
+            }
+            reader.Close();
+
+            foreach (var (tId, cId, j) in updates)
+            {
+                var updateSql = "UPDATE TableCharacters SET Json = @Json WHERE TableId = @TableId AND CharacterId = @CharacterId";
+                using var updateCommand = Connection.CreateCommand();
+                updateCommand.CommandText = updateSql;
+                updateCommand.Parameters.AddWithValue("@TableId", tId);
+                updateCommand.Parameters.AddWithValue("@CharacterId", cId);
+                updateCommand.Parameters.AddWithValue("@Json", j);
+                await updateCommand.ExecuteNonQueryAsync();
+            }
+
+            Console.WriteLine($"[TableDal] Reset {updates.Count} character connection statuses to Disconnected");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[TableDal] Error resetting connection statuses: {ex}");
+        }
+    }
+
     public async Task UpdateCharacterConnectionStatusAsync(Guid tableId, int characterId, ConnectionStatus status, DateTime lastActivity)
     {
         try

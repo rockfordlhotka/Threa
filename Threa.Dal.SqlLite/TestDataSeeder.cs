@@ -202,7 +202,7 @@ public class TestDataSeeder
             CharacterId = 1,
             PlayerId = 1,
             JoinedAt = DateTime.UtcNow.AddDays(-7),
-            ConnectionStatus = ConnectionStatus.Connected,
+            ConnectionStatus = ConnectionStatus.Disconnected,
             LastActivity = DateTime.UtcNow.AddHours(-1)
         };
 

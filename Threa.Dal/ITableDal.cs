@@ -105,4 +105,10 @@ public interface ITableDal
     /// Updates the connection status and last activity timestamp for a character at a table.
     /// </summary>
     Task UpdateCharacterConnectionStatusAsync(Guid tableId, int characterId, ConnectionStatus status, DateTime lastActivity);
+
+    /// <summary>
+    /// Resets all character connection statuses to Disconnected.
+    /// Called on application startup since no circuits exist yet.
+    /// </summary>
+    Task ResetAllConnectionStatusesAsync();
 }

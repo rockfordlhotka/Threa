@@ -57,6 +57,13 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Reset all connection statuses on startup since no circuits exist yet
+using (var scope = app.Services.CreateScope())
+{
+    var tableDal = scope.ServiceProvider.GetRequiredService<ITableDal>();
+    await tableDal.ResetAllConnectionStatusesAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

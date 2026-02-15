@@ -103,6 +103,9 @@ public class NpcSpawner : CommandBase<NpcSpawner>
 
     #endregion
 
+    [Create]
+    private void Create() { }
+
     [Execute]
     private async Task ExecuteAsync(
         [Inject] ICharacterDal characterDal,
@@ -272,7 +275,7 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 CharacterId = saved.Id,
                 PlayerId = template.PlayerId,
                 JoinedAt = DateTime.UtcNow,
-                ConnectionStatus = ConnectionStatus.Connected,
+                ConnectionStatus = ConnectionStatus.Disconnected,
                 GmNotes = SessionNotes
             };
             await tableDal.AddCharacterToTableAsync(tableChar);

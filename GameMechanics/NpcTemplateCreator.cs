@@ -94,6 +94,9 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
 
     #endregion
 
+    [Create]
+    private void Create() { }
+
     [Execute]
     private async Task ExecuteAsync([Inject] ICharacterDal characterDal)
     {
