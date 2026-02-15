@@ -20,6 +20,7 @@
 @inject ICharacterItemDal CharacterItemDal
 @inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
+@inject ITargetingInteractionManager TargetingManager
 
 <div class="character-detail-modal">
     <!-- Header with character switcher, summary, and close -->
@@ -146,6 +147,16 @@
             }
             else if (activeTab == "Combat")
             {
+                <!-- Targeting Notification Badge -->
+                @if (pendingTargetingRequests.Any())
+                {
+                    <div class="mb-3">
+                        <TargetingNotificationBadge PendingRequests="@pendingTargetingRequests"
+                                                    OnOpenTargeting="OpenTargetingModal"
+                                                    OnViewRequest="ViewTargetingRequest" />
+                    </div>
+                }
+
                 <CombatContent Character="character"
                                Table="table"
                                AvailableTargets="GetAvailableTargets()"
@@ -203,6 +214,33 @@
     </div>
 </div>
 
+<!-- Targeting Modal -->
+@if (showTargetingModal && currentTargetingInteraction != null)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1100;">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <TargetingModal Interaction="@currentTargetingInteraction"
+                                IsAttacker="@isTargetingAttacker"
+                                maxAPBoost="@GetTargetingMaxAPBoost()"
+                                maxFATBoost="@GetTargetingMaxFATBoost()"
+                                defenderDodgeAS="@GetDefenderDodgeAS()"
+                                defenderParryAS="@GetDefenderParryAS()"
+                                defenderIsInParryMode="@GetDefenderIsInParryMode()"
+                                defenderCanActiveDefense="@GetDefenderCanActiveDefense()"
+                                defenderCanParry="@GetDefenderCanParry()"
+                                OnAttackerDataUpdated="UpdateTargetingAttackerData"
+                                OnDefenderDataUpdated="UpdateTargetingDefenderData"
+                                OnAttackerConfirmChanged="ToggleTargetingAttackerConfirm"
+                                OnDefenderConfirmChanged="ToggleTargetingDefenderConfirm"
+                                OnCancel="CancelTargeting"
+                                OnClose="CloseTargetingModal"
+                                OnAcceptDamage="AcceptTargetingDamage" />
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter]
     public int CharacterId { get; set; }
@@ -227,6 +265,12 @@
     private List<TableCharacterInfo> tableCharacters = new();
     private List<Play.ActivityLogEntry> activityLog = new();
     private IDisposable? activityLogSubscription;
+
+    // Targeting state
+    private List<TargetingRequestMessage> pendingTargetingRequests = new();
+    private TargetingInteraction? currentTargetingInteraction;
+    private bool showTargetingModal;
+    private bool isTargetingAttacker;
 
     protected override async Task OnInitializedAsync()
     {
@@ -259,6 +303,14 @@
         await TimeEventSubscriber.ConnectAsync();
         await TimeEventSubscriber.SubscribeAsync();
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
+
+        // Subscribe to targeting events
+        TimeEventSubscriber.TargetingRequestReceived += OnTargetingRequestReceived;
+        TimeEventSubscriber.TargetingResponseReceived += OnTargetingResponseReceived;
+        TimeEventSubscriber.TargetingUpdateReceived += OnTargetingUpdateReceived;
+        TimeEventSubscriber.TargetingResultReceived += OnTargetingResultReceived;
+        TimeEventSubscriber.TargetingCancelledReceived += OnTargetingCancelledReceived;
+
         subscribed = true;
     }
 
@@ -409,12 +461,212 @@
             .ToList();
     }
 
-    private Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
+    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
     {
-        // For now, targeting in modal is not supported
-        // This would require implementing the full targeting modal UI from Play.razor
-        // TODO: Implement targeting modal support in CharacterDetailModal
-        return Task.CompletedTask;
+        if (character == null || table == null) return;
+
+        var (interaction, queuePosition) = await TargetingManager.StartInteractionAsync(
+            table.Id,
+            character.Id,
+            character.Name,
+            args.TargetId,
+            args.TargetName,
+            args.AttackerData);
+
+        currentTargetingInteraction = interaction;
+        showTargetingModal = true;
+        isTargetingAttacker = true;
+
+        if (queuePosition > 0)
+        {
+            // Log to activity feed
+            activityLog.Add(new Play.ActivityLogEntry(
+                DateTime.UtcNow,
+                $"Attack queued. {args.TargetName} has {queuePosition} other incoming attacks.",
+                character.Name,
+                ActivityCategory.Combat));
+            if (activityLog.Count > 100) activityLog.RemoveAt(0);
+        }
+
+        StateHasChanged();
+    }
+
+    // ================================
+    // Targeting Helper Methods
+    // ================================
+
+    private int GetTargetingMaxAPBoost()
+    {
+        if (character == null) return 0;
+        // Reserve 1 AP for the action cost
+        return Math.Max(0, character.ActionPoints.Available - 1);
+    }
+
+    private int GetTargetingMaxFATBoost()
+    {
+        if (character == null) return 0;
+        // Reserve 1 FAT for the action cost
+        return Math.Max(0, character.Fatigue.Value - 1);
+    }
+
+    private int GetDefenderDodgeAS()
+    {
+        if (character == null) return 0;
+        var dodgeSkill = character.Skills.FirstOrDefault(s =>
+            s.Name.Equals("Dodge", StringComparison.OrdinalIgnoreCase));
+        return dodgeSkill?.AbilityScore ?? 0;
+    }
+
+    private int GetDefenderParryAS()
+    {
+        if (character == null) return 0;
+        // Find weapon skill AS for parry
+        var equippedItems = character.GetEquippedItems();
+        var mainHand = equippedItems?.FirstOrDefault(i => i.Item.EquippedSlot == Threa.Dal.Dto.EquipmentSlot.MainHand);
+        if (mainHand?.Template?.RelatedSkill != null)
+        {
+            var skill = character.Skills.FirstOrDefault(s =>
+                s.Id.Equals(mainHand.Template.RelatedSkill, StringComparison.OrdinalIgnoreCase));
+            return skill?.AbilityScore ?? 0;
+        }
+        return 0;
+    }
+
+    private bool GetDefenderIsInParryMode()
+    {
+        if (character == null) return false;
+        return GameMechanics.Effects.Behaviors.CombatStanceBehavior.IsInParryMode(character);
+    }
+
+    private bool GetDefenderCanActiveDefense()
+    {
+        if (character == null) return false;
+        return !character.IsPassedOut &&
+               ((character.ActionPoints.Available >= 1 && character.Fatigue.Value >= 1) ||
+                character.ActionPoints.Available >= 2);
+    }
+
+    private bool GetDefenderCanParry()
+    {
+        if (character == null) return false;
+        return GetDefenderCanActiveDefense() || GetDefenderIsInParryMode();
+    }
+
+    // ================================
+    // Targeting Modal Callbacks
+    // ================================
+
+    private async Task UpdateTargetingAttackerData(TargetingAttackerData data)
+    {
+        if (currentTargetingInteraction == null) return;
+        await TargetingManager.UpdateAttackerDataAsync(currentTargetingInteraction.InteractionId, data);
+    }
+
+    private async Task UpdateTargetingDefenderData(TargetingDefenderData data)
+    {
+        if (currentTargetingInteraction == null) return;
+        await TargetingManager.UpdateDefenderDataAsync(currentTargetingInteraction.InteractionId, data);
+    }
+
+    private async Task ToggleTargetingAttackerConfirm(bool confirmed)
+    {
+        if (currentTargetingInteraction == null) return;
+        if (confirmed)
+        {
+            await TargetingManager.ConfirmAttackerAsync(currentTargetingInteraction.InteractionId);
+        }
+        else
+        {
+            await TargetingManager.UpdateAttackerDataAsync(currentTargetingInteraction.InteractionId, currentTargetingInteraction.AttackerData, false);
+        }
+    }
+
+    private async Task ToggleTargetingDefenderConfirm(bool confirmed)
+    {
+        if (currentTargetingInteraction == null || currentTargetingInteraction.DefenderData == null) return;
+        if (confirmed)
+        {
+            await TargetingManager.ConfirmDefenderAsync(currentTargetingInteraction.InteractionId);
+        }
+        else
+        {
+            await TargetingManager.UpdateDefenderDataAsync(currentTargetingInteraction.InteractionId, currentTargetingInteraction.DefenderData, false);
+        }
+    }
+
+    private async Task CancelTargeting()
+    {
+        if (currentTargetingInteraction == null) return;
+        await TargetingManager.CancelAsync(currentTargetingInteraction.InteractionId, "Cancelled by attacker");
+        showTargetingModal = false;
+        currentTargetingInteraction = null;
+    }
+
+    private void OpenTargetingModal()
+    {
+        if (character == null) return;
+
+        // Open the first pending request
+        var request = pendingTargetingRequests.FirstOrDefault();
+        if (request != null)
+        {
+            ViewTargetingRequest(request);
+        }
+    }
+
+    private void ViewTargetingRequest(TargetingRequestMessage request)
+    {
+        var interaction = TargetingManager.GetInteraction(request.InteractionId);
+        if (interaction != null)
+        {
+            currentTargetingInteraction = interaction;
+            showTargetingModal = true;
+            isTargetingAttacker = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseTargetingModal()
+    {
+        showTargetingModal = false;
+        currentTargetingInteraction = null;
+        // Remove from pending if it's resolved
+        if (currentTargetingInteraction != null)
+        {
+            pendingTargetingRequests.RemoveAll(r => r.InteractionId == currentTargetingInteraction.InteractionId);
+        }
+    }
+
+    private async Task AcceptTargetingDamage()
+    {
+        if (currentTargetingInteraction == null) return;
+        await TargetingManager.AcceptDamageAsync(currentTargetingInteraction.InteractionId);
+
+        // Apply damage to character if we're the defender
+        if (!isTargetingAttacker && character != null && currentTargetingInteraction.Resolution != null)
+        {
+            var resolution = currentTargetingInteraction.Resolution;
+            if (resolution.IsHit)
+            {
+                character.Fatigue.PendingDamage += resolution.FATDamage;
+                character.Vitality.PendingDamage += resolution.VITDamage;
+
+                var savable = character as Csla.Core.ISavable;
+                if (savable != null)
+                {
+                    await savable.SaveAsync();
+                }
+
+                activityLog.Add(new Play.ActivityLogEntry(
+                    DateTime.UtcNow,
+                    $"Took {resolution.FATDamage} FAT and {resolution.VITDamage} VIT damage from {currentTargetingInteraction.AttackerName}",
+                    character.Name,
+                    ActivityCategory.Combat));
+                if (activityLog.Count > 100) activityLog.RemoveAt(0);
+            }
+        }
+
+        StateHasChanged();
     }
 
     private string GetActivityClass(ActivityCategory category) =>
@@ -455,15 +707,141 @@
         }
     }
 
+    // ================================
+    // Targeting Event Handlers
+    // ================================
+
+    private void OnTargetingRequestReceived(object? sender, TargetingRequestMessage e)
+    {
+        // Ignore if not our table or no character
+        if (table == null || e.TableId != table.Id || character == null) return;
+
+        // Check if we are the defender - add to pending queue
+        if (e.DefenderId == character.Id)
+        {
+            _ = InvokeAsync(() =>
+            {
+                pendingTargetingRequests.Add(e);
+                StateHasChanged();
+            });
+        }
+        // Check if we are the attacker - open modal immediately
+        else if (e.AttackerId == character.Id)
+        {
+            _ = InvokeAsync(() =>
+            {
+                currentTargetingInteraction = TargetingManager.GetInteraction(e.InteractionId);
+                if (currentTargetingInteraction != null)
+                {
+                    showTargetingModal = true;
+                    isTargetingAttacker = true;
+                    StateHasChanged();
+                }
+            });
+        }
+    }
+
+    private void OnTargetingResponseReceived(object? sender, TargetingResponseMessage e)
+    {
+        // Ignore if not our table
+        if (table == null || e.TableId != table.Id) return;
+        if (currentTargetingInteraction == null || e.InteractionId != currentTargetingInteraction.InteractionId) return;
+
+        _ = InvokeAsync(() =>
+        {
+            // Update local interaction state
+            var interaction = TargetingManager.GetInteraction(e.InteractionId);
+            if (interaction != null)
+            {
+                currentTargetingInteraction = interaction;
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingUpdateReceived(object? sender, TargetingUpdateMessage e)
+    {
+        // Ignore if not our table
+        if (table == null || e.TableId != table.Id) return;
+        if (currentTargetingInteraction == null || e.InteractionId != currentTargetingInteraction.InteractionId) return;
+
+        _ = InvokeAsync(() =>
+        {
+            // Update local interaction state
+            var interaction = TargetingManager.GetInteraction(e.InteractionId);
+            if (interaction != null)
+            {
+                currentTargetingInteraction = interaction;
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingResultReceived(object? sender, TargetingResultMessage e)
+    {
+        // Ignore if not our table
+        if (table == null || e.TableId != table.Id) return;
+
+        _ = InvokeAsync(() =>
+        {
+            // Update local interaction state if this is our current interaction
+            if (currentTargetingInteraction != null && e.InteractionId == currentTargetingInteraction.InteractionId)
+            {
+                var interaction = TargetingManager.GetInteraction(e.InteractionId);
+                if (interaction != null)
+                {
+                    currentTargetingInteraction = interaction;
+                }
+            }
+
+            // Remove from pending requests if we're the defender
+            pendingTargetingRequests.RemoveAll(r => r.InteractionId == e.InteractionId);
+
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingCancelledReceived(object? sender, TargetingCancelledMessage e)
+    {
+        // Ignore if not our table
+        if (table == null || e.TableId != table.Id) return;
+
+        _ = InvokeAsync(() =>
+        {
+            // Update local interaction state if this is our current interaction
+            if (currentTargetingInteraction != null && e.InteractionId == currentTargetingInteraction.InteractionId)
+            {
+                var interaction = TargetingManager.GetInteraction(e.InteractionId);
+                if (interaction != null)
+                {
+                    currentTargetingInteraction = interaction;
+                }
+            }
+
+            // Remove from pending requests
+            pendingTargetingRequests.RemoveAll(r => r.InteractionId == e.InteractionId);
+
+            StateHasChanged();
+        });
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (subscribed)
         {
             TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
+
+            // Unsubscribe from targeting events
+            TimeEventSubscriber.TargetingRequestReceived -= OnTargetingRequestReceived;
+            TimeEventSubscriber.TargetingResponseReceived -= OnTargetingResponseReceived;
+            TimeEventSubscriber.TargetingUpdateReceived -= OnTargetingUpdateReceived;
+            TimeEventSubscriber.TargetingResultReceived -= OnTargetingResultReceived;
+            TimeEventSubscriber.TargetingCancelledReceived -= OnTargetingCancelledReceived;
+
             await TimeEventSubscriber.UnsubscribeAsync();
             subscribed = false;
         }
-        
+
         activityLogSubscription?.Dispose();
     }
 }
