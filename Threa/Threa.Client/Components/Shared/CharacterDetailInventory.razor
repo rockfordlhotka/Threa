@@ -190,7 +190,7 @@
 
     <!-- Right: Carried Items Grid -->
     <div class="col-md-7">
-        <div class="card">
+        <div class="card" style="@(openMenuItemId != null ? "position: relative; z-index: 10;" : "")">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <strong>Inventory</strong>
                 <button class="btn btn-sm btn-light" @onclick="OpenAddItemModal" disabled="@(isProcessing || showAddQuantityPrompt)">
