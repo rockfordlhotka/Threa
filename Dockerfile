@@ -6,7 +6,6 @@ WORKDIR /src
 COPY Threa.sln ./
 COPY GameMechanics/GameMechanics.csproj GameMechanics/
 COPY GameMechanics.Messaging.InMemory/GameMechanics.Messaging.InMemory.csproj GameMechanics.Messaging.InMemory/
-COPY GameMechanics.Test/GameMechanics.Test.csproj GameMechanics.Test/
 COPY Threa.Dal/Threa.Dal.csproj Threa.Dal/
 COPY Threa.Dal.SqlLite/Threa.Dal.Sqlite.csproj Threa.Dal.SqlLite/
 COPY Threa.Admin/Threa.Admin.csproj Threa.Admin/
