@@ -26,14 +26,42 @@ namespace GameMechanics.Combat
     /// <returns>The damage resolution result.</returns>
     public DamageResolutionResult Resolve(DamageRequest request)
     {
+      return Resolve(request, null, null, null);
+    }
+
+    /// <summary>
+    /// Resolves damage using pre-rolled armor skill values.
+    /// Used by MultiDamageResolver so the armor skill check is only rolled once
+    /// across multiple damage types.
+    /// </summary>
+    public DamageResolutionResult Resolve(DamageRequest request, int preRolledArmorBonus, int preRolledArmorRoll, int preRolledArmorRV)
+    {
+      return Resolve(request, (int?)preRolledArmorBonus, (int?)preRolledArmorRoll, (int?)preRolledArmorRV);
+    }
+
+    private DamageResolutionResult Resolve(DamageRequest request, int? preRolledArmorBonus, int? preRolledArmorRoll, int? preRolledArmorRV)
+    {
       var absorptionSteps = new List<AbsorptionRecord>();
       int remainingSV = request.IncomingSV;
 
       // Step 1: Armor skill check (free action, like Physicality)
-      int armorRoll = _diceRoller.Roll4dFPlus();
-      int armorTotal = request.DefenderArmorAS + armorRoll;
-      int armorRV = armorTotal - ArmorSkillTV;
-      int armorBonus = CalculateArmorSkillBonus(armorRV);
+      // Use pre-rolled values if provided (for multi-damage-type resolution)
+      int armorRoll;
+      int armorRV;
+      int armorBonus;
+      if (preRolledArmorBonus.HasValue)
+      {
+        armorRoll = preRolledArmorRoll!.Value;
+        armorRV = preRolledArmorRV!.Value;
+        armorBonus = preRolledArmorBonus.Value;
+      }
+      else
+      {
+        armorRoll = _diceRoller.Roll4dFPlus();
+        int armorTotal = request.DefenderArmorAS + armorRoll;
+        armorRV = armorTotal - ArmorSkillTV;
+        armorBonus = CalculateArmorSkillBonus(armorRV);
+      }
 
       // Step 2: Shield absorption (if block succeeded)
       if (request.ShieldBlockSucceeded && request.Shield != null && request.Shield.IsIntact)

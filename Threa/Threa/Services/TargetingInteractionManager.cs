@@ -451,11 +451,29 @@ public class TargetingInteractionManager : ITargetingInteractionManager
                 }
             }
 
-            // Apply weapon SV modifier (e.g., unarmed attacks: Punch +2, Kick +4)
-            int effectiveSV = sv + attackerData.WeaponSVModifier;
-            var damage = CombatResultTables.GetDamage(effectiveSV);
-            fatDamage = damage.FatigueDamage * (damageClass > 0 ? damageClass : 1);
-            vitDamage = damage.VitalityDamage * (damageClass > 0 ? damageClass : 1);
+            // Apply weapon SV modifier - check for multi-type damage
+            var damageProfile = attackerData.GetWeaponDamageProfile();
+            if (damageProfile != null && damageProfile.IsMultiType)
+            {
+                // Multi-type: sum all effective SVs for the simple FAT/VIT display
+                foreach (var typeEntry in damageProfile.GetNonZeroTypes())
+                {
+                    int typeEffectiveSV = sv + typeEntry.Value;
+                    if (typeEffectiveSV > 0)
+                    {
+                        var typeDamage = CombatResultTables.GetDamage(typeEffectiveSV);
+                        fatDamage += typeDamage.FatigueDamage * (damageClass > 0 ? damageClass : 1);
+                        vitDamage += typeDamage.VitalityDamage * (damageClass > 0 ? damageClass : 1);
+                    }
+                }
+            }
+            else
+            {
+                int effectiveSV = sv + attackerData.WeaponSVModifier;
+                var damage = CombatResultTables.GetDamage(effectiveSV);
+                fatDamage = damage.FatigueDamage * (damageClass > 0 ? damageClass : 1);
+                vitDamage = damage.VitalityDamage * (damageClass > 0 ? damageClass : 1);
+            }
         }
 
         string attackBreakdown = $"Attack: {attackerData.SkillAS} (skill) + {attackerData.WeaponAVModifier} (weapon)";
@@ -472,7 +490,12 @@ public class TargetingInteractionManager : ITargetingInteractionManager
         string defenderDetails = $"{attackBreakdown}\n{defenseBreakdown}\nSV = {av} - {tv} = {sv}";
         if (isHit)
         {
-            if (attackerData.WeaponSVModifier != 0)
+            var damageProfileDisplay = attackerData.GetWeaponDamageProfile();
+            if (damageProfileDisplay != null && damageProfileDisplay.IsMultiType)
+            {
+                defenderDetails += $" + weapon ({damageProfileDisplay.ToDisplayString()})";
+            }
+            else if (attackerData.WeaponSVModifier != 0)
             {
                 int effectiveSVDisplay = sv + attackerData.WeaponSVModifier;
                 defenderDetails += $" + {attackerData.WeaponSVModifier} (weapon) = {effectiveSVDisplay}";

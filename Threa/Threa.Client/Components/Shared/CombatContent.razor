@@ -540,6 +540,7 @@
     private int meleeWeaponSVModifier;
     private int meleeWeaponDamageClass = 1;
     private string meleeWeaponName = "";
+    private Dictionary<string, int>? meleeWeaponDamageModifiers;
 
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
@@ -590,6 +591,16 @@
         // Add equipped melee weapons
         foreach (var w in meleeWeapons)
         {
+            // Parse per-type weapon damage if available
+            Dictionary<string, int>? weaponDamageModifiers = null;
+            var weaponProfile = GameMechanics.Combat.WeaponDamageProfile.FromJson(w.Template.WeaponDamage);
+            if (weaponProfile != null && weaponProfile.HasDamage)
+            {
+                weaponDamageModifiers = new Dictionary<string, int>();
+                foreach (var kv in weaponProfile.GetNonZeroTypes())
+                    weaponDamageModifiers[kv.Key.ToString()] = kv.Value;
+            }
+
             meleeWeaponOptions.Add(new MeleeWeaponInfo
             {
                 TemplateId = w.Template.Id,
@@ -599,6 +610,7 @@
                 WeaponSVModifier = w.Template.SVModifier,
                 WeaponDamageClass = w.Template.DamageClass,
                 DamageType = w.Template.DamageType ?? "Bashing",
+                WeaponDamageModifiers = weaponDamageModifiers,
                 IsVirtual = false,
                 Description = w.Template.ShortDescription
             });
@@ -630,6 +642,7 @@
         meleeWeaponSVModifier = defaultWeapon?.WeaponSVModifier ?? 0;
         meleeWeaponDamageClass = defaultWeapon?.WeaponDamageClass ?? 1;
         meleeWeaponName = defaultWeapon?.Name ?? "Unarmed";
+        meleeWeaponDamageModifiers = defaultWeapon?.WeaponDamageModifiers;
 
         // Detect shields
         var offHand = equippedItems.FirstOrDefault(i => i.EquippedSlot == EquipmentSlot.OffHand);
@@ -1102,6 +1115,7 @@
         meleeWeaponSVModifier = weapon.WeaponSVModifier;
         meleeWeaponDamageClass = weapon.WeaponDamageClass;
         meleeWeaponName = weapon.Name;
+        meleeWeaponDamageModifiers = weapon.WeaponDamageModifiers;
 
         // If the weapon uses a different skill, try to select it
         if (!string.IsNullOrEmpty(weapon.SkillName) && Character != null)
@@ -1546,6 +1560,7 @@
         DamageType damageType = DamageType.Bashing;
         bool isDodgeable = false;
         int currentAmmo = 0;
+        Dictionary<string, int>? weaponDmgModifiers = null;
 
         if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
         {
@@ -1565,6 +1580,7 @@
             weaponSV = meleeWeaponSVModifier;
             weaponDC = meleeWeaponDamageClass;
             weaponName = meleeWeaponName;
+            weaponDmgModifiers = meleeWeaponDamageModifiers;
 
             // Fall back to equipped weapon name if no selection
             if (string.IsNullOrEmpty(weaponName))
@@ -1594,7 +1610,8 @@
             DamageType = damageType,
             IsDodgeable = isDodgeable,
             CurrentLoadedAmmo = currentAmmo,
-            UsePhysicality = actionType == TargetingActionType.MeleeAttack
+            UsePhysicality = actionType == TargetingActionType.MeleeAttack,
+            WeaponDamageModifiers = weaponDmgModifiers
         };
     }
 

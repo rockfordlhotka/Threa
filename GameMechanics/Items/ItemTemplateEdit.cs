@@ -207,6 +207,17 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(ArmorAbsorptionProperty, value);
     }
 
+    public static readonly PropertyInfo<string?> WeaponDamageProperty = RegisterProperty<string?>(nameof(WeaponDamage));
+    /// <summary>
+    /// Per-damage-type SV modifiers for weapons (JSON).
+    /// Format: {"Cutting": 4, "Energy": 2}
+    /// </summary>
+    public string? WeaponDamage
+    {
+        get => GetProperty(WeaponDamageProperty);
+        set => SetProperty(WeaponDamageProperty, value);
+    }
+
     public static readonly PropertyInfo<string?> CustomPropertiesProperty = RegisterProperty<string?>(nameof(CustomProperties));
     public string? CustomProperties
     {
@@ -312,6 +323,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DodgeModifier = 0;
             Range = null;
             ArmorAbsorption = null;
+            WeaponDamage = null;
             CustomProperties = null;
             IsContainer = false;
             ContainerMaxWeight = null;
@@ -363,6 +375,20 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DodgeModifier = data.DodgeModifier;
             Range = data.Range;
             ArmorAbsorption = data.ArmorAbsorption;
+            // Migrate legacy single-type weapon damage to multi-type JSON
+            if (!string.IsNullOrWhiteSpace(data.WeaponDamage))
+            {
+                WeaponDamage = data.WeaponDamage;
+            }
+            else if (!string.IsNullOrWhiteSpace(data.DamageType) || data.SVModifier != 0)
+            {
+                var profile = Combat.WeaponDamageProfile.FromLegacy(data.DamageType, data.SVModifier);
+                WeaponDamage = profile?.ToJson();
+            }
+            else
+            {
+                WeaponDamage = null;
+            }
             CustomProperties = data.CustomProperties;
             IsContainer = data.IsContainer;
             ContainerMaxWeight = data.ContainerMaxWeight;
@@ -410,6 +436,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DodgeModifier = DodgeModifier,
             Range = Range,
             ArmorAbsorption = ArmorAbsorption,
+            WeaponDamage = WeaponDamage,
             CustomProperties = CustomProperties,
             IsContainer = IsContainer,
             ContainerMaxWeight = ContainerMaxWeight,
@@ -458,6 +485,7 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             DodgeModifier = DodgeModifier,
             Range = Range,
             ArmorAbsorption = ArmorAbsorption,
+            WeaponDamage = WeaponDamage,
             CustomProperties = CustomProperties,
             IsContainer = IsContainer,
             ContainerMaxWeight = ContainerMaxWeight,
