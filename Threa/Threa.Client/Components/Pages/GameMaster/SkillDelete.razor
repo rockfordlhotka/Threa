@@ -1,0 +1,125 @@
+@page "/gamemaster/skills/{Id}/delete"
+
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "GameMaster,Administrator")]
+
+@using GameMechanics.Skills
+@using Microsoft.AspNetCore.Authorization
+
+@inject IDataPortal<SkillDefinitionEdit> skillPortal
+@inject NavigationManager NavigationManager
+@inject Csla.Blazor.State.StateManager StateManager
+
+<div class="info-box d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Delete Skill</strong>
+    </div>
+    <a href="/gamemaster/skills" class="btn btn-outline-secondary btn-sm">Back to Skills</a>
+</div>
+
+@if (skill == null && errorMessage == null)
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <div class="item-meta mb-2">Loading skill...</div>
+            <img src="images/busy.gif" class="busy-animation" />
+        </div>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+    <p><a href="/gamemaster/skills">Return to skill list</a></p>
+}
+else
+{
+    <div class="alert alert-danger">
+        <h4>Confirm Deletion</h4>
+        <p>
+            Are you sure you want to delete the skill <strong>@skill!.Name</strong>?
+        </p>
+        <p>
+            <strong>This action cannot be undone.</strong>
+        </p>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Skill Details
+        </div>
+        <div class="card-body">
+            <p><strong>Id:</strong> @skill.Id</p>
+            <p><strong>Name:</strong> @skill.Name</p>
+            <p><strong>Category:</strong> @skill.Category</p>
+            <p><strong>Primary Attribute:</strong> @skill.PrimaryAttribute</p>
+            <p><strong>Description:</strong> @(string.IsNullOrWhiteSpace(skill.Description) ? "(none)" : skill.Description)</p>
+        </div>
+    </div>
+
+    @if (isDeleting)
+    {
+        <button class="btn btn-danger" disabled>
+            Deleting...
+        </button>
+        <img src="images/busy.gif" class="busy-animation" />
+    }
+    else
+    {
+        <button class="btn btn-danger" @onclick="ConfirmDelete">
+            Yes, Delete This Skill
+        </button>
+        <a href="/gamemaster/skills" class="btn btn-secondary ms-2">
+            Cancel
+        </a>
+    }
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private SkillDefinitionEdit? skill;
+    private string? errorMessage;
+    private bool isDeleting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateManager.InitializeAsync();
+
+        try
+        {
+            skill = await skillPortal.FetchAsync(Id);
+            if (!skill.CanBeDeleted)
+            {
+                errorMessage = "Core attribute skills cannot be deleted.";
+                skill = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading skill: {ex.Message}";
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (skill == null)
+            return;
+
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            await skillPortal.DeleteAsync(Id);
+            NavigationManager.NavigateTo("/gamemaster/skills");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting skill: {ex.Message}";
+            isDeleting = false;
+            StateHasChanged();
+        }
+    }
+}
