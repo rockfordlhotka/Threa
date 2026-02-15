@@ -992,6 +992,28 @@
             if (item.IsEquipped && rangedWeapons.Any(w => w.ItemId == item.Id))
                 continue;
 
+            // Check for AmmoContainer items (magazines, quivers, etc.) first
+            if (item.Template?.ItemType == ItemType.AmmoContainer)
+            {
+                var containerProps = AmmoContainerProperties.FromJson(item.Template.CustomProperties);
+                if (containerProps != null)
+                {
+                    var containerState = AmmoContainerState.FromJson(item.CustomProperties);
+                    availableAmmoSources.Add(new AmmoSourceInfo
+                    {
+                        ItemId = item.Id,
+                        Name = item.CustomName ?? item.Template.Name ?? "Magazine",
+                        AmmoType = containerState.AmmoType ?? containerProps.AmmoType,
+                        CurrentAmmo = containerState.LoadedAmmo,
+                        Capacity = containerProps.Capacity,
+                        IsLooseAmmo = false,
+                        DamageModifier = 0,
+                        SpecialEffect = null
+                    });
+                }
+                continue;
+            }
+
             // Check if this is ammunition - try CustomProperties first, then fall back to ItemType
             var ammoProps = AmmunitionProperties.FromJson(item.Template?.CustomProperties);
 
