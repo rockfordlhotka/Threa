@@ -53,7 +53,19 @@
                                     var weapon = AvailableWeapons[i];
                                     <option value="@i">
                                         @weapon.Name
-                                        @if (weapon.WeaponAVModifier != 0)
+                                        @if (weapon.WeaponDamageModifiers != null && weapon.WeaponDamageModifiers.Count > 1)
+                                        {
+                                            var dmgDisplay = string.Join(", ", weapon.WeaponDamageModifiers.Where(kv => kv.Value != 0).Select(kv => $"{kv.Key} +{kv.Value}"));
+                                            @if (weapon.WeaponAVModifier != 0)
+                                            {
+                                                @($" (AV: {(weapon.WeaponAVModifier >= 0 ? "+" : "")}{weapon.WeaponAVModifier}, {dmgDisplay})")
+                                            }
+                                            else
+                                            {
+                                                @($" ({dmgDisplay})")
+                                            }
+                                        }
+                                        else if (weapon.WeaponAVModifier != 0)
                                         {
                                             @($" (AV: {(weapon.WeaponAVModifier >= 0 ? "+" : "")}{weapon.WeaponAVModifier}")
                                             @($", SV: +{weapon.WeaponSVModifier})")
@@ -87,7 +99,16 @@
                                 {
                                     <span>AV: @(AvailableWeapons[0].WeaponAVModifier >= 0 ? "+" : "")@AvailableWeapons[0].WeaponAVModifier | </span>
                                 }
-                                SV: +@AvailableWeapons[0].WeaponSVModifier | DC: @AvailableWeapons[0].WeaponDamageClass
+                                @if (AvailableWeapons[0].WeaponDamageModifiers != null && AvailableWeapons[0].WeaponDamageModifiers.Count > 1)
+                                {
+                                    var multiDmg = string.Join(", ", AvailableWeapons[0].WeaponDamageModifiers.Where(kv => kv.Value != 0).Select(kv => $"{kv.Key} +{kv.Value}"));
+                                    @multiDmg
+                                }
+                                else
+                                {
+                                    @($"SV: +{AvailableWeapons[0].WeaponSVModifier}")
+                                }
+                                @($" | DC: {AvailableWeapons[0].WeaponDamageClass}")
                             </small>
                         </div>
                     </div>
@@ -185,7 +206,20 @@
                                         </td>
                                     </tr>
                                 }
-                                @if (GetActiveSVModifier() != 0)
+                                @{
+                                    var activeWpn = GetSelectedWeapon();
+                                    var multiTypeModifiers = activeWpn?.WeaponDamageModifiers;
+                                }
+                                @if (multiTypeModifiers != null && multiTypeModifiers.Count > 1)
+                                {
+                                    <tr>
+                                        <td>@(GetActiveWeaponName()) Damage:</td>
+                                        <td class="fw-bold text-success">
+                                            @(string.Join(", ", multiTypeModifiers.Where(kv => kv.Value != 0).Select(kv => $"{kv.Key} +{kv.Value}")))
+                                        </td>
+                                    </tr>
+                                }
+                                else if (GetActiveSVModifier() != 0)
                                 {
                                     <tr>
                                         <td>@(GetActiveWeaponName()) SV Bonus:</td>

@@ -243,19 +243,52 @@ else
                                 </tr>
 
                                 <tr>
-                                    <td>Damage Type</td>
+                                    <td colspan="2"><strong>Weapon Damage by Type</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><small class="text-muted">Enter SV modifier for each damage type this weapon deals. Weapons can deal multiple damage types simultaneously (e.g., a flaming sword with Cutting +4 AND Energy +2).</small></td>
+                                </tr>
+                                <tr>
+                                    <td>Bashing</td>
                                     <td>
-                                        <select @bind="vm.Model.DamageType" class="form-control">
-                                            <option value="">-- None --</option>
-                                            @foreach (DamageType type in Enum.GetValues(typeof(DamageType)))
-                                            {
-                                                <option value="@type.ToString()">@type.ToString()</option>
-                                            }
-                                        </select>
+                                        <input type="number" class="form-control" @bind="weaponDamage.Bashing"
+                                               @bind:after="UpdateWeaponDamage" />
+                                        <small class="text-muted">Blunt impact (maces, clubs, fists)</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Cutting</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="weaponDamage.Cutting"
+                                               @bind:after="UpdateWeaponDamage" />
+                                        <small class="text-muted">Slashing (swords, axes)</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Piercing</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="weaponDamage.Piercing"
+                                               @bind:after="UpdateWeaponDamage" />
+                                        <small class="text-muted">Puncture (daggers, spears)</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Projectile</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="weaponDamage.Projectile"
+                                               @bind:after="UpdateWeaponDamage" />
+                                        <small class="text-muted">Ranged (arrows, bolts, bullets)</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Energy</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="weaponDamage.Energy"
+                                               @bind:after="UpdateWeaponDamage" />
+                                        <small class="text-muted">Magic/tech (fire, lightning, plasma)</small>
                                     </td>
                                 </tr>
 
-                                <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SVModifier)" />
                                 <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.AVModifier)" />
                             </tbody>
                         </table>
@@ -357,11 +390,44 @@ else
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Damage Modifier (SV)</td>
+                                        <td colspan="2"><strong>Ranged Weapon Damage by Type</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><small class="text-muted">Per-type SV modifiers for this ranged weapon. Leave at 0 for no modifier.</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bashing</td>
                                         <td>
-                                            <input type="number" class="form-control" @bind="rangedProps.BaseSVModifier"
-                                                   @bind:after="UpdateCustomProperties" />
-                                            <small class="text-muted">Bonus/penalty to damage</small>
+                                            <input type="number" class="form-control" @bind="rangedWeaponDamage.Bashing"
+                                                   @bind:after="UpdateRangedWeaponDamageModifiers" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cutting</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedWeaponDamage.Cutting"
+                                                   @bind:after="UpdateRangedWeaponDamageModifiers" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Piercing</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedWeaponDamage.Piercing"
+                                                   @bind:after="UpdateRangedWeaponDamageModifiers" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Projectile</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedWeaponDamage.Projectile"
+                                                   @bind:after="UpdateRangedWeaponDamageModifiers" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Energy</td>
+                                        <td>
+                                            <input type="number" class="form-control" @bind="rangedWeaponDamage.Energy"
+                                                   @bind:after="UpdateRangedWeaponDamageModifiers" />
                                         </td>
                                     </tr>
                                     @if (!rangedProps.IsThrown)
@@ -687,11 +753,44 @@ else
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Damage Modifier</td>
+                                    <td colspan="2"><strong>Ammo Damage Modifiers by Type</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><small class="text-muted">Enter per-type SV modifiers. These are added to the weapon's per-type damage. Leave at 0 for no modifier.</small></td>
+                                </tr>
+                                <tr>
+                                    <td>Bashing</td>
                                     <td>
-                                        <input type="number" class="form-control" @bind="ammoProps.DamageModifier"
-                                               @bind:after="UpdateAmmoProperties" />
-                                        <small class="text-muted">Added to weapon's base damage</small>
+                                        <input type="number" class="form-control" @bind="ammoDamage.Bashing"
+                                               @bind:after="UpdateAmmoDamageModifiers" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Cutting</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="ammoDamage.Cutting"
+                                               @bind:after="UpdateAmmoDamageModifiers" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Piercing</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="ammoDamage.Piercing"
+                                               @bind:after="UpdateAmmoDamageModifiers" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Projectile</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="ammoDamage.Projectile"
+                                               @bind:after="UpdateAmmoDamageModifiers" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Energy</td>
+                                    <td>
+                                        <input type="number" class="form-control" @bind="ammoDamage.Energy"
+                                               @bind:after="UpdateAmmoDamageModifiers" />
                                     </td>
                                 </tr>
                                 <tr>
@@ -864,7 +963,10 @@ else
     // Helper classes for JSON properties
     private RangedWeaponPropsEditor rangedProps = new();
     private ArmorAbsorptionEditor armorAbsorption = new();
+    private WeaponDamageEditor weaponDamage = new();
+    private WeaponDamageEditor rangedWeaponDamage = new();
     private AmmoPropsEditor ammoProps = new();
+    private WeaponDamageEditor ammoDamage = new();
     private AmmoContainerPropsEditor ammoContainerProps = new();
 
     // Computed properties for section visibility
@@ -922,6 +1024,22 @@ else
                     {
                         rangedProps.RangedSkill = vm.Model.RelatedSkill;
                     }
+
+                    // Load per-type ranged weapon damage modifiers
+                    if (props.DamageModifiers != null && props.DamageModifiers.Count > 0)
+                    {
+                        rangedWeaponDamage = new WeaponDamageEditor();
+                        if (props.DamageModifiers.TryGetValue("Bashing", out var b)) rangedWeaponDamage.Bashing = b;
+                        if (props.DamageModifiers.TryGetValue("Cutting", out var c)) rangedWeaponDamage.Cutting = c;
+                        if (props.DamageModifiers.TryGetValue("Piercing", out var pi)) rangedWeaponDamage.Piercing = pi;
+                        if (props.DamageModifiers.TryGetValue("Projectile", out var pr)) rangedWeaponDamage.Projectile = pr;
+                        if (props.DamageModifiers.TryGetValue("Energy", out var e)) rangedWeaponDamage.Energy = e;
+                    }
+                    else if (props.BaseSVModifier != 0)
+                    {
+                        // Legacy: put the single modifier into Projectile
+                        rangedWeaponDamage = new WeaponDamageEditor { Projectile = props.BaseSVModifier };
+                    }
                 }
             }
             catch { }
@@ -933,6 +1051,22 @@ else
                 if (props != null && !string.IsNullOrEmpty(props.AmmoType))
                 {
                     ammoProps = props;
+
+                    // Load per-type ammo damage modifiers
+                    if (props.DamageModifiers != null && props.DamageModifiers.Count > 0)
+                    {
+                        ammoDamage = new WeaponDamageEditor();
+                        if (props.DamageModifiers.TryGetValue("Bashing", out var b)) ammoDamage.Bashing = b;
+                        if (props.DamageModifiers.TryGetValue("Cutting", out var c)) ammoDamage.Cutting = c;
+                        if (props.DamageModifiers.TryGetValue("Piercing", out var pi)) ammoDamage.Piercing = pi;
+                        if (props.DamageModifiers.TryGetValue("Projectile", out var pr)) ammoDamage.Projectile = pr;
+                        if (props.DamageModifiers.TryGetValue("Energy", out var e)) ammoDamage.Energy = e;
+                    }
+                    else if (props.DamageModifier != 0)
+                    {
+                        // Legacy: put the single modifier into Projectile
+                        ammoDamage = new WeaponDamageEditor { Projectile = props.DamageModifier };
+                    }
                 }
             }
             catch { }
@@ -961,6 +1095,36 @@ else
                 }
             }
             catch { }
+        }
+
+        // Load weapon damage profile
+        if (!string.IsNullOrWhiteSpace(vm.Model.WeaponDamage))
+        {
+            try
+            {
+                var dmg = JsonSerializer.Deserialize<WeaponDamageEditor>(vm.Model.WeaponDamage);
+                if (dmg != null)
+                {
+                    weaponDamage = dmg;
+                }
+            }
+            catch { }
+        }
+        else if (!string.IsNullOrWhiteSpace(vm.Model.DamageType) || vm.Model.SVModifier != 0)
+        {
+            // Migrate legacy single-type data into the editor
+            weaponDamage = new WeaponDamageEditor();
+            if (Enum.TryParse<DamageType>(vm.Model.DamageType, true, out var dt))
+            {
+                switch (dt)
+                {
+                    case DamageType.Bashing: weaponDamage.Bashing = vm.Model.SVModifier; break;
+                    case DamageType.Cutting: weaponDamage.Cutting = vm.Model.SVModifier; break;
+                    case DamageType.Piercing: weaponDamage.Piercing = vm.Model.SVModifier; break;
+                    case DamageType.Projectile: weaponDamage.Projectile = vm.Model.SVModifier; break;
+                    case DamageType.Energy: weaponDamage.Energy = vm.Model.SVModifier; break;
+                }
+            }
         }
     }
 
@@ -1102,6 +1266,24 @@ else
         vm.Model.ArmorAbsorption = JsonSerializer.Serialize(armorAbsorption, new JsonSerializerOptions { WriteIndented = false });
     }
 
+    private void UpdateWeaponDamage()
+    {
+        if (vm.Model == null) return;
+        vm.Model.WeaponDamage = JsonSerializer.Serialize(weaponDamage, new JsonSerializerOptions { WriteIndented = false });
+        // Also update legacy fields for backwards compat
+        var profile = GameMechanics.Combat.WeaponDamageProfile.FromJson(vm.Model.WeaponDamage);
+        if (profile != null && profile.HasDamage)
+        {
+            vm.Model.DamageType = profile.PrimaryDamageType.ToString();
+            vm.Model.SVModifier = profile.PrimarySVModifier;
+        }
+        else
+        {
+            vm.Model.DamageType = string.Empty;
+            vm.Model.SVModifier = 0;
+        }
+    }
+
     private void UpdateAmmoProperties()
     {
         if (vm.Model == null) return;
@@ -1110,6 +1292,41 @@ else
             WriteIndented = false,
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         });
+    }
+
+    private void UpdateRangedWeaponDamageModifiers()
+    {
+        var modifiers = new Dictionary<string, int>();
+        if (rangedWeaponDamage.Bashing != 0) modifiers["Bashing"] = rangedWeaponDamage.Bashing;
+        if (rangedWeaponDamage.Cutting != 0) modifiers["Cutting"] = rangedWeaponDamage.Cutting;
+        if (rangedWeaponDamage.Piercing != 0) modifiers["Piercing"] = rangedWeaponDamage.Piercing;
+        if (rangedWeaponDamage.Projectile != 0) modifiers["Projectile"] = rangedWeaponDamage.Projectile;
+        if (rangedWeaponDamage.Energy != 0) modifiers["Energy"] = rangedWeaponDamage.Energy;
+
+        rangedProps.DamageModifiers = modifiers.Count > 0 ? modifiers : null;
+        // Also update legacy BaseSVModifier for backwards compat (max of all)
+        rangedProps.BaseSVModifier = Math.Max(0, new[] {
+            rangedWeaponDamage.Bashing, rangedWeaponDamage.Cutting,
+            rangedWeaponDamage.Piercing, rangedWeaponDamage.Projectile,
+            rangedWeaponDamage.Energy
+        }.Max());
+        UpdateCustomProperties();
+    }
+
+    private void UpdateAmmoDamageModifiers()
+    {
+        // Store per-type ammo damage modifiers into the ammo props
+        var modifiers = new Dictionary<string, int>();
+        if (ammoDamage.Bashing != 0) modifiers["Bashing"] = ammoDamage.Bashing;
+        if (ammoDamage.Cutting != 0) modifiers["Cutting"] = ammoDamage.Cutting;
+        if (ammoDamage.Piercing != 0) modifiers["Piercing"] = ammoDamage.Piercing;
+        if (ammoDamage.Projectile != 0) modifiers["Projectile"] = ammoDamage.Projectile;
+        if (ammoDamage.Energy != 0) modifiers["Energy"] = ammoDamage.Energy;
+
+        ammoProps.DamageModifiers = modifiers.Count > 0 ? modifiers : null;
+        // Also update legacy DamageModifier for backwards compat (sum of all)
+        ammoProps.DamageModifier = ammoDamage.Bashing + ammoDamage.Cutting + ammoDamage.Piercing + ammoDamage.Projectile + ammoDamage.Energy;
+        UpdateAmmoProperties();
     }
 
     private void UpdateAmmoContainerProperties()
@@ -1214,6 +1431,9 @@ else
         [System.Text.Json.Serialization.JsonPropertyName("baseSVModifier")]
         public int BaseSVModifier { get; set; }
 
+        [System.Text.Json.Serialization.JsonPropertyName("damageModifiers")]
+        public Dictionary<string, int>? DamageModifiers { get; set; }
+
         [System.Text.Json.Serialization.JsonPropertyName("fireModes")]
         public List<string> FireModes { get; set; } = new() { "Single" };
 
@@ -1252,6 +1472,15 @@ else
         public int Energy { get; set; }
     }
 
+    private class WeaponDamageEditor
+    {
+        public int Bashing { get; set; }
+        public int Cutting { get; set; }
+        public int Piercing { get; set; }
+        public int Projectile { get; set; }
+        public int Energy { get; set; }
+    }
+
     private class AmmoPropsEditor
     {
         [System.Text.Json.Serialization.JsonPropertyName("ammoType")]
@@ -1259,6 +1488,9 @@ else
 
         [System.Text.Json.Serialization.JsonPropertyName("damageModifier")]
         public int DamageModifier { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("damageModifiers")]
+        public Dictionary<string, int>? DamageModifiers { get; set; }
 
         [System.Text.Json.Serialization.JsonPropertyName("accuracyModifier")]
         public int AccuracyModifier { get; set; }
