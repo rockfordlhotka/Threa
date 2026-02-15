@@ -1786,26 +1786,49 @@ private async Task LoadTableCharactersAsync()
     /// <summary>
     /// Advances rounds for local (no-table) play.
     /// Per TIME_SYSTEM.md: Each round is 3 seconds of game time.
+    /// Processes AP recovery, pending damage/healing, effects, and saves the character.
     /// </summary>
-    private void LocalAdvanceRounds(int count)
+    private async Task LocalAdvanceRounds(int count)
     {
-        if (table != null || !localIsInCombat || count <= 0) return;
+        if (table != null || !localIsInCombat || count <= 0 || character == null) return;
 
         localCurrentRound += count;
         localTimeSeconds += count * 3; // 3 seconds per round per design spec
 
+        // Process game mechanics for each round (AP recovery, pending pools, effects)
+        for (int i = 0; i < count; i++)
+        {
+            character.EndOfRound(effectPortal);
+        }
+
         AddLogEntry($"Advanced {count} round(s) (Round {localCurrentRound})", ActivityCategory.Time);
+        await SaveCharacterAsync();
         StateHasChanged();
     }
 
     /// <summary>
     /// Advances narrative time for local (no-table) play.
+    /// Processes AP recovery, healing/damage pools, effect expiration, and saves the character.
     /// </summary>
-    private void LocalAdvanceTime(int seconds)
+    private async Task LocalAdvanceTime(int seconds)
     {
-        if (table != null || localIsInCombat || seconds <= 0) return;
+        if (table != null || localIsInCombat || seconds <= 0 || character == null) return;
 
         localTimeSeconds += seconds;
+
+        // Map seconds to TimeEventType + count for ProcessTimeSkip
+        var (skipUnit, skipCount) = seconds switch
+        {
+            60 => (GameMechanics.Time.TimeEventType.EndOfMinute, 1),
+            600 => (GameMechanics.Time.TimeEventType.EndOfTurn, 1),
+            3600 => (GameMechanics.Time.TimeEventType.EndOfHour, 1),
+            86400 => (GameMechanics.Time.TimeEventType.EndOfDay, 1),
+            604800 => (GameMechanics.Time.TimeEventType.EndOfWeek, 1),
+            _ => (GameMechanics.Time.TimeEventType.EndOfMinute, Math.Max(1, seconds / 60))
+        };
+
+        // Process game mechanics (AP recovery, VIT/FAT recovery, effect expiration)
+        character.ProcessTimeSkip(skipUnit, skipCount, effectPortal);
 
         string timeDesc = seconds switch
         {
@@ -1818,6 +1841,7 @@ private async Task LoadTableCharactersAsync()
         };
 
         AddLogEntry($"Advanced time by {timeDesc}", ActivityCategory.Time);
+        await SaveCharacterAsync();
         StateHasChanged();
     }
 }
