@@ -60,6 +60,8 @@ public class MultiDamageResolver
       if (effectiveSV <= 0)
         continue;
 
+      var entry = request.WeaponDamage.GetEntry(typeEntry.Key);
+
       var damageRequest = new DamageRequest
       {
         IncomingSV = effectiveSV,
@@ -70,7 +72,9 @@ public class MultiDamageResolver
         ShieldBlockSucceeded = request.ShieldBlockSucceeded,
         ShieldBlockRV = request.ShieldBlockRV,
         Shield = shieldClone,
-        ArmorPieces = armorClones
+        ArmorPieces = armorClones,
+        ApOffset = entry.ApOffset,
+        SvMax = entry.SvMax
       };
 
       var result = _damageResolver.Resolve(damageRequest, armorBonus, armorRoll, armorRV);

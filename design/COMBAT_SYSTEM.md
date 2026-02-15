@@ -462,6 +462,77 @@ Determined by **1d12** roll:
 - Higher-class armor **absorbs** lower-class damage as 1 SV maximum (trivial damage)
 - When damage **penetrates** from a higher DC to a lower DC target inside, SV is multiplied by 10×
 
+### Armor Piercing (AP Offset) and Armor Vulnerable (SV Max)
+
+Some weapons and ammunition modify how armor absorption works against them. These properties are defined per damage type on the weapon/ammo profile.
+
+#### AP Offset (Armor Piercing)
+
+AP offset reduces the armor's **base absorption value** before damage class scaling is applied. This represents rounds designed to penetrate armor material.
+
+**Formula**: `effectiveAbsorption = max(0, rawAbsorption - apOffset)`
+
+The reduced value is then processed through normal DC scaling.
+
+**Example - AP Rounds vs Plate Armor**:
+```
+Attack: Rifle with AP 5 hits with SV 10
+Target: Plate armor (absorption 12, DC1)
+
+Step 1: Apply AP offset
+  - Raw absorption: 12
+  - AP offset: 5
+  - Reduced absorption: max(0, 12 - 5) = 7
+
+Step 2: Normal absorption
+  - Armor absorbs 7 SV
+  - Penetrating SV: 10 - 7 = 3
+```
+
+AP offset applies to both armor and shields. When merging weapon + ammo profiles, AP offsets are **summed**.
+
+#### SV Max (Armor Vulnerable)
+
+SV Max caps the effective Success Value when armor defense exceeds the threshold. This represents ammunition that works well against soft targets but is stopped cold by strong armor (e.g., hollow-point or soft-target rounds).
+
+**Rule**: If total armor absorption > SvMax, the remaining SV after absorption is set to **0** (the round is completely stopped). Armor durability takes SvMax damage.
+
+If total armor absorption ≤ SvMax (or SvMax is null), normal damage processing applies.
+
+**Example - Soft-Point Rounds vs Heavy Armor**:
+```
+Attack: Pistol with SvMax 5 hits with SV 10
+Target: Heavy armor (absorption 8, DC1)
+
+Step 1: Check SvMax
+  - Total absorption (8) > SvMax (5)
+  - SvMax triggered!
+
+Step 2: Apply cap
+  - Remaining SV: 0 (round stopped by armor)
+  - Armor durability loss: 5 (takes SvMax damage)
+```
+
+**Example - Soft-Point Rounds vs Light Armor**:
+```
+Attack: Pistol with SvMax 5 hits with SV 10
+Target: Light armor (absorption 3, DC1)
+
+Step 1: Check SvMax
+  - Total absorption (3) ≤ SvMax (5)
+  - Normal processing
+
+Step 2: Normal absorption
+  - Armor absorbs 3 SV
+  - Penetrating SV: 10 - 3 = 7
+```
+
+When merging weapon + ammo profiles, SvMax takes the **minimum** non-null value (most restrictive cap wins).
+
+#### Combined AP Offset and SV Max
+
+A weapon can have both AP offset and SV Max. AP offset is applied first (reducing armor absorption), then SV Max is checked against the resulting total absorption.
+
 ### Damage Class Escalation
 
 When a weapon deals exceptionally high damage, the damage value itself determines the effective damage class. This allows powerful weapons or exceptional rolls to punch above their weight class.

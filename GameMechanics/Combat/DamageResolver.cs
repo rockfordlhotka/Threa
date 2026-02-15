@@ -71,7 +71,9 @@ namespace GameMechanics.Combat
           request.DamageType,
           request.DamageClass,
           remainingSV,
-          request.ShieldBlockRV ?? 0);
+          request.ShieldBlockRV ?? 0,
+          request.ApOffset,
+          request.SvMax);
 
         absorptionSteps.Add(shieldRecord);
         remainingSV = shieldRecord.RemainingAfter;
@@ -95,7 +97,9 @@ namespace GameMechanics.Combat
             request.DamageType,
             request.DamageClass,
             remainingSV,
-            armorBonus);
+            armorBonus,
+            request.ApOffset,
+            request.SvMax);
 
           absorptionSteps.Add(armorRecord);
           remainingSV = armorRecord.RemainingAfter;
@@ -173,10 +177,15 @@ namespace GameMechanics.Combat
       DamageType damageType,
       int attackDamageClass,
       int incomingSV,
-      int shieldBlockRV)
+      int shieldBlockRV,
+      int apOffset = 0,
+      int? svMax = null)
     {
+      // AP offset reduces raw absorption before DC scaling
+      int rawAbsorption = shield.GetAbsorption(damageType);
+      int reducedAbsorption = Math.Max(0, rawAbsorption - apOffset);
       int baseAbsorption = GetEffectiveAbsorption(
-        shield.GetAbsorption(damageType),
+        reducedAbsorption,
         shield.DamageClass,
         attackDamageClass);
 
@@ -184,14 +193,27 @@ namespace GameMechanics.Combat
       int bonus = shieldBlockRV > 0 ? Math.Min(shieldBlockRV / 2, 4) : 0;
       int totalAbsorption = Math.Max(0, baseAbsorption + bonus);
 
+      // SV max check: if total absorption exceeds svMax, cap effective SV
+      bool svMaxTriggered = false;
+      if (svMax.HasValue && totalAbsorption > svMax.Value)
+      {
+        svMaxTriggered = true;
+        // Cap: armor absorbs up to svMax worth, remaining SV becomes 0
+        totalAbsorption = svMax.Value;
+      }
+
       // Can only absorb up to incoming SV and remaining durability
       int maxAbsorption = Math.Min(totalAbsorption, shield.CurrentDurability);
       int actualAbsorbed = Math.Min(maxAbsorption, incomingSV);
-      int remaining = incomingSV - actualAbsorbed;
+      int remaining = svMaxTriggered ? 0 : incomingSV - actualAbsorbed;
 
-      // Durability loss = damage absorbed
-      int durabilityLost = shield.ReduceDurability(actualAbsorbed);
+      // Durability loss: when svMax triggered, shield takes svMax damage
+      int durabilityDamage = svMaxTriggered ? Math.Min(svMax!.Value, shield.CurrentDurability) : actualAbsorbed;
+      int durabilityLost = shield.ReduceDurability(durabilityDamage);
       bool destroyed = !shield.IsIntact;
+
+      var desc = BuildAbsorptionDescription(shield.Name, actualAbsorbed, baseAbsorption, bonus,
+        apOffset, svMax, svMaxTriggered, destroyed, "bonus");
 
       return new AbsorptionRecord
       {
@@ -205,9 +227,10 @@ namespace GameMechanics.Combat
         RemainingAfter = remaining,
         DurabilityLost = durabilityLost,
         ItemDestroyed = destroyed,
-        Description = destroyed
-          ? $"{shield.Name} absorbed {actualAbsorbed} SV and was DESTROYED"
-          : $"{shield.Name} absorbed {actualAbsorbed} SV (base {baseAbsorption} + bonus {bonus})"
+        ApOffsetApplied = apOffset,
+        SvMaxApplied = svMax,
+        SvMaxTriggered = svMaxTriggered,
+        Description = desc
       };
     }
 
@@ -219,23 +242,40 @@ namespace GameMechanics.Combat
       DamageType damageType,
       int attackDamageClass,
       int incomingSV,
-      int armorSkillBonus)
+      int armorSkillBonus,
+      int apOffset = 0,
+      int? svMax = null)
     {
+      // AP offset reduces raw absorption before DC scaling
+      int rawAbsorption = armor.GetAbsorption(damageType);
+      int reducedAbsorption = Math.Max(0, rawAbsorption - apOffset);
       int baseAbsorption = GetEffectiveAbsorption(
-        armor.GetAbsorption(damageType),
+        reducedAbsorption,
         armor.DamageClass,
         attackDamageClass);
 
       int totalAbsorption = Math.Max(0, baseAbsorption + armorSkillBonus);
 
+      // SV max check: if total absorption exceeds svMax, cap effective SV
+      bool svMaxTriggered = false;
+      if (svMax.HasValue && totalAbsorption > svMax.Value)
+      {
+        svMaxTriggered = true;
+        totalAbsorption = svMax.Value;
+      }
+
       // Can only absorb up to incoming SV and remaining durability
       int maxAbsorption = Math.Min(totalAbsorption, armor.CurrentDurability);
       int actualAbsorbed = Math.Min(maxAbsorption, incomingSV);
-      int remaining = incomingSV - actualAbsorbed;
+      int remaining = svMaxTriggered ? 0 : incomingSV - actualAbsorbed;
 
-      // Durability loss = damage absorbed
-      int durabilityLost = armor.ReduceDurability(actualAbsorbed);
+      // Durability loss: when svMax triggered, armor takes svMax damage
+      int durabilityDamage = svMaxTriggered ? Math.Min(svMax!.Value, armor.CurrentDurability) : actualAbsorbed;
+      int durabilityLost = armor.ReduceDurability(durabilityDamage);
       bool destroyed = !armor.IsIntact;
+
+      var desc = BuildAbsorptionDescription(armor.Name, actualAbsorbed, baseAbsorption, armorSkillBonus,
+        apOffset, svMax, svMaxTriggered, destroyed, "skill");
 
       return new AbsorptionRecord
       {
@@ -249,12 +289,37 @@ namespace GameMechanics.Combat
         RemainingAfter = remaining,
         DurabilityLost = durabilityLost,
         ItemDestroyed = destroyed,
-        Description = destroyed
-          ? $"{armor.Name} absorbed {actualAbsorbed} SV and was DESTROYED"
-          : armorSkillBonus != 0
-            ? $"{armor.Name} absorbed {actualAbsorbed} SV (base {baseAbsorption} + skill {armorSkillBonus})"
-            : $"{armor.Name} absorbed {actualAbsorbed} SV"
+        ApOffsetApplied = apOffset,
+        SvMaxApplied = svMax,
+        SvMaxTriggered = svMaxTriggered,
+        Description = desc
       };
+    }
+
+    private static string BuildAbsorptionDescription(
+      string itemName, int absorbed, int baseAbsorption, int bonus,
+      int apOffset, int? svMax, bool svMaxTriggered, bool destroyed, string bonusLabel)
+    {
+      if (destroyed)
+      {
+        var desc = $"{itemName} absorbed {absorbed} SV and was DESTROYED";
+        if (apOffset > 0) desc += $" (AP -{apOffset})";
+        return desc;
+      }
+
+      var parts = new List<string>();
+      parts.Add($"base {baseAbsorption}");
+      if (bonus != 0) parts.Add($"{bonusLabel} {bonus}");
+      if (apOffset > 0) parts.Add($"AP -{apOffset}");
+
+      var result = $"{itemName} absorbed {absorbed} SV";
+      if (parts.Count > 1 || apOffset > 0)
+        result += $" ({string.Join(" + ", parts)})";
+
+      if (svMaxTriggered)
+        result += $" [SvMax {svMax} triggered - remaining SV nullified]";
+
+      return result;
     }
 
     /// <summary>
