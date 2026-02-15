@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Threa.Client.Components.Pages.GamePlay;
 
 /// <summary>
@@ -40,6 +42,12 @@ public class MeleeWeaponInfo
     /// Damage type (e.g., "Bludgeoning", "Cutting").
     /// </summary>
     public string DamageType { get; set; } = "Bashing";
+
+    /// <summary>
+    /// Per-damage-type SV modifiers from weapon.
+    /// When set, takes precedence over WeaponSVModifier and DamageType.
+    /// </summary>
+    public Dictionary<string, int>? WeaponDamageModifiers { get; set; }
 
     /// <summary>
     /// Whether this is a virtual weapon (innate ability, not a physical item).

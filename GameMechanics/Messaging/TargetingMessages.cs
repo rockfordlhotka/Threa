@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GameMechanics.Combat;
 
 namespace GameMechanics.Messaging;
@@ -171,6 +172,34 @@ public class TargetingAttackerData
     /// Damage type from weapon/ammo.
     /// </summary>
     public DamageType DamageType { get; init; }
+
+    /// <summary>
+    /// Per-damage-type SV modifiers from weapon and ammo combined.
+    /// When set, takes precedence over WeaponSVModifier and DamageType for damage resolution.
+    /// Format: {"Cutting": 4, "Energy": 2}
+    /// </summary>
+    public Dictionary<string, int>? WeaponDamageModifiers { get; init; }
+
+    /// <summary>
+    /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
+    /// </summary>
+    public WeaponDamageProfile? GetWeaponDamageProfile()
+    {
+        if (WeaponDamageModifiers != null && WeaponDamageModifiers.Count > 0)
+        {
+            var modifiers = new Dictionary<DamageType, int>();
+            foreach (var kv in WeaponDamageModifiers)
+            {
+                if (System.Enum.TryParse<DamageType>(kv.Key, ignoreCase: true, out var dt))
+                    modifiers[dt] = kv.Value;
+            }
+            if (modifiers.Count > 0)
+                return new WeaponDamageProfile(modifiers);
+        }
+
+        // Fall back to legacy single type
+        return WeaponDamageProfile.FromSingle(DamageType, WeaponSVModifier);
+    }
 }
 
 /// <summary>

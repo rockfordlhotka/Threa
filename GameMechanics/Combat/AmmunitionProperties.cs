@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameMechanics.Combat.Effects;
@@ -26,9 +27,17 @@ public class AmmunitionProperties
     [JsonPropertyName("containerCapacity")]
     public int ContainerCapacity { get; set; }
 
-    /// <summary>Damage modifier applied to hits with this ammo.</summary>
+    /// <summary>Damage modifier applied to hits with this ammo (legacy single-type).</summary>
     [JsonPropertyName("damageModifier")]
     public int DamageModifier { get; set; }
+
+    /// <summary>
+    /// Per-damage-type SV modifiers for this ammo.
+    /// Format: {"Energy": 2, "Piercing": 1}
+    /// When set, takes precedence over DamageModifier.
+    /// </summary>
+    [JsonPropertyName("damageModifiers")]
+    public Dictionary<string, int>? DamageModifiers { get; set; }
 
     /// <summary>Accuracy modifier (AV) applied to attack rolls with this ammo. Cumulative with weapon AV.</summary>
     [JsonPropertyName("accuracyModifier")]
@@ -143,6 +152,30 @@ public class AmmunitionProperties
             // Armor-piercing and tracer don't create effects (handled by penetration modifier)
             _ => null
         };
+    }
+
+    /// <summary>
+    /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type modifier.
+    /// </summary>
+    public WeaponDamageProfile? GetWeaponDamageProfile()
+    {
+        if (DamageModifiers != null && DamageModifiers.Count > 0)
+        {
+            var modifiers = new Dictionary<DamageType, int>();
+            foreach (var kv in DamageModifiers)
+            {
+                if (Enum.TryParse<DamageType>(kv.Key, ignoreCase: true, out var dt))
+                    modifiers[dt] = kv.Value;
+            }
+            if (modifiers.Count > 0)
+                return new WeaponDamageProfile(modifiers);
+        }
+
+        // Fall back to legacy single modifier (applied to Projectile by default)
+        if (DamageModifier != 0)
+            return WeaponDamageProfile.FromSingle(DamageType.Projectile, DamageModifier);
+
+        return null;
     }
 
     /// <summary>
