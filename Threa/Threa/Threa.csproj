@@ -7,7 +7,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Version is set dynamically from BuildNumber.txt -->
     <MajorVersion>0</MajorVersion>
-    <MinorVersion>5</MinorVersion>
+    <MinorVersion>7</MinorVersion>
   </PropertyGroup>
 
   <!-- Read build number from file and set version properties -->
