@@ -8,7 +8,7 @@
     </div>
 
     <!-- Skills grouped by attribute -->
-    <div class="skill-groups" style="max-height: 460px; overflow-y: auto;">
+    <div class="skill-groups">
         @foreach (var group in GetGroupedSkills())
         {
             <div class="card mb-2">
@@ -62,6 +62,9 @@
     private IEnumerable<IGrouping<string, GameMechanics.SkillEdit>> GetGroupedSkills()
     {
         var skills = Character?.Skills?.AsEnumerable() ?? Enumerable.Empty<GameMechanics.SkillEdit>();
+
+        // Filter out standard skills
+        skills = skills.Where(s => s.Category != Threa.Dal.Dto.SkillCategory.Standard);
 
         if (!string.IsNullOrWhiteSpace(searchFilter))
         {

@@ -90,6 +90,24 @@ namespace GameMechanics.Combat
       CurrentDurability -= actualReduction;
       return actualReduction;
     }
+
+    /// <summary>
+    /// Creates a shallow clone with mutable durability for multi-damage-type resolution.
+    /// </summary>
+    public ArmorInfo Clone()
+    {
+      return new ArmorInfo
+      {
+        ItemId = ItemId,
+        Name = Name,
+        CoveredLocations = CoveredLocations,
+        DamageClass = DamageClass,
+        Absorption = Absorption,
+        CurrentDurability = CurrentDurability,
+        MaxDurability = MaxDurability,
+        LayerOrder = LayerOrder
+      };
+    }
   }
 
   /// <summary>
@@ -153,6 +171,22 @@ namespace GameMechanics.Combat
       int actualReduction = System.Math.Min(amount, CurrentDurability);
       CurrentDurability -= actualReduction;
       return actualReduction;
+    }
+
+    /// <summary>
+    /// Creates a shallow clone with mutable durability for multi-damage-type resolution.
+    /// </summary>
+    public ShieldInfo Clone()
+    {
+      return new ShieldInfo
+      {
+        ItemId = ItemId,
+        Name = Name,
+        DamageClass = DamageClass,
+        Absorption = Absorption,
+        CurrentDurability = CurrentDurability,
+        MaxDurability = MaxDurability
+      };
     }
   }
 }

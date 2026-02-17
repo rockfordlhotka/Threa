@@ -4,6 +4,17 @@ using Threa.Dal.Dto;
 
 namespace GameMechanics
 {
+  /// <summary>
+  /// Type of action cost payment method.
+  /// </summary>
+  public enum ActionCostType
+  {
+    /// <summary>1 AP + 1 FAT (standard action cost)</summary>
+    OneAPOneFat,
+    /// <summary>2 AP (fatigue-free action cost)</summary>
+    TwoAP
+  }
+
   [Serializable]
   public class ActionPoints : BusinessBase<ActionPoints>
   {

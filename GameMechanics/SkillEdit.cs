@@ -414,6 +414,7 @@ namespace GameMechanics
       PrimaryAttribute = std.PrimaryAttribute;
       SecondaryAttribute = std.SecondaryAttribute;
       TertiaryAttribute = std.TertiaryAttribute;
+      Category = std.Category;
     }
 
     [FetchChild]

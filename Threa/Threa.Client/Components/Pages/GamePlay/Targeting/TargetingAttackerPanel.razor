@@ -1,6 +1,7 @@
 @using Threa.Client.Components.Shared
 @using GameMechanics.Combat
 @using GameMechanics.Messaging
+@using GameMechanics
 
 <div class="targeting-attacker-panel">
     <div class="card h-100">
@@ -9,12 +10,44 @@
             <small class="d-block">@AttackerName</small>
         </div>
         <div class="card-body overflow-auto" style="max-height: 400px;">
+            <!-- Action Cost Selection -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Action Cost</label>
+                <ActionCostSelector AP="@MaxAPBoost" 
+                                    Fat="@MaxFATBoost" 
+                                    IsReadOnly="@IsReadOnly"
+                                    OnCostTypeSelected="OnActionCostTypeChanged" />
+                <small class="text-muted">Choose how to pay for this attack</small>
+            </div>
+
+            <hr />
+
+            @if (ActionType == TargetingActionType.MeleeAttack)
+            {
+                <!-- Melee Attack Info -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Weapon</label>
+                    <div class="alert alert-info py-2 mb-0">
+                        <strong>@(InitialData?.WeaponName ?? "Unarmed")</strong>
+                        @if (WeaponAVModifier != 0)
+                        {
+                            <span class="ms-2 badge @(WeaponAVModifier >= 0 ? "bg-success" : "bg-danger")">
+                                AV @(WeaponAVModifier >= 0 ? "+" : "")@WeaponAVModifier
+                            </span>
+                        }
+                    </div>
+                    <small class="text-muted">Weapon is selected based on equipped items</small>
+                </div>
+            }
+
             @if (ActionType == TargetingActionType.RangedAttack)
             {
                 <!-- Ranged Attack Options -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Range</label>
-                    <select class="form-select form-select-sm" @bind="range" @bind:after="OnDataChanged">
+                    <select class="form-select form-select-sm" 
+                            disabled="@IsReadOnly"
+                            @bind="range" @bind:after="OnDataChanged">
                         <option value="@RangeCategory.Short">Short (TV 6)</option>
                         <option value="@RangeCategory.Medium">Medium (TV 8)</option>
                         <option value="@RangeCategory.Long">Long (TV 10)</option>
@@ -26,7 +59,9 @@
                 {
                     <div class="mb-3">
                         <label class="form-label fw-bold">Fire Mode</label>
-                        <select class="form-select form-select-sm" @bind="fireMode" @bind:after="OnDataChanged">
+                        <select class="form-select form-select-sm" 
+                                disabled="@IsReadOnly"
+                                @bind="fireMode" @bind:after="OnDataChanged">
                             <option value="@FireMode.Single">Single Shot</option>
                             <option value="@FireMode.Burst">Burst (3 rounds)</option>
                             <option value="@FireMode.Suppression">Suppression (10 rounds)</option>
@@ -37,7 +72,9 @@
 
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="attackerMoving" @bind="isMoving" @bind:after="OnDataChanged">
+                    <input class="form-check-input" type="checkbox" id="attackerMoving" 
+                           disabled="@IsReadOnly"
+                           @bind="isMoving" @bind:after="OnDataChanged">
                     <label class="form-check-label" for="attackerMoving">
                         Moving (-2 AV)
                     </label>
@@ -46,14 +83,18 @@
 
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="calledShot" @bind="isCalledShot" @bind:after="OnDataChanged">
+                    <input class="form-check-input" type="checkbox" id="calledShot" 
+                           disabled="@IsReadOnly"
+                           @bind="isCalledShot" @bind:after="OnDataChanged">
                     <label class="form-check-label" for="calledShot">
                         Called Shot (-2 AV)
                     </label>
                 </div>
                 @if (isCalledShot)
                 {
-                    <select class="form-select form-select-sm mt-2" @bind="calledShotLocation" @bind:after="OnDataChanged">
+                    <select class="form-select form-select-sm mt-2" 
+                            disabled="@IsReadOnly"
+                            @bind="calledShotLocation" @bind:after="OnDataChanged">
                         <option value="@HitLocation.Head">Head</option>
                         <option value="@HitLocation.Torso">Torso</option>
                         <option value="@HitLocation.LeftArm">Left Arm</option>
@@ -71,7 +112,9 @@
             {
                 <div class="mb-3">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="usePhysicality" @bind="usePhysicality" @bind:after="OnDataChanged">
+                        <input class="form-check-input" type="checkbox" id="usePhysicality" 
+                               disabled="@IsReadOnly"
+                               @bind="usePhysicality" @bind:after="OnDataChanged">
                         <label class="form-check-label" for="usePhysicality">
                             Use Physicality Bonus
                         </label>
@@ -82,22 +125,13 @@
             <hr />
 
             <div class="mb-3">
-                <label class="form-label fw-bold">Boost</label>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">AP</span>
-                            <input type="number" class="form-control" min="0" max="@MaxAPBoost" @bind="apBoost" @bind:after="OnDataChanged">
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">FAT</span>
-                            <input type="number" class="form-control" min="0" max="@MaxFATBoost" @bind="fatBoost" @bind:after="OnDataChanged">
-                        </div>
-                    </div>
-                </div>
-                <small class="text-muted">+1 AV per boost point spent</small>
+                <label class="form-label fw-bold">Boost (Optional)</label>
+                <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                               AvailableFAT="@GetAvailableFATForBoost()"
+                               CostType="@actionCostType"
+                               IsReadOnly="@IsReadOnly"
+                               OnBoostChanged="OnBoostChanged"
+                               OnBoostCostChanged="OnBoostCostChanged" />
             </div>
         </div>
         <div class="card-footer">
@@ -167,8 +201,10 @@
     private bool usePhysicality = true;
     private int apBoost;
     private int fatBoost;
+    private int attackAVBoost;
     private RangeCategory range = RangeCategory.Medium;
     private FireMode fireMode = FireMode.Single;
+    private ActionCostType actionCostType = ActionCostType.OneAPOneFat;
 
     protected override void OnParametersSet()
     {
@@ -182,12 +218,49 @@
             fatBoost = InitialData.FATBoost;
             range = InitialData.Range ?? RangeCategory.Medium;
             fireMode = InitialData.FireMode ?? FireMode.Single;
+            actionCostType = InitialData.ActionCostType;
         }
+    }
+
+    private int GetAvailableAPForBoost()
+    {
+        var baseCost = actionCostType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, MaxAPBoost - baseCost);
+    }
+
+    private int GetAvailableFATForBoost()
+    {
+        var baseCost = actionCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, MaxFATBoost - baseCost);
+    }
+
+    private async Task OnActionCostTypeChanged(ActionCostType type)
+    {
+        actionCostType = type;
+        // Reset boost when cost type changes
+        attackAVBoost = 0;
+        apBoost = 0;
+        fatBoost = 0;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostChanged(int totalBoost)
+    {
+        attackAVBoost = totalBoost;
+        await OnDataChanged();
+    }
+
+    private async Task OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
+    {
+        attackAVBoost = cost.Boost;
+        apBoost = cost.APCost;
+        fatBoost = cost.FATCost;
+        await OnDataChanged();
     }
 
     private int GetTotalAVModifier()
     {
-        int modifier = WeaponAVModifier + apBoost + fatBoost;
+        int modifier = WeaponAVModifier + attackAVBoost;
         if (isMoving) modifier -= 2;
         if (isCalledShot) modifier -= 2;
         return modifier;
@@ -215,6 +288,7 @@
             SkillAS = BaseSkillAS,
             WeaponAVModifier = WeaponAVModifier,
             IsMoving = isMoving,
+            ActionCostType = actionCostType,
             APBoost = apBoost,
             FATBoost = fatBoost,
             IsCalledShot = isCalledShot,

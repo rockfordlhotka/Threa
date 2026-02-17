@@ -1,5 +1,6 @@
 ﻿@page "/player/characters"
 
+@using GameMechanics
 @using GameMechanics.Player
 @using Microsoft.AspNetCore.Components.QuickGrid
 
@@ -15,7 +16,16 @@
 
 <div class="alert-danger">@vm.ViewModelErrorText</div>
 
-<p><a href="player/character">Add character</a></p>
+<div class="d-flex gap-3 mb-3">
+    <a href="player/character?setting=fantasy" class="card setting-card text-decoration-none p-3" style="flex: 1; border: 2px solid var(--color-border); transition: border-color 0.2s;">
+        <h5 class="mb-1" style="color: var(--color-primary);">Fantasy (Arcanum)</h5>
+        <small class="text-muted">Magic, swords, dragons</small>
+    </a>
+    <a href="player/character?setting=scifi" class="card setting-card text-decoration-none p-3" style="flex: 1; border: 2px solid var(--color-border); transition: border-color 0.2s;">
+        <h5 class="mb-1" style="color: var(--color-primary);">Sci-Fi (Neon Circuit)</h5>
+        <small class="text-muted">Implants, tech, chrome</small>
+    </a>
+</div>
 
 @if (vm.Model == null)
 {
@@ -27,6 +37,11 @@ else
     <QuickGrid Items="characters">
         <PropertyColumn Title="Name" Property="@(p => p.Name)" />
         <PropertyColumn Title="Species" Property="@(p => p.Species)" />
+        <TemplateColumn Title="Setting">
+            <span class="badge @(context.Setting == GameSettings.SciFi ? "bg-info" : "bg-primary")">
+                @GameSettings.DisplayName(context.Setting)
+            </span>
+        </TemplateColumn>
         <TemplateColumn Title="Status">
             @if (context.IsPlayable)
             {

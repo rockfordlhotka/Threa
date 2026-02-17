@@ -96,7 +96,7 @@ public class TableCharacterAttacher : CommandBase<TableCharacterAttacher>
                 CharacterId = characterId,
                 PlayerId = playerId,
                 JoinedAt = DateTime.UtcNow,
-                ConnectionStatus = ConnectionStatus.Connected,
+                ConnectionStatus = ConnectionStatus.Disconnected,
                 LastActivity = DateTime.UtcNow
             };
 

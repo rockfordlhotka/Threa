@@ -39,6 +39,12 @@ public class GameTable
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The GM-selected default calendar ID for time display.
+    /// Null means use the theme's natural default.
+    /// </summary>
+    public string? DefaultCalendarId { get; set; }
+
     // Connected characters (managed separately for efficiency)
     public List<TableCharacter> Characters { get; set; } = [];
 

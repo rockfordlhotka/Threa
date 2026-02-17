@@ -55,6 +55,17 @@ namespace GameMechanics.Combat
     public List<ArmorInfo> ArmorPieces { get; init; } = new();
 
     /// <summary>
+    /// Armor Piercing offset - reduces armor/shield base absorption before DC scaling.
+    /// </summary>
+    public int ApOffset { get; init; }
+
+    /// <summary>
+    /// Max effective SV cap when armor defense exceeds this threshold.
+    /// When total absorption exceeds SvMax, effective SV is capped to SvMax.
+    /// </summary>
+    public int? SvMax { get; init; }
+
+    /// <summary>
     /// Creates a damage request from an attack result.
     /// </summary>
     public static DamageRequest FromAttack(

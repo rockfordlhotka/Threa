@@ -19,29 +19,44 @@
     return;
 }
 
-<div class="info-box">
-    <strong>Character:</strong> @vm.Model.Name
-    <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
-    <span style="margin-left: 2rem;"><strong>Total XP:</strong> @vm.Model.XPTotal</span>
-    <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span class="@(vm.Model.XPBanked > 0 ? "text-positive" : "text-negative")" style="font-weight: bold;">@vm.Model.XPBanked</span></span>
-    <span style="margin-left: 2rem;"><strong>XP Spent on Skills:</strong> <span class="text-info-accent" style="font-weight: bold;">@GetTotalXPSpentOnSkills()</span></span>
-</div>
-
-@if (!vm.Model.IsPlayable)
+@if (IsNpcTemplate)
 {
+    <div class="info-box">
+        <strong>NPC Template:</strong> @vm.Model.Name
+        <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+        <span style="margin-left: 2rem;"><strong>Total Max XP:</strong> <span class="text-info-accent" style="font-weight: bold;">@GetTotalNpcXP()</span></span>
+    </div>
     <div class="alert alert-info">
-        <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your skills.</p>
-        <p>You can also <strong>decrease</strong> skill levels or <strong>remove</strong> added skills to return XP to your bank if you change your mind.</p>
-        <p><em>Core attribute skills cannot be removed. Once the character is activated, you can only advance skills with earned XP (no decreasing or removing).</em></p>
+        <p>Set skill levels directly for this NPC template. Max XP is calculated using trained skill costs.</p>
+        <p><em>Core standard skills (attributes) cannot be removed. Other skills can be added and removed freely.</em></p>
     </div>
 }
 else
 {
-    <div class="alert alert-secondary">
-        <p>Your character is <strong>active</strong>. Spend XP from your bank to improve your skills.</p>
-        <p>You have <strong>@vm.Model.XPBanked XP</strong> available to spend.</p>
-        <p>Total XP spent on skills: <strong>@GetTotalXPSpentOnSkills()</strong></p>
+    <div class="info-box">
+        <strong>Character:</strong> @vm.Model.Name
+        <span style="margin-left: 2rem;"><strong>Species:</strong> @vm.Model.Species</span>
+        <span style="margin-left: 2rem;"><strong>Total XP:</strong> @vm.Model.XPTotal</span>
+        <span style="margin-left: 2rem;"><strong>Banked XP:</strong> <span class="@(vm.Model.XPBanked > 0 ? "text-positive" : "text-negative")" style="font-weight: bold;">@vm.Model.XPBanked</span></span>
+        <span style="margin-left: 2rem;"><strong>XP Spent on Skills:</strong> <span class="text-info-accent" style="font-weight: bold;">@GetTotalXPSpentOnSkills()</span></span>
     </div>
+
+    @if (!vm.Model.IsPlayable)
+    {
+        <div class="alert alert-info">
+            <p>During character creation, you can spend @vm.Model.XPBanked XP to advance your skills.</p>
+            <p>You can also <strong>decrease</strong> skill levels or <strong>remove</strong> added skills to return XP to your bank if you change your mind.</p>
+            <p><em>Core attribute skills cannot be removed. Once the character is activated, you can only advance skills with earned XP (no decreasing or removing).</em></p>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary">
+            <p>Your character is <strong>active</strong>. Spend XP from your bank to improve your skills.</p>
+            <p>You have <strong>@vm.Model.XPBanked XP</strong> available to spend.</p>
+            <p>Total XP spent on skills: <strong>@GetTotalXPSpentOnSkills()</strong></p>
+        </div>
+    }
 }
 
 <h4>Current Skills</h4>
@@ -58,11 +73,18 @@ else
             <th>Level</th>
             <th>Bonus</th>
             <th>Ability Score</th>
-            @if (!vm.Model.IsPlayable)
+            @if (IsNpcTemplate)
             {
-                <th>XP Spent</th>
+                <th>Max XP</th>
             }
-            <th>XP Cost to Next Level</th>
+            else
+            {
+                @if (!vm.Model.IsPlayable)
+                {
+                    <th>XP Spent</th>
+                }
+                <th>XP Cost to Next Level</th>
+            }
             <th>Actions</th>
         </tr>
     </thead>
@@ -75,50 +97,86 @@ else
             <tr>
                 <td title="@skillDescription">@skill.Name</td>
                 <td>@skill.PrimaryAttribute</td>
-                <td>@skill.Level</td>
-                <td>@skill.Bonus</td>
-                <td>@skill.AbilityScore</td>
-                @if (!vm.Model.IsPlayable)
+                @if (IsNpcTemplate)
                 {
                     <td>
-                        <span class="text-info-accent" style="font-weight: bold;">@skill.XPSpent</span>
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               style="width: 80px;"
+                               min="0"
+                               max="10"
+                               value="@skill.Level"
+                               @onchange="@(e => SetNpcSkillLevel(skill, int.Parse(e.Value?.ToString() ?? "0")))" />
+                    </td>
+                }
+                else
+                {
+                    <td>@skill.Level</td>
+                }
+                <td>@skill.Bonus</td>
+                <td>@skill.AbilityScore</td>
+                @if (IsNpcTemplate)
+                {
+                    <td>
+                        <span class="text-info-accent" style="font-weight: bold;">@GetCumulativeXPCost(skill)</span>
+                    </td>
+                }
+                else
+                {
+                    @if (!vm.Model.IsPlayable)
+                    {
+                        <td>
+                            <span class="text-info-accent" style="font-weight: bold;">@skill.XPSpent</span>
+                        </td>
+                    }
+                    <td>
+                        @if (skill.Level < 10)
+                        {
+                            @xpCostToNextLevel
+                        }
+                        else
+                        {
+                            <span class="text-neutral">MAX</span>
+                        }
                     </td>
                 }
                 <td>
-                    @if (skill.Level < 10)
+                    @if (IsNpcTemplate)
                     {
-                        @xpCostToNextLevel
+                        @if (CanRemoveNpcSkill(skill))
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => RemoveNpcSkill(skill)">
+                                Remove
+                            </button>
+                        }
                     }
                     else
                     {
-                        <span class="text-neutral">MAX</span>
-                    }
-                </td>
-                <td>
-                    @if (skill.Level < 10 && vm.Model.XPBanked >= xpCostToNextLevel)
-                    {
-                        <button class="btn btn-sm btn-success" @onclick="() => IncreaseSkillLevel(skill)">
-                            Level Up (@xpCostToNextLevel XP)
-                        </button>
-                    }
-                    @if (!vm.Model.IsPlayable && isNewSkill && skill.Level > 0)
-                    {
-                        <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
-                            Decrease
-                        </button>
-                    }
-                    @if (!vm.Model.IsPlayable && CanRemoveSkill(skill))
-                    {
-                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
-                            @if (skill.XPSpent > 0)
-                            {
-                                <text>Remove (+@skill.XPSpent XP)</text>
-                            }
-                            else
-                            {
-                                <text>Remove</text>
-                            }
-                        </button>
+                        @if (skill.Level < 10 && vm.Model.XPBanked >= xpCostToNextLevel)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="() => IncreaseSkillLevel(skill)">
+                                Level Up (@xpCostToNextLevel XP)
+                            </button>
+                        }
+                        @if (!vm.Model.IsPlayable && isNewSkill && skill.Level > 0)
+                        {
+                            <button class="btn btn-sm btn-warning" @onclick="() => DecreaseSkillLevel(skill)">
+                                Decrease
+                            </button>
+                        }
+                        @if (!vm.Model.IsPlayable && CanRemoveSkill(skill))
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => RemoveSkill(skill)">
+                                @if (skill.XPSpent > 0)
+                                {
+                                    <text>Remove (+@skill.XPSpent XP)</text>
+                                }
+                                else
+                                {
+                                    <text>Remove</text>
+                                }
+                            </button>
+                        }
                     }
                 </td>
             </tr>
@@ -141,6 +199,8 @@ else
     private string? errorMessage;
     private string? initError;
 
+    private bool IsNpcTemplate => vm?.Model?.IsNpc == true && vm?.Model?.IsTemplate == true;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -161,6 +221,12 @@ else
     {
         if (vm?.Model?.Skills == null) return 0;
         return vm.Model.Skills.Sum(s => s.XPSpent);
+    }
+
+    private int GetTotalNpcXP()
+    {
+        if (vm?.Model?.Skills == null) return 0;
+        return vm.Model.Skills.Sum(s => GetCumulativeXPCost(s));
     }
 
     private bool IsSkillMagic(GameMechanics.SkillEdit skill)
@@ -186,10 +252,17 @@ else
             // Default to difficulty 5 if not found
             return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, 5);
         }
-        
+
         // Use Trained as the difficulty level
         var difficulty = skillInfo.Trained;
         return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, difficulty);
+    }
+
+    private int GetCumulativeXPCost(GameMechanics.SkillEdit skill)
+    {
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        var difficulty = skillInfo?.Trained ?? 5;
+        return GameMechanics.SkillCost.GetCumulativeCost(skill.Level, difficulty);
     }
 
     private bool IsNewSkill(GameMechanics.SkillEdit skill)
@@ -210,10 +283,47 @@ else
         return !vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name);
     }
 
+    // === NPC Template Methods ===
+
+    private void SetNpcSkillLevel(GameMechanics.SkillEdit skill, int newLevel)
+    {
+        errorMessage = null;
+        newLevel = Math.Clamp(newLevel, 0, 10);
+        skill.Level = newLevel;
+
+        // Calculate XPSpent based on cumulative trained cost
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        var difficulty = skillInfo?.Trained ?? 5;
+        skill.XPSpent = GameMechanics.SkillCost.GetCumulativeCost(newLevel, difficulty);
+
+        StateHasChanged();
+    }
+
+    private bool CanRemoveNpcSkill(GameMechanics.SkillEdit skill)
+    {
+        // Core standard skills cannot be removed from NPC templates
+        var skillInfo = allSkills?.FirstOrDefault(s => s.Name == skill.Name);
+        return skillInfo?.IsStandard != true;
+    }
+
+    private void RemoveNpcSkill(GameMechanics.SkillEdit skill)
+    {
+        errorMessage = null;
+        if (!CanRemoveNpcSkill(skill))
+        {
+            errorMessage = "Core standard skills cannot be removed.";
+            return;
+        }
+        vm!.Model!.Skills.Remove(skill);
+        StateHasChanged();
+    }
+
+    // === Player Character Methods ===
+
     private void IncreaseSkillLevel(GameMechanics.SkillEdit skill)
     {
         errorMessage = null;
-        
+
         if (skill.Level >= 10)
         {
             errorMessage = "Skill is already at maximum level.";
@@ -221,7 +331,7 @@ else
         }
 
         var xpCost = GetXPCostToNextLevel(skill);
-        
+
         if (vm!.Model!.XPBanked < xpCost)
         {
             errorMessage = $"Not enough XP. Need {xpCost} XP but only have {vm.Model.XPBanked} XP.";
@@ -232,17 +342,17 @@ else
         vm.Model.SpendXP(xpCost);
         skill.Level++;
         skill.XPSpent += xpCost;
-        
+
         StateHasChanged();
     }
 
     private void DecreaseSkillLevel(GameMechanics.SkillEdit skill)
     {
         errorMessage = null;
-        
+
         // Check if this is a new level increase
         var originalLevel = vm!.Model!.OriginalSkillLevels.ContainsKey(skill.Name) ? vm.Model.OriginalSkillLevels[skill.Name] : 0;
-        
+
         if (skill.Level <= originalLevel)
         {
             errorMessage = "Cannot reduce skill level below its original value.";
@@ -254,7 +364,7 @@ else
         var xpRefund = GetXPCostToNextLevel(skill);
         vm!.Model!.RefundXP(xpRefund);
         skill.XPSpent -= xpRefund;
-        
+
         StateHasChanged();
     }
 

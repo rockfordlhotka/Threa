@@ -56,6 +56,21 @@ namespace GameMechanics.Combat
     public bool ItemDestroyed { get; init; }
 
     /// <summary>
+    /// AP offset that was applied to reduce base absorption.
+    /// </summary>
+    public int ApOffsetApplied { get; init; }
+
+    /// <summary>
+    /// SV max threshold that was evaluated, if any.
+    /// </summary>
+    public int? SvMaxApplied { get; init; }
+
+    /// <summary>
+    /// Whether SV max was triggered (total absorption exceeded threshold).
+    /// </summary>
+    public bool SvMaxTriggered { get; init; }
+
+    /// <summary>
     /// Human-readable description.
     /// </summary>
     public string Description { get; init; } = string.Empty;

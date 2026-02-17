@@ -94,6 +94,9 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
 
     #endregion
 
+    [Create]
+    private void Create() { }
+
     [Execute]
     private async Task ExecuteAsync([Inject] ICharacterDal characterDal)
     {
@@ -152,10 +155,7 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
                 XPBanked = source.XPBanked,
 
                 // Currency
-                CopperCoins = source.CopperCoins,
-                SilverCoins = source.SilverCoins,
-                GoldCoins = source.GoldCoins,
-                PlatinumCoins = source.PlatinumCoins,
+                Wallet = source.Wallet.Select(w => new WalletEntry { CurrencyCode = w.CurrencyCode, Amount = w.Amount }).ToList(),
 
                 // NPC/Template flags
                 IsNpc = true,
@@ -163,6 +163,9 @@ public class NpcTemplateCreator : CommandBase<NpcTemplateCreator>
                 IsPlayable = false, // Templates are not directly playable
                 VisibleToPlayers = true, // Templates visible in library
                 IsArchived = false,
+
+                // Setting (fantasy/scifi)
+                Setting = source.Setting,
 
                 // Template organization
                 Category = Category,

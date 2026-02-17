@@ -14,7 +14,7 @@ public class Skill
     /// Category classification for UI filtering and display logic.
     /// Determines which controls and properties are shown in the UI.
     /// </summary>
-    public SkillCategory Category { get; set; } = SkillCategory.Other;
+    public SkillCategory Category { get; set; } = SkillCategory.Standard;
 
     /// <summary>
     /// Display name of the skill.

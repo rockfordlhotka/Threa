@@ -4,6 +4,7 @@ using GameMechanics.Combat.Effects;
 using GameMechanics.Effects;
 using GameMechanics.Items;
 using GameMechanics.Time;
+using GameMechanics.Time.Calendars;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GameMechanics;
@@ -22,6 +23,14 @@ public static class ServiceCollectionExtensions
     {
         // Register time formatting service (singleton - stateless)
         services.AddSingleton<IGameTimeFormatService, DefaultGameTimeFormatService>();
+
+        // Register calendar systems
+        services.AddSingleton<IGameCalendar, CommonCalendar>();
+        services.AddSingleton<IGameCalendar, TriumvirateCalendar>();
+        services.AddSingleton<IGameCalendar, StandardFantasyCalendar>();
+        services.AddSingleton<IGameCalendar, ConfederateCalendar>();
+        services.AddSingleton<IGameCalendar, ImperialCalendar>();
+        services.AddSingleton<IGameCalendarProvider, GameCalendarProvider>();
 
         // Register travel calculator service
         services.AddScoped<ITravelCalculator, TravelCalculator>();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using GameMechanics;
 
 namespace Threa.Client.Components.Shared;
 
@@ -18,6 +19,11 @@ public class BoostSelectorBase : ComponentBase
     /// Cost type for boosts - matches the action's cost type
     /// </summary>
     [Parameter] public ActionCostType CostType { get; set; } = ActionCostType.OneAPOneFat;
+
+    /// <summary>
+    /// Whether the selector is read-only
+    /// </summary>
+    [Parameter] public bool IsReadOnly { get; set; }
 
     /// <summary>
     /// Callback when boost amount changes - passes the total +AS bonus
@@ -82,20 +88,16 @@ public class BoostSelectorBase : ComponentBase
 
     protected async Task IncrementBoost()
     {
-        if (Boost < MaxBoost)
-        {
-            Boost++;
-            await NotifyBoostChanged();
-        }
+        if (IsReadOnly || Boost >= MaxBoost) return;
+        Boost++;
+        await NotifyBoostChanged();
     }
 
     protected async Task DecrementBoost()
     {
-        if (Boost > 0)
-        {
-            Boost--;
-            await NotifyBoostChanged();
-        }
+        if (IsReadOnly || Boost <= 0) return;
+        Boost--;
+        await NotifyBoostChanged();
     }
 
     private async Task NotifyBoostChanged()

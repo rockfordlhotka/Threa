@@ -5,6 +5,8 @@
 
 @attribute [Authorize]
 
+@using System.Linq
+@using GameMechanics
 @using Threa.Services
 
 @inject Csla.Blazor.State.StateManager StateManager
@@ -32,42 +34,41 @@
 else
 {
     <div class="tab-buttons">
-        <button class="tab-link @(activeTab == tabNames[0] ? "active" : "")" @onclick="() => SelectTab(tabNames[0])">@tabNames[0]</button>
-        <button class="tab-link @(activeTab == tabNames[1] ? "active" : "")" @onclick="() => SelectTab(tabNames[1])">@tabNames[1]</button>
-        <button class="tab-link @(activeTab == tabNames[2] ? "active" : "")" @onclick="() => SelectTab(tabNames[2])">@tabNames[2]</button>
-        <button class="tab-link @(activeTab == tabNames[3] ? "active" : "")" @onclick="() => SelectTab(tabNames[3])">@tabNames[3]</button>
-        <button class="tab-link @(activeTab == tabNames[4] ? "active" : "")" @onclick="() => SelectTab(tabNames[4])">@tabNames[4]</button>
+        @foreach (var tab in GetVisibleTabs())
+        {
+            <button class="tab-link @(activeTab == tab ? "active" : "")" @onclick="() => SelectTab(tab)">@tab</button>
+        }
     </div>
 
-    @if (activeTab == tabNames[0])
+    @if (activeTab == "Info")
     {
         <div class="tab-content">
             <TabDetails vm="vm" />
         </div>
     }
 
-    @if (activeTab == tabNames[1])
+    @if (activeTab == "Attributes")
     {
         <div class="tab-content">
             <TabAttributes vm="vm" />
         </div>
     }
 
-    @if (activeTab == tabNames[2])
+    @if (activeTab == "Skills")
     {
         <div class="tab-content">
             <TabSkills vm="vm" />
         </div>
     }
 
-    @if (activeTab == tabNames[3])
+    @if (activeTab == "Magic" && vm.Model.Setting != GameSettings.SciFi)
     {
         <div class="tab-content">
             <TabMagic vm="vm" />
         </div>
     }
 
-    @if (activeTab == tabNames[4])
+    @if (activeTab == "Items")
     {
         <div class="tab-content">
             <TabItems vm="vm" />
@@ -90,14 +91,25 @@ else
     [Parameter]
     public int id { get; set; }
 
-    private readonly static string[] tabNames = new[] { "Info", "Attributes", "Skills", "Magic", "Items" };
-    private string activeTab = tabNames[0];
+    [SupplyParameterFromQuery]
+    public string? setting { get; set; }
+
+    private static readonly string[] AllTabNames = ["Info", "Attributes", "Skills", "Magic", "Items"];
+    private string activeTab = "Info";
+
+    private string[] GetVisibleTabs()
+    {
+        if (vm.Model?.Setting == GameSettings.SciFi)
+            return AllTabNames.Where(t => t != "Magic").ToArray();
+        return AllTabNames;
+    }
     private bool _warningEnabled = false;
     private bool _navigateAfterSave = false;
 
     private void SelectTab(string tabName)
     {
-        activeTab = tabName;
+        var visible = GetVisibleTabs();
+        activeTab = visible.Contains(tabName) ? tabName : visible[0];
     }
 
     protected override async Task OnInitializedAsync()
@@ -112,8 +124,15 @@ else
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {
             if (id == 0)
-                await vm.RefreshAsync(() =>
-                  characterPortal.CreateAsync());
+            {
+                var effectiveSetting = GameSettings.IsValid(setting) ? setting! : GameSettings.Default;
+                await vm.RefreshAsync(async () =>
+                {
+                    var character = await characterPortal.CreateAsync();
+                    character.Setting = effectiveSetting;
+                    return character;
+                });
+            }
             else
                 await vm.RefreshAsync(() =>
                   characterPortal.FetchAsync(id));

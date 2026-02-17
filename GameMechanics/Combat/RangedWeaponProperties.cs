@@ -84,13 +84,21 @@ public class RangedWeaponProperties
     [JsonPropertyName("isDodgeable")]
     public bool IsDodgeable { get; set; }
 
-    /// <summary>Base SV modifier added to successful hits.</summary>
+    /// <summary>Base SV modifier added to successful hits (legacy single-type).</summary>
     [JsonPropertyName("baseSVModifier")]
     public int BaseSVModifier { get; set; }
 
     /// <summary>Alias for BaseSVModifier for compatibility.</summary>
     [JsonPropertyName("damageModifier")]
     public int DamageModifier { get => BaseSVModifier; set => BaseSVModifier = value; }
+
+    /// <summary>
+    /// Per-damage-type SV modifiers for this ranged weapon.
+    /// Format: {"Projectile": 4, "Energy": 2}
+    /// When set, takes precedence over BaseSVModifier.
+    /// </summary>
+    [JsonPropertyName("damageModifiers")]
+    public Dictionary<string, int>? DamageModifiers { get; set; }
 
     /// <summary>AV modifier from weapon quality (positive = more accurate).</summary>
     [JsonPropertyName("accuracyModifier")]
@@ -112,6 +120,30 @@ public class RangedWeaponProperties
 
     /// <summary>Total capacity including chamber.</summary>
     public int TotalCapacity => Capacity + ChamberCapacity;
+
+    /// <summary>
+    /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type modifier.
+    /// </summary>
+    public WeaponDamageProfile? GetWeaponDamageProfile()
+    {
+        if (DamageModifiers != null && DamageModifiers.Count > 0)
+        {
+            var modifiers = new Dictionary<DamageType, int>();
+            foreach (var kv in DamageModifiers)
+            {
+                if (Enum.TryParse<DamageType>(kv.Key, ignoreCase: true, out var dt))
+                    modifiers[dt] = kv.Value;
+            }
+            if (modifiers.Count > 0)
+                return new WeaponDamageProfile(modifiers);
+        }
+
+        // Fall back to legacy single modifier (applied to Projectile by default)
+        if (BaseSVModifier != 0)
+            return WeaponDamageProfile.FromSingle(DamageType.Projectile, BaseSVModifier);
+
+        return null;
+    }
 
     /// <summary>
     /// Gets the parsed reload type enum.

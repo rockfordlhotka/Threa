@@ -70,6 +70,13 @@ namespace GameMechanics.GameMaster
       private set => LoadProperty(IsTemplateProperty, value);
     }
 
+    public static readonly PropertyInfo<string> SettingProperty = RegisterProperty<string>(nameof(Setting));
+    public string Setting
+    {
+      get => GetProperty(SettingProperty);
+      private set => LoadProperty(SettingProperty, value);
+    }
+
     /// <summary>
     /// Gets the character type for display: "PC", "NPC", or "Template"
     /// </summary>
@@ -95,6 +102,7 @@ namespace GameMechanics.GameMaster
       XPBanked = character.XPBanked;
       IsNpc = character.IsNpc;
       IsTemplate = character.IsTemplate;
+      Setting = character.Setting;
     }
   }
 }

@@ -3,13 +3,19 @@
 
 <div class="action-cost-selector">
     <div class="form-check">
-        <input class="form-check-input" type="radio" name="costOption" id="costOption1" @onchange="() => SetCostType(ActionCostType.OneAPOneFat)" checked="@(SelectedCostType == ActionCostType.OneAPOneFat)" disabled="@(AP < 1 || Fat < 1)">
+        <input class="form-check-input" type="radio" name="costOption" id="costOption1" 
+               @onchange="() => SetCostType(ActionCostType.OneAPOneFat)" 
+               checked="@(SelectedCostType == ActionCostType.OneAPOneFat)" 
+               disabled="@(IsReadOnly || AP < 1 || Fat < 1)">
         <label class="form-check-label @(AP < 1 || Fat < 1 ? "text-muted" : "")" for="costOption1">
             1 AP + 1 FAT
         </label>
     </div>
     <div class="form-check">
-        <input class="form-check-input" type="radio" name="costOption" id="costOption2" @onchange="() => SetCostType(ActionCostType.TwoAP)" checked="@(SelectedCostType == ActionCostType.TwoAP)" disabled="@(AP < 2)">
+        <input class="form-check-input" type="radio" name="costOption" id="costOption2" 
+               @onchange="() => SetCostType(ActionCostType.TwoAP)" 
+               checked="@(SelectedCostType == ActionCostType.TwoAP)" 
+               disabled="@(IsReadOnly || AP < 2)">
         <label class="form-check-label @(AP < 2 ? "text-muted" : "")" for="costOption2">
             2 AP
         </label>

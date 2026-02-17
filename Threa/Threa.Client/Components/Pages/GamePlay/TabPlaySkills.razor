@@ -1,241 +1,141 @@
-@* Skills Tab for gameplay - Using skills during play *@
+@* Skills Tab for gameplay - XP advancement and skill management *@
 
-@using GameMechanics.Effects.Behaviors
 @using Threa.Client.Components.Shared
 @using Threa.Dal.Dto
-@inject Radzen.DialogService DialogService
+@using Radzen
+@inject DialogService DialogService
 @inject IDataPortal<GameMechanics.Reference.SkillList> skillListPortal
-@inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
+@inject IChildDataPortal<GameMechanics.SkillEdit> skillPortal
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <strong>Available Skills</strong>
-            </div>
-            <div class="card-body">
-                @if (Character?.Skills == null || !Character.Skills.Any())
-                {
-                    <p class="text-muted">No skills available.</p>
-                }
-                else
-                {
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Search skills..."
-                               @bind="searchFilter" @bind:event="oninput" />
-                    </div>
+<div class="alert alert-info mb-3">
+    <p class="mb-2">
+        <strong><i class="bi bi-star-fill me-2"></i>Skill Advancement</strong>
+    </p>
+    <p class="mb-1">
+        Spend XP to increase your skill levels. You can pay either the <strong>trained</strong> cost (if you've had training) 
+        or the <strong>untrained</strong> cost (learning on your own).
+    </p>
+    <p class="mb-0">
+        <strong>Available XP:</strong> <span class="badge bg-primary fs-6">@(Character?.XPBanked ?? 0)</span>
+    </p>
+</div>
 
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>Skill</th>
-                                <th>Level</th>
-                                <th>AS</th>
-                                <th>Attribute</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var skill in FilteredSkills())
-                            {
-                                var skillDescription = GetSkillDescription(skill);
-                                var skillInfo = GetSkillInfo(skill);
-                                var tooltipText = !string.IsNullOrEmpty(skillDescription)
-                                    ? skillDescription
-                                    : (skill.CanUse ? "" : skill.CannotUseReason);
-                                <tr class="@(skill.CanUse ? "" : "text-muted")"
-                                    title="@tooltipText">
-                                    <td>
-                                        @skill.Name
-                                        @if (skillInfo?.RequiresPreUseConcentration == true)
-                                        {
-                                            <i class="bi bi-hourglass-top text-info ms-1"
-                                               title="Requires @skillInfo.PreUseConcentrationRounds round(s) of concentration before use"></i>
-                                        }
-                                        @if (skillInfo?.RequiresPostUseConcentration == true)
-                                        {
-                                            <i class="bi bi-hourglass-bottom text-warning ms-1"
-                                               title="Requires @skillInfo.PostUseConcentrationRounds round(s) of concentration after use"></i>
-                                        }
-                                        @if (!skill.CanUse)
-                                        {
-                                            <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
-                                               title="@skill.CannotUseReason"></i>
-                                        }
-                                    </td>
-                                    <td>@skill.Level</td>
-                                    <td><strong>@skill.AbilityScore</strong></td>
-                                    <td>@skill.PrimaryAttribute</td>
-                                    <td>
-                                        <button class="btn btn-sm @(skill.CanUse ? "btn-primary" : "btn-secondary")"
-                                                disabled="@(!CanUseSkill() || !skill.CanUse)"
-                                                title="@(skill.CanUse ? "" : skill.CannotUseReason)"
-                                                @onclick="() => UseSkill(skill)">
-                                            Use
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-            </div>
-        </div>
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
     </div>
+}
 
-    <div class="col-md-4">
-        <div class="card mb-3">
-            <div class="card-header bg-info text-white">
-                <strong>Skill Check</strong>
-            </div>
-            <div class="card-body">
-                @if (selectedSkill != null)
-                {
-                    <h5>@selectedSkill.Name</h5>
-                    <p class="mb-2">Ability Score: <strong>@selectedSkill.AbilityScore</strong></p>
-
-                    @if (!selectedSkill.CanUse)
-                    {
-                        <div class="alert alert-warning py-2 small">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                            <strong>Cannot use:</strong> @selectedSkill.CannotUseReason
-                        </div>
-                    }
-
-                    @if (Character != null && ConcentrationBehavior.IsConcentrating(Character) && selectedSkill.Name != "Drive")
-                    {
-                        <div class="alert alert-info py-2 small">
-                            <i class="bi bi-hourglass-split me-1"></i>
-                            <strong>Concentrating:</strong> Cannot use skills while concentrating (except Drive to convert VIT to FAT)
-                        </div>
-                    }
-
-                    @if (GetSkillInfo(selectedSkill) is { } selectedSkillInfo && (selectedSkillInfo.RequiresPreUseConcentration || selectedSkillInfo.RequiresPostUseConcentration))
-                    {
-                        <div class="alert alert-secondary py-2 small mb-3">
-                            <strong><i class="bi bi-hourglass me-1"></i>Concentration Requirements</strong>
-                            <ul class="mb-0 mt-1">
-                                @if (selectedSkillInfo.RequiresPreUseConcentration)
-                                {
-                                    <li><i class="bi bi-hourglass-top text-info me-1"></i>Pre-use: @selectedSkillInfo.PreUseConcentrationRounds round(s)</li>
-                                }
-                                @if (selectedSkillInfo.RequiresPostUseConcentration)
-                                {
-                                    <li><i class="bi bi-hourglass-bottom text-warning me-1"></i>Post-use: @selectedSkillInfo.PostUseConcentrationRounds round(s)</li>
-                                    @if (selectedSkillInfo.PostUseInterruptionPenaltyRounds > 0)
-                                    {
-                                        <li class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Interruption penalty: -1 AS for @selectedSkillInfo.PostUseInterruptionPenaltyRounds round(s)</li>
-                                    }
-                                }
-                            </ul>
-                        </div>
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label">Target Value (TV)</label>
-                        <input type="number" class="form-control" @bind="targetValue" min="1" max="20" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Action Type</label>
-                        <select class="form-select" @bind="actionType" @bind:after="OnActionTypeChanged">
-                            <option value="standard">Standard (1 AP, 1 FAT)</option>
-                            <option value="fatiguefree">Fatigue-Free (2 AP, 0 FAT)</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Boost (Optional)</label>
-                        <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
-                                       AvailableFAT="@GetAvailableFATForBoost()"
-                                       CostType="@GetCostType()"
-                                       OnBoostChanged="OnBoostChanged"
-                                       OnBoostCostChanged="OnBoostCostChanged" />
-                    </div>
-
-                    <button class="btn btn-primary w-100"
-                            disabled="@(!CanPerformCheck())"
-                            @onclick="PerformCheckAsync">
-                        @if (GetSkillInfo(selectedSkill)?.RequiresPreUseConcentration == true)
-                        {
-                            <span><i class="bi bi-hourglass-top me-1"></i>Start Concentration</span>
-                        }
-                        else
-                        {
-                            <span>Roll Check</span>
-                        }
-                    </button>
-
-                    @if (selectedSkill?.Name == "Drive")
-                    {
-                        <div class="alert alert-info mt-2 small">
-                            <strong>Drive Action:</strong> On success, queues 1 VIT damage and FAT healing = AS - TV + 2
-                        </div>
-                    }
-                }
-                else
-                {
-                    <p class="text-muted">Select a skill to use.</p>
-                }
-            </div>
-        </div>
-
-        @if (lastCheckResult != null)
+<div class="card mb-3">
+    <div class="card-header">
+        <strong><i class="bi bi-list-check me-2"></i>Current Skills</strong>
+    </div>
+    <div class="card-body">
+        @if (Character?.Skills == null || !Character.Skills.Any())
         {
-            <div class="card">
-                <div class="card-header @(lastCheckResult.Success ? "bg-success" : "bg-danger") text-white">
-                    <strong>Result: @(lastCheckResult.Success ? "Success" : "Failure")</strong>
-                </div>
-                <div class="card-body">
-                    <h6 class="mb-2">@lastCheckResult.Outcome</h6>
-
-                    <div class="mb-3">
-                        <table class="table table-sm table-borderless mb-0">
-                            <tbody>
-                                <tr>
-                                    <td class="text-muted">4dF+ Roll:</td>
-                                    <td class="text-end"><strong>@FormatRoll(lastCheckResult.Roll)</strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Base AS:</td>
-                                    <td class="text-end">@lastCheckResult.BaseAbilityScore</td>
-                                </tr>
-                                @if (lastCheckResult.BoostValue != 0)
-                                {
-                                    <tr>
-                                        <td class="text-muted">Boost:</td>
-                                        <td class="text-end text-success">+@lastCheckResult.BoostValue</td>
-                                    </tr>
-                                }
-                                <tr class="border-top">
-                                    <td class="text-muted">Total Roll:</td>
-                                    <td class="text-end"><strong>@(lastCheckResult.Roll + lastCheckResult.EffectiveAbilityScore)</strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Target Value (TV):</td>
-                                    <td class="text-end">@lastCheckResult.TargetValue</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="alert @(lastCheckResult.Success ? "alert-success" : "alert-danger") py-2 mb-0">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Success Value (SV):</span>
-                            <strong class="fs-5">@FormatSV(lastCheckResult.SuccessValue)</strong>
-                        </div>
-                        <small class="text-muted">
-                            @lastCheckResult.Roll + @lastCheckResult.EffectiveAbilityScore - @lastCheckResult.TargetValue = @lastCheckResult.SuccessValue
-                        </small>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(lastCheckResult.SpecialEffect))
-                    {
-                        <p class="text-info small mt-2 mb-0"><i class="bi bi-lightning-fill"></i> @lastCheckResult.SpecialEffect</p>
-                    }
-                </div>
-            </div>
+            <p class="text-muted">No skills available.</p>
         }
+        else
+        {
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search skills..."
+                       @bind="searchFilter" @bind:event="oninput" />
+            </div>
+
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Skill Name</th>
+                        <th>Primary Attribute</th>
+                        <th>Level</th>
+                        <th>Bonus</th>
+                        <th>Ability Score</th>
+                        <th>XP Cost (Next Level)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var skill in FilteredSkills())
+                    {
+                        var skillInfo = GetSkillInfo(skill);
+                        var skillDescription = GetSkillDescription(skill);
+                        var trainedCost = skill.Level < 10 ? GetXPCostToNextLevel(skill, trained: true) : 0;
+                        var untrainedCost = skill.Level < 10 ? GetXPCostToNextLevel(skill, trained: false) : 0;
+                        var isNewSkill = IsNewSkill(skill);
+                        
+                        <tr title="@skillDescription">
+                            <td>@skill.Name</td>
+                            <td>@skill.PrimaryAttribute</td>
+                            <td>@skill.Level</td>
+                            <td>@skill.Bonus</td>
+                            <td><strong>@skill.AbilityScore</strong></td>
+                            <td>
+                                @if (skill.Level < 10)
+                                {
+                                    <span class="text-success" title="Trained cost">@trainedCost</span>
+                                    <span class="text-muted mx-1">/</span>
+                                    <span class="text-warning" title="Untrained cost">@untrainedCost</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">MAX</span>
+                                }
+                            </td>
+                            <td>
+                                @if (skill.Level < 10)
+                                {
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        @if (Character!.XPBanked >= trainedCost)
+                                        {
+                                            <button class="btn btn-outline-success"
+                                                    title="Level up using trained cost"
+                                                    @onclick="() => IncreaseSkillLevel(skill, trained: true)">
+                                                <i class="bi bi-arrow-up-circle"></i> @trainedCost
+                                            </button>
+                                        }
+                                        @if (Character!.XPBanked >= untrainedCost)
+                                        {
+                                            <button class="btn btn-outline-warning"
+                                                    title="Level up using untrained cost"
+                                                    @onclick="() => IncreaseSkillLevel(skill, trained: false)">
+                                                <i class="bi bi-arrow-up-circle"></i> @untrainedCost
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                @if (isNewSkill && CanRemoveSkill(skill))
+                                {
+                                    <button class="btn btn-sm btn-outline-danger ms-2"
+                                            title="Remove this newly added skill"
+                                            @onclick="() => RemoveSkill(skill)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <strong><i class="bi bi-plus-circle me-2"></i>Add New Skill</strong>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            Add new skills to your character. New skills start at level 0 and can be leveled up using XP.
+        </p>
+        <button class="btn btn-primary" 
+                @onclick="OpenSkillPickerAsync" 
+                disabled="@(allSkills == null)">
+            <i class="bi bi-plus-circle me-1"></i> Add Skills...
+        </button>
     </div>
 </div>
 
@@ -250,25 +150,11 @@
     public EventCallback OnCharacterChanged { get; set; }
 
     private string searchFilter = "";
-    private GameMechanics.SkillEdit? selectedSkill;
-    private int targetValue = 8;
-    private string actionType = "standard";
-    private int boostValue;
-    private int boostAPCost;
-    private int boostFATCost;
-    private CheckResult? lastCheckResult;
+    private string? errorMessage;
     private GameMechanics.Reference.SkillList? allSkills;
 
-    private record CheckResult(
-        bool Success,
-        int Roll,
-        int BaseAbilityScore,
-        int BoostValue,
-        int EffectiveAbilityScore,
-        int TargetValue,
-        int SuccessValue,
-        string Outcome,
-        string? SpecialEffect);
+    // Track which skills were newly added in this session (to allow removal)
+    private HashSet<string> newlyAddedSkills = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -279,7 +165,6 @@
         catch (Exception)
         {
             // If we can't load skill list, descriptions will just be empty in tooltips
-            // The page will still work without descriptions
             allSkills = null;
         }
     }
@@ -301,9 +186,7 @@
 
         var skills = Character.Skills.AsEnumerable()
             // Filter out magic skills (shown in Magic tab)
-            .Where(s => !s.IsSpell && !s.IsManaSkill)
-            // Filter out combat-only skills (shown in Combat tab)
-            .Where(s => !s.IsCombatSkill);
+            .Where(s => !s.IsSpell && !s.IsManaSkill);
 
         if (!string.IsNullOrWhiteSpace(searchFilter))
         {
@@ -312,290 +195,122 @@
         return skills.OrderBy(s => s.Name);
     }
 
-    private bool CanUseSkill()
+    private int GetXPCostToNextLevel(GameMechanics.SkillEdit skill, bool trained)
     {
-        if (Character == null || Character.IsPassedOut) return false;
-        return Character.ActionPoints.Available >= 1;
-    }
-
-    private ActionCostType GetCostType() => actionType == "standard"
-        ? ActionCostType.OneAPOneFat
-        : ActionCostType.TwoAP;
-
-    private void OnActionTypeChanged()
-    {
-        // Reset boost when action type changes
-        boostValue = 0;
-        boostAPCost = 0;
-        boostFATCost = 0;
-    }
-
-    private void OnBoostChanged(int totalBoost)
-    {
-        boostValue = totalBoost;
-    }
-
-    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
-    {
-        boostValue = cost.Boost;
-        boostAPCost = cost.APCost;
-        boostFATCost = cost.FATCost;
-    }
-
-    private int GetAvailableAPForBoost()
-    {
-        var baseCost = actionType == "fatiguefree" ? 2 : 1;
-        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
-    }
-
-    private int GetAvailableFATForBoost()
-    {
-        var baseCost = actionType == "standard" ? 1 : 0;
-        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
-    }
-
-    private bool CanPerformCheck()
-    {
-        if (selectedSkill == null || Character == null) return false;
-        if (Character.IsPassedOut) return false;
-
-        // Check attribute requirements (secondary >= 8, tertiary >= 6)
-        if (!selectedSkill.CanUse)
-            return false;
-
-        // Drive skill requires AS >= 8 to use
-        if (selectedSkill.Name == "Drive" && selectedSkill.AbilityScore < 8)
-            return false;
-
-        // Check concentration - Drive skill is allowed while concentrating (VIT to FAT conversion)
-        // Other skills block while concentrating (user must confirm break via dialog)
-        if (selectedSkill.Name != "Drive" && ConcentrationBehavior.IsConcentrating(Character))
-            return false;
-
-        var baseAPCost = actionType == "fatiguefree" ? 2 : 1;
-        var baseFATCost = actionType == "standard" ? 1 : 0;
-
-        var totalAPNeeded = baseAPCost + boostAPCost;
-        var totalFATNeeded = baseFATCost + boostFATCost;
-
-        return Character.ActionPoints.Available >= totalAPNeeded &&
-               Character.Fatigue.Value >= totalFATNeeded;
-    }
-
-    private void UseSkill(GameMechanics.SkillEdit skill)
-    {
-        selectedSkill = skill;
-
-        // Drive skill has a fixed TV of 8
-        if (skill.Name == "Drive")
-            targetValue = 8;
-    }
-
-    private async Task PerformCheckAsync()
-    {
-        if (selectedSkill == null || Character == null) return;
-
-        var skillInfo = GetSkillInfo(selectedSkill);
-
-        // Check for pre-use concentration requirement
-        if (skillInfo?.RequiresPreUseConcentration == true)
+        var skillInfo = GetSkillInfo(skill);
+        if (skillInfo == null)
         {
-            await StartPreUseConcentrationAsync(skillInfo);
+            // Default to difficulty 5 if not found
+            return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, 5);
+        }
+
+        var difficulty = trained ? skillInfo.Trained : skillInfo.Untrained;
+        return GameMechanics.SkillCost.GetLevelUpCost(skill.Level, difficulty);
+    }
+
+    private bool IsNewSkill(GameMechanics.SkillEdit skill)
+    {
+        // A skill is "new" if it was added in this session
+        return newlyAddedSkills.Contains(skill.Name);
+    }
+
+    private bool CanRemoveSkill(GameMechanics.SkillEdit skill)
+    {
+        // Can only remove skills that were added in this session
+        return newlyAddedSkills.Contains(skill.Name);
+    }
+
+    private void IncreaseSkillLevel(GameMechanics.SkillEdit skill, bool trained)
+    {
+        errorMessage = null;
+
+        if (skill.Level >= 10)
+        {
+            errorMessage = "Skill is already at maximum level.";
             return;
         }
 
-        // Execute the skill check normally
-        await ExecuteSkillCheckAsync(skillInfo);
+        var xpCost = GetXPCostToNextLevel(skill, trained);
+
+        if (Character!.XPBanked < xpCost)
+        {
+            errorMessage = $"Not enough XP. Need {xpCost} XP but only have {Character.XPBanked} XP.";
+            return;
+        }
+
+        // Spend XP and increase level
+        Character.SpendXP(xpCost);
+        skill.Level++;
+        skill.XPSpent += xpCost;
+
+        _ = OnCharacterChanged.InvokeAsync();
+        StateHasChanged();
     }
 
-    private async Task StartPreUseConcentrationAsync(GameMechanics.Reference.SkillInfo skillInfo)
+    private async Task OpenSkillPickerAsync()
     {
-        if (selectedSkill == null || Character == null) return;
+        errorMessage = null;
 
-        // Show confirmation dialog
-        var confirmed = await DialogService.Confirm(
-            $"This skill requires {skillInfo.PreUseConcentrationRounds} round(s) of concentration before use. " +
-            "During this time, you cannot take other actions. If interrupted, the skill will not execute.\n\n" +
-            "Do you want to start concentrating?",
-            "Start Concentration",
-            new Radzen.ConfirmOptions { OkButtonText = "Start Concentration", CancelButtonText = "Cancel" });
+        if (Character?.Skills == null) return;
 
-        if (confirmed != true) return;
+        // Get existing skill names to exclude from picker
+        var existingSkillNames = Character.Skills.Select(s => s.Name).ToHashSet();
 
-        // Deduct base action costs (1 AP + 1 FAT to start concentration)
-        if (actionType == "standard")
+        var result = await DialogService.OpenAsync<SkillMultiPickerModal>(
+            "Add Skills",
+            new Dictionary<string, object>
+            {
+                { "ExistingSkillNames", existingSkillNames },
+                { "ExcludeMagicSkills", false } // Allow all skills in play mode
+            },
+            new DialogOptions { Width = "600px", Height = "600px", CloseDialogOnOverlayClick = false });
+
+        if (result is List<string> selectedSkillIdentifiers && selectedSkillIdentifiers.Count > 0)
         {
-            Character.ActionPoints.TakeActionWithFatigue();
-        }
-        else
-        {
-            Character.ActionPoints.TakeActionNoFatigue();
-        }
-
-        // Create the pre-use concentration effect
-        var concentrationState = ConcentrationBehavior.CreatePreUseSkillState(
-            skillInfo.Id,
-            skillInfo.Name,
-            skillInfo.PreUseConcentrationRounds);
-
-        var effect = effectPortal.CreateChild(
-            EffectType.Concentration,
-            $"Concentrating on {skillInfo.Name}",
-            null, // no body location
-            skillInfo.PreUseConcentrationRounds,
-            concentrationState);
-
-        if (Character.Effects.AddEffect(effect))
-        {
-            lastCheckResult = new CheckResult(
-                false,
-                0,
-                selectedSkill.AbilityScore,
-                0,
-                selectedSkill.AbilityScore,
-                targetValue,
-                0,
-                $"Started concentrating on {skillInfo.Name} ({skillInfo.PreUseConcentrationRounds} rounds)",
-                $"Skill will be ready after concentration completes");
-
-            await OnCharacterChanged.InvokeAsync();
-        }
-        else
-        {
-            lastCheckResult = new CheckResult(
-                false,
-                0,
-                selectedSkill.AbilityScore,
-                0,
-                selectedSkill.AbilityScore,
-                targetValue,
-                0,
-                "Failed to start concentration",
-                "You may already be concentrating on another action");
+            try
+            {
+                foreach (var skillIdentifier in selectedSkillIdentifiers)
+                {
+                    await Character.Skills.AddSkillAsync(skillIdentifier, skillListPortal, skillPortal);
+                    
+                    // Track this as a newly added skill
+                    var skillName = skillIdentifier.Split(':').Last();
+                    newlyAddedSkills.Add(skillName);
+                }
+                
+                await OnCharacterChanged.InvokeAsync();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error adding skills: {ex.Message}";
+            }
         }
     }
 
-    private async Task ExecuteSkillCheckAsync(GameMechanics.Reference.SkillInfo? skillInfo)
+    private void RemoveSkill(GameMechanics.SkillEdit skill)
     {
-        if (selectedSkill == null || Character == null) return;
+        errorMessage = null;
 
-        // Deduct base action costs
-        if (actionType == "standard")
+        if (!CanRemoveSkill(skill))
         {
-            Character.ActionPoints.TakeActionWithFatigue();
-        }
-        else // fatigue-free
-        {
-            Character.ActionPoints.TakeActionNoFatigue();
+            errorMessage = "Can only remove skills that were added in this session.";
+            return;
         }
 
-        // Deduct boost costs
-        if (boostAPCost > 0)
-            Character.ActionPoints.Available -= boostAPCost;
-        if (boostFATCost > 0)
-            Character.Fatigue.Value -= boostFATCost;
-
-        // Perform the actual roll using 4dF+ with boost applied
-        int roll = GameMechanics.Dice.Roll4dFPlus();
-        int effectiveAS = selectedSkill.AbilityScore + boostValue;
-        int totalRoll = roll + effectiveAS;
-        int successValue = totalRoll - targetValue;
-        bool success = successValue >= 0;
-
-        string? specialEffect = null;
-
-        // Handle Drive skill special case: VIT to FAT conversion on success
-        if (selectedSkill.Name == "Drive" && success)
+        // Refund all XP spent on this skill
+        if (skill.XPSpent > 0)
         {
-            // Queue 1 VIT damage and FAT healing = AS - TV + 2
-            int fatHealing = effectiveAS - targetValue + 2;
-            Character.Vitality.PendingDamage += 1;
-            Character.Fatigue.PendingHealing += fatHealing;
-            specialEffect = $"Queued 1 VIT damage and {fatHealing} FAT healing";
+            Character!.RefundXP(skill.XPSpent);
         }
 
-        // Apply post-use concentration if required and skill was successful
-        if (success && skillInfo?.RequiresPostUseConcentration == true)
-        {
-            ApplyPostUseConcentration(skillInfo);
-            specialEffect = (specialEffect != null ? specialEffect + "; " : "") +
-                $"Must maintain concentration for {skillInfo.PostUseConcentrationRounds} round(s)";
-        }
+        // Remove from tracking
+        newlyAddedSkills.Remove(skill.Name);
 
-        string outcome = success ? GetSuccessOutcome(successValue) : GetFailureOutcome(successValue);
-        lastCheckResult = new CheckResult(
-            success,
-            roll,
-            selectedSkill.AbilityScore,
-            boostValue,
-            effectiveAS,
-            targetValue,
-            successValue,
-            outcome,
-            specialEffect);
+        // Remove the skill
+        Character!.Skills.Remove(skill);
 
-        // Notify parent that character changed (for saving)
-        await OnCharacterChanged.InvokeAsync();
-    }
-
-    private void ApplyPostUseConcentration(GameMechanics.Reference.SkillInfo skillInfo)
-    {
-        if (Character == null) return;
-
-        // Create debuff config from skill definition
-        var debuffConfig = new InterruptionDebuffConfig
-        {
-            Name = $"{skillInfo.Name} Concentration Broken",
-            Description = $"Concentration on {skillInfo.Name} was interrupted.",
-            DurationRounds = skillInfo.PostUseInterruptionPenaltyRounds,
-            GlobalAsPenalty = -1
-        };
-
-        var concentrationState = ConcentrationBehavior.CreatePostUseSkillState(
-            skillInfo.Id,
-            skillInfo.Name,
-            skillInfo.PostUseConcentrationRounds,
-            linkedEffects: null, // TODO: Add linked effects when skill creates effects on targets
-            interruptionDebuff: debuffConfig);
-
-        var effect = effectPortal.CreateChild(
-            EffectType.Concentration,
-            $"Maintaining {skillInfo.Name}",
-            null, // no body location
-            skillInfo.PostUseConcentrationRounds,
-            concentrationState);
-
-        Character.Effects.AddEffect(effect);
-    }
-
-    private string GetSuccessOutcome(int sv)
-    {
-        return sv switch
-        {
-            >= 10 => "Critical Success!",
-            >= 5 => "Great Success",
-            >= 0 => "Success",
-            _ => "Failure"
-        };
-    }
-
-    private string GetFailureOutcome(int sv)
-    {
-        return sv switch
-        {
-            <= -10 => "Critical Failure!",
-            <= -5 => "Bad Failure",
-            _ => "Failure"
-        };
-    }
-
-    private string FormatRoll(int roll)
-    {
-        return roll >= 0 ? $"+{roll}" : roll.ToString();
-    }
-
-    private string FormatSV(int sv)
-    {
-        return sv >= 0 ? $"+{sv}" : sv.ToString();
+        _ = OnCharacterChanged.InvokeAsync();
+        StateHasChanged();
     }
 }

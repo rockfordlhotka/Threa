@@ -1,6 +1,7 @@
 @page "/gamemaster/templates"
 @rendermode InteractiveServer
 
+@using System.Linq
 @using GameMechanics
 @using GameMechanics.GameMaster
 @using Microsoft.AspNetCore.Authorization
@@ -90,6 +91,13 @@ else
                         </Template>
                     </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Species" Title="Species" Sortable="true" Width="150px" />
+                    <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Setting" Sortable="true" Width="130px" SortProperty="Setting">
+                        <Template Context="template">
+                            <span class="badge @(template.Setting == GameSettings.SciFi ? "bg-info" : "bg-primary")">
+                                @GameSettings.DisplayName(template.Setting)
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Property="Category" Title="Category" Sortable="true" Width="150px" />
                     <RadzenDataGridColumn TItem="NpcTemplateInfo" Title="Difficulty" Sortable="true" Width="120px" SortProperty="DifficultyRating">
                         <Template Context="template">
@@ -216,9 +224,13 @@ else
     private string searchText = "";
     private string? selectedCategory;
     private string? selectedTag;
+    private string? selectedSetting;
     private bool showInactive = false;
     private List<string> categories = new();
     private List<string> availableTags = new();
+    private static readonly List<KeyValuePair<string, string>> settingOptions = GameSettings.All
+        .Select(s => new KeyValuePair<string, string>(s, GameSettings.DisplayName(s)))
+        .ToList();
     private System.Timers.Timer? debounceTimer;
     private const int DebounceMs = 300;
     private int archivedCount;
@@ -283,6 +295,10 @@ else
         // Filter by active status
         if (!showInactive)
             query = query.Where(t => t.IsActive);
+
+        // Filter by setting
+        if (!string.IsNullOrEmpty(selectedSetting))
+            query = query.Where(t => t.Setting == selectedSetting);
 
         // Filter by category
         if (!string.IsNullOrEmpty(selectedCategory))
@@ -439,6 +455,10 @@ else
         <RadzenTextBox @bind-Value="@searchText" Placeholder="Search templates..."
             @oninput="@((e) => OnSearchInput(e.Value?.ToString() ?? ""))"
             Style="width: 300px" />
+        <RadzenDropDown TValue="string?" Data="@settingOptions"
+            @bind-Value="@selectedSetting" Change="@(_ => ApplyFilters())"
+            Placeholder="All Settings" AllowClear="true" Style="width: 180px"
+            TextProperty="Value" ValueProperty="Key" />
         <RadzenDropDown TValue="string?" Data="@categories"
             @bind-Value="@selectedCategory" Change="@(_ => ApplyFilters())"
             Placeholder="All Categories" AllowClear="true" Style="width: 200px" />

@@ -196,13 +196,35 @@ else
                 {
                     <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
                         <div style="font-family: var(--font-display); font-size: 0.85rem;">@table.Name</div>
-                        <small style="color: var(--color-text-muted);">@TimeFormat.FormatCompact(table.CurrentTimeSeconds)</small>
+                        <small style="color: var(--color-text-muted);">
+                            <GameTimeDisplay EpochSeconds="table.CurrentTimeSeconds"
+                                             Theme="@table.Theme"
+                                             DefaultCalendarId="@table.DefaultCalendarId" />
+                        </small>
                         <div class="mt-1">
                             @if (table.IsInCombat)
                             {
                                 <span class="badge bg-danger">In Rounds</span>
+                                <span class="badge bg-info ms-1">Round @table.CurrentRound</span>
                             }
-                            <span class="badge bg-info ms-1">Round @table.CurrentRound</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Local Time Management (no table) -->
+                    <div class="text-end p-2 rounded" style="background: var(--color-bg-tertiary);">
+                        <div style="font-family: var(--font-display); font-size: 0.85rem;">Solo Play</div>
+                        <small style="color: var(--color-text-muted);">
+                            <GameTimeDisplay EpochSeconds="localTimeSeconds"
+                                             Theme="@(character.Setting ?? "fantasy")" />
+                        </small>
+                        <div class="mt-1">
+                            @if (localIsInCombat)
+                            {
+                                <span class="badge bg-danger">In Rounds</span>
+                                <span class="badge bg-info ms-1">Round @localCurrentRound</span>
+                            }
                         </div>
                     </div>
                 }
@@ -225,6 +247,73 @@ else
             }
         </div>
     </div>
+
+    <!-- Local Time Management Panel (only visible when no table) -->
+    @if (table == null)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-clock-history me-2"></i>Time Management</strong>
+                <a href="/player/browse-campaigns" class="btn btn-sm btn-primary">
+                    <i class="bi bi-door-open me-1"></i>Join a Table
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <!-- Combat Mode Toggle -->
+                    <div class="col-12 mb-2">
+                        @if (!localIsInCombat)
+                        {
+                            <button class="btn btn-danger w-100" @onclick="LocalEnterCombat">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Enter Combat / Rounds
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success w-100" @onclick="LocalExitCombat">
+                                <i class="bi bi-check-circle-fill me-1"></i>Exit Combat / Rounds
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Round Advancement (only in combat) -->
+                    @if (localIsInCombat)
+                    {
+                        <div class="col-12 mb-2">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(1)">
+                                    <i class="bi bi-skip-forward-fill"></i> +1 Round
+                                </button>
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(10)">
+                                    +10 Rounds
+                                </button>
+                                <button class="btn btn-outline-primary" @onclick="() => LocalAdvanceRounds(20)">
+                                    +1 Minute
+                                </button>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Time Advancement (narrative time) -->
+                    @if (!localIsInCombat)
+                    {
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Advance Time</label>
+                            <div class="btn-group w-100 mb-2" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(60)">+1 Min</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(600)">+10 Min</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(3600)">+1 Hour</button>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(86400)">+1 Day</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => LocalAdvanceTime(604800)">+1 Week</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Targeting Notification Badge -->
     @if (pendingTargetingRequests.Any())
@@ -274,6 +363,10 @@ else
         else if (activeTab == "Inventory")
         {
             <TabPlayInventory Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
+        }
+        else if (activeTab == "Narrative")
+        {
+            <TabPlayNarrative Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
     </div>
 
@@ -340,16 +433,16 @@ public int CharacterId { get; set; }
 public Guid TableId { get; set; }
 
 private bool isLoading = true;
-private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory" };
+private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory", "Narrative" };
 private string[] tabNames => GetTabNamesForTheme();
 private string activeTab = "Status";
 
 private string[] GetTabNamesForTheme()
 {
-    var theme = table?.Theme ?? "fantasy";
-    if (theme == "scifi")
+    // Use table theme as authoritative setting during gameplay (character.Setting may be stale)
+    var setting = table?.Theme ?? character?.Setting ?? "fantasy";
+    if (setting == GameMechanics.GameSettings.SciFi)
     {
-        // Hide Magic tab for sci-fi theme
         return AllTabNames.Where(t => t != "Magic").ToArray();
     }
     return AllTabNames;
@@ -371,6 +464,11 @@ private List<ActivityLogEntry> activityLog = new();
 private IDisposable? activityLogSubscription;
 private bool timeEventSubscribed;
 private bool _disposed;
+
+// Local time management (for no-table characters)
+private long localTimeSeconds = 0;
+private int localCurrentRound = 0;
+private bool localIsInCombat = false;
 
 // Targeting state
 private List<TargetingRequestMessage> pendingTargetingRequests = new();
@@ -427,6 +525,13 @@ protected override async Task OnInitializedAsync()
                     if (table != null)
                     {
                         await JS.InvokeVoidAsync("threaTheme.apply", table.Theme ?? "fantasy");
+
+                        // Sync character setting with table theme (rebuilds wallet if needed)
+                        if (character != null && !string.IsNullOrEmpty(table.Theme) && character.Setting != table.Theme)
+                        {
+                            character.Setting = table.Theme;
+                            character = await character.SaveAsync();
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1647,5 +1752,96 @@ private async Task LoadTableCharactersAsync()
                 errorMessage = $"Failed to save character image: {ex.Message}";
             }
         }
+    }
+
+    // ================================
+    // Local Time Management (No Table)
+    // ================================
+
+    /// <summary>
+    /// Enters combat mode for local (no-table) play.
+    /// </summary>
+    private void LocalEnterCombat()
+    {
+        if (table != null) return; // Only for no-table scenarios
+
+        localIsInCombat = true;
+        localCurrentRound = 1;
+        AddLogEntry("Entered combat mode", ActivityCategory.Combat);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Exits combat mode for local (no-table) play.
+    /// </summary>
+    private void LocalExitCombat()
+    {
+        if (table != null) return; // Only for no-table scenarios
+
+        localIsInCombat = false;
+        AddLogEntry("Exited combat mode", ActivityCategory.Combat);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Advances rounds for local (no-table) play.
+    /// Per TIME_SYSTEM.md: Each round is 3 seconds of game time.
+    /// Processes AP recovery, pending damage/healing, effects, and saves the character.
+    /// </summary>
+    private async Task LocalAdvanceRounds(int count)
+    {
+        if (table != null || !localIsInCombat || count <= 0 || character == null) return;
+
+        localCurrentRound += count;
+        localTimeSeconds += count * 3; // 3 seconds per round per design spec
+
+        // Process game mechanics for each round (AP recovery, pending pools, effects)
+        for (int i = 0; i < count; i++)
+        {
+            character.EndOfRound(effectPortal);
+        }
+
+        AddLogEntry($"Advanced {count} round(s) (Round {localCurrentRound})", ActivityCategory.Time);
+        await SaveCharacterAsync();
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Advances narrative time for local (no-table) play.
+    /// Processes AP recovery, healing/damage pools, effect expiration, and saves the character.
+    /// </summary>
+    private async Task LocalAdvanceTime(int seconds)
+    {
+        if (table != null || localIsInCombat || seconds <= 0 || character == null) return;
+
+        localTimeSeconds += seconds;
+
+        // Map seconds to TimeEventType + count for ProcessTimeSkip
+        var (skipUnit, skipCount) = seconds switch
+        {
+            60 => (GameMechanics.Time.TimeEventType.EndOfMinute, 1),
+            600 => (GameMechanics.Time.TimeEventType.EndOfTurn, 1),
+            3600 => (GameMechanics.Time.TimeEventType.EndOfHour, 1),
+            86400 => (GameMechanics.Time.TimeEventType.EndOfDay, 1),
+            604800 => (GameMechanics.Time.TimeEventType.EndOfWeek, 1),
+            _ => (GameMechanics.Time.TimeEventType.EndOfMinute, Math.Max(1, seconds / 60))
+        };
+
+        // Process game mechanics (AP recovery, VIT/FAT recovery, effect expiration)
+        character.ProcessTimeSkip(skipUnit, skipCount, effectPortal);
+
+        string timeDesc = seconds switch
+        {
+            60 => "1 minute",
+            600 => "10 minutes",
+            3600 => "1 hour",
+            86400 => "1 day",
+            604800 => "1 week",
+            _ => $"{seconds} seconds"
+        };
+
+        AddLogEntry($"Advanced time by {timeDesc}", ActivityCategory.Time);
+        await SaveCharacterAsync();
+        StateHasChanged();
     }
 }

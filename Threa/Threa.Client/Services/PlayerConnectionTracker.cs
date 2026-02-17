@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using GameMechanics.Messaging;
 using Threa.Dal;
 using Threa.Dal.Dto;
 
@@ -7,6 +8,7 @@ namespace Threa.Client.Services;
 /// <summary>
 /// Tracks which players/characters are currently connected via active Blazor circuits.
 /// Updates the ConnectionStatus in the database when players connect/disconnect.
+/// Publishes CharacterUpdateMessage so the GM table page refreshes in real time.
 /// </summary>
 public class PlayerConnectionTracker
 {
@@ -108,8 +110,21 @@ public class PlayerConnectionTracker
 
             // Update the connection status in the database
             await tableDal.UpdateCharacterConnectionStatusAsync(tableId, characterId, status, DateTime.UtcNow);
-            
+
             Console.WriteLine($"[PlayerConnectionTracker] Updated character {characterId} at table {tableId} to {status}");
+
+            // Notify the GM table page so it refreshes the character cards
+            var publisher = scope.ServiceProvider.GetRequiredService<ITimeEventPublisher>();
+            if (publisher.IsConnected)
+            {
+                await publisher.PublishCharacterUpdateAsync(new CharacterUpdateMessage
+                {
+                    CampaignId = tableId.ToString(),
+                    CharacterId = characterId,
+                    UpdateType = CharacterUpdateType.General,
+                    Description = status == ConnectionStatus.Connected ? "Player connected" : "Player disconnected"
+                });
+            }
         }
         catch (Exception ex)
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GameMechanics.Combat;
 
 namespace GameMechanics.Messaging;
@@ -86,6 +87,11 @@ public class TargetingAttackerData
     public bool IsMoving { get; init; }
 
     /// <summary>
+    /// Action cost type for the attack (1 AP + 1 FAT or 2 AP).
+    /// </summary>
+    public ActionCostType ActionCostType { get; init; } = ActionCostType.OneAPOneFat;
+
+    /// <summary>
     /// AP boost being applied.
     /// </summary>
     public int APBoost { get; init; }
@@ -166,6 +172,34 @@ public class TargetingAttackerData
     /// Damage type from weapon/ammo.
     /// </summary>
     public DamageType DamageType { get; init; }
+
+    /// <summary>
+    /// Per-damage-type SV modifiers from weapon and ammo combined.
+    /// When set, takes precedence over WeaponSVModifier and DamageType for damage resolution.
+    /// Format: {"Cutting": 4, "Energy": 2}
+    /// </summary>
+    public Dictionary<string, int>? WeaponDamageModifiers { get; init; }
+
+    /// <summary>
+    /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
+    /// </summary>
+    public WeaponDamageProfile? GetWeaponDamageProfile()
+    {
+        if (WeaponDamageModifiers != null && WeaponDamageModifiers.Count > 0)
+        {
+            var modifiers = new Dictionary<DamageType, int>();
+            foreach (var kv in WeaponDamageModifiers)
+            {
+                if (System.Enum.TryParse<DamageType>(kv.Key, ignoreCase: true, out var dt))
+                    modifiers[dt] = kv.Value;
+            }
+            if (modifiers.Count > 0)
+                return new WeaponDamageProfile(modifiers);
+        }
+
+        // Fall back to legacy single type
+        return WeaponDamageProfile.FromSingle(DamageType, WeaponSVModifier);
+    }
 }
 
 /// <summary>
@@ -202,6 +236,11 @@ public class TargetingDefenderData
     /// Target size modifier for ranged attacks.
     /// </summary>
     public TargetSize Size { get; init; } = TargetSize.Normal;
+
+    /// <summary>
+    /// Action cost type for active defense (1 AP + 1 FAT or 2 AP). Only applies to active defense.
+    /// </summary>
+    public ActionCostType DefenseCostType { get; init; } = ActionCostType.OneAPOneFat;
 
     /// <summary>
     /// AP boost for active defense.

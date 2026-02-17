@@ -172,6 +172,12 @@ public class ItemTemplate
     public string? ArmorAbsorption { get; set; }
 
     /// <summary>
+    /// Per-damage-type SV modifiers for weapons (JSON).
+    /// Format: {"Cutting": 4, "Energy": 2}
+    /// </summary>
+    public string? WeaponDamage { get; set; }
+
+    /// <summary>
     /// Additional properties stored as JSON.
     /// </summary>
     public string? CustomProperties { get; set; }

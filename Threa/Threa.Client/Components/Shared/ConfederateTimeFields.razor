@@ -1,0 +1,66 @@
+@namespace Threa.Client.Components.Shared
+
+@using GameMechanics.Time.Calendars
+
+<div class="row g-2">
+    <div class="col-6">
+        <label class="form-label small">Year</label>
+        <input type="number" class="form-control" value="@year" @onchange="e => SetYear(e)" />
+    </div>
+    <div class="col-6">
+        <label class="form-label small">Pentade</label>
+        <select class="form-select" value="@pentade" @onchange="e => SetPentade(e)">
+            @for (int i = 0; i < ConfederateCalendar.PentadeNames.Length; i++)
+            {
+                <option value="@i">@(i + 1) - @ConfederateCalendar.PentadeNames[i]</option>
+            }
+        </select>
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Week (1-5)</label>
+        <input type="number" class="form-control" value="@(week + 1)" @onchange="e => SetWeek(e)" min="1" max="5" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Day (1-8)</label>
+        <input type="number" class="form-control" value="@(day + 1)" @onchange="e => SetDay(e)" min="1" max="8" />
+    </div>
+    <div class="col-4">
+        <label class="form-label small">Watch</label>
+        <select class="form-select" value="@watch" @onchange="e => SetWatch(e)">
+            @for (int i = 0; i < ConfederateCalendar.WatchNames.Length; i++)
+            {
+                <option value="@i">@(i + 1) - @ConfederateCalendar.WatchNames[i]</option>
+            }
+        </select>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public long EpochSeconds { get; set; }
+
+    [Parameter]
+    public EventCallback<long> OnChanged { get; set; }
+
+    private long year, pentade, week, day, watch;
+
+    protected override void OnParametersSet()
+    {
+        (year, pentade, week, day, watch) = ConfederateCalendar.DecomposeDateTime(EpochSeconds);
+    }
+
+    private async Task SetYear(ChangeEventArgs e) { year = ParseLong(e); await Recompose(); }
+    private async Task SetPentade(ChangeEventArgs e) { pentade = ParseLong(e); await Recompose(); }
+    private async Task SetWeek(ChangeEventArgs e) { week = ParseLong(e) - 1; await Recompose(); }
+    private async Task SetDay(ChangeEventArgs e) { day = ParseLong(e) - 1; await Recompose(); }
+    private async Task SetWatch(ChangeEventArgs e) { watch = ParseLong(e); await Recompose(); }
+
+    private async Task Recompose()
+    {
+        var epoch = ConfederateCalendar.ComposeDateTime(year, pentade, week, day, watch);
+        await OnChanged.InvokeAsync(epoch);
+    }
+
+    private static long ParseLong(ChangeEventArgs e) =>
+        long.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+}

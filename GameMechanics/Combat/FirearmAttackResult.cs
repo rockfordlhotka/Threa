@@ -66,6 +66,12 @@ public class FirearmAttackResult
     /// <summary>SV for the direct hit target (includes DirectHitBonus).</summary>
     public int? DirectHitSV { get; set; }
 
+    /// <summary>
+    /// Per-damage-type SV profile when multi-type damage is available.
+    /// Null when using legacy single-type damage.
+    /// </summary>
+    public WeaponDamageProfile? DamageProfile { get; set; }
+
     /// <summary>Human-readable description of the result.</summary>
     public string Description { get; set; } = string.Empty;
 
@@ -188,4 +194,9 @@ public class ProjectileHitResult
 
     /// <summary>The SV if hit (base + RV/2 + ammo modifier).</summary>
     public int SV { get; set; }
+
+    /// <summary>
+    /// Per-damage-type SV profile when multi-type damage is available.
+    /// </summary>
+    public WeaponDamageProfile? DamageProfile { get; set; }
 }
