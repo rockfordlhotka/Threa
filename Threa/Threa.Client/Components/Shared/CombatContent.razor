@@ -541,6 +541,7 @@
     private int meleeWeaponDamageClass = 1;
     private string meleeWeaponName = "";
     private Dictionary<string, int>? meleeWeaponDamageModifiers;
+    private int meleeWeaponTemplateId;
 
     // Pending damage state (from defense when hit)
     private int? pendingDamageSV;
@@ -1116,6 +1117,7 @@
         meleeWeaponDamageClass = weapon.WeaponDamageClass;
         meleeWeaponName = weapon.Name;
         meleeWeaponDamageModifiers = weapon.WeaponDamageModifiers;
+        meleeWeaponTemplateId = weapon.TemplateId;
 
         // If the weapon uses a different skill, try to select it
         if (!string.IsNullOrEmpty(weapon.SkillName) && Character != null)
@@ -1561,6 +1563,7 @@
         bool isDodgeable = false;
         int currentAmmo = 0;
         Dictionary<string, int>? weaponDmgModifiers = null;
+        int weaponTemplateId = 0;
 
         if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
         {
@@ -1581,6 +1584,7 @@
             weaponDC = meleeWeaponDamageClass;
             weaponName = meleeWeaponName;
             weaponDmgModifiers = meleeWeaponDamageModifiers;
+            weaponTemplateId = meleeWeaponTemplateId;
 
             // Fall back to equipped weapon name if no selection
             if (string.IsNullOrEmpty(weaponName))
@@ -1611,7 +1615,9 @@
             IsDodgeable = isDodgeable,
             CurrentLoadedAmmo = currentAmmo,
             UsePhysicality = actionType == TargetingActionType.MeleeAttack,
-            WeaponDamageModifiers = weaponDmgModifiers
+            WeaponDamageModifiers = weaponDmgModifiers,
+            WeaponTemplateId = weaponTemplateId,
+            AttackerCharacterId = Character?.Id ?? 0
         };
     }
 

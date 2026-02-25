@@ -181,6 +181,18 @@ public class TargetingAttackerData
     public Dictionary<string, int>? WeaponDamageModifiers { get; init; }
 
     /// <summary>
+    /// The ItemTemplate ID of the weapon being used (0 = unknown/unarmed).
+    /// Used by the defender's damage resolution to apply weapon on-hit effects.
+    /// </summary>
+    public int WeaponTemplateId { get; init; }
+
+    /// <summary>
+    /// The ID of the attacking character.
+    /// Used by the defender to attribute on-hit effects correctly.
+    /// </summary>
+    public int AttackerCharacterId { get; init; }
+
+    /// <summary>
     /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
     /// </summary>
     public WeaponDamageProfile? GetWeaponDamageProfile()

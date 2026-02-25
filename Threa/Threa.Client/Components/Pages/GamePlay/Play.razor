@@ -8,6 +8,7 @@
 @implements IDisposable
 
 @using GameMechanics.Messaging
+@using GameMechanics.Combat.Effects
 @using Threa.Services
 @using Threa.Client.Services
 @using Threa.Client.Components.Shared
@@ -28,6 +29,7 @@
 @inject ICharacterItemDal CharacterItemDal
 @inject IItemTemplateDal ItemTemplateDal
 @inject IGameTimeFormatService TimeFormat
+@inject GameMechanics.Combat.Effects.AttackEffectService AttackEffectService
 
 @using GameMechanics.Time
 @using Threa.Dal
@@ -1586,6 +1588,13 @@ private async Task LoadTableCharactersAsync()
                 character.Fatigue.Value -= resolution.FATDamage;
                 character.Vitality.Value -= resolution.VITDamage;
 
+                // Apply weapon on-hit effects if the weapon template is known
+                var attackerData = currentTargetingInteraction.AttackerData;
+                if (attackerData.WeaponTemplateId > 0)
+                {
+                    await ApplyWeaponOnHitEffectsAsync(attackerData, resolution, character);
+                }
+
                 // Save character
                 if (character is Csla.Core.ISavable savable)
                 {
@@ -1597,6 +1606,55 @@ private async Task LoadTableCharactersAsync()
         }
 
         StateHasChanged();
+    }
+
+    private async Task ApplyWeaponOnHitEffectsAsync(
+        GameMechanics.Messaging.TargetingAttackerData attackerData,
+        GameMechanics.Messaging.TargetingResolutionData resolution,
+        GameMechanics.CharacterEdit target)
+    {
+        try
+        {
+            var weaponTemplate = await ItemTemplateDal.GetTemplateAsync(attackerData.WeaponTemplateId);
+            if (weaponTemplate?.Effects == null || !weaponTemplate.Effects.Any())
+                return;
+
+            // Armor was penetrated if any damage got through
+            bool armorPenetrated = resolution.FATDamage > 0 || resolution.VITDamage > 0;
+
+            var context = new GameMechanics.Combat.Effects.AttackEffectContext
+            {
+                Attacker = null, // Attacker's CharacterEdit not available on defender's page; buff effects skipped
+                Target = target,
+                WeaponTemplate = weaponTemplate,
+                AttackSV = resolution.SuccessValue,
+                HitLocation = resolution.HitLocation,
+                IsCriticalHit = GameMechanics.Combat.Effects.AttackEffectContext.IsCritical(resolution.SuccessValue),
+                BaseDamageType = attackerData.DamageType,
+                ArmorWasPenetrated = armorPenetrated,
+                // Armor/shield DC not tracked in targeting resolution; use 0 (no DC restriction from armor)
+                ArmorDamageClass = null,
+                ShieldDamageClass = null,
+                TargetDamageClass = 0
+            };
+
+            var effects = await AttackEffectService.CollectAttackEffectsAsync(context);
+            if (effects.HasEffects)
+            {
+                await AttackEffectService.ApplyEffectsAsync(effects, target, attacker: null!);
+
+                if (effects.TargetEffects.Any())
+                {
+                    var names = string.Join(", ", effects.TargetEffects.Select(e => e.Grant.EffectName));
+                    AddLogEntry($"On-hit effects applied: {names}", ActivityCategory.Combat);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal — log but don't block damage application
+            AddLogEntry($"Warning: could not apply weapon on-hit effects: {ex.Message}", ActivityCategory.Combat);
+        }
     }
 
     // ================================

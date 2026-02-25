@@ -79,11 +79,14 @@ public class AttackEffectService
             allSuccess &= applied;
         }
 
-        // Apply attacker effects (life-steal, self-buffs)
-        foreach (var effect in collectionResult.AttackerEffects)
+        // Apply attacker effects (life-steal, self-buffs) — skipped when attacker is unavailable.
+        if (attacker != null)
         {
-            var applied = await ApplyEffectGrantAsync(effect.Grant, attacker, effect.SourceName);
-            allSuccess &= applied;
+            foreach (var effect in collectionResult.AttackerEffects)
+            {
+                var applied = await ApplyEffectGrantAsync(effect.Grant, attacker, effect.SourceName);
+                allSuccess &= applied;
+            }
         }
 
         return allSuccess;
@@ -164,6 +167,9 @@ public class AttackEffectService
 
     private void CollectBuffEffects(AttackEffectContext context, AttackEffectCollectionResult result)
     {
+        // Skip if attacker's character object isn't available.
+        if (context.Attacker == null) return;
+
         // Get all active buffs on the attacker
         var activeBuffs = context.Attacker.Effects
             .Where(e => e.EffectType == EffectType.Buff && e.IsActive)
@@ -200,6 +206,9 @@ public class AttackEffectService
 
     private async Task CollectEquippedItemEffectsAsync(AttackEffectContext context, AttackEffectCollectionResult result)
     {
+        // Skip if attacker's character object isn't available.
+        if (context.Attacker == null) return;
+
         // Get all equipped items for the attacker (excluding the weapon which was already checked)
         var equippedItems = await _itemDal.GetEquippedItemsAsync(context.Attacker.Id);
 

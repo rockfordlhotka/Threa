@@ -37,9 +37,8 @@ public class WeaponTargetEffectTests
     {
         return new AttackEffectContext
         {
-            // CharacterEdit cannot be newed up without the data portal; these tests
-            // only exercise ShouldTargetEffectApply which never reads Attacker/Target.
-            Attacker = null!,
+            // Attacker is nullable; Target still required but not accessed by these tests.
+            Attacker = null,
             Target = null!,
             HitLocation = HitLocation.Torso,
             BaseDamageType = DamageType.Cutting,

@@ -11,9 +11,10 @@ namespace GameMechanics.Combat.Effects;
 public class AttackEffectContext
 {
     /// <summary>
-    /// The attacking character.
+    /// The attacking character. May be null when only weapon template effects are being
+    /// collected (buff-granted and equipped-item effects are skipped in that case).
     /// </summary>
-    public required CharacterEdit Attacker { get; init; }
+    public CharacterEdit? Attacker { get; init; }
 
     /// <summary>
     /// The target character being attacked.
