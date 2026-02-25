@@ -233,11 +233,38 @@
                 {
                     @foreach (var skill in (Character?.Skills ?? Enumerable.Empty<SkillEdit>()).OrderBy(s => s.Name))
                     {
+                        var chipBonus = Character?.GetChipSkillLevelBonus(skill.Name, skill.Bonus) ?? 0;
                         <div class="d-flex align-items-center gap-1 small @(skill.Level == 0 ? "text-muted" : "")">
                             <span class="flex-grow-1 text-truncate" title="@skill.Name">@skill.Name</span>
                             <span class="text-muted" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@skill.PrimaryAttribute</span>
                             <span style="width: 24px; text-align: right;">@skill.Level</span>
+                            @if (chipBonus > 0)
+                            {
+                                <span class="badge bg-info" title="Chip raises effective level by @chipBonus" style="font-size: 0.65rem;">+@chipBonus</span>
+                            }
                         </div>
+                    }
+
+                    @if (Character?.GetChipGrantedSkills()
+                             .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
+                             .Any() == true)
+                    {
+                        <hr class="my-2" />
+                        <div class="small text-info fw-semibold mb-1">
+                            <i class="bi bi-cpu me-1"></i>Chip Skills
+                        </div>
+                        @foreach (var granted in Character!.GetChipGrantedSkills()
+                            .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
+                            .OrderBy(g => g.SkillName))
+                        {
+                            var chipAS = GameMechanics.SkillEdit.GetAttributeBase(Character!, granted.PrimaryAttribute) + granted.SkillLevel;
+                            <div class="d-flex align-items-center gap-1 small" title="@granted.ChipName">
+                                <span class="flex-grow-1 text-truncate text-info">@granted.SkillName</span>
+                                <span class="text-muted" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@granted.PrimaryAttribute</span>
+                                <span style="width: 24px; text-align: right;">@granted.SkillLevel</span>
+                                <span class="badge bg-info" style="font-size: 0.65rem;" title="AS from chip">@chipAS</span>
+                            </div>
+                        }
                     }
                 }
             </div>

@@ -358,6 +358,15 @@
                 character = await character.SaveAsync();
             }
 
+            // Load equipped items and chip data so chip skills are visible on the character sheet
+            if (character != null)
+            {
+                var equippedItems = await CharacterItemDal.GetEquippedItemsWithTemplatesAsync(character.Id);
+                character.SetEquippedItems(equippedItems);
+                var allItems = await CharacterItemDal.GetCharacterItemsAsync(character.Id);
+                character.SetChipItems(allItems);
+            }
+
             // Load GM notes directly from DAL to ensure we get the latest saved value
             currentGmNotes = await tableDal.GetGmNotesAsync(TableId, selectedCharacterId);
         }
