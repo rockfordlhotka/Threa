@@ -65,11 +65,17 @@
                         var trainedCost = skill.Level < 10 ? GetXPCostToNextLevel(skill, trained: true) : 0;
                         var untrainedCost = skill.Level < 10 ? GetXPCostToNextLevel(skill, trained: false) : 0;
                         var isNewSkill = IsNewSkill(skill);
-                        
+                        var chipBonus = Character!.GetChipSkillLevelBonus(skill.Name, skill.Bonus);
                         <tr title="@skillDescription">
                             <td>@skill.Name</td>
                             <td>@skill.PrimaryAttribute</td>
-                            <td>@skill.Level</td>
+                            <td>
+                                @skill.Level
+                                @if (chipBonus > 0)
+                                {
+                                    <span class="badge bg-info ms-1" title="Chip raises effective level by @chipBonus">chip +@chipBonus</span>
+                                }
+                            </td>
                             <td>@skill.Bonus</td>
                             <td><strong>@skill.AbilityScore</strong></td>
                             <td>
@@ -122,6 +128,48 @@
         }
     </div>
 </div>
+
+@{
+    var chipOnlySkills = Character?.GetChipGrantedSkills()
+        .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
+        .ToList();
+}
+@if (chipOnlySkills != null && chipOnlySkills.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-header" style="background: var(--bs-info); color: white;">
+            <strong><i class="bi bi-cpu me-2"></i>Chip Skills</strong>
+            <span class="badge bg-white text-dark ms-2">@chipOnlySkills.Count</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">Skills granted by loaded skill chips. Only active while the chip is in an equipped Skillwire.</p>
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Skill</th>
+                        <th>Source</th>
+                        <th>Attr</th>
+                        <th>Chip Level</th>
+                        <th>Ability Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var granted in chipOnlySkills.OrderBy(g => g.SkillName))
+                    {
+                        var chipAS = GameMechanics.SkillEdit.GetAttributeBase(Character!, granted.PrimaryAttribute) + granted.SkillLevel;
+                        <tr>
+                            <td>@granted.SkillName</td>
+                            <td><span class="badge bg-info">@granted.ChipName</span></td>
+                            <td>@granted.PrimaryAttribute</td>
+                            <td>@granted.SkillLevel</td>
+                            <td><strong>@chipAS</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 <div class="card">
     <div class="card-header">
