@@ -57,6 +57,29 @@ public class AttackEffectContext
     public Dictionary<string, object> AdditionalData { get; init; } = [];
 
     /// <summary>
+    /// The damage class of the armor at the hit location (1–4), or null if the target
+    /// has no armor there.
+    /// </summary>
+    public int? ArmorDamageClass { get; init; }
+
+    /// <summary>
+    /// The damage class of any shield that was involved (1–4), or null if no shield.
+    /// </summary>
+    public int? ShieldDamageClass { get; init; }
+
+    /// <summary>
+    /// The target's inherent damage class (1–4). Represents natural toughness (e.g.,
+    /// a dragon's hide). 0 means no inherent DC restriction.
+    /// </summary>
+    public int TargetDamageClass { get; init; } = 0;
+
+    /// <summary>
+    /// Whether the attack penetrated the target's armor (i.e., the net SV after armor
+    /// absorption was still positive). True if there is no armor at the hit location.
+    /// </summary>
+    public bool ArmorWasPenetrated { get; init; } = true;
+
+    /// <summary>
     /// Determines if the attack is considered a critical based on SV threshold.
     /// By default, SV >= 8 is a critical.
     /// </summary>

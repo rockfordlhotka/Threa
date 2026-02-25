@@ -119,7 +119,7 @@ public class AttackEffectService
             {
                 if (grant.AppliesToAttacker)
                     result.AddAttackerEffect(grant, weaponName);
-                else
+                else if (ShouldTargetEffectApply(grant, context))
                     result.AddTargetEffect(grant, weaponName);
             }
         }
@@ -138,7 +138,7 @@ public class AttackEffectService
         {
             if (onHitEffect.AppliesToAttacker)
                 result.AddAttackerEffect(onHitEffect, ammoName);
-            else
+            else if (ShouldTargetEffectApply(onHitEffect, context))
                 result.AddTargetEffect(onHitEffect, ammoName);
         }
 
@@ -146,7 +146,7 @@ public class AttackEffectService
         else if (!string.IsNullOrEmpty(context.AmmoProperties.SpecialEffect))
         {
             var legacyEffect = ParseLegacySpecialEffect(context.AmmoProperties.SpecialEffect, ammoName);
-            if (legacyEffect != null)
+            if (legacyEffect != null && ShouldTargetEffectApply(legacyEffect, context))
             {
                 result.AddTargetEffect(legacyEffect, ammoName);
             }
@@ -244,11 +244,47 @@ public class AttackEffectService
                 {
                     if (grant.AppliesToAttacker)
                         result.AddAttackerEffect(grant, itemName);
-                    else
+                    else if (ShouldTargetEffectApply(grant, context))
                         result.AddTargetEffect(grant, itemName);
                 }
             }
         }
+    }
+
+    #endregion
+
+    #region Armor / DC Filter
+
+    /// <summary>
+    /// Returns true if a target effect should be applied, taking the armor interaction
+    /// rule and damage class restrictions into account.
+    /// Only called for effects that target the defender (AppliesToAttacker == false).
+    /// </summary>
+    private static bool ShouldTargetEffectApply(AttackEffectGrant grant, AttackEffectContext context)
+    {
+        // Damage class check: skip if any DC (armor, shield, or target) meets or exceeds the effect's DC.
+        if (grant.EffectDamageClass > 0)
+        {
+            if (context.ArmorDamageClass.HasValue && context.ArmorDamageClass.Value >= grant.EffectDamageClass)
+                return false;
+            if (context.ShieldDamageClass.HasValue && context.ShieldDamageClass.Value >= grant.EffectDamageClass)
+                return false;
+            if (context.TargetDamageClass > 0 && context.TargetDamageClass >= grant.EffectDamageClass)
+                return false;
+        }
+
+        // Armor interaction rule check.
+        return grant.ArmorRule switch
+        {
+            ArmorInteractionRule.PenetrationOnly =>
+                // No armor at hit location OR the attack actually penetrated it.
+                context.ArmorDamageClass == null || context.ArmorWasPenetrated,
+            ArmorInteractionRule.NoArmor =>
+                context.ArmorDamageClass == null,
+            ArmorInteractionRule.IgnoreArmor =>
+                true,
+            _ => true
+        };
     }
 
     #endregion
@@ -298,7 +334,9 @@ public class AttackEffectService
             BonusDamageType = bonusDamageType,
             Source = sourceName,
             AppliesToAttacker = appliesToAttacker,
-            IconName = effectDef.IconName
+            IconName = effectDef.IconName,
+            ArmorRule = effectDef.ArmorRule,
+            EffectDamageClass = effectDef.EffectDamageClass
         };
     }
 

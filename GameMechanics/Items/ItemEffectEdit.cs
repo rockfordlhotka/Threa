@@ -126,6 +126,20 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
         set => SetProperty(ToggleApCostProperty, value);
     }
 
+    public static readonly PropertyInfo<ArmorInteractionRule> ArmorRuleProperty = RegisterProperty<ArmorInteractionRule>(nameof(ArmorRule));
+    public ArmorInteractionRule ArmorRule
+    {
+        get => GetProperty(ArmorRuleProperty);
+        set => SetProperty(ArmorRuleProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> EffectDamageClassProperty = RegisterProperty<int>(nameof(EffectDamageClass));
+    public int EffectDamageClass
+    {
+        get => GetProperty(EffectDamageClassProperty);
+        set => SetProperty(EffectDamageClassProperty, value);
+    }
+
     /// <summary>
     /// Gets the display name for the trigger type.
     /// </summary>
@@ -227,6 +241,8 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             Priority = 0;
             IsToggleable = false;
             ToggleApCost = 0;
+            ArmorRule = ArmorInteractionRule.PenetrationOnly;
+            EffectDamageClass = 0;
         }
         BusinessRules.CheckRules();
     }
@@ -252,6 +268,8 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             Priority = dto.Priority;
             IsToggleable = dto.IsToggleable;
             ToggleApCost = dto.ToggleApCost;
+            ArmorRule = dto.ArmorRule;
+            EffectDamageClass = dto.EffectDamageClass;
         }
         BusinessRules.CheckRules();
     }
@@ -278,7 +296,9 @@ public class ItemEffectEdit : BusinessBase<ItemEffectEdit>
             IsActive = IsActive,
             Priority = Priority,
             IsToggleable = IsToggleable,
-            ToggleApCost = ToggleApCost
+            ToggleApCost = ToggleApCost,
+            ArmorRule = ArmorRule,
+            EffectDamageClass = EffectDamageClass
         };
     }
 

@@ -88,4 +88,17 @@ public class ItemEffectDefinition
     /// AP cost to toggle this effect on or off. 0 = free action.
     /// </summary>
     public int ToggleApCost { get; set; }
+
+    /// <summary>
+    /// How this target effect interacts with the defender's armor at the hit location.
+    /// Only relevant when Trigger is OnAttackWith or OnCritical and the effect targets the defender.
+    /// </summary>
+    public ArmorInteractionRule ArmorRule { get; set; } = ArmorInteractionRule.PenetrationOnly;
+
+    /// <summary>
+    /// The damage class of this effect (1–4). The effect will not apply if the target's armor,
+    /// shield, or inherent damage class equals or exceeds this value.
+    /// Set to 0 to bypass the damage class check entirely.
+    /// </summary>
+    public int EffectDamageClass { get; set; } = 0;
 }

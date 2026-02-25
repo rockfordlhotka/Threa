@@ -74,6 +74,36 @@
         }
     </RadzenFieldset>
 
+    <!-- Target Effect Settings (on-hit, on-critical) -->
+    @if (IsTargetCombatEffect)
+    {
+        <RadzenFieldset Text="Target Effect Settings" class="mb-3">
+            <div class="mb-2">
+                <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" Variant="Variant.Flat" Size="AlertSize.Small">
+                    These settings control when this effect is applied to the <strong>target</strong> of the attack.
+                    Effects that target the attacker (self-buffs, life-steal) are not affected by these settings.
+                </RadzenAlert>
+            </div>
+            <div class="row">
+                <div class="col-6 mb-2">
+                    <RadzenLabel Text="Armor Interaction" Component="armorRule" />
+                    <RadzenDropDown @bind-Value="Effect.ArmorRule" Data="@_armorRules" Name="armorRule"
+                                    TextProperty="Text" ValueProperty="Value" Style="width: 100%" />
+                    <small class="text-muted">@GetArmorRuleDescription(Effect.ArmorRule)</small>
+                </div>
+                <div class="col-6 mb-2">
+                    <RadzenLabel Text="Effect Damage Class (1–4, 0 = no restriction)" Component="effectDc" />
+                    <RadzenNumeric @bind-Value="Effect.EffectDamageClass" Name="effectDc" Style="width: 100%"
+                                   Min="0" Max="4" />
+                    <small class="text-muted">
+                        Effect won't apply if armor, shield, or target DC ≥ this value.
+                        Example: DC 1 flame effect won't affect a dragon with DC 2+ hide.
+                    </small>
+                </div>
+            </div>
+        </RadzenFieldset>
+    }
+
     <!-- Curse Settings Section -->
     <RadzenFieldset Text="Curse Settings" class="mb-3">
         <div class="row">
@@ -179,6 +209,13 @@
         new("On Critical", ItemEffectTrigger.OnCritical)
     ];
 
+    private readonly List<DropdownItem<ArmorInteractionRule>> _armorRules =
+    [
+        new("Penetration Only (default)", ArmorInteractionRule.PenetrationOnly),
+        new("No Armor at Hit Location", ArmorInteractionRule.NoArmor),
+        new("Ignore Armor Completely", ArmorInteractionRule.IgnoreArmor)
+    ];
+
     private readonly List<DropdownItem<EffectType>> _effectTypes =
     [
         new("Item Effect", EffectType.ItemEffect),
@@ -194,6 +231,17 @@
                                        Effect.Trigger == ItemEffectTrigger.OnAttackWith ||
                                        Effect.Trigger == ItemEffectTrigger.OnHitWhileWearing ||
                                        Effect.Trigger == ItemEffectTrigger.OnCritical;
+
+    private bool IsTargetCombatEffect => Effect.Trigger == ItemEffectTrigger.OnAttackWith ||
+                                          Effect.Trigger == ItemEffectTrigger.OnCritical;
+
+    private static string GetArmorRuleDescription(ArmorInteractionRule rule) => rule switch
+    {
+        ArmorInteractionRule.PenetrationOnly => "Effect applies only if the attack penetrated the target's armor (or target has no armor at hit location)",
+        ArmorInteractionRule.NoArmor => "Effect only applies if the target has no armor at the hit location",
+        ArmorInteractionRule.IgnoreArmor => "Effect applies regardless of armor — even if the armor absorbed the hit",
+        _ => string.Empty
+    };
 
     private void Save()
     {

@@ -85,6 +85,21 @@ public class AttackEffectGrant
     public string? IconName { get; set; }
 
     /// <summary>
+    /// How this effect interacts with the target's armor at the hit location.
+    /// Only evaluated for target effects (AppliesToAttacker == false).
+    /// </summary>
+    [JsonPropertyName("armorRule")]
+    public ArmorInteractionRule ArmorRule { get; set; } = ArmorInteractionRule.PenetrationOnly;
+
+    /// <summary>
+    /// The damage class of this effect (1–4). The effect will not apply if the target's armor,
+    /// shield, or inherent damage class equals or exceeds this value.
+    /// Set to 0 to bypass the damage class check.
+    /// </summary>
+    [JsonPropertyName("effectDamageClass")]
+    public int EffectDamageClass { get; set; } = 0;
+
+    /// <summary>
     /// Creates an AttackEffectGrant for a simple bonus damage effect.
     /// </summary>
     public static AttackEffectGrant CreateBonusDamage(int damage, DamageType damageType, string source)
