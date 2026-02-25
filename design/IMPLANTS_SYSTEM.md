@@ -475,6 +475,84 @@ Implants use the Item Effects System with these specifics:
 
 ---
 
+## Skillwire & Skill Chips
+
+The **Skillwire** is a neural implant (`EquipmentSlot = ImplantNeural`) that acts as a container for **skill chips** — small data chips loaded mentally that grant the character access to a skill.
+
+### Container Mechanic
+
+- The Skillwire has `IsContainer = true` and `MaxChipSlots = N` (commonly 4).
+- Only items with `ItemType = SkillChip` (18) may be placed into a Skillwire.
+- Slot capacity is enforced by `ItemManagementService.MoveToContainerAsync()`.
+- Chips are loaded/unloaded via the standard `MoveToContainerAsync` call (not the Reload button).
+
+### Skill Grant Behavior
+
+Each skill chip has a `SkillBonuses` entry with `BonusType = GrantSkill` (3):
+
+| Field | Purpose |
+|-------|---------|
+| `BonusType = GrantSkill` | Identifies this as a skill-grant (not a flat bonus) |
+| `BonusValue` | The skill level the chip provides |
+| `SkillName` | The name of the skill granted |
+| `CustomProperties` JSON: `{"chipPrimaryAttribute":"INT"}` | Primary attribute for ability score calculation |
+
+**Override Rule**: A chip overrides the character's native skill level **only if the chip level is higher**. If the character has Hacking 5 natively and loads a Hacking 3 chip, the chip has no effect. This is implemented via `CharacterEdit.GetChipSkillLevelBonus(skillName, nativeSkillLevel)`.
+
+### Ability Score Calculation
+
+For skills the character has natively, `SkillEdit.AbilityScore` automatically applies the chip bonus:
+
+```
+AS = Bonus(nativeLevel) + ChipBonus + AttributeBase + EffectModifier
+```
+
+where `ChipBonus = max(0, chipLevel - nativeLevel)`.
+
+For skills the character does **not** have natively, use `CharacterEdit.GetChipGrantedSkills()` to enumerate them. The UI computes AS as:
+
+```
+AS = AttributeBase(chipPrimaryAttribute) + chipLevel
+```
+
+### Data Format
+
+```json
+// Skill chip ItemTemplate
+{
+  "ItemType": 18,
+  "CustomProperties": "{\"chipPrimaryAttribute\":\"INT\"}",
+  "SkillBonuses": [
+    { "SkillName": "Hacking", "BonusType": 3, "BonusValue": 3 }
+  ]
+}
+
+// Skillwire ItemTemplate
+{
+  "ItemType": 17,
+  "EquipmentSlot": "ImplantNeural",
+  "IsContainer": true,
+  "MaxChipSlots": 4,
+  "ContainerAllowedTypes": "18"
+}
+```
+
+### Loading Chips in Code
+
+```csharp
+// After loading equipped items, also load chip data
+var allItems = await CharacterItemDal.GetCharacterItemsAsync(character.Id);
+character.SetChipItems(allItems);
+
+// Access chip-granted skills for non-native skills
+foreach (var granted in character.GetChipGrantedSkills())
+{
+    // granted.SkillName, granted.SkillLevel, granted.PrimaryAttribute, granted.ChipName
+}
+```
+
+---
+
 ## Related Documents
 
 - [Item Effects System](ITEM_EFFECTS_SYSTEM.md) - Core effect mechanics

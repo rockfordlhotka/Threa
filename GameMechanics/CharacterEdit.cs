@@ -28,6 +28,9 @@ namespace GameMechanics
     [NonSerialized]
     private List<EquippedItemInfo>? _equippedItems;
 
+    [NonSerialized]
+    private List<Items.GrantedSkillInfo>? _chipGrantedSkills;
+
     /// <summary>
     /// Result from the last concentration effect that completed or was interrupted.
     /// Used by UI/controller to handle deferred actions like magazine reload.
@@ -62,6 +65,80 @@ namespace GameMechanics
     public IReadOnlyList<EquippedItemInfo>? GetEquippedItems()
     {
       return _equippedItems;
+    }
+
+    /// <summary>
+    /// Sets chip-granted skills from skill chips loaded in equipped Skillwire implants.
+    /// Call this after SetEquippedItems() with ALL character items (equipped + unequipped).
+    /// </summary>
+    public void SetChipItems(IEnumerable<CharacterItem> allItems)
+    {
+      var itemList = allItems.Where(i => i.Template != null).ToList();
+
+      // Find equipped implant containers with chip slots
+      var equippedSkillwires = itemList
+        .Where(i => i.IsEquipped && i.Template!.MaxChipSlots.HasValue)
+        .ToList();
+
+      _chipGrantedSkills = [];
+
+      foreach (var skillwire in equippedSkillwires)
+      {
+        // Find chips loaded in this skillwire
+        var chips = itemList
+          .Where(i => i.ContainerItemId == skillwire.Id
+                   && i.Template!.ItemType == ItemType.SkillChip)
+          .ToList();
+
+        foreach (var chip in chips)
+        {
+          var grantBonus = chip.Template!.SkillBonuses
+            .FirstOrDefault(b => b.BonusType == BonusType.GrantSkill);
+          if (grantBonus == null) continue;
+
+          // Primary attribute stored in CustomProperties JSON: {"chipPrimaryAttribute":"INT"}
+          var primaryAttr = "INT"; // default
+          if (!string.IsNullOrEmpty(chip.Template.CustomProperties))
+          {
+            try
+            {
+              var props = System.Text.Json.JsonDocument.Parse(chip.Template.CustomProperties);
+              if (props.RootElement.TryGetProperty("chipPrimaryAttribute", out var attrEl))
+                primaryAttr = attrEl.GetString() ?? primaryAttr;
+            }
+            catch { }
+          }
+
+          _chipGrantedSkills.Add(new Items.GrantedSkillInfo(
+            SkillName: grantBonus.SkillName,
+            SkillLevel: (int)grantBonus.BonusValue,
+            PrimaryAttribute: primaryAttr,
+            ChipName: chip.Template.Name,
+            ChipItemId: chip.Id));
+        }
+      }
+    }
+
+    /// <summary>Clears chip grants cache. Call when items change.</summary>
+    public void ClearChipItems() => _chipGrantedSkills = null;
+
+    /// <summary>Returns all chip-granted skills from loaded chips in equipped Skillwires.</summary>
+    public IEnumerable<Items.GrantedSkillInfo> GetChipGrantedSkills()
+      => _chipGrantedSkills ?? Enumerable.Empty<Items.GrantedSkillInfo>();
+
+    /// <summary>
+    /// Returns the bonus levels a chip adds to a skill (0 if chip doesn't improve on native level).
+    /// Used by SkillEdit.AbilityScore to apply override.
+    /// </summary>
+    public int GetChipSkillLevelBonus(string skillName, int nativeSkillLevel)
+    {
+      if (_chipGrantedSkills == null) return 0;
+      var best = _chipGrantedSkills
+        .Where(s => s.SkillName.Equals(skillName, StringComparison.OrdinalIgnoreCase))
+        .Select(s => s.SkillLevel)
+        .DefaultIfEmpty(0)
+        .Max();
+      return best > nativeSkillLevel ? best - nativeSkillLevel : 0;
     }
 
     /// <summary>

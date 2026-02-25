@@ -349,7 +349,10 @@ namespace GameMechanics
       get
       {
         var character = (CharacterEdit)((IParent)Parent).Parent;
-        var baseAS = Bonus + GetAttributeBase(character, PrimaryAttribute);
+
+        // Apply chip override: if chip provides higher skill level than native, use the difference
+        var chipBonus = character.GetChipSkillLevelBonus(Name, Bonus);
+        var baseAS = Bonus + chipBonus + GetAttributeBase(character, PrimaryAttribute);
 
         // Apply ability score modifiers from active effects (wounds, debuffs, etc.)
         var effectModifier = character.Effects.GetAbilityScoreModifier(Name, PrimaryAttribute, baseAS);

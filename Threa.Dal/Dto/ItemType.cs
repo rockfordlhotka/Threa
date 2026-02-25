@@ -22,5 +22,6 @@ public enum ItemType
     Shield = 14,
     Ammunition = 15,
     AmmoContainer = 16,
-    Implant = 17
+    Implant = 17,
+    SkillChip = 18  // A chip loaded into a Skillwire implant to grant a skill
 }

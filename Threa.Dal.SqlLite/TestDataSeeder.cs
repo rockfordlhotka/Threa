@@ -1084,6 +1084,72 @@ public class TestDataSeeder
             },
             new ItemTemplate
             {
+                Id = 204,
+                Name = "Skillwire",
+                Description = "Advanced neural implant with 4 skill chip slots. Chips are loaded mentally.",
+                ShortDescription = "Neural skill chip interface",
+                ItemType = ItemType.Implant,
+                EquipmentSlot = EquipmentSlot.ImplantNeural,
+                IsContainer = true,
+                MaxChipSlots = 4,
+                ContainerAllowedTypes = "18",  // ItemType.SkillChip
+                Weight = 0.2m,
+                Volume = 0.005m,
+                Value = 30000,
+                Rarity = ItemRarity.Rare,
+                IsActive = true,
+                Tags = "implant,cybernetic,neural,skillwire"
+            },
+            new ItemTemplate
+            {
+                Id = 205,
+                Name = "Hacking Chip III",
+                Description = "Grants Hacking skill at level 3 while loaded in a Skillwire.",
+                ShortDescription = "Skill chip: Hacking 3",
+                ItemType = ItemType.SkillChip,
+                CustomProperties = """{"chipPrimaryAttribute":"INT"}""",
+                Weight = 0.01m,
+                Volume = 0.0001m,
+                Value = 2000,
+                Rarity = ItemRarity.Uncommon,
+                IsActive = true,
+                Tags = "skillchip,hacking,intel",
+                SkillBonuses = [ new ItemSkillBonus { SkillName = "Hacking", BonusType = BonusType.GrantSkill, BonusValue = 3 } ]
+            },
+            new ItemTemplate
+            {
+                Id = 206,
+                Name = "Combat Chip II",
+                Description = "Grants Pistols skill at level 2 while loaded in a Skillwire.",
+                ShortDescription = "Skill chip: Pistols 2",
+                ItemType = ItemType.SkillChip,
+                CustomProperties = """{"chipPrimaryAttribute":"DEX"}""",
+                Weight = 0.01m,
+                Volume = 0.0001m,
+                Value = 1500,
+                Rarity = ItemRarity.Uncommon,
+                IsActive = true,
+                Tags = "skillchip,combat,pistols",
+                SkillBonuses = [ new ItemSkillBonus { SkillName = "Pistols", BonusType = BonusType.GrantSkill, BonusValue = 2 } ]
+            },
+            new ItemTemplate
+            {
+                Id = 207,
+                Name = "Stealth Chip IV",
+                Description = "Grants Stealth skill at level 4 while loaded in a Skillwire.",
+                ShortDescription = "Skill chip: Stealth 4",
+                ItemType = ItemType.SkillChip,
+                CustomProperties = """{"chipPrimaryAttribute":"DEX"}""",
+                Weight = 0.01m,
+                Volume = 0.0001m,
+                Value = 3500,
+                Rarity = ItemRarity.Rare,
+                IsActive = true,
+                Tags = "skillchip,stealth",
+                SkillBonuses = [ new ItemSkillBonus { SkillName = "Stealth", BonusType = BonusType.GrantSkill, BonusValue = 4 } ]
+            },
+            new ItemTemplate
+            {
                 Id = 203,
                 Name = "Thermographic Optics",
                 Description = "Optical implant providing thermal vision overlay, enhancing awareness in darkness and through smoke.",

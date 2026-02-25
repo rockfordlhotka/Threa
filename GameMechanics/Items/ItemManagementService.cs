@@ -347,6 +347,22 @@ public class ItemManagementService
               "Ammo containers must be loaded using the Reload button. " +
               "Select the magazine/quiver and click Reload.");
           }
+
+          // Validate skill chip slot rules for implant containers
+          if (containerTemplate.MaxChipSlots.HasValue)
+          {
+            // Only SkillChip items allowed in Skillwire implants
+            var itemToMove = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
+            if (itemToMove.ItemType != ItemType.SkillChip)
+              return ItemOperationResult.Failed(
+                "Only skill chips can be loaded into a Skillwire implant.");
+
+            // Count current chips and check against slot limit
+            var existingChips = await _itemDal.GetContainerContentsAsync(containerItemId.Value);
+            if (existingChips.Count >= containerTemplate.MaxChipSlots.Value)
+              return ItemOperationResult.Failed(
+                $"This Skillwire is full ({containerTemplate.MaxChipSlots.Value} chip slots used).");
+          }
         }
       }
 

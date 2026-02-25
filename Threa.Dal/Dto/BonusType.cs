@@ -18,5 +18,8 @@ public enum BonusType
     /// <summary>
     /// Reduces cooldown time for skills.
     /// </summary>
-    CooldownReduction = 2
+    CooldownReduction = 2,
+
+    /// <summary>Grants the skill at the specified level (not additive; overrides if higher than native).</summary>
+    GrantSkill = 3
 }

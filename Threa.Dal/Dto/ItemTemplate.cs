@@ -74,6 +74,11 @@ public class ItemTemplate
     public bool IsContainer { get; set; }
 
     /// <summary>
+    /// Maximum number of skill chips this implant can hold (null = not a chip container).
+    /// </summary>
+    public int? MaxChipSlots { get; set; }
+
+    /// <summary>
     /// Maximum weight the container can hold (if IsContainer).
     /// </summary>
     public decimal? ContainerMaxWeight { get; set; }
