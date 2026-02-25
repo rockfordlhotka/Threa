@@ -189,6 +189,11 @@
         border-color: var(--bs-success);
     }
 
+    .equipment-slot.active-skillwire {
+        background: rgba(13, 202, 240, 0.1);
+        border-left-color: var(--bs-info, #0dcaf0);
+    }
+
     .inventory-actions {
         background: var(--color-bg-tertiary, #f8f9fa);
         border-radius: 0 0 4px 4px;
@@ -435,8 +440,68 @@
         </div>
     </div>
 
-    <!-- Equipment Slots / Container Panel -->
+    <!-- Equipment Slots / Container Panel / Skillwire Panel -->
     <div class="col-md-5">
+        @if (skillwirePanel != null)
+        {
+            var swTemplate = GetTemplate(skillwirePanel.ItemTemplateId);
+            var maxSlots = swTemplate?.MaxChipSlots ?? 0;
+            <div class="card mb-3">
+                <div class="card-header text-white" style="background: var(--bs-info, #0dcaf0);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong><i class="bi bi-cpu me-1"></i>@GetItemName(skillwirePanel)</strong>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseSkillwirePanel"></button>
+                    </div>
+                    <div class="small mt-1">
+                        @skillwireChips.Count / @maxSlots chip slots used
+                        @if (skillwireChips.Count >= maxSlots)
+                        {
+                            <span class="badge bg-danger ms-2">Full</span>
+                        }
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!skillwireChips.Any())
+                    {
+                        <p class="text-muted text-center py-2">No chips loaded.</p>
+                    }
+                    else
+                    {
+                        <div class="container-grid">
+                            @foreach (var chip in skillwireChips)
+                            {
+                                var grantBonus = chip.Template?.SkillBonuses
+                                    .FirstOrDefault(b => b.BonusType == BonusType.GrantSkill);
+                                <div class="container-item @(selectedSkillwireChipId == chip.Id ? "selected" : "")"
+                                     title="@GetItemTooltip(chip)"
+                                     @onclick="() => SelectSkillwireChip(chip)">
+                                    <span class="item-icon">SC</span>
+                                    <span class="item-name">@GetItemDisplayName(chip)</span>
+                                    @if (grantBonus != null)
+                                    {
+                                        <span class="item-qty" style="color: var(--bs-info);">Lv @((int)grantBonus.BonusValue)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (skillwireChips.Count < maxSlots)
+                    {
+                        <p class="text-muted small mt-2 mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select a skill chip in inventory, then click the Skillwire slot to load it.
+                        </p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-warning btn-sm"
+                            disabled="@(selectedSkillwireChip == null)"
+                            @onclick="UnloadChipFromSkillwire">
+                        <i class="bi bi-box-arrow-up"></i> Unload Chip
+                    </button>
+                </div>
+            </div>
+        }
         @if (selectedContainer != null)
         {
             <div class="card">
@@ -518,12 +583,22 @@
                             @foreach (var slot in category.Slots)
                             {
                                 var equipped = GetEquippedItem(slot);
-                                <div class="equipment-slot clickable @(IsValidTarget(slot) ? "valid-target" : "")"
+                                var equippedTpl = equipped != null ? GetTemplate(equipped.ItemTemplateId) : null;
+                                var isSkillwireSlot = equippedTpl?.MaxChipSlots.HasValue == true;
+                                var isActiveSkillwire = skillwirePanel?.Id == equipped?.Id;
+                                <div class="equipment-slot clickable @(IsValidTarget(slot) ? "valid-target" : "") @(isActiveSkillwire ? "active-skillwire" : "")"
                                      @onclick="() => OnEquipmentSlotClick(slot)">
                                     <span class="slot-name">@slot.GetDisplayName()</span>
                                     @if (equipped != null)
                                     {
                                         <span class="slot-item-name">@GetItemDisplayName(equipped)</span>
+                                        @if (isSkillwireSlot)
+                                        {
+                                            var chipCount = GetContainerContents(equipped.Id).Count;
+                                            <span class="badge ms-1" style="background: var(--bs-info);">
+                                                @chipCount/@equippedTpl!.MaxChipSlots
+                                            </span>
+                                        }
                                     }
                                     else
                                     {
@@ -595,6 +670,12 @@
     private List<CharacterItem> containerContents = new();
     private Guid? selectedContainerItemId;
     private CharacterItem? selectedContainerItem;
+
+    // Skillwire chip panel state
+    private CharacterItem? skillwirePanel;
+    private List<CharacterItem> skillwireChips = new();
+    private Guid? selectedSkillwireChipId;
+    private CharacterItem? selectedSkillwireChip;
 
     // Drop quantity dialog state
     private int dropQuantity = 1;
@@ -763,6 +844,8 @@
             ItemType.Treasure => "$",
             ItemType.RawMaterial => "R",
             ItemType.Miscellaneous => "?",
+            ItemType.Implant => "Im",
+            ItemType.SkillChip => "SC",
             _ => "?"
         };
     }
@@ -925,6 +1008,12 @@
             if (!IsContainerItem(item))
             {
                 CloseContainerPanel();
+                // Close skillwire panel unless user is selecting a chip to load
+                var itemTemplate = GetTemplate(item.ItemTemplateId);
+                if (itemTemplate?.ItemType != ItemType.SkillChip)
+                {
+                    CloseSkillwirePanel();
+                }
             }
         }
     }
@@ -942,6 +1031,34 @@
         try
         {
             ClearMessages();
+
+            // Check if the equipped item in this slot is a Skillwire chip container
+            var equippedInSlot = GetEquippedItem(slot);
+            var equippedInSlotTemplate = equippedInSlot != null ? GetTemplate(equippedInSlot.ItemTemplateId) : null;
+            if (equippedInSlotTemplate?.MaxChipSlots.HasValue == true)
+            {
+                if (selectedItem != null)
+                {
+                    // User has an item selected — must be a skill chip to load
+                    var selectedTemplate = GetTemplate(selectedItem.ItemTemplateId);
+                    if (selectedTemplate?.ItemType == ItemType.SkillChip)
+                    {
+                        await LoadChipIntoSkillwire(selectedItem.Id, equippedInSlot!.Id);
+                        return;
+                    }
+                    else
+                    {
+                        errorMessage = "Only skill chips can be loaded into a Skillwire. Select a skill chip from inventory first.";
+                        return;
+                    }
+                }
+                else
+                {
+                    // No item selected — open chip management panel
+                    OpenSkillwirePanel(equippedInSlot!);
+                    return;
+                }
+            }
 
             // If no item selected, check if we should unequip
             if (selectedItem == null)
@@ -1123,6 +1240,8 @@
         // Clear container item selection
         selectedContainerItemId = null;
         selectedContainerItem = null;
+        // Opening a container panel closes the skillwire panel
+        CloseSkillwirePanel();
     }
 
     private void CloseContainerPanel()
@@ -1131,6 +1250,116 @@
         containerContents.Clear();
         selectedContainerItemId = null;
         selectedContainerItem = null;
+    }
+
+    // ==========================================
+    // Skillwire Chip Panel Methods
+    // ==========================================
+
+    private void OpenSkillwirePanel(CharacterItem skillwire)
+    {
+        skillwirePanel = skillwire;
+        skillwireChips = GetContainerContents(skillwire.Id);
+        selectedSkillwireChipId = null;
+        selectedSkillwireChip = null;
+        // Opening skillwire panel closes the regular container panel
+        CloseContainerPanel();
+    }
+
+    private void CloseSkillwirePanel()
+    {
+        skillwirePanel = null;
+        skillwireChips.Clear();
+        selectedSkillwireChipId = null;
+        selectedSkillwireChip = null;
+    }
+
+    private void SelectSkillwireChip(CharacterItem chip)
+    {
+        if (selectedSkillwireChipId == chip.Id)
+        {
+            selectedSkillwireChipId = null;
+            selectedSkillwireChip = null;
+        }
+        else
+        {
+            selectedSkillwireChipId = chip.Id;
+            selectedSkillwireChip = chip;
+        }
+    }
+
+    private async Task LoadChipIntoSkillwire(Guid chipId, Guid skillwireId)
+    {
+        try
+        {
+            ClearMessages();
+            var chip = inventoryItems?.FirstOrDefault(i => i.Id == chipId);
+            var skillwire = inventoryItems?.FirstOrDefault(i => i.Id == skillwireId);
+            if (chip == null || skillwire == null)
+            {
+                errorMessage = "Item not found.";
+                return;
+            }
+
+            var result = await itemService.MoveToContainerAsync(Character!, chipId, skillwireId);
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            successMessage = $"Loaded {GetItemName(chip)} into {GetItemName(skillwire)}.";
+            selectedItem = null;
+            selectedItemId = null;
+            await LoadItemsAsync();
+            await NotifyCharacterChanged();
+
+            // Refresh the skillwire panel to show the new chip
+            var updatedSkillwire = inventoryItems?.FirstOrDefault(i => i.Id == skillwireId);
+            if (updatedSkillwire != null)
+                OpenSkillwirePanel(updatedSkillwire);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading chip: {ex.Message}";
+        }
+    }
+
+    private async Task UnloadChipFromSkillwire()
+    {
+        if (selectedSkillwireChip == null || skillwirePanel == null) return;
+
+        try
+        {
+            ClearMessages();
+            var chipName = GetItemName(selectedSkillwireChip);
+            var skillwireId = skillwirePanel.Id;
+
+            var result = await itemService.MoveToContainerAsync(Character!, selectedSkillwireChip.Id, null);
+            if (!result.Success)
+            {
+                errorMessage = result.ErrorMessage;
+                return;
+            }
+
+            successMessage = $"Unloaded {chipName} from Skillwire.";
+            selectedSkillwireChipId = null;
+            selectedSkillwireChip = null;
+
+            await LoadItemsAsync();
+            await NotifyCharacterChanged();
+
+            // Refresh the skillwire panel
+            var updatedSkillwire = inventoryItems?.FirstOrDefault(i => i.Id == skillwireId);
+            if (updatedSkillwire != null)
+                OpenSkillwirePanel(updatedSkillwire);
+            else
+                CloseSkillwirePanel();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error unloading chip: {ex.Message}";
+        }
     }
 
     private void SelectContainerItem(CharacterItem item)
@@ -1337,7 +1566,8 @@
                itemType == ItemType.Armor ||
                itemType == ItemType.Shield ||
                itemType == ItemType.Jewelry ||
-               itemType == ItemType.Clothing;
+               itemType == ItemType.Clothing ||
+               itemType == ItemType.Implant;
     }
 
     private static bool IsSlotCompatible(EquipmentSlot itemSlot, EquipmentSlot targetSlot)
@@ -1377,6 +1607,15 @@
         if (selectedItem == null) return false;
         var template = GetTemplate(selectedItem.ItemTemplateId);
         if (template == null) return false;
+
+        // Skill chips highlight any equipped Skillwire slot as a valid load target
+        if (template.ItemType == ItemType.SkillChip)
+        {
+            var equippedInSlot = GetEquippedItem(slot);
+            var equippedTemplate = equippedInSlot != null ? GetTemplate(equippedInSlot.ItemTemplateId) : null;
+            return equippedTemplate?.MaxChipSlots.HasValue == true;
+        }
+
         if (!IsEquippableType(template.ItemType)) return false;
         return IsSlotCompatible(template.EquipmentSlot, slot);
     }
