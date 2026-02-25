@@ -193,6 +193,12 @@ public class TargetingAttackerData
     public int AttackerCharacterId { get; init; }
 
     /// <summary>
+    /// Special effect string from the loaded ammo (e.g., "Incendiary", "Cryo").
+    /// Null if no ammo or no special effect. Used to apply ammo on-hit effects to the target.
+    /// </summary>
+    public string? AmmoSpecialEffect { get; init; }
+
+    /// <summary>
     /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
     /// </summary>
     public WeaponDamageProfile? GetWeaponDamageProfile()

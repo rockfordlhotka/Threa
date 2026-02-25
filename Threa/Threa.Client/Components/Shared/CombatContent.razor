@@ -679,9 +679,23 @@
                 // TODO: Look up loaded ammo template to check for ammo-provided AOE
                 // For now, inherent AOE is supported; ammo AOE will be checked at attack time
 
+                // Fetch loaded ammo special effect from the magazine item if available
+                string? loadedAmmoSpecialEffect = null;
+                if (ammoState.LoadedMagazineId.HasValue && CharacterItemDal != null)
+                {
+                    try
+                    {
+                        var magazineItem = await CharacterItemDal.GetItemAsync(ammoState.LoadedMagazineId.Value);
+                        var magProps = GameMechanics.Combat.AmmunitionProperties.FromJson(magazineItem?.Template?.CustomProperties);
+                        loadedAmmoSpecialEffect = magProps?.SpecialEffect;
+                    }
+                    catch { /* Non-fatal — skip ammo effect if lookup fails */ }
+                }
+
                 rangedWeapons.Add(new RangedWeaponInfo
                 {
                     ItemId = item.Id,
+                    TemplateId = item.Template?.Id ?? 0,
                     Name = item.Template?.Name ?? "Unknown",
                     SkillName = skillName,
                     SkillAS = skill?.AbilityScore ?? 0,
@@ -695,6 +709,7 @@
                     AcceptsLooseAmmo = rangedProps?.AcceptsLooseAmmo ?? false,
                     LoadedMagazineId = ammoState.LoadedMagazineId,
                     AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
+                    LoadedAmmoSpecialEffect = loadedAmmoSpecialEffect,
                     IsDodgeable = rangedProps?.IsDodgeable ?? true,
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
                     SupportsBurst = rangedProps?.HasFireMode(FireMode.Burst) ?? false,
@@ -1565,6 +1580,8 @@
         Dictionary<string, int>? weaponDmgModifiers = null;
         int weaponTemplateId = 0;
 
+        string? ammoSpecialEffect = null;
+
         if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
         {
             var weapon = rangedWeapons.First();
@@ -1575,6 +1592,8 @@
             weaponName = weapon.Name;
             isDodgeable = weapon.IsDodgeable;
             currentAmmo = weapon.LoadedAmmo;
+            weaponTemplateId = weapon.TemplateId;
+            ammoSpecialEffect = weapon.LoadedAmmoSpecialEffect;
         }
         else if (actionType == TargetingActionType.MeleeAttack)
         {
@@ -1617,7 +1636,8 @@
             UsePhysicality = actionType == TargetingActionType.MeleeAttack,
             WeaponDamageModifiers = weaponDmgModifiers,
             WeaponTemplateId = weaponTemplateId,
-            AttackerCharacterId = Character?.Id ?? 0
+            AttackerCharacterId = Character?.Id ?? 0,
+            AmmoSpecialEffect = ammoSpecialEffect
         };
     }
 

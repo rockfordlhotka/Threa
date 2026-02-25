@@ -14,6 +14,11 @@ public class RangedWeaponInfo
     public Guid ItemId { get; set; }
 
     /// <summary>
+    /// The ItemTemplate ID of the weapon. Used to fetch on-hit effects.
+    /// </summary>
+    public int TemplateId { get; set; }
+
+    /// <summary>
     /// Weapon name.
     /// </summary>
     public string Name { get; set; } = "";
@@ -79,6 +84,12 @@ public class RangedWeaponInfo
     /// Damage modifier from special ammo.
     /// </summary>
     public int AmmoDamageModifier { get; set; }
+
+    /// <summary>
+    /// Special effect string from the loaded ammo (e.g., "Incendiary", "Cryo", "AP").
+    /// Null if the loaded ammo has no special effect.
+    /// </summary>
+    public string? LoadedAmmoSpecialEffect { get; set; }
 
     /// <summary>
     /// Whether the weapon can be dodged (thrown, arrows).

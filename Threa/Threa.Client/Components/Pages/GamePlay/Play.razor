@@ -1615,28 +1615,64 @@ private async Task LoadTableCharactersAsync()
     {
         try
         {
-            var weaponTemplate = await ItemTemplateDal.GetTemplateAsync(attackerData.WeaponTemplateId);
-            if (weaponTemplate?.Effects == null || !weaponTemplate.Effects.Any())
-                return;
-
             // Armor was penetrated if any damage got through
             bool armorPenetrated = resolution.FATDamage > 0 || resolution.VITDamage > 0;
 
-            var context = new GameMechanics.Combat.Effects.AttackEffectContext
+            AttackEffectContext context;
+
+            if (!string.IsNullOrEmpty(attackerData.AmmoSpecialEffect))
             {
-                Attacker = null, // Attacker's CharacterEdit not available on defender's page; buff effects skipped
-                Target = target,
-                WeaponTemplate = weaponTemplate,
-                AttackSV = resolution.SuccessValue,
-                HitLocation = resolution.HitLocation,
-                IsCriticalHit = GameMechanics.Combat.Effects.AttackEffectContext.IsCritical(resolution.SuccessValue),
-                BaseDamageType = attackerData.DamageType,
-                ArmorWasPenetrated = armorPenetrated,
-                // Armor/shield DC not tracked in targeting resolution; use 0 (no DC restriction from armor)
-                ArmorDamageClass = null,
-                ShieldDamageClass = null,
-                TargetDamageClass = 0
-            };
+                // Ranged attack with special ammo — use RangedAttackEffectContext so ammo effects are collected
+                var weaponTemplate = attackerData.WeaponTemplateId > 0
+                    ? await ItemTemplateDal.GetTemplateAsync(attackerData.WeaponTemplateId)
+                    : null;
+
+                var ammoProperties = new GameMechanics.Combat.AmmunitionProperties
+                {
+                    SpecialEffect = attackerData.AmmoSpecialEffect,
+                    DamageModifier = attackerData.AmmoDamageModifier
+                };
+
+                context = new GameMechanics.Combat.Effects.RangedAttackEffectContext
+                {
+                    Attacker = null,
+                    Target = target,
+                    WeaponTemplate = weaponTemplate,
+                    AmmoProperties = ammoProperties,
+                    AttackSV = resolution.SuccessValue,
+                    HitLocation = resolution.HitLocation,
+                    IsCriticalHit = AttackEffectContext.IsCritical(resolution.SuccessValue),
+                    BaseDamageType = attackerData.DamageType,
+                    ArmorWasPenetrated = armorPenetrated,
+                    ArmorDamageClass = null,
+                    ShieldDamageClass = null,
+                    TargetDamageClass = 0
+                };
+            }
+            else
+            {
+                // Melee or ranged with no special ammo — weapon template effects only
+                if (attackerData.WeaponTemplateId <= 0) return;
+
+                var weaponTemplate = await ItemTemplateDal.GetTemplateAsync(attackerData.WeaponTemplateId);
+                if (weaponTemplate?.Effects == null || !weaponTemplate.Effects.Any(e => e.IsActive))
+                    return;
+
+                context = new AttackEffectContext
+                {
+                    Attacker = null,
+                    Target = target,
+                    WeaponTemplate = weaponTemplate,
+                    AttackSV = resolution.SuccessValue,
+                    HitLocation = resolution.HitLocation,
+                    IsCriticalHit = AttackEffectContext.IsCritical(resolution.SuccessValue),
+                    BaseDamageType = attackerData.DamageType,
+                    ArmorWasPenetrated = armorPenetrated,
+                    ArmorDamageClass = null,
+                    ShieldDamageClass = null,
+                    TargetDamageClass = 0
+                };
+            }
 
             var effects = await AttackEffectService.CollectAttackEffectsAsync(context);
             if (effects.HasEffects)
