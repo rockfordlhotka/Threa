@@ -249,12 +249,27 @@
                         <div class="d-flex flex-wrap gap-2">
                             @foreach (var skill in GetStandardSkills())
                             {
+                                var skillCtx = new GameMechanics.SkillCheckContext(skill.Name, skill.PrimaryAttribute, skill.AbilityScore);
                                 <button class="btn combat-tile combat-tile-skills @(!CanAct() ? "combat-tile-dimmed" : "")"
-                                        @onclick="() => StartSkillCheckWithSkill(skill)"
+                                        @onclick="() => StartSkillCheckWithSkill(skillCtx)"
                                         disabled="@(!CanAct())"
                                         title="@(CanAct() ? $"{skill.Name} (AS {skill.AbilityScore}) - 1 AP + 1 FAT" : $"{skill.Name} requires 1 AP + 1 FAT")">
                                     <i class="bi bi-check-circle"></i>
                                     <span>@skill.Name</span>
+                                </button>
+                            }
+                            @foreach (var granted in (Character?.GetChipGrantedSkills() ?? Enumerable.Empty<GameMechanics.Items.GrantedSkillInfo>())
+                                .Where(g => !(Character?.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false)))
+                            {
+                                var chipAS = GameMechanics.SkillEdit.GetAttributeBase(Character!, granted.PrimaryAttribute) + granted.SkillLevel;
+                                var chipCtx = new GameMechanics.SkillCheckContext(granted.SkillName, granted.PrimaryAttribute, chipAS, IsChipSkill: true);
+                                <button class="btn combat-tile combat-tile-skills @(!CanAct() ? "combat-tile-dimmed" : "")"
+                                        @onclick="() => StartSkillCheckWithSkill(chipCtx)"
+                                        disabled="@(!CanAct())"
+                                        title="@(CanAct() ? $"{granted.SkillName} via chip (AS {chipAS}) - 1 AP + 1 FAT" : $"{granted.SkillName} requires 1 AP + 1 FAT")"
+                                        style="border-color: var(--bs-info); color: var(--bs-info);">
+                                    <i class="bi bi-cpu"></i>
+                                    <span>@granted.SkillName</span>
                                 </button>
                             }
                         </div>
@@ -519,7 +534,7 @@
     private List<GameMechanics.SkillEdit> filteredSkills = new();
     private List<GameMechanics.SkillEdit> attackSkills = new();
     private GameMechanics.SkillEdit? selectedSkill;
-    private GameMechanics.SkillEdit? preselectedSkillForCheck;
+    private GameMechanics.SkillCheckContext? preselectedSkillForCheck;
     private List<CharacterItem> equippedItems = new();
 
     // Equipment state
@@ -971,7 +986,7 @@
         StartSkillCheckWithSkill(null);
     }
 
-    private void StartSkillCheckWithSkill(GameMechanics.SkillEdit? skill)
+    private void StartSkillCheckWithSkill(GameMechanics.SkillCheckContext? skill)
     {
         // Skill checks end parry mode
         if (Character != null && CombatStanceBehavior.IsInParryMode(Character))

@@ -9,7 +9,11 @@
 
     <!-- Skills grouped by attribute -->
     <div class="skill-groups">
-        @foreach (var group in GetGroupedSkills())
+        @{
+            var grouped = GetGroupedSkills().ToList();
+            var chipSkills = GetChipOnlySkills().ToList();
+        }
+        @foreach (var group in grouped)
         {
             <div class="card mb-2">
                 <div class="card-header py-1 px-2 bg-light">
@@ -19,7 +23,7 @@
                     @foreach (var skill in group)
                     {
                         <button class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center"
-                                @onclick="() => SelectSkill(skill)">
+                                @onclick="() => SelectNativeSkill(skill)">
                             <span>@skill.Name</span>
                             <span class="badge bg-primary">AS @skill.AbilityScore</span>
                         </button>
@@ -28,7 +32,26 @@
             </div>
         }
 
-        @if (!GetGroupedSkills().Any())
+        @if (chipSkills.Count > 0)
+        {
+            <div class="card mb-2" style="border-color: var(--bs-info);">
+                <div class="card-header py-1 px-2" style="background: rgba(13,202,240,0.15);">
+                    <strong class="small" style="color: var(--bs-info);"><i class="bi bi-cpu me-1"></i>Chip Skills</strong>
+                </div>
+                <div class="list-group list-group-flush">
+                    @foreach (var ctx in chipSkills)
+                    {
+                        <button class="list-group-item list-group-item-action py-2 px-3 d-flex justify-content-between align-items-center"
+                                @onclick="() => SelectContext(ctx)">
+                            <span>@ctx.Name <small class="text-muted">(@ctx.PrimaryAttribute)</small></span>
+                            <span class="badge" style="background: var(--bs-info);">AS @ctx.AbilityScore</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (!grouped.Any() && chipSkills.Count == 0)
         {
             <p class="text-muted text-center mt-3">No skills found.</p>
         }
@@ -82,9 +105,35 @@
         return AttributeDisplayNames.GetValueOrDefault(attr, attr);
     }
 
-    private void SelectSkill(GameMechanics.SkillEdit skill)
+    private IEnumerable<GameMechanics.SkillCheckContext> GetChipOnlySkills()
     {
-        DialogService.Close(skill);
+        if (Character == null) return Enumerable.Empty<GameMechanics.SkillCheckContext>();
+
+        var chipSkills = Character.GetChipGrantedSkills()
+            .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false));
+
+        if (!string.IsNullOrWhiteSpace(searchFilter))
+            chipSkills = chipSkills.Where(g => g.SkillName.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
+
+        return chipSkills
+            .OrderBy(g => g.PrimaryAttribute)
+            .ThenBy(g => g.SkillName)
+            .Select(g => new GameMechanics.SkillCheckContext(
+                Name: g.SkillName,
+                PrimaryAttribute: g.PrimaryAttribute,
+                AbilityScore: GameMechanics.SkillEdit.GetAttributeBase(Character, g.PrimaryAttribute) + g.SkillLevel,
+                IsChipSkill: true));
+    }
+
+    private void SelectNativeSkill(GameMechanics.SkillEdit skill)
+    {
+        var ctx = new GameMechanics.SkillCheckContext(skill.Name, skill.PrimaryAttribute, skill.AbilityScore);
+        DialogService.Close(ctx);
+    }
+
+    private void SelectContext(GameMechanics.SkillCheckContext ctx)
+    {
+        DialogService.Close(ctx);
     }
 
     private void Cancel()

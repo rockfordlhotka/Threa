@@ -265,10 +265,10 @@
     public EventCallback<string> OnSkillCheckComplete { get; set; }
 
     [Parameter]
-    public GameMechanics.SkillEdit? PreselectedSkill { get; set; }
+    public GameMechanics.SkillCheckContext? PreselectedSkill { get; set; }
 
     // Skill selection state
-    private GameMechanics.SkillEdit? selectedSkill;
+    private GameMechanics.SkillCheckContext? selectedSkill;
     private bool modalOpened;
 
     // Setup state
@@ -322,7 +322,7 @@
                 Height = "600px"
             });
 
-        if (result is GameMechanics.SkillEdit skill)
+        if (result is GameMechanics.SkillCheckContext skill)
         {
             selectedSkill = skill;
         }
@@ -347,7 +347,7 @@
                 Height = "600px"
             });
 
-        if (result is GameMechanics.SkillEdit skill)
+        if (result is GameMechanics.SkillCheckContext skill)
         {
             selectedSkill = skill;
             // Reset boost when changing skill
