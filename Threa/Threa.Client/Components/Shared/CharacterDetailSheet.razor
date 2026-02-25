@@ -245,30 +245,39 @@
                         </div>
                     }
 
-                    @if (Character?.GetChipGrantedSkills()
-                             .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
-                             .Any() == true)
-                    {
-                        <hr class="my-2" />
-                        <div class="small text-info fw-semibold mb-1">
-                            <i class="bi bi-cpu me-1"></i>Chip Skills
-                        </div>
-                        @foreach (var granted in Character!.GetChipGrantedSkills()
-                            .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
-                            .OrderBy(g => g.SkillName))
-                        {
-                            var chipAS = GameMechanics.SkillEdit.GetAttributeBase(Character!, granted.PrimaryAttribute) + granted.SkillLevel;
-                            <div class="d-flex align-items-center gap-1 small" title="@granted.ChipName">
-                                <span class="flex-grow-1 text-truncate text-info">@granted.SkillName</span>
-                                <span class="text-muted" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@granted.PrimaryAttribute</span>
-                                <span style="width: 24px; text-align: right;">@granted.SkillLevel</span>
-                                <span class="badge bg-info" style="font-size: 0.65rem;" title="AS from chip">@chipAS</span>
-                            </div>
-                        }
-                    }
                 }
             </div>
         </div>
+
+        @{
+            var chipOnlySkillsForCard = Character?.GetChipGrantedSkills()
+                .Where(g => !(Character.Skills?.Any(s => s.Name.Equals(g.SkillName, StringComparison.OrdinalIgnoreCase)) ?? false))
+                .OrderBy(g => g.SkillName)
+                .ToList();
+        }
+        @if (chipOnlySkillsForCard != null && chipOnlySkillsForCard.Count > 0)
+        {
+            <div class="card mt-2" style="border-color: var(--bs-info);">
+                <div class="card-header py-2" style="background: rgba(13,202,240,0.15);">
+                    <strong class="small" style="color: var(--bs-info);">
+                        <i class="bi bi-cpu me-1"></i>Chip Skills
+                    </strong>
+                    <span class="badge ms-1" style="background: var(--bs-info); font-size: 0.65rem;">@chipOnlySkillsForCard.Count</span>
+                </div>
+                <div class="card-body py-2">
+                    @foreach (var granted in chipOnlySkillsForCard)
+                    {
+                        var chipAS = GameMechanics.SkillEdit.GetAttributeBase(Character!, granted.PrimaryAttribute) + granted.SkillLevel;
+                        <div class="d-flex align-items-center gap-1 small mb-1" title="@granted.ChipName">
+                            <span class="flex-grow-1 text-truncate" style="color: var(--bs-info);">@granted.SkillName</span>
+                            <span class="text-muted" style="width: 65px; text-align: center; flex-shrink: 0; white-space: nowrap;">@granted.PrimaryAttribute</span>
+                            <span style="width: 24px; text-align: right;">@granted.SkillLevel</span>
+                            <span class="badge" style="background: var(--bs-info); font-size: 0.65rem;" title="Ability Score from chip">@chipAS</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 </div>
 
