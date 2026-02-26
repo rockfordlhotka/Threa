@@ -17,7 +17,9 @@
             <strong>Administrative Actions</strong> - These actions are rarely needed during normal gameplay.
         </div>
 
-        <!-- Remove from Table -->
+        <!-- Remove from Table (player characters only) -->
+        @if (Character?.IsNpc != true)
+        {
         <div class="card">
             <div class="card-header bg-danger text-white">
                 <strong><i class="bi bi-person-x me-1"></i>Remove from Table</strong>
@@ -32,6 +34,7 @@
                 </button>
             </div>
         </div>
+        }
 
         @* NPC Lifecycle Section - Only shown for NPCs *@
         @if (Character?.IsNpc == true)

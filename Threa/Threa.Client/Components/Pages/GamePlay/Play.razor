@@ -8,6 +8,7 @@
 @implements IDisposable
 
 @using GameMechanics.Messaging
+@using GameMechanics.Combat
 @using GameMechanics.Combat.Effects
 @using Threa.Services
 @using Threa.Client.Services
@@ -1538,6 +1539,20 @@ private async Task LoadTableCharactersAsync()
         if (currentTargetingInteraction == null) return;
         if (confirmed)
         {
+            // Deduct attack action costs when attacker locks in
+            if (character != null)
+            {
+                var data = currentTargetingInteraction.AttackerData;
+                int baseAPCost = data.ActionCostType == ActionCostType.TwoAP ? 2 : 1;
+                int baseFATCost = data.ActionCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+                character.ActionPoints.Available -= baseAPCost + data.APBoost;
+                character.ActionPoints.ActionsTakenThisRound += 1;
+                character.Fatigue.Value -= baseFATCost + data.FATBoost;
+
+                if (character is Csla.Core.ISavable savable)
+                    await savable.SaveAsync();
+            }
             await TargetingManager.ConfirmAttackerAsync(currentTargetingInteraction.InteractionId);
         }
         else
@@ -1551,6 +1566,27 @@ private async Task LoadTableCharactersAsync()
         if (currentTargetingInteraction == null || currentTargetingInteraction.DefenderData == null) return;
         if (confirmed)
         {
+            // Deduct defense costs for active defense when defender locks in
+            if (character != null)
+            {
+                var data = currentTargetingInteraction.DefenderData;
+                bool isActiveDefense = data.DefenseType == DefenseType.Dodge ||
+                                       data.DefenseType == DefenseType.ShieldBlock ||
+                                       (data.DefenseType == DefenseType.Parry && !data.IsInParryMode);
+
+                if (isActiveDefense)
+                {
+                    int baseAPCost = data.DefenseCostType == ActionCostType.TwoAP ? 2 : 1;
+                    int baseFATCost = data.DefenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+                    character.ActionPoints.Available -= baseAPCost + data.APBoost;
+                    character.ActionPoints.ActionsTakenThisRound += 1;
+                    character.Fatigue.Value -= baseFATCost + data.FATBoost;
+
+                    if (character is Csla.Core.ISavable savable)
+                        await savable.SaveAsync();
+                }
+            }
             await TargetingManager.ConfirmDefenderAsync(currentTargetingInteraction.InteractionId);
         }
         else

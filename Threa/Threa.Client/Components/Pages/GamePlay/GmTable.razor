@@ -7,12 +7,14 @@
 @implements IDisposable
 
 @using GameMechanics.Batch
+@using GameMechanics.Combat
 @using GameMechanics.Messaging
 @using GameMechanics.Time
 @using Microsoft.AspNetCore.Authorization
 @using Radzen
 @using Threa.Services
 @using Threa.Client.Components.Shared
+@using Threa.Client.Components.Pages.GamePlay.Targeting
 @using Threa.Dal
 @using Threa.Dal.Dto
 @using System.Security.Claims
@@ -36,6 +38,7 @@
 @inject DialogService DialogService
 @inject TimeAdvancementService TimeAdvancementService
 @inject IGameTimeFormatService TimeFormat
+@inject ITargetingInteractionManager TargetingManager
 
 <PageTitle>GM Table - @(table?.Name ?? "Loading...")</PageTitle>
 
@@ -484,6 +487,34 @@ else
 
         <!-- Right Panel: Time Controls & Activity -->
         <div class="col-md-6">
+            @* Incoming Player Attacks on NPCs *@
+            @if (pendingNpcTargetingRequests.Any())
+            {
+                <div class="card mb-3 border-danger">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <strong><i class="bi bi-exclamation-triangle me-1"></i>Incoming Player Attacks</strong>
+                        <span class="badge bg-white text-danger">@pendingNpcTargetingRequests.Count</span>
+                    </div>
+                    <div class="card-body py-2">
+                        @foreach (var request in pendingNpcTargetingRequests)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: var(--color-bg-tertiary);">
+                                <div>
+                                    <i class="bi bi-person-fill text-primary me-1"></i>
+                                    <strong>@request.AttackerName</strong>
+                                    <span class="text-muted mx-1">→</span>
+                                    <i class="bi bi-person-badge text-secondary me-1"></i>
+                                    <strong>@request.DefenderName</strong>
+                                </div>
+                                <button class="btn btn-sm btn-danger" @onclick="() => OpenNpcTargetingModal(request)">
+                                    <i class="bi bi-shield me-1"></i>Defend
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <!-- Time Controls -->
             <div class="card mb-3">
                 <div class="card-header">
@@ -618,6 +649,33 @@ else
     </div>
 }
 
+@* NPC Targeting Modal - GM acts as defender for incoming PC attacks on NPCs *@
+@if (showNpcTargetingModal && currentNpcTargetingInteraction != null)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <TargetingModal Interaction="@currentNpcTargetingInteraction"
+                                IsAttacker="false"
+                                maxAPBoost="@GetNpcMaxAPBoost()"
+                                maxFATBoost="@GetNpcMaxFATBoost()"
+                                defenderDodgeAS="@GetNpcDodgeAS()"
+                                defenderParryAS="@GetNpcParryAS()"
+                                defenderIsInParryMode="false"
+                                defenderCanActiveDefense="@GetNpcCanActiveDefense()"
+                                defenderCanParry="@GetNpcCanParry()"
+                                OnAttackerDataUpdated="UpdateNpcAttackerData"
+                                OnDefenderDataUpdated="UpdateNpcDefenderData"
+                                OnAttackerConfirmChanged="ToggleNpcAttackerConfirm"
+                                OnDefenderConfirmChanged="ToggleNpcDefenderConfirm"
+                                OnCancel="CancelNpcTargeting"
+                                OnClose="CloseNpcTargetingModal"
+                                OnAcceptDamage="AcceptNpcTargetingDamage" />
+            </div>
+        </div>
+    </div>
+}
+
 @* RadzenDialog must be in the interactive context for DialogService to work *@
 <RadzenDialog />
 
@@ -683,6 +741,12 @@ else
     // Selection state for batch operations
     private HashSet<int> selectedCharacterIds = new();
 
+    // NPC targeting state - GM acts as defender for incoming PC attacks on NPCs
+    private List<TargetingRequestMessage> pendingNpcTargetingRequests = new();
+    private TargetingInteraction? currentNpcTargetingInteraction;
+    private bool showNpcTargetingModal;
+    private GameMechanics.CharacterEdit? targetedNpc;
+
     private record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
     protected override async Task OnInitializedAsync()
@@ -709,6 +773,10 @@ else
         TimeEventSubscriber.TimeSkipReceived += OnTimeSkipReceived;
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
         TimeEventSubscriber.JoinRequestReceived += OnJoinRequestReceived;
+        TimeEventSubscriber.TargetingRequestReceived += OnTargetingRequestReceived;
+        TimeEventSubscriber.TargetingUpdateReceived += OnTargetingUpdateReceived;
+        TimeEventSubscriber.TargetingResultReceived += OnTargetingResultReceived;
+        TimeEventSubscriber.TargetingCancelledReceived += OnTargetingCancelledReceived;
         timeEventSubscribed = true;
     }
 
@@ -868,6 +936,10 @@ else
         TimeEventSubscriber.TimeSkipReceived -= OnTimeSkipReceived;
         TimeEventSubscriber.CharacterUpdateReceived -= OnCharacterUpdateReceived;
         TimeEventSubscriber.JoinRequestReceived -= OnJoinRequestReceived;
+        TimeEventSubscriber.TargetingRequestReceived -= OnTargetingRequestReceived;
+        TimeEventSubscriber.TargetingUpdateReceived -= OnTargetingUpdateReceived;
+        TimeEventSubscriber.TargetingResultReceived -= OnTargetingResultReceived;
+        TimeEventSubscriber.TargetingCancelledReceived -= OnTargetingCancelledReceived;
         await TimeEventSubscriber.UnsubscribeAsync();
         timeEventSubscribed = false;
     }
@@ -1633,5 +1705,227 @@ else
         // Refresh character list to show updated state (health, visibility, or removed NPCs)
         await RefreshCharacterListAsync();
         StateHasChanged();
+    }
+
+    // ================================
+    // NPC Targeting - GM as Defender
+    // ================================
+
+    private void OnTargetingRequestReceived(object? sender, TargetingRequestMessage e)
+    {
+        if (_disposed || table == null || e.TableId != table.Id) return;
+
+        // Only handle attacks targeting NPCs at this table
+        var targetNpc = tableCharacters?.FirstOrDefault(c => c.CharacterId == e.DefenderId && c.IsNpc);
+        if (targetNpc == null) return;
+
+        _ = InvokeAsync(() =>
+        {
+            pendingNpcTargetingRequests.Add(e);
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingUpdateReceived(object? sender, TargetingUpdateMessage e)
+    {
+        if (_disposed || table == null || e.TableId != table.Id) return;
+        if (currentNpcTargetingInteraction == null || e.InteractionId != currentNpcTargetingInteraction.InteractionId) return;
+
+        _ = InvokeAsync(() =>
+        {
+            var interaction = TargetingManager.GetInteraction(e.InteractionId);
+            if (interaction != null)
+                currentNpcTargetingInteraction = interaction;
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingResultReceived(object? sender, TargetingResultMessage e)
+    {
+        if (_disposed || table == null || e.TableId != table.Id) return;
+
+        _ = InvokeAsync(() =>
+        {
+            if (currentNpcTargetingInteraction != null && e.InteractionId == currentNpcTargetingInteraction.InteractionId)
+            {
+                var interaction = TargetingManager.GetInteraction(e.InteractionId);
+                if (interaction != null)
+                    currentNpcTargetingInteraction = interaction;
+            }
+            pendingNpcTargetingRequests.RemoveAll(r => r.InteractionId == e.InteractionId);
+            StateHasChanged();
+        });
+    }
+
+    private void OnTargetingCancelledReceived(object? sender, TargetingCancelledMessage e)
+    {
+        if (_disposed || table == null || e.TableId != table.Id) return;
+
+        _ = InvokeAsync(() =>
+        {
+            if (currentNpcTargetingInteraction != null && e.InteractionId == currentNpcTargetingInteraction.InteractionId)
+            {
+                var interaction = TargetingManager.GetInteraction(e.InteractionId);
+                if (interaction != null)
+                    currentNpcTargetingInteraction = interaction;
+            }
+            pendingNpcTargetingRequests.RemoveAll(r => r.InteractionId == e.InteractionId);
+            StateHasChanged();
+        });
+    }
+
+    private async Task OpenNpcTargetingModal(TargetingRequestMessage request)
+    {
+        var interaction = TargetingManager.GetInteraction(request.InteractionId);
+        if (interaction == null) return;
+
+        try
+        {
+            targetedNpc = await characterPortal.FetchAsync(request.DefenderId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GmTable] Failed to load NPC for targeting: {ex.Message}");
+            targetedNpc = null;
+        }
+
+        currentNpcTargetingInteraction = interaction;
+        showNpcTargetingModal = true;
+        StateHasChanged();
+    }
+
+    private int GetNpcMaxAPBoost() =>
+        targetedNpc == null ? 0 : Math.Max(0, targetedNpc.ActionPoints.Available - 1);
+
+    private int GetNpcMaxFATBoost() =>
+        targetedNpc == null ? 0 : Math.Max(0, targetedNpc.Fatigue.Value - 1);
+
+    private int GetNpcDodgeAS()
+    {
+        if (targetedNpc == null) return 0;
+        var skill = targetedNpc.Skills.FirstOrDefault(s =>
+            s.Name.Equals("Dodge", StringComparison.OrdinalIgnoreCase));
+        return skill?.AbilityScore ?? 0;
+    }
+
+    private int GetNpcParryAS()
+    {
+        if (targetedNpc == null) return 0;
+        var equippedItems = targetedNpc.GetEquippedItems();
+        var mainHand = equippedItems?.FirstOrDefault(i => i.Item.EquippedSlot == EquipmentSlot.MainHand);
+        if (mainHand?.Template?.RelatedSkill != null)
+        {
+            var skill = targetedNpc.Skills.FirstOrDefault(s =>
+                s.Id.Equals(mainHand.Template.RelatedSkill, StringComparison.OrdinalIgnoreCase));
+            return skill?.AbilityScore ?? 0;
+        }
+        return 0;
+    }
+
+    private bool GetNpcCanActiveDefense()
+    {
+        if (targetedNpc == null) return false;
+        return !targetedNpc.IsPassedOut &&
+               ((targetedNpc.ActionPoints.Available >= 1 && targetedNpc.Fatigue.Value >= 1) ||
+                targetedNpc.ActionPoints.Available >= 2);
+    }
+
+    private bool GetNpcCanParry() => GetNpcCanActiveDefense();
+
+    private async Task UpdateNpcAttackerData(TargetingAttackerData data)
+    {
+        if (currentNpcTargetingInteraction == null) return;
+        await TargetingManager.UpdateAttackerDataAsync(currentNpcTargetingInteraction.InteractionId, data);
+    }
+
+    private async Task UpdateNpcDefenderData(TargetingDefenderData data)
+    {
+        if (currentNpcTargetingInteraction == null) return;
+        await TargetingManager.UpdateDefenderDataAsync(currentNpcTargetingInteraction.InteractionId, data);
+    }
+
+    private async Task ToggleNpcAttackerConfirm(bool confirmed)
+    {
+        if (currentNpcTargetingInteraction == null) return;
+        // The attacker is a player character — their costs are deducted on their own Play.razor client.
+        // The GM only confirms on the attacker's behalf if needed; no local character to charge here.
+        if (confirmed)
+            await TargetingManager.ConfirmAttackerAsync(currentNpcTargetingInteraction.InteractionId);
+        else
+            await TargetingManager.UpdateAttackerDataAsync(currentNpcTargetingInteraction.InteractionId, currentNpcTargetingInteraction.AttackerData, false);
+    }
+
+    private async Task ToggleNpcDefenderConfirm(bool confirmed)
+    {
+        if (currentNpcTargetingInteraction == null || currentNpcTargetingInteraction.DefenderData == null) return;
+        if (confirmed)
+        {
+            // Deduct defense costs from the NPC when the GM locks in their defense
+            if (targetedNpc != null)
+            {
+                var data = currentNpcTargetingInteraction.DefenderData;
+                bool isActiveDefense = data.DefenseType == DefenseType.Dodge ||
+                                       data.DefenseType == DefenseType.ShieldBlock ||
+                                       (data.DefenseType == DefenseType.Parry && !data.IsInParryMode);
+
+                if (isActiveDefense)
+                {
+                    int baseAPCost = data.DefenseCostType == ActionCostType.TwoAP ? 2 : 1;
+                    int baseFATCost = data.DefenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+                    targetedNpc.ActionPoints.Available -= baseAPCost + data.APBoost;
+                    targetedNpc.ActionPoints.ActionsTakenThisRound += 1;
+                    targetedNpc.Fatigue.Value -= baseFATCost + data.FATBoost;
+
+                    if (targetedNpc is Csla.Core.ISavable savable)
+                        await savable.SaveAsync();
+                }
+            }
+            await TargetingManager.ConfirmDefenderAsync(currentNpcTargetingInteraction.InteractionId);
+        }
+        else
+        {
+            await TargetingManager.UpdateDefenderDataAsync(currentNpcTargetingInteraction.InteractionId, currentNpcTargetingInteraction.DefenderData, false);
+        }
+    }
+
+    private Task CancelNpcTargeting()
+    {
+        // The GM is the defender — only the attacker can cancel, so just close the modal
+        CloseNpcTargetingModal();
+        return Task.CompletedTask;
+    }
+
+    private void CloseNpcTargetingModal()
+    {
+        showNpcTargetingModal = false;
+        if (currentNpcTargetingInteraction != null)
+            pendingNpcTargetingRequests.RemoveAll(r => r.InteractionId == currentNpcTargetingInteraction.InteractionId);
+        currentNpcTargetingInteraction = null;
+        targetedNpc = null;
+    }
+
+    private async Task AcceptNpcTargetingDamage()
+    {
+        if (currentNpcTargetingInteraction == null || targetedNpc == null) return;
+
+        await TargetingManager.AcceptDamageAsync(currentNpcTargetingInteraction.InteractionId);
+
+        var resolution = currentNpcTargetingInteraction.Resolution;
+        if (resolution?.IsHit == true)
+        {
+            targetedNpc.Fatigue.Value -= resolution.FATDamage;
+            targetedNpc.Vitality.Value -= resolution.VITDamage;
+
+            if (targetedNpc is Csla.Core.ISavable savable)
+                await savable.SaveAsync();
+
+            AddLogEntry(
+                $"{currentNpcTargetingInteraction.DefenderName} took {resolution.FATDamage} FAT and {resolution.VITDamage} VIT damage from {currentNpcTargetingInteraction.AttackerName}",
+                ActivityCategory.Combat);
+
+            await RefreshCharacterListAsync();
+            StateHasChanged();
+        }
     }
 }

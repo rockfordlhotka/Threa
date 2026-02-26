@@ -312,6 +312,9 @@
     private async Task ToggleConfirm()
     {
         if (IsReadOnly) return;
+        // Push current state before confirming so DefenderData is never null in the parent
+        if (!IsConfirmed)
+            await OnDataChanged();
         await OnConfirmChanged.InvokeAsync(!IsConfirmed);
     }
 
