@@ -63,14 +63,17 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
         set => SetProperty(EquipmentSlotProperty, value);
     }
 
-    public static readonly PropertyInfo<List<EquipmentSlot>> EquipmentSlotsProperty = RegisterProperty<List<EquipmentSlot>>(nameof(EquipmentSlots));
+    // EquipmentSlots is stored as List<int> so that CSLA's MobileFormatter can
+    // serialize it correctly (int is a native CSLA primitive type).
+    public static readonly PropertyInfo<List<int>> EquipmentSlotsRawProperty = RegisterProperty<List<int>>("EquipmentSlotsRaw");
+
     /// <summary>
     /// Valid slots for this item. Replaces EquipmentSlot as canonical field.
     /// </summary>
     public List<EquipmentSlot> EquipmentSlots
     {
-        get => GetProperty(EquipmentSlotsProperty) ?? [];
-        set => SetProperty(EquipmentSlotsProperty, value);
+        get => (GetProperty(EquipmentSlotsRawProperty) ?? []).Select(i => (EquipmentSlot)i).ToList();
+        set => SetProperty(EquipmentSlotsRawProperty, value.Select(s => (int)s).ToList());
     }
 
     public static readonly PropertyInfo<bool> OccupiesAllSlotsProperty = RegisterProperty<bool>(nameof(OccupiesAllSlots));
