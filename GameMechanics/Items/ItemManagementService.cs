@@ -1,6 +1,8 @@
 using Csla;
 using GameMechanics.Combat;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
 using Threa.Dal.Dto;
@@ -96,17 +98,21 @@ public class ItemManagementService
   }
 
   /// <summary>
-  /// Equips an item from inventory to a specific slot.
+  /// Equips an item from inventory to a slot (or slots for multi-slot items).
   /// Applies equip-triggered effects and handles curse blocking.
   /// </summary>
   /// <param name="character">The character equipping the item.</param>
   /// <param name="itemId">The item to equip.</param>
-  /// <param name="slot">The slot to equip to.</param>
+  /// <param name="chosenSlot">
+  /// The slot chosen by the player. Required when the template has multiple chooseable slots
+  /// (OccupiesAllSlots=false and EquipmentSlots.Count &gt; 1). Ignored when OccupiesAllSlots=true
+  /// or there is only one valid slot.
+  /// </param>
   /// <returns>Result of the operation.</returns>
   public async Task<ItemOperationResult> EquipItemAsync(
     CharacterEdit character,
     Guid itemId,
-    EquipmentSlot slot)
+    EquipmentSlot? chosenSlot = null)
   {
     try
     {
@@ -118,26 +124,42 @@ public class ItemManagementService
       if (item.ContainerItemId.HasValue)
         return ItemOperationResult.Failed("Item must be removed from container before equipping.");
 
-      // Get template for effects
+      // Get template for effects (DAL already normalizes EquipmentSlots)
       var template = await _templateDal.GetTemplateAsync(item.ItemTemplateId);
 
-      // Check if slot is compatible
-      if (template.EquipmentSlot != EquipmentSlot.None && template.EquipmentSlot != slot)
+      // Determine target slots
+      List<EquipmentSlot> targetSlots;
+      if (template.OccupiesAllSlots || template.EquipmentSlots.Count <= 1)
       {
-        // Allow some flexibility for weapon slots
-        if (!IsCompatibleSlot(template.EquipmentSlot, slot))
-          return ItemOperationResult.Failed($"This item cannot be equipped in the {slot.GetDisplayName()} slot.");
+        // Use all template slots (or the single defined slot)
+        targetSlots = template.EquipmentSlots.Count > 0
+          ? template.EquipmentSlots
+          : (chosenSlot.HasValue
+              ? [chosenSlot.Value]
+              : []);
+      }
+      else
+      {
+        // Player must choose one slot from the available list
+        if (!chosenSlot.HasValue)
+          return ItemOperationResult.Failed("A specific slot must be chosen for this item.");
+        if (!template.EquipmentSlots.Contains(chosenSlot.Value))
+          return ItemOperationResult.Failed($"This item cannot be equipped in the {chosenSlot.Value.GetDisplayName()} slot.");
+        targetSlots = [chosenSlot.Value];
       }
 
+      if (targetSlots.Count == 0)
+        return ItemOperationResult.Failed("This item has no valid equipment slots.");
+
       // Check for implant requirements
-      if (slot.IsImplant())
+      if (targetSlots.Any(s => s.IsImplant()))
       {
         // TODO: Check for surgery requirements
         // For now, just allow implant equipping
       }
 
-      // Equip in DAL (handles unequipping existing items)
-      await _itemDal.EquipItemAsync(itemId, slot);
+      // Equip in DAL (handles unequipping existing items in those slots)
+      await _itemDal.EquipItemAsync(itemId, targetSlots);
 
       // Apply equip effects (WhileEquipped)
       if (template.Effects.Count > 0)
@@ -146,7 +168,8 @@ public class ItemManagementService
       }
 
       item.IsEquipped = true;
-      item.EquippedSlot = slot;
+      item.EquippedSlot = targetSlots[0];
+      item.EquippedSlots = targetSlots;
       return ItemOperationResult.Succeeded(item);
     }
     catch (Exception ex)
@@ -181,7 +204,7 @@ public class ItemManagementService
         return ItemOperationResult.Failed(curseCheck.BlockReason!);
 
       // Check for implant removal requirements
-      if (item.EquippedSlot.IsImplant())
+      if (item.EquippedSlot.IsImplant() || item.EquippedSlots.Any(s => s.IsImplant()))
       {
         // TODO: Check for surgery requirements
         // For now, just allow implant removal
@@ -195,6 +218,7 @@ public class ItemManagementService
 
       item.IsEquipped = false;
       item.EquippedSlot = EquipmentSlot.None;
+      item.EquippedSlots = [];
       return ItemOperationResult.Succeeded(item);
     }
     catch (Exception ex)
@@ -287,6 +311,7 @@ public class ItemManagementService
       item.OwnerCharacterId = toCharacter.Id;
       item.IsEquipped = false;
       item.EquippedSlot = EquipmentSlot.None;
+      item.EquippedSlots = [];
       item.ContainerItemId = null;
       await _itemDal.UpdateItemAsync(item);
 
@@ -473,23 +498,4 @@ public class ItemManagementService
     return check.IsAllowed ? null : check.BlockReason;
   }
 
-  private static bool IsCompatibleSlot(EquipmentSlot itemSlot, EquipmentSlot targetSlot)
-  {
-    // Weapons can go in MainHand, OffHand, or TwoHand based on weapon type
-    if (itemSlot == EquipmentSlot.MainHand || itemSlot == EquipmentSlot.OffHand || itemSlot == EquipmentSlot.TwoHand)
-    {
-      return targetSlot == EquipmentSlot.MainHand || 
-             targetSlot == EquipmentSlot.OffHand || 
-             targetSlot == EquipmentSlot.TwoHand;
-    }
-
-    // Rings can go in any finger slot
-    if (itemSlot.IsFingerSlot())
-    {
-      return targetSlot.IsFingerSlot();
-    }
-
-    // Otherwise, must match exactly
-    return itemSlot == targetSlot;
-  }
 }

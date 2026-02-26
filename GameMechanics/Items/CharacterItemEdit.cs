@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Csla;
@@ -45,6 +46,16 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
     {
         get => GetProperty(EquippedSlotProperty);
         set => SetProperty(EquippedSlotProperty, value);
+    }
+
+    public static readonly PropertyInfo<List<EquipmentSlot>> EquippedSlotsProperty = RegisterProperty<List<EquipmentSlot>>(nameof(EquippedSlots));
+    /// <summary>
+    /// All slots currently occupied by this item.
+    /// </summary>
+    public List<EquipmentSlot> EquippedSlots
+    {
+        get => GetProperty(EquippedSlotsProperty) ?? [];
+        set => SetProperty(EquippedSlotsProperty, value);
     }
 
     public static readonly PropertyInfo<bool> IsEquippedProperty = RegisterProperty<bool>(nameof(IsEquipped));
@@ -109,6 +120,7 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
             ItemTemplateId = templateId;
             ContainerItemId = null;
             EquippedSlot = EquipmentSlot.None;
+            EquippedSlots = [];
             IsEquipped = false;
             StackSize = 1;
             CurrentDurability = null;
@@ -136,6 +148,7 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
             OwnerCharacterId = data.OwnerCharacterId;
             ContainerItemId = data.ContainerItemId;
             EquippedSlot = data.EquippedSlot;
+            EquippedSlots = new List<EquipmentSlot>(data.EquippedSlots);
             IsEquipped = data.IsEquipped;
             StackSize = data.StackSize;
             CurrentDurability = data.CurrentDurability;
@@ -156,6 +169,7 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
             OwnerCharacterId = OwnerCharacterId,
             ContainerItemId = ContainerItemId,
             EquippedSlot = EquippedSlot,
+            EquippedSlots = new List<EquipmentSlot>(EquippedSlots),
             IsEquipped = IsEquipped,
             StackSize = StackSize,
             CurrentDurability = CurrentDurability,
@@ -177,6 +191,7 @@ public class CharacterItemEdit : BusinessBase<CharacterItemEdit>
             OwnerCharacterId = OwnerCharacterId,
             ContainerItemId = ContainerItemId,
             EquippedSlot = EquippedSlot,
+            EquippedSlots = new List<EquipmentSlot>(EquippedSlots),
             IsEquipped = IsEquipped,
             StackSize = StackSize,
             CurrentDurability = CurrentDurability,

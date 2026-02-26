@@ -94,11 +94,12 @@ public interface ICharacterItemDal
     Task DeleteItemAsync(Guid id);
 
     /// <summary>
-    /// Equips an item to a specific slot.
+    /// Equips an item to one or more slots.
+    /// Unequips any items currently occupying those slots before equipping.
     /// </summary>
     /// <param name="itemId">The item to equip.</param>
-    /// <param name="slot">The slot to equip to.</param>
-    Task EquipItemAsync(Guid itemId, EquipmentSlot slot);
+    /// <param name="slots">The slots to equip to. Pass multiple slots for items that occupy several slots simultaneously.</param>
+    Task EquipItemAsync(Guid itemId, List<EquipmentSlot> slots);
 
     /// <summary>
     /// Unequips an item.

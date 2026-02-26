@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Combat
@@ -55,6 +56,15 @@ namespace GameMechanics.Combat
         _ => []
       };
     }
+
+    /// <summary>
+    /// Gets the combined hit locations covered by armor equipped in multiple slots.
+    /// Deduplicates the results so each location appears at most once.
+    /// </summary>
+    /// <param name="slots">The equipment slots to check.</param>
+    /// <returns>Distinct array of hit locations covered by armor in any of the given slots.</returns>
+    public static HitLocation[] GetCoveredLocations(IEnumerable<EquipmentSlot> slots)
+      => slots.SelectMany(GetCoveredLocations).Distinct().ToArray();
 
     /// <summary>
     /// Gets all equipment slots that could provide armor for a specific hit location.

@@ -39,9 +39,22 @@ public class ItemTemplate
     public WeaponType WeaponType { get; set; }
 
     /// <summary>
-    /// The slot(s) where this item can be equipped.
+    /// The slot where this item can be equipped (legacy single-slot field, kept for backward compatibility).
+    /// Canonical slot data is in <see cref="EquipmentSlots"/>.
     /// </summary>
     public EquipmentSlot EquipmentSlot { get; set; }
+
+    /// <summary>
+    /// Valid slots for this item. Replaces EquipmentSlot as the canonical field.
+    /// When empty and EquipmentSlot != None, the DAL normalizes this to [EquipmentSlot].
+    /// </summary>
+    public List<EquipmentSlot> EquipmentSlots { get; set; } = [];
+
+    /// <summary>
+    /// When true, equipping this item occupies ALL slots in EquipmentSlots simultaneously.
+    /// When false, the player picks one slot from the list.
+    /// </summary>
+    public bool OccupiesAllSlots { get; set; } = false;
 
     /// <summary>
     /// Weight of the item in pounds.

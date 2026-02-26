@@ -99,11 +99,11 @@
 else
 {
     <div class="equipped-items" style="margin-bottom: 2rem;">
-        @foreach (var item in equippedItems.OrderBy(i => i.EquippedSlot))
+        @foreach (var item in equippedItems.OrderBy(i => i.EquippedSlots.Count > 0 ? (int)i.EquippedSlots[0] : (int)i.EquippedSlot))
         {
             <div class="item-card">
                 <div style="font-weight: bold;">
-                    @GetEquippedSlotName(item.EquippedSlot): @(item.Template?.Name ?? "Unknown Item")
+                    @GetEquippedSlotDisplayName(item): @(item.Template?.Name ?? "Unknown Item")
                     @if (item.CustomName != null)
                     {
                         <span class="custom-name"> "@item.CustomName"</span>
@@ -330,28 +330,47 @@ else
                                     Weight: @((item.Template.Weight * item.StackSize).ToString("F1")) lbs @if(item.StackSize > 1){ <span>(@item.Template.Weight ea)</span> } | Value: @FormatCurrency(item.Template.Value)
                                 </div>
                             }
-                            @if (item.Template?.EquipmentSlot != EquipmentSlot.None && item.Template?.EquipmentSlot != null)
+                            @{
+                                var templateSlots = item.Template?.EquipmentSlots.Count > 0
+                                    ? item.Template.EquipmentSlots
+                                    : (item.Template?.EquipmentSlot != EquipmentSlot.None
+                                        ? new List<EquipmentSlot> { item.Template!.EquipmentSlot }
+                                        : new List<EquipmentSlot>());
+                                var occupiesAll = item.Template?.OccupiesAllSlots ?? false;
+                            }
+                            @if (templateSlots.Count > 0)
                             {
                                 <div style="margin-top: 0.5rem;">
-                                    @if (item.Template!.ItemType == ItemType.Weapon)
+                                    @if (occupiesAll || templateSlots.Count == 1)
                                     {
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" @onclick="() => EquipItemAsync(item, EquipmentSlot.MainHand)" title="Equip in main hand">
-                                                Main Hand
-                                            </button>
-                                            <button class="btn btn-outline-primary" @onclick="() => EquipItemAsync(item, EquipmentSlot.OffHand)" title="Equip in off hand">
-                                                Off Hand
-                                            </button>
-                                            <button class="btn btn-outline-primary" @onclick="() => EquipItemAsync(item, EquipmentSlot.TwoHand)" title="Equip as two-handed">
-                                                Two Hand
-                                            </button>
-                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => EquipMultiSlotAsync(item, templateSlots)">
+                                            Equip
+                                            @if (templateSlots.Count > 1)
+                                            {
+                                                <span class="ms-1 text-muted" style="font-size:0.8em;">
+                                                    (@string.Join("+", templateSlots.Select(s => s.GetDisplayName())))
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="ms-1">(@templateSlots[0].GetDisplayName())</span>
+                                            }
+                                        </button>
                                     }
                                     else
                                     {
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EquipItemAsync(item, item.Template.EquipmentSlot)">
-                                            Equip (@item.Template.EquipmentSlot.GetDisplayName())
-                                        </button>
+                                        <div class="btn-group btn-group-sm">
+                                            @foreach (var slot in templateSlots)
+                                            {
+                                                var capturedSlot = slot;
+                                                <button class="btn btn-outline-primary"
+                                                        @onclick="() => EquipMultiSlotAsync(item, new List<EquipmentSlot> { capturedSlot })"
+                                                        title="@capturedSlot.GetDisplayName()">
+                                                    @capturedSlot.GetDisplayName()
+                                                </button>
+                                            }
+                                        </div>
                                     }
                                 </div>
                             }
@@ -626,12 +645,12 @@ else
         }
     }
     
-    private async Task EquipItemAsync(CharacterItem item, EquipmentSlot slot)
+    private async Task EquipMultiSlotAsync(CharacterItem item, List<EquipmentSlot> slots)
     {
         try
         {
             errorMessage = null;
-            await itemDal.EquipItemAsync(item.Id, slot);
+            await itemDal.EquipItemAsync(item.Id, slots);
             await LoadItemsAsync();
             StateHasChanged();
         }
@@ -662,6 +681,14 @@ else
             return new List<CharacterItem>();
 
         return allItems.Where(i => i.ContainerItemId == containerId).ToList();
+    }
+
+    private string GetEquippedSlotDisplayName(CharacterItem item)
+    {
+        var slots = item.EquippedSlots.Count > 0 ? item.EquippedSlots : (item.EquippedSlot != EquipmentSlot.None ? new List<EquipmentSlot> { item.EquippedSlot } : new List<EquipmentSlot>());
+        if (slots.Count == 0) return "Unknown Slot";
+        if (slots.Count == 1) return GetEquippedSlotName(slots[0]);
+        return string.Join("+", slots.Select(GetEquippedSlotName));
     }
 
     private string GetEquippedSlotName(EquipmentSlot slot)
