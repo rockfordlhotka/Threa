@@ -337,4 +337,53 @@ public class ItemTemplateTests : TestBase
     }
 
     #endregion
+
+    #region EquipmentSlots Serialization Tests
+
+    [TestMethod]
+    public async Task ItemTemplateEdit_EquipmentSlots_SurvivesClone()
+    {
+        // Clone() uses CSLA's MobileFormatter - the same path as the data portal.
+        // If MobileList<int> serializes correctly, the clone will match the original.
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<ItemTemplateEdit>>();
+
+        var template = await dp.CreateAsync();
+        template.Name = "Boots";
+        template.ItemType = ItemType.Armor;
+        template.EquipmentSlots = [EquipmentSlot.FootLeft, EquipmentSlot.FootRight];
+        template.OccupiesAllSlots = true;
+
+        var clone = template.Clone() as ItemTemplateEdit;
+
+        Assert.IsNotNull(clone);
+        Assert.AreEqual(2, clone.EquipmentSlots.Count, "Clone must preserve slot count");
+        Assert.IsTrue(clone.EquipmentSlots.Contains(EquipmentSlot.FootLeft), "Clone must have FootLeft");
+        Assert.IsTrue(clone.EquipmentSlots.Contains(EquipmentSlot.FootRight), "Clone must have FootRight");
+        Assert.IsTrue(clone.OccupiesAllSlots, "Clone must preserve OccupiesAllSlots");
+    }
+
+    [TestMethod]
+    public async Task ItemTemplateEdit_EquipmentSlots_SaveAndFetchMultiSlot()
+    {
+        var provider = InitServices();
+        var dp = provider.GetRequiredService<IDataPortal<ItemTemplateEdit>>();
+
+        var template = await dp.CreateAsync();
+        template.Name = "Powered Gauntlets";
+        template.ItemType = ItemType.Armor;
+        template.EquipmentSlots = [EquipmentSlot.HandLeft, EquipmentSlot.HandRight];
+        template.OccupiesAllSlots = true;
+        template.Weight = 2m;
+
+        template = await template.SaveAsync();
+        var loaded = await dp.FetchAsync(template.Id);
+
+        Assert.AreEqual(2, loaded.EquipmentSlots.Count, "Both slots must persist through save/fetch");
+        Assert.IsTrue(loaded.EquipmentSlots.Contains(EquipmentSlot.HandLeft));
+        Assert.IsTrue(loaded.EquipmentSlots.Contains(EquipmentSlot.HandRight));
+        Assert.IsTrue(loaded.OccupiesAllSlots);
+    }
+
+    #endregion
 }
