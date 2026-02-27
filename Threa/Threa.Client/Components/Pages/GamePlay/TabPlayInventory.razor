@@ -2319,6 +2319,9 @@
             // Check if it's a loaded magazine
             else if (itemTemplate.ItemType == ItemType.AmmoContainer)
             {
+                // Skip magazines already loaded in a weapon
+                if (loadedMagazineIds.Contains(item.Id)) continue;
+
                 var containerState = AmmoContainerState.FromJson(item.CustomProperties);
                 if (containerState.LoadedAmmo <= 0)
                     continue; // Empty magazine
