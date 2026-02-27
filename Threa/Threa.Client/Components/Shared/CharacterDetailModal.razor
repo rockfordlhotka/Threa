@@ -342,10 +342,13 @@
         await LoadCharacterAsync();
     }
 
-    private async Task LoadCharacterAsync()
+    private async Task LoadCharacterAsync(bool showLoading = true)
     {
-        isLoading = true;
-        StateHasChanged();
+        if (showLoading)
+        {
+            isLoading = true;
+            StateHasChanged();
+        }
 
         try
         {
@@ -389,8 +392,8 @@
 
     private async Task OnCharacterUpdated()
     {
-        // Reload the character to reflect changes
-        await LoadCharacterAsync();
+        // Reload the character silently to preserve child component state (e.g. healthMode selection)
+        await LoadCharacterAsync(showLoading: false);
     }
 
     private void OnCharacterRemoved()
