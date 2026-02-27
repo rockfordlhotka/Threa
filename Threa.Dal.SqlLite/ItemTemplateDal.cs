@@ -40,6 +40,27 @@ public class ItemTemplateDal : IItemTemplateDal
         }
     }
 
+    /// <summary>
+    /// Normalizes a template loaded from storage for backward compatibility.
+    /// - If EquipmentSlot == TwoHand: migrates to EquipmentSlots=[MainHand,OffHand], OccupiesAllSlots=true, EquipmentSlot=MainHand.
+    /// - If EquipmentSlots is empty and EquipmentSlot != None: populates EquipmentSlots=[EquipmentSlot].
+    /// </summary>
+#pragma warning disable CS0618 // TwoHand is obsolete but we need it here for migration
+    private static void NormalizeTemplate(ItemTemplate template)
+    {
+        if (template.EquipmentSlot == EquipmentSlot.TwoHand)
+        {
+            template.EquipmentSlots = [EquipmentSlot.MainHand, EquipmentSlot.OffHand];
+            template.OccupiesAllSlots = true;
+            template.EquipmentSlot = EquipmentSlot.MainHand;
+        }
+        else if (template.EquipmentSlots.Count == 0 && template.EquipmentSlot != EquipmentSlot.None)
+        {
+            template.EquipmentSlots = [template.EquipmentSlot];
+        }
+    }
+#pragma warning restore CS0618
+
     public async Task<List<ItemTemplate>> GetAllTemplatesAsync()
     {
         try
@@ -58,6 +79,7 @@ public class ItemTemplateDal : IItemTemplateDal
                 {
                     // Ensure the ID from the database is set
                     template.Id = dbId;
+                    NormalizeTemplate(template);
                     templates.Add(template);
                 }
             }
@@ -93,6 +115,7 @@ public class ItemTemplateDal : IItemTemplateDal
                 throw new OperationFailedException($"ItemTemplate {id} deserialization failed");
             // Ensure the ID from the database is set
             template.Id = dbId;
+            NormalizeTemplate(template);
             return template;
         }
         catch (NotFoundException)
@@ -118,6 +141,12 @@ public class ItemTemplateDal : IItemTemplateDal
     {
         try
         {
+            // Sync legacy EquipmentSlot from EquipmentSlots before saving
+            if (template.EquipmentSlots.Count > 0)
+                template.EquipmentSlot = template.EquipmentSlots[0];
+            else if (template.EquipmentSlot != EquipmentSlot.None)
+                template.EquipmentSlots = [template.EquipmentSlot];
+
             string sql;
             using var command = Connection.CreateCommand();
 

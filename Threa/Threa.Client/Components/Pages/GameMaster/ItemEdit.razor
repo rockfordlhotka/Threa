@@ -160,24 +160,34 @@ else
                             @if (ShowEquipmentSection)
                             {
                                 <tr>
-                                    <td>Equipment Slot</td>
+                                    <td style="vertical-align: top; padding-top: 0.5rem;">Equipment Slots</td>
                                     <td>
-                                        <select @bind="vm.Model.EquipmentSlot" class="form-control">
-                                            @foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
+                                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--rz-border-color, #dee2e6); border-radius: 4px; padding: 0.5rem;">
+                                            @foreach (var slot in GetAvailableEquipmentSlots())
                                             {
-                                                @if (vm.Model.ItemType == ItemType.Implant)
-                                                {
-                                                    @if (slot == EquipmentSlot.None || slot.IsImplant())
-                                                    {
-                                                        <option value="@slot">@slot.GetDisplayName()</option>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <option value="@slot">@slot</option>
-                                                }
+                                                <div class="form-check">
+                                                    <input type="checkbox"
+                                                           class="form-check-input"
+                                                           id="slot_@((int)slot)"
+                                                           checked="@vm.Model.EquipmentSlots.Contains(slot)"
+                                                           @onchange="@(e => OnSlotToggle(slot, (bool)e.Value!))" />
+                                                    <label class="form-check-label" for="slot_@((int)slot)">
+                                                        @slot.GetDisplayName()
+                                                    </label>
+                                                </div>
                                             }
-                                        </select>
+                                        </div>
+                                        <small class="text-muted">Select all slots this item can be equipped in.</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Occupies All Slots</td>
+                                    <td>
+                                        <RadzenCheckBox @bind-Value="vm.Model.OccupiesAllSlots" TValue="bool" />
+                                        <small class="text-muted ms-2">
+                                            When checked, equipping occupies ALL selected slots at once (e.g., powered armor, boots).
+                                            When unchecked, the player chooses one slot at equip time (e.g., rings).
+                                        </small>
                                     </td>
                                 </tr>
                             }
@@ -1153,18 +1163,51 @@ else
             vm.Model.MaxStackSize = 1;
         }
 
-        // Implants cannot be stackable; clear non-implant equipment slot
+        // Implants cannot be stackable; clear non-implant equipment slots
         if (vm.Model.ItemType == ItemType.Implant)
         {
             vm.Model.IsStackable = false;
             vm.Model.MaxStackSize = 1;
-            if (vm.Model.EquipmentSlot != EquipmentSlot.None && !vm.Model.EquipmentSlot.IsImplant())
+            if (vm.Model.EquipmentSlots.Any(s => !s.IsImplant()))
             {
-                vm.Model.EquipmentSlot = EquipmentSlot.None;
+                vm.Model.EquipmentSlots = vm.Model.EquipmentSlots.Where(s => s.IsImplant()).ToList();
+            }
+        }
+        else
+        {
+            // Clear implant slots when switching to a non-implant item type
+            if (vm.Model.EquipmentSlots.Any(s => s.IsImplant()))
+            {
+                vm.Model.EquipmentSlots = vm.Model.EquipmentSlots.Where(s => !s.IsImplant()).ToList();
             }
         }
 
         StateHasChanged();
+    }
+
+    /// <summary>Returns the available equipment slots for the current item type.</summary>
+    private IEnumerable<EquipmentSlot> GetAvailableEquipmentSlots()
+    {
+        if (vm.Model == null) return Enumerable.Empty<EquipmentSlot>();
+
+        var all = Enum.GetValues<EquipmentSlot>().Where(s => s != EquipmentSlot.None);
+        if (vm.Model.ItemType == ItemType.Implant)
+            return all.Where(s => s.IsImplant());
+
+#pragma warning disable CS0618 // Exclude obsolete TwoHand from new slot pickers
+        return all.Where(s => !s.IsImplant() && s != EquipmentSlot.TwoHand);
+#pragma warning restore CS0618
+    }
+
+    private void OnSlotToggle(EquipmentSlot slot, bool isChecked)
+    {
+        if (vm.Model == null) return;
+        var slots = new List<EquipmentSlot>(vm.Model.EquipmentSlots);
+        if (isChecked && !slots.Contains(slot))
+            slots.Add(slot);
+        else if (!isChecked)
+            slots.Remove(slot);
+        vm.Model.EquipmentSlots = slots;
     }
 
     private void OnImplantWeaponToggle(ChangeEventArgs e)

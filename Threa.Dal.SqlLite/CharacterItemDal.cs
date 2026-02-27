@@ -44,6 +44,27 @@ public class CharacterItemDal : ICharacterItemDal
         }
     }
 
+    /// <summary>
+    /// Normalizes a CharacterItem loaded from storage for backward compatibility.
+    /// - If EquippedSlot == TwoHand: migrates to EquippedSlots=[MainHand,OffHand], EquippedSlot=MainHand.
+    /// - If EquippedSlots is empty and IsEquipped and EquippedSlot != None: populates EquippedSlots=[EquippedSlot].
+    /// </summary>
+#pragma warning disable CS0618 // TwoHand is obsolete but we need it here for migration
+    private static void NormalizeItem(CharacterItem item)
+    {
+        if (item.EquippedSlot == EquipmentSlot.TwoHand)
+        {
+            item.EquippedSlots = [EquipmentSlot.MainHand, EquipmentSlot.OffHand];
+            item.EquippedSlot = EquipmentSlot.MainHand;
+            item.IsEquipped = true;
+        }
+        else if (item.EquippedSlots.Count == 0 && item.IsEquipped && item.EquippedSlot != EquipmentSlot.None)
+        {
+            item.EquippedSlots = [item.EquippedSlot];
+        }
+    }
+#pragma warning restore CS0618
+
     public async Task<List<CharacterItem>> GetCharacterItemsAsync(int characterId)
     {
         try
@@ -60,6 +81,7 @@ public class CharacterItemDal : ICharacterItemDal
                 var item = JsonSerializer.Deserialize<CharacterItem>(json);
                 if (item != null)
                 {
+                    NormalizeItem(item);
                     await PopulateTemplateAsync(item);
                     items.Add(item);
                 }
@@ -93,6 +115,7 @@ public class CharacterItemDal : ICharacterItemDal
                 var item = JsonSerializer.Deserialize<CharacterItem>(json);
                 if (item != null && item.ContainerItemId == containerItemId)
                 {
+                    NormalizeItem(item);
                     await PopulateTemplateAsync(item);
                     items.Add(item);
                 }
@@ -120,6 +143,7 @@ public class CharacterItemDal : ICharacterItemDal
             var item = JsonSerializer.Deserialize<CharacterItem>(json);
             if (item == null)
                 throw new OperationFailedException($"CharacterItem {id} deserialization failed");
+            NormalizeItem(item);
             await PopulateTemplateAsync(item);
             return item;
         }
@@ -207,30 +231,23 @@ public class CharacterItemDal : ICharacterItemDal
         }
     }
 
-    public async Task EquipItemAsync(Guid itemId, EquipmentSlot slot)
+    public async Task EquipItemAsync(Guid itemId, List<EquipmentSlot> slots)
     {
         var item = await GetItemAsync(itemId);
-        
+
         // Check if item is in a container
         if (item.ContainerItemId.HasValue)
             throw new OperationFailedException("Cannot equip items directly from inside containers. Move to inventory first.");
 
-        // Handle two-handed weapon equipping
-        if (slot == EquipmentSlot.TwoHand)
+        // For each incoming slot, unequip any items currently occupying it (except the item being equipped)
+        foreach (var slot in slots)
         {
-            await UnequipSlotAsync(item.OwnerCharacterId, EquipmentSlot.MainHand);
-            await UnequipSlotAsync(item.OwnerCharacterId, EquipmentSlot.OffHand);
+            await UnequipSlotAsync(item.OwnerCharacterId, slot, excludeItemId: itemId);
         }
-        else if (slot == EquipmentSlot.MainHand || slot == EquipmentSlot.OffHand)
-        {
-            await UnequipSlotAsync(item.OwnerCharacterId, EquipmentSlot.TwoHand);
-        }
-
-        // Unequip any item currently in the target slot
-        await UnequipSlotAsync(item.OwnerCharacterId, slot);
 
         item.IsEquipped = true;
-        item.EquippedSlot = slot;
+        item.EquippedSlots = slots;
+        item.EquippedSlot = slots.Count > 0 ? slots[0] : EquipmentSlot.None;
         await UpdateItemAsync(item);
     }
 
@@ -239,18 +256,20 @@ public class CharacterItemDal : ICharacterItemDal
         var item = await GetItemAsync(itemId);
         item.IsEquipped = false;
         item.EquippedSlot = EquipmentSlot.None;
+        item.EquippedSlots = [];
         await UpdateItemAsync(item);
     }
 
     public async Task MoveToContainerAsync(Guid itemId, Guid? containerItemId)
     {
         var item = await GetItemAsync(itemId);
-        
+
         // If equipping, must unequip first
         if (item.IsEquipped && containerItemId.HasValue)
         {
             item.IsEquipped = false;
             item.EquippedSlot = EquipmentSlot.None;
+            item.EquippedSlots = [];
         }
 
         // Validate container exists and is a container
@@ -269,15 +288,19 @@ public class CharacterItemDal : ICharacterItemDal
         await UpdateItemAsync(item);
     }
 
-    private async Task UnequipSlotAsync(int characterId, EquipmentSlot slot)
+    private async Task UnequipSlotAsync(int characterId, EquipmentSlot slot, Guid? excludeItemId = null)
     {
         var items = await GetEquippedItemsAsync(characterId);
-        var equippedItem = items.Find(i => i.EquippedSlot == slot);
-        if (equippedItem != null)
+        // Find items that occupy this slot — check both the legacy single-slot field and the multi-slot list
+        var conflicts = items.FindAll(i =>
+            (excludeItemId == null || i.Id != excludeItemId) &&
+            (i.EquippedSlot == slot || i.EquippedSlots.Contains(slot)));
+        foreach (var conflict in conflicts)
         {
-            equippedItem.IsEquipped = false;
-            equippedItem.EquippedSlot = EquipmentSlot.None;
-            await UpdateItemAsync(equippedItem);
+            conflict.IsEquipped = false;
+            conflict.EquippedSlot = EquipmentSlot.None;
+            conflict.EquippedSlots = [];
+            await UpdateItemAsync(conflict);
         }
     }
 

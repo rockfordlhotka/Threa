@@ -6,6 +6,7 @@ using GameMechanics.Items;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Threa.Dal;
@@ -21,9 +22,8 @@ public class ItemManagementServiceTests : TestBase
     services.AddGameMechanics();
   }
 
-  // Use existing template IDs from MockDb to avoid concurrency issues
-  private const int SWORD_TEMPLATE_ID = 1;
-  private const int RING_TEMPLATE_ID = 13; // Assuming this exists, or use another
+  // Use existing template IDs from TestDataSeeder (Id=10 = Longsword with MainHand slot)
+  private const int SWORD_TEMPLATE_ID = 10;
 
   #region AddItemToInventoryAsync Tests
 
@@ -65,17 +65,150 @@ public class ItemManagementServiceTests : TestBase
     var item = new CharacterItem
     {
       Id = Guid.NewGuid(),
-      ItemTemplateId = SWORD_TEMPLATE_ID,
+      ItemTemplateId = SWORD_TEMPLATE_ID, // Longsword: EquipmentSlot=MainHand → EquipmentSlots=[MainHand]
       OwnerCharacterId = character.Id,
       StackSize = 1
     };
     await itemDal.AddItemAsync(item);
 
+    // Single-slot item: chosenSlot is accepted but template slot is used
     var result = await service.EquipItemAsync(character, item.Id, EquipmentSlot.MainHand);
 
-    Assert.IsTrue(result.Success);
+    Assert.IsTrue(result.Success, $"Equip failed: {result.ErrorMessage}");
     Assert.IsTrue(result.Item?.IsEquipped);
     Assert.AreEqual(EquipmentSlot.MainHand, result.Item?.EquippedSlot);
+    Assert.AreEqual(1, result.Item?.EquippedSlots.Count);
+    Assert.AreEqual(EquipmentSlot.MainHand, result.Item?.EquippedSlots[0]);
+  }
+
+  [TestMethod]
+  public async Task EquipItemAsync_MultiSlotItem_OccupiesAllSlots()
+  {
+    var provider = InitServices();
+    var service = provider.GetRequiredService<ItemManagementService>();
+    var itemDal = provider.GetRequiredService<ICharacterItemDal>();
+    var templateDal = provider.GetRequiredService<IItemTemplateDal>();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var character = dp.Create(42);
+
+    // Create a Boots template that occupies both feet simultaneously
+    var bootsTemplate = await templateDal.SaveTemplateAsync(new ItemTemplate
+    {
+      Name = "Iron Boots",
+      ItemType = ItemType.Armor,
+      EquipmentSlots = [EquipmentSlot.FootLeft, EquipmentSlot.FootRight],
+      OccupiesAllSlots = true,
+      IsActive = true,
+      Weight = 3m
+    });
+
+    var boots = new CharacterItem
+    {
+      Id = Guid.NewGuid(),
+      ItemTemplateId = bootsTemplate.Id,
+      OwnerCharacterId = character.Id,
+      StackSize = 1
+    };
+    await itemDal.AddItemAsync(boots);
+
+    var result = await service.EquipItemAsync(character, boots.Id);
+
+    Assert.IsTrue(result.Success, $"Equip failed: {result.ErrorMessage}");
+    Assert.IsTrue(result.Item?.IsEquipped);
+    Assert.AreEqual(2, result.Item?.EquippedSlots.Count);
+    Assert.IsTrue(result.Item?.EquippedSlots.Contains(EquipmentSlot.FootLeft));
+    Assert.IsTrue(result.Item?.EquippedSlots.Contains(EquipmentSlot.FootRight));
+  }
+
+  [TestMethod]
+  public async Task EquipItemAsync_MultiSlotItem_UnequipsConflictingItems()
+  {
+    var provider = InitServices();
+    var service = provider.GetRequiredService<ItemManagementService>();
+    var itemDal = provider.GetRequiredService<ICharacterItemDal>();
+    var templateDal = provider.GetRequiredService<IItemTemplateDal>();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var character = dp.Create(42);
+
+    // Create a Boots template (occupies both feet)
+    var bootsTemplate = await templateDal.SaveTemplateAsync(new ItemTemplate
+    {
+      Name = "Iron Boots",
+      ItemType = ItemType.Armor,
+      EquipmentSlots = [EquipmentSlot.FootLeft, EquipmentSlot.FootRight],
+      OccupiesAllSlots = true,
+      IsActive = true,
+      Weight = 3m
+    });
+    // Create a Sandal template (one foot)
+    var sandalTemplate = await templateDal.SaveTemplateAsync(new ItemTemplate
+    {
+      Name = "Left Sandal",
+      ItemType = ItemType.Armor,
+      EquipmentSlots = [EquipmentSlot.FootLeft],
+      OccupiesAllSlots = false,
+      IsActive = true,
+      Weight = 0.5m
+    });
+
+    var sandal = new CharacterItem { Id = Guid.NewGuid(), ItemTemplateId = sandalTemplate.Id, OwnerCharacterId = character.Id, StackSize = 1 };
+    var boots = new CharacterItem { Id = Guid.NewGuid(), ItemTemplateId = bootsTemplate.Id, OwnerCharacterId = character.Id, StackSize = 1 };
+    await itemDal.AddItemAsync(sandal);
+    await itemDal.AddItemAsync(boots);
+
+    // Equip sandal to FootLeft
+    await service.EquipItemAsync(character, sandal.Id);
+
+    // Now equip boots — should unequip the sandal
+    var result = await service.EquipItemAsync(character, boots.Id);
+
+    Assert.IsTrue(result.Success, $"Equip failed: {result.ErrorMessage}");
+    Assert.IsTrue(result.Item?.IsEquipped);
+    Assert.AreEqual(2, result.Item?.EquippedSlots.Count);
+
+    // Verify sandal was unequipped
+    var sandalReloaded = await itemDal.GetItemAsync(sandal.Id);
+    Assert.IsFalse(sandalReloaded.IsEquipped, "Sandal should have been unequipped by the boots");
+    Assert.AreEqual(0, sandalReloaded.EquippedSlots.Count);
+  }
+
+  [TestMethod]
+  public async Task EquipItemAsync_ChooseableSlotItem_UsesChosenSlot()
+  {
+    var provider = InitServices();
+    var service = provider.GetRequiredService<ItemManagementService>();
+    var itemDal = provider.GetRequiredService<ICharacterItemDal>();
+    var templateDal = provider.GetRequiredService<IItemTemplateDal>();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var character = dp.Create(42);
+
+    // Create a Ring template with all left-hand finger slots (player picks one)
+    var ringTemplate = await templateDal.SaveTemplateAsync(new ItemTemplate
+    {
+      Name = "Ring of Power",
+      ItemType = ItemType.Jewelry,
+      EquipmentSlots = [
+        EquipmentSlot.FingerLeft1, EquipmentSlot.FingerLeft2, EquipmentSlot.FingerLeft3,
+        EquipmentSlot.FingerLeft4, EquipmentSlot.FingerLeft5,
+        EquipmentSlot.FingerRight1, EquipmentSlot.FingerRight2, EquipmentSlot.FingerRight3,
+        EquipmentSlot.FingerRight4, EquipmentSlot.FingerRight5
+      ],
+      OccupiesAllSlots = false,
+      IsActive = true,
+      Weight = 0.05m
+    });
+
+    var ring = new CharacterItem { Id = Guid.NewGuid(), ItemTemplateId = ringTemplate.Id, OwnerCharacterId = character.Id, StackSize = 1 };
+    await itemDal.AddItemAsync(ring);
+
+    // Equip ring to a specific finger
+    var result = await service.EquipItemAsync(character, ring.Id, EquipmentSlot.FingerLeft3);
+
+    Assert.IsTrue(result.Success, $"Equip failed: {result.ErrorMessage}");
+    Assert.IsTrue(result.Item?.IsEquipped);
+    Assert.AreEqual(EquipmentSlot.FingerLeft3, result.Item?.EquippedSlot);
+    Assert.AreEqual(1, result.Item?.EquippedSlots.Count);
+    Assert.AreEqual(EquipmentSlot.FingerLeft3, result.Item?.EquippedSlots[0]);
   }
 
   #endregion

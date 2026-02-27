@@ -184,7 +184,7 @@
                                 @if (request?.IsApproved == true)
                                 {
                                     @* Character is already in this campaign - go to play *@
-                                    <a href="@($"/player/play/{campaign.Id}")" class="btn btn-success w-100">
+                                    <a href="@($"/play/{selectedCharacter!.Id}/{campaign.Id}")" class="btn btn-success w-100">
                                         <i class="bi bi-controller me-1"></i>Play
                                     </a>
                                 }

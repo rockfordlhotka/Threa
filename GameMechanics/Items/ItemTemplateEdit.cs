@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Csla;
 using Csla.Core;
@@ -60,6 +61,33 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
     {
         get => GetProperty(EquipmentSlotProperty);
         set => SetProperty(EquipmentSlotProperty, value);
+    }
+
+    // EquipmentSlots is stored as MobileList<int> so that CSLA's MobileFormatter can
+    // serialize it correctly. MobileList<T> implements IMobileObject, making it a
+    // first-class CSLA type that survives Clone() and data portal round-trips.
+    public static readonly PropertyInfo<Csla.Core.MobileList<int>> EquipmentSlotsRawProperty =
+        RegisterProperty<Csla.Core.MobileList<int>>("EquipmentSlotsRaw");
+
+    /// <summary>
+    /// Valid slots for this item. Replaces EquipmentSlot as canonical field.
+    /// </summary>
+    public List<EquipmentSlot> EquipmentSlots
+    {
+        get => (GetProperty(EquipmentSlotsRawProperty) ?? []).Select(i => (EquipmentSlot)i).ToList();
+        set => SetProperty(EquipmentSlotsRawProperty,
+            new Csla.Core.MobileList<int>(value.Select(s => (int)s)));
+    }
+
+    public static readonly PropertyInfo<bool> OccupiesAllSlotsProperty = RegisterProperty<bool>(nameof(OccupiesAllSlots));
+    /// <summary>
+    /// When true, equipping occupies ALL slots in EquipmentSlots simultaneously.
+    /// When false, the player picks one slot.
+    /// </summary>
+    public bool OccupiesAllSlots
+    {
+        get => GetProperty(OccupiesAllSlotsProperty);
+        set => SetProperty(OccupiesAllSlotsProperty, value);
     }
 
     public static readonly PropertyInfo<decimal> WeightProperty = RegisterProperty<decimal>(nameof(Weight));
@@ -303,6 +331,8 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ItemType = ItemType.Miscellaneous;
             WeaponType = WeaponType.None;
             EquipmentSlot = EquipmentSlot.None;
+            EquipmentSlots = [];
+            OccupiesAllSlots = false;
             Weight = 0;
             Volume = 0;
             Value = 0;
@@ -355,6 +385,8 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ItemType = data.ItemType;
             WeaponType = data.WeaponType;
             EquipmentSlot = data.EquipmentSlot;
+            EquipmentSlots = new List<EquipmentSlot>(data.EquipmentSlots);
+            OccupiesAllSlots = data.OccupiesAllSlots;
             Weight = data.Weight;
             Volume = data.Volume;
             Value = data.Value;
@@ -408,6 +440,11 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
     [Insert]
     private async Task Insert([Inject] IItemTemplateDal dal)
     {
+        // If EquipmentSlots is empty but the legacy EquipmentSlot is set, derive the list from it
+        var effectiveSlots = EquipmentSlots.Count > 0
+            ? EquipmentSlots
+            : (EquipmentSlot != EquipmentSlot.None ? new List<EquipmentSlot> { EquipmentSlot } : new List<EquipmentSlot>());
+
         var dto = new ItemTemplate
         {
             Name = Name,
@@ -415,7 +452,9 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ShortDescription = ShortDescription,
             ItemType = ItemType,
             WeaponType = WeaponType,
-            EquipmentSlot = EquipmentSlot,
+            EquipmentSlots = new List<EquipmentSlot>(effectiveSlots),
+            OccupiesAllSlots = OccupiesAllSlots,
+            EquipmentSlot = effectiveSlots.Count > 0 ? effectiveSlots[0] : EquipmentSlot.None,
             Weight = Weight,
             Volume = Volume,
             Value = Value,
@@ -456,6 +495,11 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
     [Update]
     private async Task Update([Inject] IItemTemplateDal dal)
     {
+        // If EquipmentSlots is empty but the legacy EquipmentSlot is set, derive the list from it
+        var effectiveSlots = EquipmentSlots.Count > 0
+            ? EquipmentSlots
+            : (EquipmentSlot != EquipmentSlot.None ? new List<EquipmentSlot> { EquipmentSlot } : new List<EquipmentSlot>());
+
         var dto = new ItemTemplate
         {
             Id = Id,
@@ -464,7 +508,9 @@ public class ItemTemplateEdit : BusinessBase<ItemTemplateEdit>
             ShortDescription = ShortDescription,
             ItemType = ItemType,
             WeaponType = WeaponType,
-            EquipmentSlot = EquipmentSlot,
+            EquipmentSlots = new List<EquipmentSlot>(effectiveSlots),
+            OccupiesAllSlots = OccupiesAllSlots,
+            EquipmentSlot = effectiveSlots.Count > 0 ? effectiveSlots[0] : EquipmentSlot.None,
             Weight = Weight,
             Volume = Volume,
             Value = Value,

@@ -32,6 +32,12 @@ public enum EquipmentSlot
     // Weapon Slots
     MainHand = 20,
     OffHand = 21,
+
+    /// <summary>
+    /// Obsolete. Use EquipmentSlots = [MainHand, OffHand] with OccupiesAllSlots = true instead.
+    /// Kept for backward compatibility with serialized JSON data.
+    /// </summary>
+    [Obsolete("Use EquipmentSlots=[MainHand, OffHand] with OccupiesAllSlots=true instead. The DAL normalizes old TwoHand data automatically.")]
     TwoHand = 22,
 
     // Jewelry Slots - Left Hand Fingers

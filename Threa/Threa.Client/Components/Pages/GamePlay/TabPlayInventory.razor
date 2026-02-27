@@ -852,7 +852,8 @@
 
     private CharacterItem? GetEquippedItem(EquipmentSlot slot)
     {
-        return inventoryItems?.FirstOrDefault(i => i.IsEquipped && i.EquippedSlot == slot);
+        return inventoryItems?.FirstOrDefault(i => i.IsEquipped &&
+            (i.EquippedSlots.Contains(slot) || i.EquippedSlot == slot));
     }
 
     // Loaded ammo display info
@@ -1071,7 +1072,7 @@
                 return;
             }
 
-            // Check slot compatibility (use template.EquipmentSlot)
+            // Check slot compatibility
             var template = GetTemplate(selectedItem.ItemTemplateId);
             if (template == null)
             {
@@ -1086,29 +1087,56 @@
                 return;
             }
 
-            if (!IsSlotCompatible(template.EquipmentSlot, slot))
+            // Determine target slots: for OccupiesAllSlots items, use all template slots;
+            // otherwise use the single clicked slot (e.g., ring on specific finger).
+            List<EquipmentSlot> targetSlots;
+            if (template.OccupiesAllSlots && template.EquipmentSlots.Count > 0)
             {
-                errorMessage = $"This item (slot: {template.EquipmentSlot}) cannot be equipped in the {slot.GetDisplayName()} slot.";
-                return;
+                // Verify the clicked slot is one of this item's valid slots
+                if (!template.EquipmentSlots.Contains(slot))
+                {
+                    errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
+                    return;
+                }
+                targetSlots = template.EquipmentSlots;
+            }
+            else
+            {
+                // Single-slot or chooseable multi-slot: use the clicked slot
+                var primarySlot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+                if (!IsSlotCompatible(primarySlot, slot))
+                {
+                    errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
+                    return;
+                }
+                targetSlots = [slot];
             }
 
-            // Check if target slot has a cursed item (auto-swap would fail)
-            var existingItem = GetEquippedItem(slot);
-            if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+            // Check if any target slot has a cursed item (auto-swap would fail)
+            foreach (var targetSlot in targetSlots)
             {
-                errorMessage = $"Cannot swap: {GetItemName(existingItem)} is cursed and cannot be unequipped.";
-                return;
+                var existingItem = GetEquippedItem(targetSlot);
+                if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+                {
+                    errorMessage = $"Cannot swap: {GetItemName(existingItem)} in {targetSlot.GetDisplayName()} is cursed and cannot be unequipped.";
+                    return;
+                }
             }
 
-            // Equip the item (service handles auto-swap)
-            var result = await itemService.EquipItemAsync(Character!, selectedItem.Id, slot);
+            // Equip the item: pass null chosenSlot for OccupiesAllSlots (service uses all template slots),
+            // or the specific clicked slot for single/chooseable-slot items.
+            var result = await itemService.EquipItemAsync(Character!, selectedItem.Id,
+                template.OccupiesAllSlots ? null : slot);
             if (!result.Success)
             {
                 errorMessage = result.ErrorMessage;
                 return;
             }
 
-            successMessage = $"Equipped {GetItemName(selectedItem)} to {slot.GetDisplayName()}.";
+            var slotLabel = template.OccupiesAllSlots && template.EquipmentSlots.Count > 1
+                ? string.Join("+", targetSlots.Select(s => s.GetDisplayName()))
+                : slot.GetDisplayName();
+            successMessage = $"Equipped {GetItemName(selectedItem)} to {slotLabel}.";
             selectedItem = null;
             selectedItemId = null;
             await LoadItemsAsync();
@@ -1617,7 +1645,18 @@
         }
 
         if (!IsEquippableType(template.ItemType)) return false;
-        return IsSlotCompatible(template.EquipmentSlot, slot);
+
+        // For multi-slot items (OccupiesAllSlots), highlight any slot in the template's list
+        if (template.OccupiesAllSlots && template.EquipmentSlots.Count > 0)
+            return template.EquipmentSlots.Contains(slot);
+
+        // For chooseable multi-slot items, highlight any slot in the list
+        if (template.EquipmentSlots.Count > 1)
+            return template.EquipmentSlots.Contains(slot);
+
+        // Single-slot: use compatibility check against the primary slot
+        var primarySlot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+        return IsSlotCompatible(primarySlot, slot);
     }
 
     private async Task NotifyCharacterChanged()

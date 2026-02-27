@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Threa.Dal.Dto;
 
@@ -29,9 +30,16 @@ public class CharacterItem
     public Guid? ContainerItemId { get; set; }
 
     /// <summary>
-    /// The slot where this item is equipped (None if not equipped).
+    /// The primary slot where this item is equipped (legacy single-slot field, kept for backward compatibility).
+    /// Canonical slot data is in <see cref="EquippedSlots"/>.
     /// </summary>
     public EquipmentSlot EquippedSlot { get; set; } = EquipmentSlot.None;
+
+    /// <summary>
+    /// All slots currently occupied by this item (canonical).
+    /// When empty and IsEquipped, the DAL normalizes this to [EquippedSlot].
+    /// </summary>
+    public List<EquipmentSlot> EquippedSlots { get; set; } = [];
 
     /// <summary>
     /// Whether this item is currently equipped.

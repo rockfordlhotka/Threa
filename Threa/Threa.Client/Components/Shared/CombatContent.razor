@@ -1775,13 +1775,47 @@
         return "Free parry defenses (costs 1 AP + 1 FAT to enter)";
     }
 
-    private List<GameMechanics.SkillEdit> GetStandardSkills()
+    // The 8 fixed standard skills with their primary attributes.
+    // Filtered by name so the list is always correct regardless of how Category is stored.
+    private static readonly (string Name, string Attribute)[] StandardSkillDefinitions =
     {
-        if (Character?.Skills == null) return new List<GameMechanics.SkillEdit>();
-        
-        return Character.Skills
-            .Where(s => s.Category == Threa.Dal.Dto.SkillCategory.Standard)
-            .OrderBy(s => s.Name)
-            .ToList();
+        ("Awareness",   "ITT"),
+        ("Bearing",     "PHY"),
+        ("Dodge",       "DEX"),
+        ("Drive",       "END"),
+        ("Focus",       "WIL"),
+        ("Influence",   "PHY"),
+        ("Physicality", "STR"),
+        ("Reasoning",   "INT"),
+    };
+
+    private record StandardSkillEntry(string Name, string PrimaryAttribute, int AbilityScore);
+
+    private List<StandardSkillEntry> GetStandardSkills()
+    {
+        var result = new List<StandardSkillEntry>();
+
+        foreach (var (name, attribute) in StandardSkillDefinitions)
+        {
+            var found = Character?.Skills?.FirstOrDefault(s =>
+                s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+            if (found != null)
+            {
+                result.Add(new StandardSkillEntry(found.Name, found.PrimaryAttribute, found.AbilityScore));
+            }
+            else if (Character != null)
+            {
+                // Skill not yet on this character — compute AS from attribute (untrained level = attribute value)
+                int attrBase = GameMechanics.SkillEdit.GetAttributeBase(Character, attribute);
+                result.Add(new StandardSkillEntry(name, attribute, attrBase));
+            }
+            else
+            {
+                result.Add(new StandardSkillEntry(name, attribute, 0));
+            }
+        }
+
+        return result;
     }
 }

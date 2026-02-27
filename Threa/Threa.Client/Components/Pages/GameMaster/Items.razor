@@ -69,6 +69,16 @@ else
                             }
                         </Template>
                     </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ItemTemplateInfo" Title="" Width="80px" Sortable="false">
+                        <Template Context="item">
+                            <a href="/gamemaster/items/@item.Id/delete"
+                               class="btn btn-sm btn-outline-danger"
+                               @onclick:stopPropagation="true"
+                               title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
         </div>
@@ -119,7 +129,7 @@ else
                 i.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrEmpty(i.Tags) && i.Tags.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
 
-        filteredItems = query.ToList();
+        filteredItems = query.OrderBy(i => i.Name).ToList();
     }
 
     public void Dispose()
