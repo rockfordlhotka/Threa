@@ -138,8 +138,16 @@
             <i class="bi bi-clock me-1"></i>
             <strong>Duration:</strong> @durationRounds round(s) of concentration
             <br />
-            <small class="text-muted">Rate: 3 rounds per game round (1 per second)</small>
-            <br />
+            @if (selectedIsLooseAmmo)
+            {
+                <small class="text-muted">Rate: 3 rounds per game round (1 per second)</small>
+                <br />
+            }
+            else
+            {
+                <small class="text-muted">Magazine swap: fixed 1 round</small>
+                <br />
+            }
             <small class="text-warning">
                 <i class="bi bi-exclamation-triangle me-1"></i>
                 Taking other actions will break concentration and cancel the reload.
@@ -203,7 +211,8 @@
             return Math.Min(spaceAvailable, magazineState.LoadedAmmo);
         }
     }
-    private int durationRounds => (int)Math.Ceiling(roundsToLoad / 3.0);
+    // Magazine swap is always 1 round; single-round loading is 3 rounds per game round
+    private int durationRounds => selectedIsLooseAmmo ? (int)Math.Ceiling(roundsToLoad / 3.0) : 1;
     private bool IsFormValid => selectedAmmo != null && roundsToLoad > 0 && roundsToLoad <= maxRoundsToLoad && CanAffordSelectedCost;
     private bool CanAffordSelectedCost => useTwoApCost ? CanAffordTwoAp : CanAffordOneApOneFat;
 
