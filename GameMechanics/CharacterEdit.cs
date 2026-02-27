@@ -133,11 +133,11 @@ namespace GameMechanics
     public int GetChipSkillLevelBonus(string skillName, int nativeSkillLevel)
     {
       if (_chipGrantedSkills == null) return 0;
-      var best = _chipGrantedSkills
+      var chipGrants = _chipGrantedSkills
         .Where(s => s.SkillName.Equals(skillName, StringComparison.OrdinalIgnoreCase))
-        .Select(s => s.SkillLevel)
-        .DefaultIfEmpty(0)
-        .Max();
+        .ToList();
+      if (chipGrants.Count == 0) return 0;
+      var best = chipGrants.Select(s => s.SkillLevel).Max();
       return best > nativeSkillLevel ? best - nativeSkillLevel : 0;
     }
 
