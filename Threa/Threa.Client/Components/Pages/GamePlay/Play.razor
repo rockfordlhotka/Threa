@@ -1089,21 +1089,32 @@ private async Task LoadTableCharactersAsync()
 
         try
         {
-            // Fetch the weapon item from DAL
             var weapon = await CharacterItemDal.GetItemAsync(payload.WeaponItemId);
             if (weapon != null)
             {
-                // Update LoadedAmmo via WeaponAmmoState pattern
                 var ammoState = GameMechanics.Combat.WeaponAmmoState.FromJson(weapon.CustomProperties);
-                ammoState.LoadedAmmo = payload.RoundsToLoad;
 
-                // Merge ammo state back into CustomProperties
+                if (payload.IsLooseAmmo)
+                {
+                    // Loose ammo: rounds were transferred directly into weapon
+                    ammoState.LoadedAmmo = payload.RoundsToLoad;
+                }
+                else
+                {
+                    // Magazine: link the magazine to the weapon; magazine stays in inventory
+                    var magazine = await CharacterItemDal.GetItemAsync(payload.MagazineItemId);
+                    if (magazine != null)
+                    {
+                        var magazineState = GameMechanics.Combat.AmmoContainerState.FromJson(magazine.CustomProperties);
+                        ammoState.LoadedMagazineId = payload.MagazineItemId;
+                        ammoState.LoadedAmmo = magazineState.LoadedAmmo;
+                        ammoState.LoadedAmmoType = payload.AmmoType;
+                    }
+                }
+
                 weapon.CustomProperties = GameMechanics.Combat.WeaponAmmoState.MergeIntoCustomProperties(
                     weapon.CustomProperties, ammoState);
-
                 await CharacterItemDal.UpdateItemAsync(weapon);
-
-                // Reload equipped items to reflect the change
                 await LoadEquippedItemsAsync();
             }
         }

@@ -409,38 +409,44 @@ public class TimeAdvancementService
         var payload = MagazineReloadPayload.FromJson(payloadJson);
         if (payload == null) return;
 
-        // Update weapon ammo state
-        var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
-        if (weapon != null)
-        {
-            var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
-            weaponState.LoadedAmmo += payload.RoundsToLoad;
-            weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
-                weapon.CustomProperties, weaponState);
-            await _itemDal.UpdateItemAsync(weapon);
-        }
-
-        // Reduce ammo source
         var ammoSource = await _itemDal.GetItemAsync(payload.MagazineItemId);
-        if (ammoSource != null)
+
+        if (payload.IsLooseAmmo)
         {
-            if (payload.IsLooseAmmo)
+            // Loose ammo: transfer rounds into weapon, reduce stack
+            var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null)
             {
-                // Loose ammo: reduce stack size
+                var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+                weaponState.LoadedAmmo += payload.RoundsToLoad;
+                weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, weaponState);
+                await _itemDal.UpdateItemAsync(weapon);
+            }
+
+            if (ammoSource != null)
+            {
                 ammoSource.StackSize -= payload.RoundsToLoad;
                 if (ammoSource.StackSize <= 0)
                     await _itemDal.DeleteItemAsync(payload.MagazineItemId);
                 else
                     await _itemDal.UpdateItemAsync(ammoSource);
             }
-            else
+        }
+        else
+        {
+            // Magazine: link the magazine to the weapon; magazine stays in inventory untouched
+            var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null && ammoSource != null)
             {
-                // Magazine: reduce container state
                 var magazineState = AmmoContainerState.FromJson(ammoSource.CustomProperties);
-                magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - payload.RoundsToLoad);
-                ammoSource.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
-                    ammoSource.CustomProperties, magazineState);
-                await _itemDal.UpdateItemAsync(ammoSource);
+                var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+                weaponState.LoadedMagazineId = payload.MagazineItemId;
+                weaponState.LoadedAmmo = magazineState.LoadedAmmo;
+                weaponState.LoadedAmmoType = payload.AmmoType;
+                weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, weaponState);
+                await _itemDal.UpdateItemAsync(weapon);
             }
         }
     }
@@ -606,7 +612,19 @@ public class TimeAdvancementService
         // Get ammo type from weapon state if not specified
         var ammoType = payload.AmmoType ?? weaponState.LoadedAmmoType;
 
-        // Reduce weapon ammo
+        // If the weapon has a linked magazine, unloading just detaches the magazine — it stays in inventory
+        if (weaponState.LoadedMagazineId.HasValue)
+        {
+            weaponState.LoadedAmmo = 0;
+            weaponState.LoadedMagazineId = null;
+            weaponState.LoadedAmmoType = null;
+            weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                weapon.CustomProperties, weaponState);
+            await _itemDal.UpdateItemAsync(weapon);
+            return;
+        }
+
+        // Loose ammo: reduce weapon ammo and return rounds to inventory
         weaponState.LoadedAmmo -= roundsToUnload;
         weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
             weapon.CustomProperties, weaponState);
