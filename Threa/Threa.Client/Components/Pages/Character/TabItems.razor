@@ -31,8 +31,26 @@
 @if (vm.Model.Id == 0)
 {
     <div class="alert alert-info">
-        <p><strong>Save your character first</strong> to manage inventory.</p>
-        <p><em>After saving, you can browse and add items to your starting inventory.</em></p>
+        @if (OnSave.HasDelegate || OnSaveAndClose.HasDelegate)
+        {
+            <p><strong>Save the template first</strong> to manage equipment.</p>
+            <p><em>After saving, you can browse and add items to the template's starting inventory.</em></p>
+            <div class="d-flex gap-2 mt-2">
+                @if (OnSave.HasDelegate)
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="OnSave">Save</button>
+                }
+                @if (OnSaveAndClose.HasDelegate)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="OnSaveAndClose">Save & Close</button>
+                }
+            </div>
+        }
+        else
+        {
+            <p><strong>Save your character first</strong> to manage inventory.</p>
+            <p><em>After saving, you can browse and add items to your starting inventory.</em></p>
+        }
     </div>
     return;
 }
@@ -462,6 +480,9 @@ else
     [Parameter]
     public ViewModel<GameMechanics.CharacterEdit>? vm { get; set; }
 
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnSaveAndClose { get; set; }
+
     private List<CharacterItem>? allItems;
     private List<CharacterItem>? equippedItems;
     private List<CharacterItem>? inventoryItems;
@@ -521,13 +542,14 @@ else
                 // Inventory items are those not equipped and not inside a container
                 equippedItems = allItems.Where(i => i.IsEquipped).ToList();
                 inventoryItems = allItems.Where(i => !i.IsEquipped && !i.ContainerItemId.HasValue).ToList();
-
-                isLoadingItems = false;
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error loading items: {ex.Message}";
+        }
+        finally
+        {
             isLoadingItems = false;
         }
     }
