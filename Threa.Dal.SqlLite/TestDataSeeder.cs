@@ -530,6 +530,53 @@ public class TestDataSeeder
                 Untrained = 7,
                 Trained = 4,
                 PrimaryAttribute = "INT"
+            },
+
+            // === MEDICAL SKILLS ===
+            new Skill
+            {
+                Id = "first-aid",
+                Name = "First-Aid",
+                Category = SkillCategory.Medical,
+                IsSpecialized = false,
+                Untrained = 4,
+                Trained = 2,
+                PrimaryAttribute = "WIL",
+                DefaultTV = 8,
+                ResultTable = ResultTableType.Healing,
+                RequiresPostUseConcentration = true,
+                PostUseConcentrationRounds = 2,
+                Description = "Basic emergency treatment to stabilize injuries. Anyone can attempt first aid."
+            },
+            new Skill
+            {
+                Id = "nursing",
+                Name = "Nursing",
+                Category = SkillCategory.Medical,
+                IsSpecialized = true,
+                Untrained = 6,
+                Trained = 3,
+                PrimaryAttribute = "INT",
+                DefaultTV = 8,
+                ResultTable = ResultTableType.Healing,
+                RequiresPostUseConcentration = true,
+                PostUseConcentrationRounds = 3,
+                Description = "Professional nursing care providing sustained treatment and recovery support."
+            },
+            new Skill
+            {
+                Id = "doctor",
+                Name = "Doctor",
+                Category = SkillCategory.Medical,
+                IsSpecialized = true,
+                Untrained = 8,
+                Trained = 4,
+                PrimaryAttribute = "INT",
+                DefaultTV = 8,
+                ResultTable = ResultTableType.Healing,
+                RequiresPostUseConcentration = true,
+                PostUseConcentrationRounds = 4,
+                Description = "Advanced medical expertise enabling complex procedures and diagnosis."
             }
         ];
     }

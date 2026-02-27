@@ -3,6 +3,7 @@
 @using Threa.Client.Components.Shared
 
 @inject Radzen.DialogService DialogService
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
 
 <div class="skill-check-mode">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -239,6 +240,18 @@
                                 @(resultSV >= 0 ? "+" : "")@resultSV
                             </td>
                         </tr>
+                        @if (resultConcentrationRounds > 0)
+                        {
+                            <tr>
+                                <td colspan="2"><hr class="my-1" /></td>
+                            </tr>
+                            <tr>
+                                <td>Concentration:</td>
+                                <td class="fw-bold text-info">
+                                    <i class="bi bi-hourglass-split"></i> @resultConcentrationRounds rounds
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -287,6 +300,7 @@
     private int resultSV;
     private int resultWoundPenalty;
     private int resultMultiActionPenalty;
+    private int resultConcentrationRounds;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -479,7 +493,27 @@
         resultSV = sv;
         resultWoundPenalty = woundPenalty;
         resultMultiActionPenalty = multiActionPenalty;
+        resultConcentrationRounds = 0;
         hasRolled = true;
+
+        // Apply post-use concentration if the skill requires it and the check succeeded
+        if (sv >= 0 && selectedSkill.PostUseConcentrationRounds > 0)
+        {
+            var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
+                skillId: selectedSkill.SkillId,
+                skillName: selectedSkill.Name,
+                concentrationRounds: selectedSkill.PostUseConcentrationRounds);
+
+            var effect = EffectPortal.CreateChild(
+                EffectType.Concentration,
+                $"Concentrating: {selectedSkill.Name}",
+                null,
+                (int?)null,
+                stateJson);
+
+            Character.Effects.AddEffect(effect);
+            resultConcentrationRounds = selectedSkill.PostUseConcentrationRounds;
+        }
 
         // Save character state
         if (Character is Csla.Core.ISavable savable)

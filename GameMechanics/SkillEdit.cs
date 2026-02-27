@@ -215,6 +215,22 @@ namespace GameMechanics
     /// </summary>
     public bool IsManaSkill => Category == SkillCategory.Mana;
 
+    /// <summary>
+    /// Whether this is a medical/healing skill.
+    /// </summary>
+    public bool IsMedicalSkill => Category == SkillCategory.Medical;
+
+    public static readonly PropertyInfo<int> PostUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PostUseConcentrationRounds));
+    /// <summary>
+    /// Number of concentration rounds required after using this skill.
+    /// Used by medical skills to define treatment duration.
+    /// </summary>
+    public int PostUseConcentrationRounds
+    {
+      get => GetProperty(PostUseConcentrationRoundsProperty);
+      private set => LoadProperty(PostUseConcentrationRoundsProperty, value);
+    }
+
     // === Attribute Requirement Constants ===
 
     /// <summary>
@@ -454,6 +470,9 @@ namespace GameMechanics
         IsMagic = skill.IsMagic;
         IsTheology = skill.IsTheology;
         IsPsionic = skill.IsPsionic;
+
+        // Load concentration properties
+        PostUseConcentrationRounds = skill.PostUseConcentrationRounds;
       }
     }
 
@@ -497,6 +516,9 @@ namespace GameMechanics
         skill.AppliesPhysicalityBonus = AppliesPhysicalityBonus;
         skill.RequiresTarget = RequiresTarget;
         skill.IsFreeAction = IsFreeAction;
+
+        // Save concentration properties
+        skill.PostUseConcentrationRounds = PostUseConcentrationRounds;
       }
     }
 

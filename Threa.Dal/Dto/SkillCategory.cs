@@ -36,6 +36,11 @@ public enum SkillCategory
     Knowledge = 5,
 
     /// <summary>
+    /// Medical and healing skills (First-Aid, Nursing, Doctor, etc.)
+    /// </summary>
+    Medical = 6,
+
+    /// <summary>
     /// Mana gathering/channeling skills (Fire Mana, Water Mana, etc.)
     /// </summary>
     Mana = 10,

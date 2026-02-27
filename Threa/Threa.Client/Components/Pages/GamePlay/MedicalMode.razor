@@ -2,6 +2,7 @@
 @using GameMechanics.Effects.Behaviors
 @using Threa.Dal.Dto
 @using Threa.Client.Components.Shared
+@using GameMechanics
 
 @inject Radzen.DialogService DialogService
 @inject IChildDataPortal<GameMechanics.EffectRecord> effectPortal
@@ -26,35 +27,34 @@
                     </div>
                     <div class="card-body">
                         <div class="list-group">
-                            @foreach (var skillOption in GetAvailableMedicalSkills())
+                            @foreach (var skill in GetMedicalSkills())
                             {
-                                <button class="list-group-item list-group-item-action @(selectedSkillType == skillOption.Type ? "active" : "")"
-                                        @onclick="() => SelectSkill(skillOption.Type)"
-                                        disabled="@(!skillOption.IsAvailable)">
+                                <button class="list-group-item list-group-item-action @(selectedSkill?.Id == skill.Id ? "active" : "")"
+                                        @onclick="() => SelectSkill(skill)">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>@skillOption.Name</strong>
-                                            <div class="small @(selectedSkillType == skillOption.Type ? "" : "text-muted")">
-                                                @skillOption.Attribute skill - @skillOption.ConcentrationRounds round@(skillOption.ConcentrationRounds > 1 ? "s" : "") to complete
+                                            <strong>@skill.Name</strong>
+                                            <div class="small @(selectedSkill?.Id == skill.Id ? "" : "text-muted")">
+                                                @skill.PrimaryAttribute skill - @skill.PostUseConcentrationRounds round@(skill.PostUseConcentrationRounds != 1 ? "s" : "") to complete
                                             </div>
                                         </div>
                                         <div class="text-end">
-                                            <span class="badge @(skillOption.IsAvailable ? "bg-primary" : "bg-secondary")">
-                                                AS @skillOption.AbilityScore
+                                            <span class="badge bg-primary">
+                                                AS @skill.AbilityScore
                                             </span>
-                                            @if (!skillOption.IsAvailable)
-                                            {
-                                                <div class="small text-danger">@skillOption.DisabledReason</div>
-                                            }
                                         </div>
                                     </div>
                                 </button>
+                            }
+                            @if (!GetMedicalSkills().Any())
+                            {
+                                <div class="text-muted p-2">No medical skills found. Add First-Aid, Nursing, or Doctor skills to this character.</div>
                             }
                         </div>
                     </div>
                 </div>
 
-                @if (selectedSkillType.HasValue)
+                @if (selectedSkill != null)
                 {
                     <!-- Target Selection -->
                     <div class="card mb-3">
@@ -111,6 +111,20 @@
                                                 OnCostTypeSelected="OnCostTypeChanged" />
                         </div>
                     </div>
+
+                    <!-- Boost -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>4. Boost (Optional)</strong>
+                        </div>
+                        <div class="card-body">
+                            <BoostSelector AvailableAP="@GetAvailableAPForBoost()"
+                                           AvailableFAT="@GetAvailableFATForBoost()"
+                                           CostType="@costType"
+                                           OnBoostChanged="OnBoostChanged"
+                                           OnBoostCostChanged="OnBoostCostChanged" />
+                        </div>
+                    </div>
                 }
             </div>
 
@@ -121,19 +135,25 @@
                         <strong><i class="bi bi-info-circle"></i> Treatment Summary</strong>
                     </div>
                     <div class="card-body">
-                        @if (selectedSkillType.HasValue && targetType != TargetType.None)
+                        @if (selectedSkill != null && targetType != TargetType.None)
                         {
-                            var skillInfo = GetSkillInfo(selectedSkillType.Value);
                             <table class="table table-sm mb-0">
                                 <tbody>
                                     <tr>
                                         <td>Skill:</td>
-                                        <td class="fw-bold">@skillInfo.Name</td>
+                                        <td class="fw-bold">@selectedSkill.Name</td>
                                     </tr>
                                     <tr>
                                         <td>Ability Score:</td>
-                                        <td class="fw-bold">@skillInfo.AbilityScore</td>
+                                        <td class="fw-bold">@selectedSkill.AbilityScore</td>
                                     </tr>
+                                    @if (boostValue > 0)
+                                    {
+                                        <tr>
+                                            <td>Boost:</td>
+                                            <td class="fw-bold text-success">+@boostValue</td>
+                                        </tr>
+                                    }
                                     <tr>
                                         <td>Target Value:</td>
                                         <td class="fw-bold">@MedicalResolver.MedicalTV</td>
@@ -149,7 +169,7 @@
                                     {
                                         <tr>
                                             <td>Concentration:</td>
-                                            <td class="fw-bold">@skillInfo.ConcentrationRounds round@(skillInfo.ConcentrationRounds > 1 ? "s" : "")</td>
+                                            <td class="fw-bold">@selectedSkill.PostUseConcentrationRounds round@(selectedSkill.PostUseConcentrationRounds != 1 ? "s" : "")</td>
                                         </tr>
                                     }
                                     <tr>
@@ -159,6 +179,13 @@
                                         <td>Cost:</td>
                                         <td>@GetCostDisplay()</td>
                                     </tr>
+                                    @if (boostValue > 0)
+                                    {
+                                        <tr>
+                                            <td>Boost Cost:</td>
+                                            <td class="text-warning">@GetBoostCostDisplay()</td>
+                                        </tr>
+                                    }
                                 </tbody>
                             </table>
 
@@ -192,7 +219,8 @@
                     <div class="card-footer">
                         <button class="btn btn-success btn-lg w-100"
                                 @onclick="RollCheck"
-                                disabled="@(!CanRoll())">
+                                disabled="@(!CanRoll())"
+                                title="@(selectedSkill == null ? "Select a skill" : targetType == TargetType.None ? "Select a target" : "")">
                             <i class="bi bi-dice-5"></i> Roll Check
                         </button>
                     </div>
@@ -247,11 +275,11 @@
                     <tbody>
                         <tr>
                             <td>Skill:</td>
-                            <td class="fw-bold">@MedicalResolver.GetSkillDisplayName(selectedSkillType!.Value)</td>
+                            <td class="fw-bold">@selectedSkill?.Name</td>
                         </tr>
                         <tr>
                             <td>Ability Score:</td>
-                            <td class="fw-bold">@checkResult?.AbilityScore</td>
+                            <td class="fw-bold">@checkResult?.AbilityScore@(boostValue > 0 ? $" (+{boostValue} boost)" : "")</td>
                         </tr>
                         <tr>
                             <td>Dice Roll:</td>
@@ -354,17 +382,28 @@
     private enum TargetType { None, Self, Other }
 
     // Selection state
-    private MedicalSkillType? selectedSkillType;
+    private SkillEdit? selectedSkill;
     private TargetType targetType = TargetType.None;
     private ActionCostType costType = ActionCostType.OneAPOneFat;
+
+    // Boost state
+    private int boostValue;
+    private int boostAPCost;
+    private int boostFATCost;
 
     // Roll state
     private bool hasRolled;
     private MedicalCheckResult? checkResult;
 
-    private void SelectSkill(MedicalSkillType type)
+    private void SelectSkill(SkillEdit skill)
     {
-        selectedSkillType = type;
+        selectedSkill = skill;
+    }
+
+    private IEnumerable<SkillEdit> GetMedicalSkills()
+    {
+        if (Character == null) return [];
+        return Character.Skills.Where(s => s.IsMedicalSkill);
     }
 
     private void SelectTarget(TargetType type)
@@ -375,95 +414,40 @@
     private void OnCostTypeChanged(ActionCostType type)
     {
         costType = type;
+        boostValue = 0;
+        boostAPCost = 0;
+        boostFATCost = 0;
     }
 
-    private record MedicalSkillOption(
-        MedicalSkillType Type,
-        string Name,
-        string Attribute,
-        int AbilityScore,
-        int ConcentrationRounds,
-        bool IsAvailable,
-        string? DisabledReason);
+    private void OnBoostChanged(int totalBoost) => boostValue = totalBoost;
 
-    private IEnumerable<MedicalSkillOption> GetAvailableMedicalSkills()
+    private void OnBoostCostChanged((int Boost, int APCost, int FATCost) cost)
     {
-        if (Character == null)
-            yield break;
-
-        // First-Aid uses WIL
-        var wilAttr = Character.AttributeList.FirstOrDefault(a => a.Name == "WIL");
-        var firstAidSkill = FindSkill("First-Aid", "First Aid", "FirstAid");
-        int firstAidAS = CalculateAS(wilAttr?.Value ?? 10, firstAidSkill?.Level ?? 0);
-
-        yield return new MedicalSkillOption(
-            MedicalSkillType.FirstAid,
-            "First-Aid",
-            "WIL",
-            firstAidAS,
-            2,
-            true,
-            null);
-
-        // Nursing uses INT
-        var intAttr = Character.AttributeList.FirstOrDefault(a => a.Name == "INT");
-        var nursingSkill = FindSkill("Nursing");
-        int nursingAS = CalculateAS(intAttr?.Value ?? 10, nursingSkill?.Level ?? 0);
-        bool hasNursing = nursingSkill != null && nursingSkill.Level > 0;
-
-        yield return new MedicalSkillOption(
-            MedicalSkillType.Nursing,
-            "Nursing",
-            "INT",
-            nursingAS,
-            3,
-            hasNursing,
-            hasNursing ? null : "Requires Nursing skill");
-
-        // Doctor uses INT
-        var doctorSkill = FindSkill("Doctor");
-        int doctorAS = CalculateAS(intAttr?.Value ?? 10, doctorSkill?.Level ?? 0);
-        bool hasDoctor = doctorSkill != null && doctorSkill.Level > 0;
-
-        yield return new MedicalSkillOption(
-            MedicalSkillType.Doctor,
-            "Doctor",
-            "INT",
-            doctorAS,
-            4,
-            hasDoctor,
-            hasDoctor ? null : "Requires Doctor skill");
+        boostValue = cost.Boost;
+        boostAPCost = cost.APCost;
+        boostFATCost = cost.FATCost;
     }
 
-    /// <summary>
-    /// Find a skill by checking multiple possible name variations.
-    /// </summary>
-    private GameMechanics.SkillEdit? FindSkill(params string[] possibleNames)
+    private int GetAvailableAPForBoost()
     {
-        if (Character == null) return null;
-
-        foreach (var name in possibleNames)
-        {
-            var skill = Character.Skills.FirstOrDefault(s =>
-                s.Name.Equals(name, StringComparison.OrdinalIgnoreCase) ||
-                s.Id.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (skill != null)
-                return skill;
-        }
-        return null;
+        var baseCost = costType == ActionCostType.TwoAP ? 2 : 1;
+        return Math.Max(0, (Character?.ActionPoints.Available ?? 0) - baseCost);
     }
 
-    private int CalculateAS(int attributeValue, int skillLevel)
+    private int GetAvailableFATForBoost()
     {
-        // AS = Attribute + Skill Level - 5
-        return attributeValue + skillLevel - 5;
+        var baseCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        return Math.Max(0, (Character?.Fatigue.Value ?? 0) - baseCost);
     }
 
-    private MedicalSkillOption GetSkillInfo(MedicalSkillType type)
+    private string GetBoostCostDisplay()
     {
-        return GetAvailableMedicalSkills().FirstOrDefault(s => s.Type == type)
-            ?? new MedicalSkillOption(type, "Unknown", "?", 0, 2, false, null);
+        if (boostValue == 0) return "None";
+        if (boostFATCost > 0)
+            return $"{boostAPCost} AP + {boostFATCost} FAT (+{boostValue} AS)";
+        return $"{boostAPCost} AP (+{boostValue} AS)";
     }
+
 
     private string GetCostDisplay()
     {
@@ -477,14 +461,14 @@
 
     private bool CanRoll()
     {
-        if (Character == null || !selectedSkillType.HasValue || targetType == TargetType.None) return false;
+        if (Character == null || selectedSkill == null || targetType == TargetType.None) return false;
         if (Character.IsPassedOut) return false;
 
         // Only check concentration for Self target (Other target doesn't start concentration)
         if (targetType == TargetType.Self && ConcentrationBehavior.IsConcentrating(Character)) return false;
 
-        var apNeeded = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatNeeded = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var apNeeded = (costType == ActionCostType.TwoAP ? 2 : 1) + boostAPCost;
+        var fatNeeded = (costType == ActionCostType.OneAPOneFat ? 1 : 0) + boostFATCost;
 
         return Character.ActionPoints.Available >= apNeeded &&
                Character.Fatigue.Value >= fatNeeded;
@@ -492,7 +476,7 @@
 
     private async Task RollCheck()
     {
-        if (!CanRoll() || Character == null || !selectedSkillType.HasValue) return;
+        if (!CanRoll() || Character == null || selectedSkill == null) return;
 
         // Check if character is concentrating - only need to break for Self target (which starts new concentration)
         if (targetType == TargetType.Self)
@@ -516,29 +500,24 @@
         }
 
         // Deduct costs
-        var apCost = costType == ActionCostType.TwoAP ? 2 : 1;
-        var fatCost = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+        var apCost = (costType == ActionCostType.TwoAP ? 2 : 1) + boostAPCost;
+        var fatCost = (costType == ActionCostType.OneAPOneFat ? 1 : 0) + boostFATCost;
 
         Character.ActionPoints.Available -= apCost;
         Character.ActionPoints.ActionsTakenThisRound += 1;
         if (fatCost > 0)
             Character.Fatigue.Value -= fatCost;
 
-        // Get skill info
-        var skillInfo = GetSkillInfo(selectedSkillType.Value);
-
-        // Count wounds
-        int woundCount = Character.Effects.Count(e => e.EffectType == EffectType.Wound);
-
-        // Create request and resolve
+        // Create request and resolve using skill definition data
+        // AbilityScore is pre-computed and already includes wounds, effects, and attribute bonuses
         var request = new MedicalRequest
         {
-            SkillType = selectedSkillType.Value,
-            SkillLevel = GetSkillLevel(selectedSkillType.Value),
-            AttributeValue = GetAttributeValue(selectedSkillType.Value),
-            AttributeName = skillInfo.Attribute,
-            WoundCount = woundCount,
-            IsMultipleAction = Character.ActionPoints.ActionsTakenThisRound > 1
+            SkillDisplayName = selectedSkill.Name,
+            AbilityScore = selectedSkill.AbilityScore,
+            AttributeName = selectedSkill.PrimaryAttribute,
+            ConcentrationRounds = selectedSkill.PostUseConcentrationRounds,
+            IsMultipleAction = Character.ActionPoints.ActionsTakenThisRound > 1,
+            Boost = boostValue
         };
 
         var resolver = new MedicalResolver();
@@ -558,35 +537,11 @@
         }
     }
 
-    private int GetSkillLevel(MedicalSkillType type)
-    {
-        if (Character == null) return 0;
-
-        var skill = type switch
-        {
-            MedicalSkillType.FirstAid => FindSkill("First-Aid", "First Aid", "FirstAid"),
-            MedicalSkillType.Nursing => FindSkill("Nursing"),
-            MedicalSkillType.Doctor => FindSkill("Doctor"),
-            _ => null
-        };
-
-        return skill?.Level ?? 0;
-    }
-
-    private int GetAttributeValue(MedicalSkillType type)
-    {
-        if (Character == null) return 10;
-
-        var attrName = MedicalResolver.GetAttributeName(type);
-        var attr = Character.AttributeList.FirstOrDefault(a => a.Name == attrName);
-        return attr?.Value ?? 10;
-    }
-
     private async Task StartConcentration()
     {
-        if (Character == null || checkResult == null || !selectedSkillType.HasValue) return;
+        if (Character == null || checkResult == null || selectedSkill == null) return;
 
-        var skillName = MedicalResolver.GetSkillDisplayName(selectedSkillType.Value);
+        var skillName = selectedSkill.Name;
         string message;
 
         if (targetType == TargetType.Self)

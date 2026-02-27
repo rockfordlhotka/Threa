@@ -1,6 +1,5 @@
 using GameMechanics.Actions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Threa.Dal.Dto;
 
 namespace GameMechanics.Test;
 
@@ -14,15 +13,13 @@ public class MedicalResolverTests
         var roller = DeterministicDiceRoller.WithFixed4dFPlus(0);
         var resolver = new MedicalResolver(roller);
 
-        // WIL 12, Skill Level 4 => AS = 12 + 4 - 5 = 11
+        // AS = 11 (attr 12 + skill bonus 4 - 5, or equivalent pre-computed)
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 4,
-            AttributeValue = 12,
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 11,
             AttributeName = "WIL",
-            WoundCount = 0,
-            IsMultipleAction = false
+            ConcentrationRounds = 2
         };
 
         // Act
@@ -47,17 +44,16 @@ public class MedicalResolverTests
 
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 2,
-            AttributeValue = 10,
-            AttributeName = "WIL"
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 7,   // e.g., attr 10 + skill 2 - 5
+            AttributeName = "WIL",
+            ConcentrationRounds = 2
         };
 
         // Act
         var result = resolver.ResolveCheck(request);
 
         // Assert
-        // AS = 10 + 2 - 5 = 7
         // Total = 7 + 4 = 11
         // SV = 11 - 8 = 3
         Assert.AreEqual(7, result.AbilityScore);
@@ -76,17 +72,16 @@ public class MedicalResolverTests
 
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 2,
-            AttributeValue = 10,
-            AttributeName = "WIL"
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 7,
+            AttributeName = "WIL",
+            ConcentrationRounds = 2
         };
 
         // Act
         var result = resolver.ResolveCheck(request);
 
         // Assert
-        // AS = 10 + 2 - 5 = 7
         // Total = 7 + (-4) = 3
         // SV = 3 - 8 = -5
         Assert.AreEqual(7, result.AbilityScore);
@@ -97,27 +92,26 @@ public class MedicalResolverTests
     }
 
     [TestMethod]
-    public void ResolveCheck_WithWounds_AppliesPenalty()
+    public void ResolveCheck_WithWounds_PenaltyAlreadyInAbilityScore()
     {
         // Arrange
         var roller = DeterministicDiceRoller.WithFixed4dFPlus(0);
         var resolver = new MedicalResolver(roller);
 
+        // Wound penalties are pre-applied in AbilityScore via SkillEdit.AbilityScore
+        // Base AS would be 11 (12 + 4 - 5), wounds reduce it to 7 (2 wounds = -4)
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 4,
-            AttributeValue = 12,
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 7,   // pre-computed with wound penalties applied
             AttributeName = "WIL",
-            WoundCount = 2  // -4 penalty
+            ConcentrationRounds = 2
         };
 
         // Act
         var result = resolver.ResolveCheck(request);
 
         // Assert
-        // Base AS = 12 + 4 - 5 = 11
-        // With wounds: 11 - 4 = 7
         // SV = 7 - 8 = -1
         Assert.AreEqual(7, result.AbilityScore);
         Assert.AreEqual(-1, result.SuccessValue);
@@ -133,18 +127,17 @@ public class MedicalResolverTests
 
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 4,
-            AttributeValue = 12,
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 11,
             AttributeName = "WIL",
-            IsMultipleAction = true  // -1 penalty
+            ConcentrationRounds = 2,
+            IsMultipleAction = true  // -1 penalty applied by resolver
         };
 
         // Act
         var result = resolver.ResolveCheck(request);
 
         // Assert
-        // Base AS = 12 + 4 - 5 = 11
         // With multiple action: 11 - 1 = 10
         // SV = 10 - 8 = 2
         Assert.AreEqual(10, result.AbilityScore);
@@ -153,10 +146,10 @@ public class MedicalResolverTests
     }
 
     [TestMethod]
-    [DataRow(MedicalSkillType.FirstAid, 2)]
-    [DataRow(MedicalSkillType.Nursing, 3)]
-    [DataRow(MedicalSkillType.Doctor, 4)]
-    public void ResolveCheck_ReturnsCorrectConcentrationRounds(MedicalSkillType skillType, int expectedRounds)
+    [DataRow(2)]
+    [DataRow(3)]
+    [DataRow(4)]
+    public void ResolveCheck_PassesThroughConcentrationRounds(int concentrationRounds)
     {
         // Arrange
         var roller = DeterministicDiceRoller.WithFixed4dFPlus(0);
@@ -164,17 +157,17 @@ public class MedicalResolverTests
 
         var request = new MedicalRequest
         {
-            SkillType = skillType,
-            SkillLevel = 2,
-            AttributeValue = 10,
-            AttributeName = skillType == MedicalSkillType.FirstAid ? "WIL" : "INT"
+            SkillDisplayName = "Test Skill",
+            AbilityScore = 7,
+            AttributeName = "WIL",
+            ConcentrationRounds = concentrationRounds
         };
 
         // Act
         var result = resolver.ResolveCheck(request);
 
-        // Assert
-        Assert.AreEqual(expectedRounds, result.ConcentrationRounds);
+        // Assert - concentration rounds are passed through from the skill definition
+        Assert.AreEqual(concentrationRounds, result.ConcentrationRounds);
     }
 
     [TestMethod]
@@ -195,16 +188,16 @@ public class MedicalResolverTests
         // Arrange
         // We need AS + dice - TV = targetSV
         // With TV = 8 and AS = 10, dice needs to be targetSV - 2
-        int diceRoll = targetSV + 8 - 10;  // AS of 10 (attr 10 + skill 5 - 5)
+        int diceRoll = targetSV + 8 - 10;
         var roller = DeterministicDiceRoller.WithFixed4dFPlus(diceRoll);
         var resolver = new MedicalResolver(roller);
 
         var request = new MedicalRequest
         {
-            SkillType = MedicalSkillType.FirstAid,
-            SkillLevel = 5,
-            AttributeValue = 10,
-            AttributeName = "WIL"
+            SkillDisplayName = "First-Aid",
+            AbilityScore = 10,
+            AttributeName = "WIL",
+            ConcentrationRounds = 2
         };
 
         // Act
@@ -213,30 +206,6 @@ public class MedicalResolverTests
         // Assert
         Assert.AreEqual(targetSV, result.SuccessValue, $"SV should be {targetSV}");
         Assert.AreEqual(expectedHealing, result.HealingAmount, $"Healing for SV {targetSV} should be {expectedHealing}");
-    }
-
-    [TestMethod]
-    public void GetConcentrationRounds_ReturnsCorrectValues()
-    {
-        Assert.AreEqual(2, MedicalResolver.GetConcentrationRounds(MedicalSkillType.FirstAid));
-        Assert.AreEqual(3, MedicalResolver.GetConcentrationRounds(MedicalSkillType.Nursing));
-        Assert.AreEqual(4, MedicalResolver.GetConcentrationRounds(MedicalSkillType.Doctor));
-    }
-
-    [TestMethod]
-    public void GetAttributeName_ReturnsCorrectAttributes()
-    {
-        Assert.AreEqual("WIL", MedicalResolver.GetAttributeName(MedicalSkillType.FirstAid));
-        Assert.AreEqual("INT", MedicalResolver.GetAttributeName(MedicalSkillType.Nursing));
-        Assert.AreEqual("INT", MedicalResolver.GetAttributeName(MedicalSkillType.Doctor));
-    }
-
-    [TestMethod]
-    public void GetSkillDisplayName_ReturnsCorrectNames()
-    {
-        Assert.AreEqual("First-Aid", MedicalResolver.GetSkillDisplayName(MedicalSkillType.FirstAid));
-        Assert.AreEqual("Nursing", MedicalResolver.GetSkillDisplayName(MedicalSkillType.Nursing));
-        Assert.AreEqual("Doctor", MedicalResolver.GetSkillDisplayName(MedicalSkillType.Doctor));
     }
 
     [TestMethod]

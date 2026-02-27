@@ -64,7 +64,8 @@
             native = native.Where(s => s.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase));
 
         var nativeContexts = native.Select(s =>
-            new GameMechanics.SkillCheckContext(s.Name, s.PrimaryAttribute, s.AbilityScore));
+            new GameMechanics.SkillCheckContext(s.Name, s.PrimaryAttribute, s.AbilityScore,
+                SkillId: s.Id, PostUseConcentrationRounds: s.PostUseConcentrationRounds));
 
         // Chip-only skills (granted by chip, not already a native skill)
         var chipOnly = (Character == null

@@ -158,6 +158,12 @@ public class Skill
     public bool IsCombatSkill => Category == SkillCategory.Combat;
 
     /// <summary>
+    /// Whether this is a medical/healing skill.
+    /// UI should show medical-specific controls (concentration rounds, healing result).
+    /// </summary>
+    public bool IsMedicalSkill => Category == SkillCategory.Medical;
+
+    /// <summary>
     /// Whether this skill can be deleted.
     /// Standard attribute skills cannot be deleted as they are core to the game system.
     /// </summary>
