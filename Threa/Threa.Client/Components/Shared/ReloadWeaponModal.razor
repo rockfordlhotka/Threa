@@ -89,7 +89,7 @@
         {
             <div class="alert alert-secondary">
                 <i class="bi bi-info-circle me-1"></i>
-                Loading full magazine: <strong>@roundsToLoad rounds</strong>
+                Will transfer <strong>@roundsToLoad rounds</strong> from the pack into the weapon.
             </div>
         }
 
@@ -191,7 +191,18 @@
     private int chamberCapacity;
 
     // Computed values
-    private int maxRoundsToLoad => Math.Min(spaceAvailable, selectedAmmo?.StackSize ?? 0);
+    private int maxRoundsToLoad
+    {
+        get
+        {
+            if (selectedAmmo == null) return 0;
+            if (selectedIsLooseAmmo)
+                return Math.Min(spaceAvailable, selectedAmmo.StackSize);
+            // Magazine: use the rounds available in the magazine, not StackSize (which is always 1)
+            var magazineState = AmmoContainerState.FromJson(selectedAmmo.CustomProperties);
+            return Math.Min(spaceAvailable, magazineState.LoadedAmmo);
+        }
+    }
     private int durationRounds => (int)Math.Ceiling(roundsToLoad / 3.0);
     private bool IsFormValid => selectedAmmo != null && roundsToLoad > 0 && roundsToLoad <= maxRoundsToLoad && CanAffordSelectedCost;
     private bool CanAffordSelectedCost => useTwoApCost ? CanAffordTwoAp : CanAffordOneApOneFat;
