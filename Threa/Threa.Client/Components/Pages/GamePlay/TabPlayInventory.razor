@@ -400,6 +400,28 @@
                     <i class="bi bi-box-arrow-up"></i> Unload
                 </button>
             }
+            @{
+                var _selTpl = selectedItem != null ? GetTemplate(selectedItem.ItemTemplateId) : null;
+                var _showEquip = selectedItem != null && !selectedItem.IsEquipped &&
+                                 _selTpl != null && IsEquippableType(_selTpl.ItemType);
+                var _equipDirect = _showEquip &&
+                                   (_selTpl!.OccupiesAllSlots || _selTpl.EquipmentSlots.Count <= 1);
+            }
+            @if (_showEquip)
+            {
+                @if (_equipDirect)
+                {
+                    <button class="btn btn-outline-success ms-2" @onclick="EquipSelectedItemDirect">
+                        <i class="bi bi-shield-check"></i> Equip
+                    </button>
+                }
+                else
+                {
+                    <span class="ms-2 text-success small fst-italic">
+                        <i class="bi bi-arrow-right"></i> Click a highlighted slot to equip
+                    </span>
+                }
+            }
             @if (selectedItem != null)
             {
                 <span class="ms-3 text-muted">
@@ -1027,6 +1049,18 @@
     }
 
     // Equip/Unequip methods
+    private async Task EquipSelectedItemDirect()
+    {
+        if (selectedItem == null) return;
+        var template = GetTemplate(selectedItem.ItemTemplateId);
+        if (template == null) return;
+
+        var slot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+        if (slot == EquipmentSlot.None) return;
+
+        await OnEquipmentSlotClick(slot);
+    }
+
     private async Task OnEquipmentSlotClick(EquipmentSlot slot)
     {
         try
