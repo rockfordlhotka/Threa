@@ -529,7 +529,8 @@ else
                                              Theme="@table.Theme"
                                              DefaultCalendarId="@table.DefaultCalendarId"
                                              IsGm="true"
-                                             OnDefaultCalendarChanged="ChangeDefaultCalendar" />
+                                             OnDefaultCalendarChanged="ChangeDefaultCalendar"
+                                             OnRequestShowModal="ToggleBodyCalendarModal" />
                         </div>
                     </div>
 
@@ -649,6 +650,18 @@ else
     </div>
 }
 
+@* Calendar detail modal for the body time display - rendered at page level to avoid
+   clip-path containment from the scifi-theme card that surrounds the time controls *@
+@if (showBodyCalendarModal && table != null)
+{
+    <CalendarModal EpochSeconds="table.CurrentTimeSeconds"
+                   Theme="@table.Theme"
+                   DefaultCalendarId="@table.DefaultCalendarId"
+                   IsGm="true"
+                   OnDefaultChanged="ChangeDefaultCalendar"
+                   OnClose="() => showBodyCalendarModal = false" />
+}
+
 @* NPC Targeting Modal - GM acts as defender for incoming PC attacks on NPCs *@
 @if (showNpcTargetingModal && currentNpcTargetingInteraction != null)
 {
@@ -737,6 +750,10 @@ else
 
     // Set Time modal state
     private bool showSetTimeModal = false;
+
+    // Calendar modal state for the body time display (rendered at page level to avoid clip-path containment)
+    private bool showBodyCalendarModal = false;
+    private void ToggleBodyCalendarModal() => showBodyCalendarModal = !showBodyCalendarModal;
 
     // Selection state for batch operations
     private HashSet<int> selectedCharacterIds = new();
