@@ -334,7 +334,7 @@
                 else
                 {
                     <div class="inventory-grid">
-                        @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null))
+                        @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null && !loadedMagazineIds.Contains(i.Id)))
                         {
                             <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "") @GetContainerFillClass(item)"
                                  title="@GetItemTooltip(item)"
@@ -677,6 +677,7 @@
     public EventCallback OnCharacterChanged { get; set; }
 
     private List<CharacterItem>? inventoryItems;
+    private HashSet<Guid> loadedMagazineIds = new();
     private Dictionary<int, ItemTemplate>? templateCache;
     private bool isLoading = true;
 
@@ -830,6 +831,13 @@
                     item.Template = template;
                 }
             }
+
+            // Collect magazine IDs currently loaded in weapons so they can be hidden from inventory
+            loadedMagazineIds = inventoryItems
+                .Select(i => WeaponAmmoState.FromJson(i.CustomProperties).LoadedMagazineId)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
         }
         finally
         {
