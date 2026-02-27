@@ -601,6 +601,8 @@ else
     {
         var query = itemTemplates?.AsEnumerable() ?? Enumerable.Empty<ItemTemplate>();
 
+        query = query.Where(i => !i.IsVirtual);
+
         if (selectedType.HasValue)
             query = query.Where(i => i.ItemType == selectedType.Value);
 
