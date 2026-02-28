@@ -1783,13 +1783,14 @@
         effect.Source = "Combat";
         Character.Effects.AddEffect(effect);
 
-        if (Character is Csla.Core.ISavable savable)
-            await savable.SaveAsync();
-
         LogActivity($"{Character.Name} enters Parry Mode with {weaponSkillName}.", ActivityCategory.Combat);
 
+        // Prefer saving via OnCharacterChanged so the parent can update its reference.
+        // The fallback direct save is for standalone usage without a parent save callback.
         if (OnCharacterChanged.HasDelegate)
             await OnCharacterChanged.InvokeAsync();
+        else if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
 
         StateHasChanged();
     }
