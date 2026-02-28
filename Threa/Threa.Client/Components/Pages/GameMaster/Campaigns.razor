@@ -8,7 +8,6 @@
 @using Threa.Services
 @using Threa.Client.Components.Shared
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableList> tableListPortal
@@ -98,7 +97,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
 
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {

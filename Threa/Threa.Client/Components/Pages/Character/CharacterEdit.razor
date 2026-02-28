@@ -9,7 +9,6 @@
 @using GameMechanics
 @using Threa.Services
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject ViewModel<GameMechanics.CharacterEdit> vm
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
@@ -115,7 +114,6 @@ else
     protected override async Task OnInitializedAsync()
     {
         // Every page _must_ initialize the state manager
-        await StateManager.InitializeAsync();
 
         vm.Saved += OnSaved;
         vm.ModelChanged += OnModelChanged;

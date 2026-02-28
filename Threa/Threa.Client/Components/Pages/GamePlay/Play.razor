@@ -16,7 +16,6 @@
 @using Threa.Client.Components.Pages.GamePlay.Targeting
 @using Radzen
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject ITargetingInteractionManager TargetingManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
@@ -496,7 +495,6 @@ public record ActivityLogEntry(DateTime Timestamp, string Message, string Source
 
 protected override async Task OnInitializedAsync()
 {
-    await StateManager.InitializeAsync();
 
     if (RenderModeProvider.GetRenderMode(this).IsInteractive())
     {

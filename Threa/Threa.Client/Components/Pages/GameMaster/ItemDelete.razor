@@ -9,7 +9,6 @@
 
 @inject IDataPortal<ItemTemplateEdit> itemPortal
 @inject NavigationManager NavigationManager
-@inject Csla.Blazor.State.StateManager StateManager
 
 <h3>Delete Item</h3>
 
@@ -75,7 +74,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
 
         try
         {

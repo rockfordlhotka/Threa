@@ -8,7 +8,6 @@
 @using Threa.Services
 @using GameMechanics.Time
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
@@ -131,7 +130,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

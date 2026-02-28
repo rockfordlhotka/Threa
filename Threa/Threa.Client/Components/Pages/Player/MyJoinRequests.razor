@@ -9,7 +9,6 @@
 @using GameMechanics.GamePlay
 @using Threa.Dal.Dto
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 @inject ApplicationContext applicationContext
@@ -107,7 +106,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

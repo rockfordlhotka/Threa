@@ -6,7 +6,6 @@
 
 @using Threa.Services
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject ViewModel<GameMechanics.CharacterEdit> vm
 @inject IDataPortal<GameMechanics.CharacterEdit> characterPortal
@@ -88,7 +87,6 @@ private bool isActivating = false;
 
 protected override async Task OnInitializedAsync()
 {
-    await StateManager.InitializeAsync();
 
     vm.ModelChanged += async () => await InvokeAsync(() => StateHasChanged());
     vm.ModelPropertyChanged += async (s, a) => await InvokeAsync(() => StateHasChanged());
