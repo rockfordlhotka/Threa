@@ -531,6 +531,12 @@ namespace GameMechanics
         // Save concentration properties
         skill.PostUseConcentrationRounds = PostUseConcentrationRounds;
         skill.SvBonus = SvBonus;
+
+        // Save category and type flags
+        skill.Category = Category;
+        skill.IsMagic = IsMagic;
+        skill.IsTheology = IsTheology;
+        skill.IsPsionic = IsPsionic;
       }
     }
 

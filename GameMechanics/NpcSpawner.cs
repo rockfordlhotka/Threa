@@ -257,6 +257,8 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                     IsFreeAction = s.IsFreeAction,
                     IsPassive = s.IsPassive,
                     ActionDescription = s.ActionDescription,
+                    PostUseConcentrationRounds = s.PostUseConcentrationRounds,
+                    SvBonus = s.SvBonus,
 
                     // CharacterSkill-specific properties
                     Level = s.Level,
