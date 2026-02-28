@@ -670,7 +670,7 @@
     {
         if (Character?.Effects == null) return null;
 
-        var woundEffects = Character.Effects.GetEffectsByType(EffectType.Wound).ToList();
+        var woundEffects = Character.Effects.GetEffectsByType(EffectType.Wound).Where(e => e.IsActive).ToList();
         if (!woundEffects.Any()) return null;
 
         // Find the minimum RoundsToDamage across all wound effects
