@@ -28,7 +28,7 @@
                 <!-- Melee Weapon Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Weapon</label>
-                    @if (AvailableWeapons?.Count > 1)
+                    @if (AvailableWeapons?.Count > 0)
                     {
                         <select class="form-select form-select-sm"
                                 disabled="@IsReadOnly"
@@ -50,20 +50,11 @@
                     }
                     else
                     {
-                        var displayWeapon = GetSelectedWeapon();
-                        var displayName = displayWeapon?.Name ?? InitialData?.WeaponName ?? "Unarmed";
-                        var displayAV = displayWeapon?.WeaponAVModifier ?? WeaponAVModifier;
                         <div class="alert alert-info py-2 mb-0">
-                            <strong>@displayName</strong>
-                            @if (displayAV != 0)
-                            {
-                                <span class="ms-2 badge @(displayAV >= 0 ? "bg-success" : "bg-danger")">
-                                    AV @(displayAV >= 0 ? "+" : "")@displayAV
-                                </span>
-                            }
+                            <strong>Unarmed</strong>
                         </div>
                     }
-                    <small class="text-muted">Weapon is selected based on equipped items</small>
+                    <small class="text-muted">Select melee weapon or unarmed attack</small>
                 </div>
             }
 
