@@ -483,6 +483,11 @@ private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 // Semaphore to prevent concurrent processing of time skip messages
 private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
 
+// Back button interception: track open Radzen dialogs so the back button dismisses them
+// instead of navigating away from the play page.
+private IDisposable? _locationChangingRegistration;
+private int _openDialogCount = 0;
+
 public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
 protected override async Task OnInitializedAsync()
@@ -491,6 +496,11 @@ protected override async Task OnInitializedAsync()
 
     if (RenderModeProvider.GetRenderMode(this).IsInteractive())
     {
+        // Intercept navigation so the browser back button dismisses open dialogs
+        // rather than leaving the play page.
+        DialogService.OnOpen += OnDialogOpened;
+        DialogService.OnClose += OnDialogClosed;
+        _locationChangingRegistration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
         try
         {
             isLoading = true;
@@ -898,9 +908,48 @@ private async Task LoadTableCharactersAsync()
         }
         _disposed = true;
 
+        _locationChangingRegistration?.Dispose();
+        DialogService.OnOpen -= OnDialogOpened;
+        DialogService.OnClose -= OnDialogClosed;
+
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEvents();
         _timeSkipSemaphore?.Dispose();
+    }
+
+    /// <summary>
+    /// Intercepts navigation (e.g. browser back button). When dialogs or the targeting modal
+    /// are open, closes them and prevents leaving the play page.
+    /// </summary>
+    private ValueTask OnLocationChanging(LocationChangingContext context)
+    {
+        if (_openDialogCount > 0 || showTargetingModal)
+        {
+            // Snapshot the count before closing to avoid any risk of an infinite loop
+            // if Close() were ever queued rather than synchronously firing OnClose.
+            var count = _openDialogCount;
+            for (int i = 0; i < count; i++)
+            {
+                DialogService.Close(null);
+            }
+            // Close the targeting modal if visible
+            showTargetingModal = false;
+            context.PreventNavigation();
+            _ = InvokeAsync(StateHasChanged);
+        }
+        return ValueTask.CompletedTask;
+    }
+
+    private void OnDialogOpened(string? title, Type type, Dictionary<string, object?> parameters, DialogOptions options)
+    {
+        _openDialogCount++;
+    }
+
+    // 'dynamic' is required to match Radzen's Action<dynamic> OnClose event signature.
+    private void OnDialogClosed(dynamic result)
+    {
+        if (_openDialogCount > 0)
+            _openDialogCount--;
     }
 
     private string GetActivityClass(ActivityCategory category) =>
