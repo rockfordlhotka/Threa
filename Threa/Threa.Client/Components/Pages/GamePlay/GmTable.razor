@@ -1167,6 +1167,10 @@ else
     {
         if (table == null) return;
 
+        // Capture time BEFORE advancing so ProcessTimeSkipAsync can sync lagging characters
+        // to the pre-advance time, then advance by the correct amount (not double-advance).
+        var preAdvanceTableTime = table.CurrentTimeSeconds;
+
         table.AdvanceTime(seconds);
         await SaveTable();
 
@@ -1193,7 +1197,7 @@ else
             table.Id,
             timeEventType,
             count,
-            currentTableTimeSeconds: table.CurrentTimeSeconds);
+            currentTableTimeSeconds: preAdvanceTableTime);
 
         if (!result.Success)
         {
@@ -1284,7 +1288,7 @@ else
                 table.Id,
                 timeEventType,
                 Math.Max(count, 1),
-                currentTableTimeSeconds: table.CurrentTimeSeconds);
+                currentTableTimeSeconds: oldTime);
 
             if (!result.Success)
             {

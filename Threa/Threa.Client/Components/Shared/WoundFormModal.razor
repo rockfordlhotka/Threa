@@ -10,6 +10,7 @@
 @inject IChildDataPortal<EffectRecord> effectPortal
 @inject DialogService DialogService
 @inject ITimeEventPublisher TimeEventPublisher
+@inject ITableDal tableDal
 
 <div class="p-3">
     <EditForm Model="@this" OnValidSubmit="SaveWound">
@@ -336,6 +337,21 @@
         {
             // Re-fetch character for fresh state
             var character = await characterPortal.FetchAsync(CharacterId);
+
+            // Sync character's game time to the table's current time if behind.
+            // This prevents wounds from being created with a stale base time that
+            // would cause them to expire prematurely on the next time advancement.
+            if (TableId != Guid.Empty)
+            {
+                try
+                {
+                    var gameTable = await tableDal.GetTableAsync(TableId);
+                    var tableCurrentTime = gameTable.StartTimeSeconds + (gameTable.CurrentRound * 3L);
+                    if (tableCurrentTime > character.CurrentGameTimeSeconds)
+                        character.CurrentGameTimeSeconds = tableCurrentTime;
+                }
+                catch { /* ignore if table can't be loaded — use character's own time */ }
+            }
 
             var healingSeconds = GetHealingTimeSeconds();
 
