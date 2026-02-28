@@ -258,6 +258,7 @@
     private CharacterEdit? character;
     private string? currentGmNotes;
     private bool subscribed;
+    private bool ownedSubscription;
     private bool isEditMode;
     private string tableTheme = "fantasy";
     private long currentTimeSeconds;
@@ -301,6 +302,9 @@
         if (subscribed) return;
 
         await TimeEventSubscriber.ConnectAsync();
+        // Track whether this component initiated the subscription so we only unsubscribe if we own it.
+        // GmTable (the parent) may have already subscribed on the shared scoped instance.
+        ownedSubscription = !TimeEventSubscriber.IsSubscribed;
         await TimeEventSubscriber.SubscribeAsync();
         TimeEventSubscriber.CharacterUpdateReceived += OnCharacterUpdateReceived;
 
@@ -848,7 +852,14 @@
             TimeEventSubscriber.TargetingResultReceived -= OnTargetingResultReceived;
             TimeEventSubscriber.TargetingCancelledReceived -= OnTargetingCancelledReceived;
 
-            await TimeEventSubscriber.UnsubscribeAsync();
+            // Only tear down the underlying Rx subscriptions if this component initiated them.
+            // When GmTable opens this modal, GmTable already owns the subscription on the shared
+            // scoped ITimeEventSubscriber. Calling UnsubscribeAsync here would destroy those Rx
+            // subscriptions and prevent GmTable from receiving any further messages.
+            if (ownedSubscription)
+            {
+                await TimeEventSubscriber.UnsubscribeAsync();
+            }
             subscribed = false;
         }
 
