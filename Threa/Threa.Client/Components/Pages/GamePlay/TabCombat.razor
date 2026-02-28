@@ -1,6 +1,7 @@
 @using GameMechanics
 @using GameMechanics.GamePlay
 @using GameMechanics.Messaging
+@using GameMechanics.Combat
 @using Threa.Dal
 @using Threa.Client.Components.Shared
 @using Threa.Client.Components.Pages.GamePlay
@@ -36,7 +37,7 @@
     public List<TargetSelectionModal.TargetInfo>? AvailableTargets { get; set; }
 
     [Parameter]
-    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons)> OnInitiateTargeting { get; set; }
 
     /// <summary>
     /// Activity log entries to display in the combat tab's activity feed.

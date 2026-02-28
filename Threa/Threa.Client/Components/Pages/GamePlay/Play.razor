@@ -392,6 +392,7 @@ else
                                     defenderIsInParryMode="@GetDefenderIsInParryMode()"
                                     defenderCanActiveDefense="@GetDefenderCanActiveDefense()"
                                     defenderCanParry="@GetDefenderCanParry()"
+                                    AttackerAvailableWeapons="@(isTargetingAttacker ? targetingAttackerWeapons : null)"
                                     OnAttackerDataUpdated="UpdateTargetingAttackerData"
                                     OnDefenderDataUpdated="UpdateTargetingDefenderData"
                                     OnAttackerConfirmChanged="ToggleTargetingAttackerConfirm"
@@ -479,6 +480,7 @@ private List<TargetingRequestMessage> pendingTargetingRequests = new();
 private TargetingInteraction? currentTargetingInteraction;
 private bool showTargetingModal;
 private bool isTargetingAttacker;
+private List<MeleeWeaponInfo>? targetingAttackerWeapons;
 private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 
 // Semaphore to prevent concurrent processing of time skip messages
@@ -1900,8 +1902,9 @@ private async Task LoadTableCharactersAsync()
     /// <summary>
     /// Handles the targeting initiation callback from TabCombat.
     /// </summary>
-    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
+    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons) args)
     {
+        targetingAttackerWeapons = args.AvailableWeapons;
         await InitiateTargeting(args.ActionType, args.TargetId, args.TargetName, args.AttackerData);
     }
 

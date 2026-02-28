@@ -2,6 +2,7 @@
 @using GameMechanics.GamePlay
 @using GameMechanics.Messaging
 @using GameMechanics.Effects.Behaviors
+@using GameMechanics.Combat
 @using Radzen
 @using Threa.Dal
 @using Threa.Client.Components.Shared
@@ -229,6 +230,7 @@
                                 defenderIsInParryMode="@GetDefenderIsInParryMode()"
                                 defenderCanActiveDefense="@GetDefenderCanActiveDefense()"
                                 defenderCanParry="@GetDefenderCanParry()"
+                                AttackerAvailableWeapons="@(isTargetingAttacker ? targetingAttackerWeapons : null)"
                                 OnAttackerDataUpdated="UpdateTargetingAttackerData"
                                 OnDefenderDataUpdated="UpdateTargetingDefenderData"
                                 OnAttackerConfirmChanged="ToggleTargetingAttackerConfirm"
@@ -272,6 +274,7 @@
     private TargetingInteraction? currentTargetingInteraction;
     private bool showTargetingModal;
     private bool isTargetingAttacker;
+    private List<MeleeWeaponInfo>? targetingAttackerWeapons;
 
     protected override async Task OnInitializedAsync()
     {
@@ -475,9 +478,10 @@
             .ToList();
     }
 
-    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
+    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons) args)
     {
         if (character == null || table == null) return;
+        targetingAttackerWeapons = args.AvailableWeapons;
 
         var (interaction, queuePosition) = await TargetingManager.StartInteractionAsync(
             table.Id,

@@ -524,7 +524,7 @@
     public List<TargetSelectionModal.TargetInfo>? AvailableTargets { get; set; }
 
     [Parameter]
-    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons)> OnInitiateTargeting { get; set; }
 
     /// <summary>
     /// Activity log entries to display in the combat tab's activity feed.
@@ -1648,7 +1648,7 @@
         // Initiate targeting through parent
         if (OnInitiateTargeting.HasDelegate)
         {
-            await OnInitiateTargeting.InvokeAsync((pendingTargetingActionType, target.CharacterId, target.CharacterName, attackerData));
+            await OnInitiateTargeting.InvokeAsync((pendingTargetingActionType, target.CharacterId, target.CharacterName, attackerData, pendingTargetingActionType == TargetingActionType.MeleeAttack ? meleeWeaponOptions : null));
         }
 
         // Return to default mode - the targeting modal will be shown by Play.razor
@@ -1736,7 +1736,8 @@
             WeaponDamageModifiers = weaponDmgModifiers,
             WeaponTemplateId = weaponTemplateId,
             AttackerCharacterId = Character?.Id ?? 0,
-            AmmoSpecialEffect = ammoSpecialEffect
+            AmmoSpecialEffect = ammoSpecialEffect,
+            AvailableWeapons = actionType == TargetingActionType.MeleeAttack ? new List<MeleeWeaponInfo>(meleeWeaponOptions) : null
         };
     }
 
