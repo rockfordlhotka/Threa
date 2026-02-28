@@ -1674,6 +1674,28 @@ private async Task LoadTableCharactersAsync()
                 await savable.SaveAsync();
         }
 
+        // Refund AP/FAT if defender already confirmed an active defense (costs were charged on confirm)
+        if (!isTargetingAttacker && currentTargetingInteraction.DefenderConfirmed &&
+            currentTargetingInteraction.DefenderData != null && character != null)
+        {
+            var data = currentTargetingInteraction.DefenderData;
+            bool isActiveDefense = data.DefenseType == DefenseType.Dodge ||
+                                   data.DefenseType == DefenseType.ShieldBlock ||
+                                   (data.DefenseType == DefenseType.Parry && !data.IsInParryMode);
+            if (isActiveDefense)
+            {
+                int baseAPCost = data.DefenseCostType == ActionCostType.TwoAP ? 2 : 1;
+                int baseFATCost = data.DefenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+                character.ActionPoints.Available += baseAPCost + data.APBoost;
+                character.ActionPoints.ActionsTakenThisRound -= 1;
+                character.Fatigue.Value += baseFATCost + data.FATBoost;
+
+                if (character is Csla.Core.ISavable savable)
+                    await savable.SaveAsync();
+            }
+        }
+
         await TargetingManager.CancelAsync(currentTargetingInteraction.InteractionId, "Cancelled by attacker");
         showTargetingModal = false;
         currentTargetingInteraction = null;
