@@ -843,6 +843,11 @@ public class TimeAdvancementService
             targetCharacter.Vitality.PendingHealing += vitHealing;
         }
 
+        // Medical healing also improves the most severe wound by one severity level
+        // and halves its remaining healing time. Minor wounds cannot be improved this
+        // way — only time heals them fully.
+        WoundBehavior.ImproveWound(targetCharacter, targetCharacter.CurrentGameTimeSeconds);
+
         // Save the target character
         await _characterPortal.UpdateAsync(targetCharacter);
     }
