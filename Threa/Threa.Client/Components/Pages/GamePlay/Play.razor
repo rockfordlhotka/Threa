@@ -347,7 +347,8 @@ else
         }
         else if (activeTab == "Combat")
         {
-            <TabCombat Character="character"
+            <TabCombat @ref="tabCombatRef"
+                        Character="character"
                         Table="table"
                         OnCharacterChanged="SaveCharacterAsync"
                         AvailableTargets="@GetAvailableTargets()"
@@ -487,6 +488,7 @@ private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
 // instead of navigating away from the play page.
 private IDisposable? _locationChangingRegistration;
 private int _openDialogCount = 0;
+private TabCombat? tabCombatRef;
 
 public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
@@ -918,12 +920,13 @@ private async Task LoadTableCharactersAsync()
     }
 
     /// <summary>
-    /// Intercepts navigation (e.g. browser back button). When dialogs or the targeting modal
-    /// are open, closes them and prevents leaving the play page.
+    /// Intercepts navigation (e.g. browser back button). When dialogs, the targeting modal,
+    /// or a non-default combat mode are active, closes/resets them and prevents leaving the
+    /// play page.
     /// </summary>
     private ValueTask OnLocationChanging(LocationChangingContext context)
     {
-        if (_openDialogCount > 0 || showTargetingModal)
+        if (_openDialogCount > 0 || showTargetingModal || (tabCombatRef?.IsInNonDefaultMode ?? false))
         {
             // Snapshot the count before closing to avoid any risk of an infinite loop
             // if Close() were ever queued rather than synchronously firing OnClose.
@@ -934,6 +937,8 @@ private async Task LoadTableCharactersAsync()
             }
             // Close the targeting modal if visible
             showTargetingModal = false;
+            // Reset any active combat mode (attack, defend, etc.)
+            tabCombatRef?.ResetCombatMode();
             context.PreventNavigation();
             _ = InvokeAsync(StateHasChanged);
         }

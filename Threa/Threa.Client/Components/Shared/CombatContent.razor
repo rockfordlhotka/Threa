@@ -1152,6 +1152,22 @@
         }
     }
 
+    /// <summary>
+    /// Returns true when a non-default combat mode (attack, defend, etc.) is active.
+    /// Used by Play.razor to intercept browser back-button navigation.
+    /// </summary>
+    public bool IsInNonDefaultMode => combatMode != CombatMode.Default;
+
+    /// <summary>
+    /// Resets the combat mode to Default. Called by Play.razor when the browser
+    /// back button is pressed while a combat mode is active.
+    /// </summary>
+    public void ResetToDefault()
+    {
+        ReturnToDefault();
+        StateHasChanged();
+    }
+
     private void ReturnToDefault()
     {
         combatMode = CombatMode.Default;

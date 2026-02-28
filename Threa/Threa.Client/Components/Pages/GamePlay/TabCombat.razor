@@ -10,7 +10,8 @@
 @inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
 
-<CombatContent Character="Character"
+<CombatContent @ref="combatContentRef"
+               Character="Character"
                Table="Table"
                AvailableTargets="AvailableTargets"
                ActivityEntries="ActivityEntries"
@@ -49,4 +50,17 @@
     /// </summary>
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
+
+    private CombatContent? combatContentRef;
+
+    /// <summary>
+    /// Returns true when a non-default combat mode is active in the combat content.
+    /// </summary>
+    public bool IsInNonDefaultMode => combatContentRef?.IsInNonDefaultMode ?? false;
+
+    /// <summary>
+    /// Resets combat mode to Default. Called by Play.razor when the browser back button
+    /// is pressed while a combat mode is active.
+    /// </summary>
+    public void ResetCombatMode() => combatContentRef?.ResetToDefault();
 }
