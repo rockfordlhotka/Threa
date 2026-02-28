@@ -333,6 +333,48 @@ public class ConcentrationBehaviorCastingTimeTests : TestBase
     }
 
     [TestMethod]
+    public void CreateWeaponReloadState_Magazine_AlwaysTakesOneRound()
+    {
+        // Arrange - magazine with 30 rounds
+        var weaponId = Guid.NewGuid();
+        var magazineId = Guid.NewGuid();
+
+        // Act
+        var stateJson = ConcentrationBehavior.CreateWeaponReloadState(
+            weaponItemId: weaponId,
+            ammoSourceItemId: magazineId,
+            roundsToLoad: 30,
+            isLooseAmmo: false);
+
+        var state = ConcentrationState.FromJson(stateJson);
+
+        // Assert - magazine reload should always take exactly 1 round regardless of capacity
+        Assert.IsNotNull(state);
+        Assert.AreEqual(1, state.TotalRequired, "Magazine reload must always take exactly 1 round");
+    }
+
+    [TestMethod]
+    public void CreateWeaponReloadState_LooseAmmo_TakesRoundsBasedOnCount()
+    {
+        // Arrange - loading 9 loose rounds
+        var weaponId = Guid.NewGuid();
+        var ammoId = Guid.NewGuid();
+
+        // Act
+        var stateJson = ConcentrationBehavior.CreateWeaponReloadState(
+            weaponItemId: weaponId,
+            ammoSourceItemId: ammoId,
+            roundsToLoad: 9,
+            isLooseAmmo: true);
+
+        var state = ConcentrationState.FromJson(stateJson);
+
+        // Assert - 9 loose rounds at 3 per game round = 3 game rounds
+        Assert.IsNotNull(state);
+        Assert.AreEqual(3, state.TotalRequired, "9 loose rounds should take 3 game rounds (3 rounds per game round)");
+    }
+
+    [TestMethod]
     public void CreateSpellCastingState_CreatesValidState()
     {
         // Arrange
