@@ -220,6 +220,17 @@ namespace GameMechanics
     /// </summary>
     public bool IsMedicalSkill => Category == SkillCategory.Medical;
 
+    public static readonly PropertyInfo<int> PreUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PreUseConcentrationRounds));
+    /// <summary>
+    /// Number of concentration rounds the character must spend before executing this skill.
+    /// The skill is not rolled until concentration completes. Interruption prevents the skill use.
+    /// </summary>
+    public int PreUseConcentrationRounds
+    {
+      get => GetProperty(PreUseConcentrationRoundsProperty);
+      private set => LoadProperty(PreUseConcentrationRoundsProperty, value);
+    }
+
     public static readonly PropertyInfo<int> PostUseConcentrationRoundsProperty = RegisterProperty<int>(nameof(PostUseConcentrationRounds));
     /// <summary>
     /// Number of concentration rounds required after using this skill.
@@ -229,6 +240,17 @@ namespace GameMechanics
     {
       get => GetProperty(PostUseConcentrationRoundsProperty);
       private set => LoadProperty(PostUseConcentrationRoundsProperty, value);
+    }
+
+    public static readonly PropertyInfo<int> PostUseInterruptionPenaltyRoundsProperty = RegisterProperty<int>(nameof(PostUseInterruptionPenaltyRounds));
+    /// <summary>
+    /// Duration in rounds of the AS penalty debuff applied when post-use concentration is interrupted.
+    /// 0 means use the default (3 rounds, -1 AS).
+    /// </summary>
+    public int PostUseInterruptionPenaltyRounds
+    {
+      get => GetProperty(PostUseInterruptionPenaltyRoundsProperty);
+      private set => LoadProperty(PostUseInterruptionPenaltyRoundsProperty, value);
     }
 
     public static readonly PropertyInfo<int> SvBonusProperty = RegisterProperty<int>(nameof(SvBonus));
@@ -444,6 +466,9 @@ namespace GameMechanics
       SecondaryAttribute = std.SecondaryAttribute;
       TertiaryAttribute = std.TertiaryAttribute;
       Category = std.Category;
+      PreUseConcentrationRounds = std.PreUseConcentrationRounds;
+      PostUseConcentrationRounds = std.PostUseConcentrationRounds;
+      PostUseInterruptionPenaltyRounds = std.PostUseInterruptionPenaltyRounds;
     }
 
     [FetchChild]
@@ -482,7 +507,9 @@ namespace GameMechanics
         IsPsionic = skill.IsPsionic;
 
         // Load concentration properties
+        PreUseConcentrationRounds = skill.PreUseConcentrationRounds;
         PostUseConcentrationRounds = skill.PostUseConcentrationRounds;
+        PostUseInterruptionPenaltyRounds = skill.PostUseInterruptionPenaltyRounds;
         SvBonus = skill.SvBonus;
       }
     }
@@ -529,7 +556,9 @@ namespace GameMechanics
         skill.IsFreeAction = IsFreeAction;
 
         // Save concentration properties
+        skill.PreUseConcentrationRounds = PreUseConcentrationRounds;
         skill.PostUseConcentrationRounds = PostUseConcentrationRounds;
+        skill.PostUseInterruptionPenaltyRounds = PostUseInterruptionPenaltyRounds;
         skill.SvBonus = SvBonus;
 
         // Save category and type flags
@@ -537,6 +566,22 @@ namespace GameMechanics
         skill.IsMagic = IsMagic;
         skill.IsTheology = IsTheology;
         skill.IsPsionic = IsPsionic;
+      }
+    }
+
+    /// <summary>
+    /// Syncs concentration and mechanic properties from the current skill definition.
+    /// Called when loading a character to ensure these values reflect current game rules,
+    /// even for characters whose skills were created before these properties existed.
+    /// </summary>
+    internal void SyncConcentrationFromDefinition(Threa.Dal.Dto.Skill definition)
+    {
+      using (BypassPropertyChecks)
+      {
+        PreUseConcentrationRounds = definition.PreUseConcentrationRounds;
+        PostUseConcentrationRounds = definition.PostUseConcentrationRounds;
+        PostUseInterruptionPenaltyRounds = definition.PostUseInterruptionPenaltyRounds;
+        SvBonus = definition.SvBonus;
       }
     }
 

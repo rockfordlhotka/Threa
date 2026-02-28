@@ -1127,7 +1127,8 @@ namespace GameMechanics
       [Inject] IChildDataPortal<ActionPoints> actionPointsPortal,
       [Inject] IChildDataPortal<EffectList> effectPortal,
       [Inject] IChildDataPortal<WalletEditList> walletPortal,
-      [Inject] IDataPortal<Reference.SpeciesList> speciesPortal)
+      [Inject] IDataPortal<Reference.SpeciesList> speciesPortal,
+      [Inject] Threa.Dal.ISkillDal skillDal)
     {
       _walletPortal = walletPortal;
       var existing = await dal.GetCharacterAsync(id);
@@ -1145,6 +1146,17 @@ namespace GameMechanics
         AttributeList = attributePortal.FetchChild(existing.AttributeList, speciesInfo);
 
         Skills = skillPortal.FetchChild(existing.Skills);
+
+        // Sync concentration and mechanic properties from current skill definitions.
+        // This ensures characters created before these properties existed get correct values
+        // and that changes to skill definitions are always reflected for all characters.
+        var skillDefs = await skillDal.GetAllSkillsAsync();
+        var skillDefMap = skillDefs.ToDictionary(s => s.Id);
+        foreach (var skill in Skills)
+        {
+          if (skillDefMap.TryGetValue(skill.Id, out var def))
+            skill.SyncConcentrationFromDefinition(def);
+        }
 
         // Load wallet with legacy migration (setting-aware)
 #pragma warning disable CS0612 // Obsolete member usage for migration

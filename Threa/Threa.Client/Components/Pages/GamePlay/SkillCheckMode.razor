@@ -109,6 +109,31 @@
                                         <td>Target Value:</td>
                                         <td class="fw-bold">@targetValue</td>
                                     </tr>
+                                    @if (selectedSkill.PreUseConcentrationRounds > 0)
+                                    {
+                                        <tr>
+                                            <td colspan="2"><hr class="my-1" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Pre-use:</td>
+                                            <td class="fw-bold text-warning">
+                                                <i class="bi bi-hourglass-split"></i> @selectedSkill.PreUseConcentrationRounds round@(selectedSkill.PreUseConcentrationRounds != 1 ? "s" : "") concentration required
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (selectedSkill.PostUseConcentrationRounds > 0)
+                                    {
+                                        @if (selectedSkill.PreUseConcentrationRounds == 0)
+                                        {
+                                            <tr><td colspan="2"><hr class="my-1" /></td></tr>
+                                        }
+                                        <tr>
+                                            <td>Post-use:</td>
+                                            <td class="fw-bold text-info">
+                                                <i class="bi bi-hourglass-split"></i> @selectedSkill.PostUseConcentrationRounds round@(selectedSkill.PostUseConcentrationRounds != 1 ? "s" : "") concentration
+                                            </td>
+                                        </tr>
+                                    }
                                     <tr>
                                         <td colspan="2"><hr class="my-1" /></td>
                                     </tr>
@@ -132,11 +157,22 @@
                         }
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary btn-lg w-100"
-                                @onclick="ExecuteSkillCheck"
-                                disabled="@(!CanRoll())">
-                            <i class="bi bi-dice-5"></i> Roll Check
-                        </button>
+                        @if (selectedSkill?.PreUseConcentrationRounds > 0)
+                        {
+                            <button class="btn btn-warning btn-lg w-100"
+                                    @onclick="ExecuteSkillCheck"
+                                    disabled="@(!CanRoll())">
+                                <i class="bi bi-hourglass-split"></i> Begin Concentration (@selectedSkill.PreUseConcentrationRounds rounds)
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary btn-lg w-100"
+                                    @onclick="ExecuteSkillCheck"
+                                    disabled="@(!CanRoll())">
+                                <i class="bi bi-dice-5"></i> Roll Check
+                            </button>
+                        }
                     </div>
                 </div>
 
@@ -417,6 +453,22 @@
         if (selectedSkill == null) return false;
         if (targetValue <= 0) return false;
 
+        // Block if currently in pre-use concentration for this skill (waiting to complete)
+        if (selectedSkill.PreUseConcentrationRounds > 0 && !string.IsNullOrEmpty(selectedSkill.SkillId))
+        {
+            var concEffect = Character.GetConcentrationEffect();
+            if (concEffect != null)
+            {
+                var cState = ConcentrationState.FromJson(concEffect.BehaviorState);
+                if (cState?.ConcentrationType == "PreUseSkill")
+                {
+                    var payload = SkillUsePayload.FromJson(cState.DeferredActionPayload);
+                    if (payload?.SkillId == selectedSkill.SkillId)
+                        return false;
+                }
+            }
+        }
+
         var apNeeded = (costType == ActionCostType.TwoAP ? 2 : 1) + boostAPCost;
         var fatNeeded = (costType == ActionCostType.OneAPOneFat ? 1 : 0) + boostFATCost;
 
@@ -428,6 +480,57 @@
     {
         if (!CanRoll() || Character == null || selectedSkill == null) return;
 
+        // Handle pre-use concentration: start concentration instead of rolling immediately
+        if (selectedSkill.PreUseConcentrationRounds > 0)
+        {
+            // Check and break any existing concentration first
+            var existingConc = Character.GetConcentrationEffect();
+            if (existingConc != null)
+            {
+                var existingState = ConcentrationState.FromJson(existingConc.BehaviorState);
+                if (existingState != null)
+                {
+                    var confirmed = await ConcentrationBreakDialog.ShowAsync(
+                        DialogService, existingState, existingConc.Name);
+                    if (!confirmed) return;
+                    ConcentrationBehavior.BreakConcentration(Character, "Started new concentration");
+                }
+            }
+
+            if (CombatStanceBehavior.IsInParryMode(Character))
+                CombatStanceBehavior.EndParryMode(Character);
+
+            var apCostPre = costType == ActionCostType.TwoAP ? 2 : 1;
+            var fatCostPre = costType == ActionCostType.OneAPOneFat ? 1 : 0;
+            Character.ActionPoints.Available -= (apCostPre + boostAPCost);
+            Character.ActionPoints.ActionsTakenThisRound += 1;
+            if ((fatCostPre + boostFATCost) > 0)
+                Character.Fatigue.Value -= (fatCostPre + boostFATCost);
+
+            var preStateJson = ConcentrationBehavior.CreatePreUseSkillState(
+                skillId: selectedSkill.SkillId,
+                skillName: selectedSkill.Name,
+                concentrationRounds: selectedSkill.PreUseConcentrationRounds);
+
+            var preEffect = EffectPortal.CreateChild(
+                EffectType.Concentration,
+                $"Concentrating: {selectedSkill.Name}",
+                null,
+                (int?)null,
+                preStateJson);
+
+            Character.Effects.AddEffect(preEffect);
+
+            if (Character is Csla.Core.ISavable savablePre)
+                await savablePre.SaveAsync();
+
+            await OnSkillCheckComplete.InvokeAsync(
+                $"{Character.Name}: Begins pre-use concentration for {selectedSkill.Name} " +
+                $"({selectedSkill.PreUseConcentrationRounds} rounds — roll when complete)");
+            return;
+        }
+
+        // Standard roll path
         // Check concentration - prompt to break if active
         var concentrationEffect = Character.GetConcentrationEffect();
         if (concentrationEffect != null)
@@ -499,10 +602,24 @@
         // Apply post-use concentration if the skill requires it and the check succeeded
         if (sv >= 0 && selectedSkill.PostUseConcentrationRounds > 0)
         {
+            // Build interruption debuff using the skill's configured penalty duration
+            InterruptionDebuffConfig? interruptionDebuff = null;
+            if (selectedSkill.PostUseInterruptionPenaltyRounds > 0)
+            {
+                interruptionDebuff = new InterruptionDebuffConfig
+                {
+                    Name = $"{selectedSkill.Name} Concentration Broken",
+                    Description = $"Concentration on {selectedSkill.Name} was interrupted.",
+                    DurationRounds = selectedSkill.PostUseInterruptionPenaltyRounds,
+                    GlobalAsPenalty = -1
+                };
+            }
+
             var stateJson = ConcentrationBehavior.CreatePostUseSkillState(
                 skillId: selectedSkill.SkillId,
                 skillName: selectedSkill.Name,
-                concentrationRounds: selectedSkill.PostUseConcentrationRounds);
+                concentrationRounds: selectedSkill.PostUseConcentrationRounds,
+                interruptionDebuff: interruptionDebuff);
 
             var effect = EffectPortal.CreateChild(
                 EffectType.Concentration,

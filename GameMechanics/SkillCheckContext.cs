@@ -10,4 +10,6 @@ public record SkillCheckContext(
     int AbilityScore,
     bool IsChipSkill = false,
     string SkillId = "",
-    int PostUseConcentrationRounds = 0);
+    int PreUseConcentrationRounds = 0,
+    int PostUseConcentrationRounds = 0,
+    int PostUseInterruptionPenaltyRounds = 0);
