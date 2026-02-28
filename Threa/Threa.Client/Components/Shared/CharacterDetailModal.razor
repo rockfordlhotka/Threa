@@ -321,17 +321,15 @@
 
         InvokeAsync(async () =>
         {
-            // Refresh character data silently (no visual indicator per CONTEXT.md)
-            isLoading = true;
-            StateHasChanged();
-
+            // Refresh character data silently — do NOT toggle isLoading here, as that
+            // destroys and recreates child components, resetting their local state
+            // (e.g. healthMode selection in CharacterDetailGmActions).
             try
             {
                 character = await characterPortal.FetchAsync(selectedCharacterId);
             }
             finally
             {
-                isLoading = false;
                 StateHasChanged();
             }
         });
