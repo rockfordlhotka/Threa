@@ -101,11 +101,18 @@
                         {
                             @foreach (var piece in armorPieces)
                             {
+                                var coveredLocations = EquipmentLocationMapper.GetCoveredLocations(piece.EquippedSlot);
                                 <div class="mb-2">
                                     <div class="d-flex justify-content-between small">
                                         <span class="text-muted">@piece.EquippedSlot</span>
                                         <span class="fw-bold">@(piece.Template?.Name ?? "Unknown")</span>
                                     </div>
+                                    @if (coveredLocations.Length > 0)
+                                    {
+                                        <div class="small text-muted mt-1">
+                                            Covers: @string.Join(", ", coveredLocations.Select(FormatHitLocation))
+                                        </div>
+                                    }
                                     @if (piece.CurrentDurability.HasValue && piece.Template?.MaxDurability.HasValue == true)
                                     {
                                         var durPercent = piece.Template.MaxDurability.Value > 0
@@ -849,6 +856,17 @@
         filteredSkills = result;
         await InvokeAsync(StateHasChanged);
     }
+
+    private static string FormatHitLocation(HitLocation location) => location switch
+    {
+        HitLocation.Head => "Head",
+        HitLocation.Torso => "Torso",
+        HitLocation.LeftArm => "Left Arm",
+        HitLocation.RightArm => "Right Arm",
+        HitLocation.LeftLeg => "Left Leg",
+        HitLocation.RightLeg => "Right Leg",
+        _ => location.ToString()
+    };
 
     private string GetSkillCategory(GameMechanics.SkillEdit skill)
     {
