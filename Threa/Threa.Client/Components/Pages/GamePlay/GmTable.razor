@@ -671,7 +671,7 @@ else
                                 maxFATBoost="@GetNpcMaxFATBoost()"
                                 defenderDodgeAS="@GetNpcDodgeAS()"
                                 defenderParryAS="@GetNpcParryAS()"
-                                defenderIsInParryMode="false"
+                                defenderIsInParryMode="@GetNpcIsInParryMode()"
                                 defenderCanActiveDefense="@GetNpcCanActiveDefense()"
                                 defenderCanParry="@GetNpcCanParry()"
                                 OnAttackerDataUpdated="UpdateNpcAttackerData"
@@ -1848,7 +1848,13 @@ else
                 targetedNpc.ActionPoints.Available >= 2);
     }
 
-    private bool GetNpcCanParry() => GetNpcCanActiveDefense();
+    private bool GetNpcIsInParryMode()
+    {
+        if (targetedNpc == null) return false;
+        return GameMechanics.Effects.Behaviors.CombatStanceBehavior.IsInParryMode(targetedNpc);
+    }
+
+    private bool GetNpcCanParry() => GetNpcCanActiveDefense() || GetNpcIsInParryMode();
 
     private async Task UpdateNpcAttackerData(TargetingAttackerData data)
     {
