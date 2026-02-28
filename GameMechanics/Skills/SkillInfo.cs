@@ -105,6 +105,16 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
         private set => LoadProperty(PostUseInterruptionPenaltyRoundsProperty, value);
     }
 
+    public static readonly PropertyInfo<int> SvBonusProperty = RegisterProperty<int>(nameof(SvBonus));
+    /// <summary>
+    /// Bonus added to the Success Value after a successful check.
+    /// </summary>
+    public int SvBonus
+    {
+        get => GetProperty(SvBonusProperty);
+        private set => LoadProperty(SvBonusProperty, value);
+    }
+
     /// <summary>
     /// Whether this skill can be deleted.
     /// Standard attribute skills cannot be deleted.
@@ -128,5 +138,6 @@ public class SkillInfo : ReadOnlyBase<SkillInfo>
         LoadProperty(RequiresPostUseConcentrationProperty, dto.RequiresPostUseConcentration);
         LoadProperty(PostUseConcentrationRoundsProperty, dto.PostUseConcentrationRounds);
         LoadProperty(PostUseInterruptionPenaltyRoundsProperty, dto.PostUseInterruptionPenaltyRounds);
+        LoadProperty(SvBonusProperty, dto.SvBonus);
     }
 }

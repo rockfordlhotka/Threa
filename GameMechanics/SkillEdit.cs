@@ -231,6 +231,16 @@ namespace GameMechanics
       private set => LoadProperty(PostUseConcentrationRoundsProperty, value);
     }
 
+    public static readonly PropertyInfo<int> SvBonusProperty = RegisterProperty<int>(nameof(SvBonus));
+    /// <summary>
+    /// Bonus added to the Success Value after a successful check.
+    /// </summary>
+    public int SvBonus
+    {
+      get => GetProperty(SvBonusProperty);
+      private set => LoadProperty(SvBonusProperty, value);
+    }
+
     // === Attribute Requirement Constants ===
 
     /// <summary>
@@ -473,6 +483,7 @@ namespace GameMechanics
 
         // Load concentration properties
         PostUseConcentrationRounds = skill.PostUseConcentrationRounds;
+        SvBonus = skill.SvBonus;
       }
     }
 
@@ -519,6 +530,7 @@ namespace GameMechanics
 
         // Save concentration properties
         skill.PostUseConcentrationRounds = PostUseConcentrationRounds;
+        skill.SvBonus = SvBonus;
       }
     }
 
