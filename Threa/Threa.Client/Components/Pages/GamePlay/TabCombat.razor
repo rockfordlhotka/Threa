@@ -64,4 +64,11 @@
     /// is pressed while a combat mode is active.
     /// </summary>
     public void ResetCombatMode() => combatContentRef?.ResetToDefault();
+
+    /// <summary>
+    /// Forwards ammo-update after a targeted ranged attack to the CombatContent component.
+    /// </summary>
+    public Task HandleTargetedRangedAmmoUpdateAsync(Guid weaponItemId, int ammoRemaining)
+        => combatContentRef?.HandleTargetedRangedAmmoUpdateAsync(weaponItemId, ammoRemaining)
+           ?? Task.CompletedTask;
 }

@@ -205,6 +205,22 @@ public class TargetingAttackerData
     /// </summary>
     public List<MeleeWeaponInfo>? AvailableWeapons { get; init; }
 
+    // === Ranged weapon identity/capability (populated by CombatContent for ranged attacks) ===
+
+    /// <summary>
+    /// CharacterItem ID of the ranged weapon being used.
+    /// </summary>
+    public Guid WeaponItemId { get; init; }
+
+    /// <summary>Whether the weapon supports single-shot fire.</summary>
+    public bool SupportsSingle { get; init; } = true;
+
+    /// <summary>Whether the weapon supports burst fire.</summary>
+    public bool SupportsBurst { get; init; }
+
+    /// <summary>Whether the weapon supports suppressive fire.</summary>
+    public bool SupportsSuppression { get; init; }
+
     /// <summary>
     /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
     /// </summary>
@@ -367,6 +383,23 @@ public class TargetingResolutionData
     /// Breakdown of defense calculation.
     /// </summary>
     public string DefenseBreakdown { get; init; } = string.Empty;
+
+    // === Ranged ammo tracking ===
+
+    /// <summary>
+    /// CharacterItem ID of the weapon used (ranged attacks only).
+    /// </summary>
+    public Guid WeaponItemId { get; init; }
+
+    /// <summary>
+    /// Number of rounds consumed by this attack.
+    /// </summary>
+    public int AmmoConsumed { get; init; }
+
+    /// <summary>
+    /// Rounds remaining in the weapon after this attack.
+    /// </summary>
+    public int AmmoRemaining { get; init; }
 }
 
 /// <summary>
