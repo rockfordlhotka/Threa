@@ -156,7 +156,7 @@ public class TimeAdvancementService
                         // Pass loadedCharacters so linked effects can be removed from other characters
                         if (character.LastConcentrationResult != null)
                         {
-                            var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
+                            var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters, currentTableTimeSeconds);
                             if (!string.IsNullOrEmpty(concentrationMessage))
                             {
                                 result.Messages.Add(concentrationMessage);
@@ -251,7 +251,7 @@ public class TimeAdvancementService
                     // Pass loadedCharacters so linked effects can be removed from other characters
                     if (character.LastConcentrationResult != null)
                     {
-                        var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
+                        var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters, currentTableTimeSeconds);
                         if (!string.IsNullOrEmpty(concentrationMessage))
                         {
                             result.Messages.Add(concentrationMessage);
@@ -323,7 +323,8 @@ public class TimeAdvancementService
     /// <returns>A message describing what happened, or null if nothing to process.</returns>
     private async Task<string?> ProcessConcentrationResultAsync(
         CharacterEdit character,
-        Dictionary<int, CharacterEdit> loadedCharacters)
+        Dictionary<int, CharacterEdit> loadedCharacters,
+        long currentTableTimeSeconds)
     {
         var result = character.LastConcentrationResult;
         if (result == null) return null;
@@ -367,7 +368,7 @@ public class TimeAdvancementService
                 case "MedicalHealing":
                     if (result.Success)
                     {
-                        await ExecuteMedicalHealingAsync(result.Payload);
+                        await ExecuteMedicalHealingAsync(result.Payload, loadedCharacters, currentTableTimeSeconds);
                         return result.Message;
                     }
                     break;
@@ -801,8 +802,15 @@ public class TimeAdvancementService
     /// <summary>
     /// Executes the medical healing by applying FAT/VIT healing to the target character.
     /// Healing amount is determined by the SV stored in the payload.
+    /// Uses the pre-loaded character instance from <paramref name="loadedCharacters"/> when
+    /// available so that the outer loop's save (not a separate save here) persists all changes
+    /// together — preventing the stale loadedCharacters copy from overwriting the healing.
+    /// Falls back to a fresh fetch+save for characters not present at the table.
     /// </summary>
-    private async Task ExecuteMedicalHealingAsync(string? payloadJson)
+    private async Task ExecuteMedicalHealingAsync(
+        string? payloadJson,
+        Dictionary<int, CharacterEdit> loadedCharacters,
+        long currentTableTimeSeconds)
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
@@ -822,9 +830,22 @@ public class TimeAdvancementService
 
         int healingAmount = healingResult.EffectValue;
 
-        // Load the target character
-        var targetCharacter = await _characterPortal.FetchAsync(payload.TargetCharacterId);
+        // Prefer the already-loaded instance so the outer loop's save persists everything.
+        // If the target isn't at this table, fall back to fetching independently.
+        bool targetIsLoaded = loadedCharacters.TryGetValue(payload.TargetCharacterId, out var targetCharacter);
+        if (!targetIsLoaded || targetCharacter == null)
+        {
+            targetCharacter = await _characterPortal.FetchAsync(payload.TargetCharacterId);
+        }
         if (targetCharacter == null) return;
+
+        // Ensure the target's game time is current before epoch-based calculations
+        if (currentTableTimeSeconds > 0 &&
+            (targetCharacter.CurrentGameTimeSeconds == 0 ||
+             targetCharacter.CurrentGameTimeSeconds < currentTableTimeSeconds))
+        {
+            targetCharacter.CurrentGameTimeSeconds = currentTableTimeSeconds;
+        }
 
         // Apply healing to both FAT and VIT pools (player chooses how to distribute later,
         // but for now we apply evenly - prioritize FAT first since it's typically depleted first)
@@ -848,7 +869,12 @@ public class TimeAdvancementService
         // way — only time heals them fully.
         WoundBehavior.ImproveWound(targetCharacter, targetCharacter.CurrentGameTimeSeconds);
 
-        // Save the target character
-        await _characterPortal.UpdateAsync(targetCharacter);
+        // Only save here when the target was not in loadedCharacters (not at this table).
+        // When the target IS in loadedCharacters, the outer loop's UpdateAsync call handles saving,
+        // which prevents this independent save from being overwritten by the stale loaded instance.
+        if (!targetIsLoaded)
+        {
+            await _characterPortal.UpdateAsync(targetCharacter);
+        }
     }
 }
