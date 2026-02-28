@@ -1,0 +1,298 @@
+@using GameMechanics.Combat
+@using GameMechanics.Effects.Behaviors
+
+@inject Csla.IChildDataPortal<GameMechanics.EffectRecord> EffectPortal
+
+<div class="healing-resolution">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-heart-pulse text-success"></i> Apply Healing</h4>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+    </div>
+
+    @if (resolutionPhase == ResolutionPhase.Input)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>1. Healing Source</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Success Value (SV)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-lg" @bind="inputSV"
+                                       min="0" placeholder="Enter SV">
+                                <span class="input-group-text">SV</span>
+                            </div>
+                            <small class="text-muted">The SV from the healing roll (medical treatment, magic, etc.)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Healing Class</label>
+                            <select class="form-select" @bind="selectedHealingClass">
+                                <option value="1">Class 1 (Standard healing)</option>
+                                <option value="2">Class 2 (Powerful healing) - 10x</option>
+                                <option value="3">Class 3 (Miraculous healing) - 100x</option>
+                                <option value="4">Class 4 (Divine healing) - 1000x</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <strong><i class="bi bi-calculator"></i> Healing Preview</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Healing SV:</td>
+                                    <td class="fw-bold">@inputSV</td>
+                                </tr>
+                                <tr>
+                                    <td>Healing Class:</td>
+                                    <td class="fw-bold">@selectedHealingClass</td>
+                                </tr>
+                                <tr>
+                                    <td>Dice Roll:</td>
+                                    <td class="fw-bold">@GetDicePreview()</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-success btn-lg w-100" @onclick="ProceedToResolution"
+                                disabled="@(inputSV < 0)">
+                            <i class="bi bi-dice-5"></i> Roll Healing
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (resolutionPhase == ResolutionPhase.Result && rollResult != null)
+    {
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <strong><i class="bi bi-heart-pulse"></i> Healing Result</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Dice Roll</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Healing SV:</td>
+                                    <td>@inputSV</td>
+                                </tr>
+                                <tr>
+                                    <td>Dice:</td>
+                                    <td>@rollResult.DiceSpec.Description</td>
+                                </tr>
+                                <tr>
+                                    <td>Raw Roll:</td>
+                                    <td>@rollResult.RawRoll</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td><strong>Healing Total:</strong></td>
+                                    <td><strong>@rollResult.DamageValue</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>Healing Applied</h5>
+                        <div class="alert alert-success">
+                            <div class="d-flex gap-4 mb-2">
+                                @if (rollResult.FatigueDamage > 0)
+                                {
+                                    <div>
+                                        <span class="text-success fw-bold fs-4">@rollResult.FatigueDamage</span>
+                                        <small class="text-muted"> FAT healed</small>
+                                    </div>
+                                }
+                                @if (rollResult.VitalityDamage > 0)
+                                {
+                                    <div>
+                                        <span class="text-success fw-bold fs-4">@rollResult.VitalityDamage</span>
+                                        <small class="text-muted"> VIT healed</small>
+                                    </div>
+                                }
+                            </div>
+                            @if (rollResult.Wounds > 0)
+                            {
+                                <div>
+                                    <i class="bi bi-bandaid"></i>
+                                    <strong>@rollResult.Wounds wound@(rollResult.Wounds > 1 ? "s" : "") improved</strong>
+                                    <small class="d-block text-muted">Each wound steps down one severity; healing time halved.</small>
+                                </div>
+                            }
+                        </div>
+                        @if (woundImproveMessages.Any())
+                        {
+                            <ul class="list-unstyled small text-success">
+                                @foreach (var msg in woundImproveMessages)
+                                {
+                                    <li><i class="bi bi-check-circle"></i> @msg</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <button class="btn btn-success btn-lg" @onclick="ApplyHealingAndComplete">
+                    <i class="bi bi-check-lg"></i> Apply Healing
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ResetResolution">
+                    <i class="bi bi-arrow-repeat"></i> New Healing
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public GameMechanics.CharacterEdit? Character { get; set; }
+    [Parameter] public GameMechanics.GamePlay.TableEdit? Table { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<string> OnHealingComplete { get; set; }
+
+    private enum ResolutionPhase { Input, Result }
+    private ResolutionPhase resolutionPhase = ResolutionPhase.Input;
+
+    private int inputSV;
+    private int selectedHealingClass = 1;
+
+    private DamageRollResult? rollResult;
+    private List<string> woundImproveMessages = new();
+
+    private string GetDicePreview()
+    {
+        if (inputSV < 0) return "N/A";
+        var spec = DamageTables.GetDiceForSV(inputSV);
+        return spec.Description;
+    }
+
+    private void ProceedToResolution()
+    {
+        if (Character == null) return;
+
+        var roller = new RandomDiceRoller();
+        rollResult = DamageTables.RollDamage(roller, inputSV, selectedHealingClass);
+        woundImproveMessages.Clear();
+        resolutionPhase = ResolutionPhase.Result;
+    }
+
+    private async Task ApplyHealingAndComplete()
+    {
+        if (rollResult == null || Character == null) return;
+
+        // FAT healing → pending healing pool
+        if (rollResult.FatigueDamage > 0)
+            Character.Fatigue.PendingHealing += rollResult.FatigueDamage;
+
+        // VIT healing → pending healing pool
+        if (rollResult.VitalityDamage > 0)
+            Character.Vitality.PendingHealing += rollResult.VitalityDamage;
+
+        // Wound healing → improve each wound by one severity step
+        long currentTimeSeconds = Table?.CurrentTimeSeconds ?? Character.CurrentGameTimeSeconds;
+        for (int i = 0; i < rollResult.Wounds; i++)
+        {
+            var improved = WoundBehavior.ImproveWound(Character, currentTimeSeconds);
+            if (improved != null)
+            {
+                var state = WoundState.Deserialize(improved.BehaviorState);
+                var severity = state.CurrentSeverity ?? state.Severity ?? "Minor";
+                var location = improved.Location ?? "unknown location";
+                woundImproveMessages.Add($"{location} wound improved to {severity}");
+            }
+            else
+            {
+                woundImproveMessages.Add("No improvable wounds remain (only Minor or no wounds)");
+                break;
+            }
+        }
+
+        if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
+
+        var message = BuildCompletionMessage();
+        await OnHealingComplete.InvokeAsync(message);
+    }
+
+    private string BuildCompletionMessage()
+    {
+        if (rollResult == null) return "";
+
+        var parts = new List<string>();
+        parts.Add($"{Character?.Name} receives healing:");
+
+        if (rollResult.FatigueDamage > 0)
+            parts.Add($"+{rollResult.FatigueDamage} FAT");
+
+        if (rollResult.VitalityDamage > 0)
+            parts.Add($"+{rollResult.VitalityDamage} VIT");
+
+        if (rollResult.Wounds > 0)
+            parts.Add($"{rollResult.Wounds} wound{(rollResult.Wounds > 1 ? "s" : "")} improved");
+
+        return string.Join(", ", parts);
+    }
+
+    private void ResetResolution()
+    {
+        resolutionPhase = ResolutionPhase.Input;
+        rollResult = null;
+        woundImproveMessages.Clear();
+    }
+
+    private class RandomDiceRoller : IDiceRoller
+    {
+        private static readonly Random _random = new();
+
+        public int Roll(int count, int size)
+        {
+            int total = 0;
+            for (int i = 0; i < count; i++)
+                total += _random.Next(1, size + 1);
+            return total;
+        }
+
+        public int RollFudge()
+        {
+            int die = _random.Next(1, 7);
+            if (die <= 2) return -1;
+            if (die >= 5) return +1;
+            return 0;
+        }
+
+        public int Roll4dFPlus()
+        {
+            int total = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                int die = _random.Next(1, 7);
+                if (die <= 2) total -= 1;
+                else if (die >= 5) total += 1;
+
+                while (die == 6)
+                {
+                    die = _random.Next(1, 7);
+                    if (die <= 2) total -= 1;
+                    else if (die >= 5) total += 1;
+                }
+            }
+            return total;
+        }
+    }
+}

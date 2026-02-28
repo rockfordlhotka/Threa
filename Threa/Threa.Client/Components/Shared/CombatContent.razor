@@ -297,6 +297,12 @@
                                 <i class="bi bi-heart-pulse"></i>
                                 <span>Medical</span>
                             </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartApplyHealing"
+                                    title="Apply healing from a treatment, spell, or other source (enter SV and class)">
+                                <i class="bi bi-bandaid-fill"></i>
+                                <span>Apply Healing</span>
+                            </button>
                             <button class="btn combat-tile combat-tile-other @(!CanRest() && !(Character?.IsPassedOut ?? true) ? "combat-tile-dimmed" : "")"
                                     @onclick="StartRest"
                                     disabled="@(!CanRest())"
@@ -402,6 +408,13 @@
                           ArmorSkillAS="armorSkillAS"
                           OnCancel="ReturnToDefault"
                           OnDamageComplete="OnDamageComplete" />
+    }
+    else if (combatMode == CombatMode.ApplyHealing)
+    {
+        <HealingResolution Character="Character"
+                           Table="Table"
+                           OnCancel="ReturnToDefault"
+                           OnHealingComplete="OnHealingComplete" />
     }
     else if (combatMode == CombatMode.RangedAttack)
     {
@@ -535,7 +548,7 @@
     [Parameter]
     public IActivityLogService? ActivityLog { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck, Rest }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, ApplyHealing, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck, Rest }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -1492,6 +1505,20 @@
         // For non-combat damage (falls, spells, etc.)
         ClearPendingDamage();
         combatMode = CombatMode.TakeDamage;
+    }
+
+    private void StartApplyHealing()
+    {
+        combatMode = CombatMode.ApplyHealing;
+    }
+
+    private async Task OnHealingComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+        if (OnCharacterChanged.HasDelegate)
+            await OnCharacterChanged.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ClearPendingDamage()
