@@ -16,6 +16,6 @@
   {
     get => Property?.Value?.ToString();
     set => Property!.Value =
-      Utilities.CoerceValue(Property.Value?.GetType() ?? typeof(string), value?.GetType(), Property.Value, value);
+      Utilities.CoerceValue(Property.GetPropertyInfo()?.PropertyType ?? Property.Value?.GetType() ?? typeof(string), value?.GetType(), Property.Value, value);
   }
 }
