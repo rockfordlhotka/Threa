@@ -38,43 +38,22 @@ public class BoostSelectorBase : ComponentBase
     protected int Boost { get; set; }
 
     /// <summary>
-    /// Maximum boost based on cost type and available resources.
-    /// Standard (1 AP + 1 FAT per boost): limited by min(AP, FAT)
-    /// Fatigue-Free (2 AP per boost): limited by AP / 2
+    /// Maximum boost based on total available resources.
+    /// Per game design: 1 AP or 1 FAT = +1 AS; AP and FAT can be mixed.
     /// </summary>
-    protected int MaxBoost => CostType switch
-    {
-        ActionCostType.OneAPOneFat => Math.Min(AvailableAP, AvailableFAT),
-        ActionCostType.TwoAP => AvailableAP / 2,
-        _ => 0
-    };
+    protected int MaxBoost => AvailableAP + AvailableFAT;
 
     /// <summary>
-    /// AP cost for current boost amount
+    /// AP cost for current boost amount (AP spent first, then FAT)
     /// </summary>
-    protected int APCost => CostType switch
-    {
-        ActionCostType.OneAPOneFat => Boost,
-        ActionCostType.TwoAP => Boost * 2,
-        _ => 0
-    };
+    protected int APCost => Math.Min(Boost, AvailableAP);
 
     /// <summary>
-    /// FAT cost for current boost amount
+    /// FAT cost for current boost amount (FAT used only after AP is exhausted)
     /// </summary>
-    protected int FATCost => CostType switch
-    {
-        ActionCostType.OneAPOneFat => Boost,
-        ActionCostType.TwoAP => 0,
-        _ => 0
-    };
+    protected int FATCost => Math.Max(0, Boost - AvailableAP);
 
-    protected string CostPerBoostDisplay => CostType switch
-    {
-        ActionCostType.OneAPOneFat => "1 AP + 1 FAT",
-        ActionCostType.TwoAP => "2 AP",
-        _ => "Unknown"
-    };
+    protected string CostPerBoostDisplay => "1 AP or 1 FAT";
 
     protected override void OnParametersSet()
     {

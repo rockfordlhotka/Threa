@@ -1658,6 +1658,22 @@ private async Task LoadTableCharactersAsync()
     private async Task CancelTargeting()
     {
         if (currentTargetingInteraction == null) return;
+
+        // Refund AP/FAT if attacker already confirmed (costs were charged on confirm)
+        if (isTargetingAttacker && currentTargetingInteraction.AttackerConfirmed && character != null)
+        {
+            var data = currentTargetingInteraction.AttackerData;
+            int baseAPCost = data.ActionCostType == ActionCostType.TwoAP ? 2 : 1;
+            int baseFATCost = data.ActionCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+            character.ActionPoints.Available += baseAPCost + data.APBoost;
+            character.ActionPoints.ActionsTakenThisRound -= 1;
+            character.Fatigue.Value += baseFATCost + data.FATBoost;
+
+            if (character is Csla.Core.ISavable savable)
+                await savable.SaveAsync();
+        }
+
         await TargetingManager.CancelAsync(currentTargetingInteraction.InteractionId, "Cancelled by attacker");
         showTargetingModal = false;
         currentTargetingInteraction = null;
