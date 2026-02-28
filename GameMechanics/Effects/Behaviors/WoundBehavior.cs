@@ -502,7 +502,7 @@ public class WoundBehavior : IEffectBehavior
   public static void HealWound(CharacterEdit character, string location)
   {
     var wound = character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && e.Location == location)
+      .Where(e => e.EffectType == EffectType.Wound && e.Location == location && e.IsActive)
       .FirstOrDefault();
 
     if (wound == null)
@@ -541,7 +541,7 @@ public class WoundBehavior : IEffectBehavior
   public static WoundState? GetLocationState(CharacterEdit character, string location)
   {
     var wound = character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && e.Location == location)
+      .Where(e => e.EffectType == EffectType.Wound && e.Location == location && e.IsActive)
       .FirstOrDefault();
 
     if (wound == null)
@@ -556,7 +556,7 @@ public class WoundBehavior : IEffectBehavior
   public static IEnumerable<(string Location, WoundState State)> GetAllWoundStates(CharacterEdit character)
   {
     return character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && !string.IsNullOrEmpty(e.Location))
+      .Where(e => e.EffectType == EffectType.Wound && e.IsActive && !string.IsNullOrEmpty(e.Location))
       .Select(e => (e.Location!, WoundState.Deserialize(e.BehaviorState)));
   }
 
