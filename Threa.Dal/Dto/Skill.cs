@@ -158,6 +158,12 @@ public class Skill
     public bool IsCombatSkill => Category == SkillCategory.Combat;
 
     /// <summary>
+    /// Bonus added to the Success Value after a successful check.
+    /// Used by advanced medical skills (Nursing, Doctor) to represent greater expertise.
+    /// </summary>
+    public int SvBonus { get; set; } = 0;
+
+    /// <summary>
     /// Whether this is a medical/healing skill.
     /// UI should show medical-specific controls (concentration rounds, healing result).
     /// </summary>

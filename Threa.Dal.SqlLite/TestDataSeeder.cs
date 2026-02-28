@@ -561,6 +561,7 @@ public class TestDataSeeder
                 ResultTable = ResultTableType.Healing,
                 RequiresPostUseConcentration = true,
                 PostUseConcentrationRounds = 3,
+                SvBonus = 2,
                 Description = "Professional nursing care providing sustained treatment and recovery support."
             },
             new Skill
@@ -576,6 +577,7 @@ public class TestDataSeeder
                 ResultTable = ResultTableType.Healing,
                 RequiresPostUseConcentration = true,
                 PostUseConcentrationRounds = 4,
+                SvBonus = 4,
                 Description = "Advanced medical expertise enabling complex procedures and diagnosis."
             }
         ];

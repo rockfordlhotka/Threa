@@ -42,6 +42,12 @@
                                             <span class="badge bg-primary">
                                                 AS @skill.AbilityScore
                                             </span>
+                                            @if (skill.SvBonus > 0)
+                                            {
+                                                <span class="badge bg-success ms-1">
+                                                    +@skill.SvBonus SV
+                                                </span>
+                                            }
                                         </div>
                                     </div>
                                 </button>
@@ -147,6 +153,13 @@
                                         <td>Ability Score:</td>
                                         <td class="fw-bold">@selectedSkill.AbilityScore</td>
                                     </tr>
+                                    @if (selectedSkill.SvBonus > 0)
+                                    {
+                                        <tr>
+                                            <td>SV Bonus:</td>
+                                            <td class="fw-bold text-success">+@selectedSkill.SvBonus</td>
+                                        </tr>
+                                    }
                                     @if (boostValue > 0)
                                     {
                                         <tr>
@@ -517,7 +530,8 @@
             AttributeName = selectedSkill.PrimaryAttribute,
             ConcentrationRounds = selectedSkill.PostUseConcentrationRounds,
             IsMultipleAction = Character.ActionPoints.ActionsTakenThisRound > 1,
-            Boost = boostValue
+            Boost = boostValue,
+            SvBonus = selectedSkill.SvBonus
         };
 
         var resolver = new MedicalResolver();

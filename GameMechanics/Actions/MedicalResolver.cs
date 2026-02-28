@@ -39,6 +39,12 @@ public class MedicalRequest
     /// AP/FAT boost to add to the ability score. Each point costs 1 AP + 1 FAT (or 2 AP).
     /// </summary>
     public int Boost { get; set; }
+
+    /// <summary>
+    /// Flat bonus added to the Success Value from the skill definition.
+    /// Represents greater expertise in advanced medical skills (Nursing, Doctor).
+    /// </summary>
+    public int SvBonus { get; set; }
 }
 
 /// <summary>
@@ -135,8 +141,8 @@ public class MedicalResolver
         int diceRoll = _diceRoller.Roll4dFPlus();
         int totalRoll = abilityScore + diceRoll;
 
-        // Calculate SV
-        int sv = totalRoll - MedicalTV;
+        // Calculate SV, adding any skill-defined bonus
+        int sv = totalRoll - MedicalTV + request.SvBonus;
 
         // Get healing amount from result table
         var healingResult = ResultTables.GetResult(sv, ResultTableType.Healing);
