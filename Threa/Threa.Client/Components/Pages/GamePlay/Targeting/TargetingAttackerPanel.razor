@@ -198,8 +198,12 @@
             </div>
         </div>
         <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span>Skill (@GetEffectiveSkillName()):</span>
+                <strong>@GetEffectiveSkillAS()</strong>
+            </div>
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span>Total AV Modifier:</span>
+                <span>Weapon/Boost modifier:</span>
                 <strong class="@(GetTotalAVModifier() >= 0 ? "text-success" : "text-danger")">
                     @(GetTotalAVModifier() >= 0 ? "+" : "")@GetTotalAVModifier()
                 </strong>
@@ -301,7 +305,8 @@
             // Weapons are embedded in InitialData by CombatContent.BuildAttackerData —
             // prefer that over the separately-threaded parameter so the targeting
             // panel works identically to the anonymous-attack AttackMode.
-            if (InitialData.AvailableWeapons != null)
+            // Only override if InitialData has actual weapons (not empty list).
+            if (InitialData.AvailableWeapons?.Count > 0)
                 AvailableWeapons = InitialData.AvailableWeapons;
 
             if (AvailableWeapons != null && InitialData.WeaponName != null)
@@ -314,6 +319,20 @@
 
     private MeleeWeaponInfo? GetSelectedWeapon() =>
         AvailableWeapons?.Count > 0 ? AvailableWeapons[selectedWeaponIndex] : null;
+
+    private string GetEffectiveSkillName()
+    {
+        var w = GetSelectedWeapon();
+        if (w?.SkillName is { Length: > 0 } wSkill) return wSkill;
+        return InitialData?.SkillName ?? "Attack";
+    }
+
+    private int GetEffectiveSkillAS()
+    {
+        var w = GetSelectedWeapon();
+        if (w?.SkillAS > 0) return w.SkillAS;
+        return BaseSkillAS;
+    }
 
     private async Task OnWeaponSelectionChanged(ChangeEventArgs e)
     {
@@ -386,12 +405,19 @@
     private TargetingAttackerData BuildAttackerData()
     {
         var selectedWeapon = GetSelectedWeapon();
+        // Use the selected weapon's skill info if available; otherwise fall back to initial data.
+        var skillName = selectedWeapon?.SkillName is { Length: > 0 } wSkill
+            ? wSkill
+            : InitialData?.SkillName ?? "";
+        var skillAS = selectedWeapon?.SkillAS > 0
+            ? selectedWeapon.SkillAS
+            : BaseSkillAS;
         return new TargetingAttackerData
         {
             ActionType = ActionType,
             SkillId = InitialData?.SkillId ?? "",
-            SkillName = InitialData?.SkillName ?? "",
-            SkillAS = BaseSkillAS,
+            SkillName = skillName,
+            SkillAS = skillAS,
             WeaponAVModifier = selectedWeapon?.WeaponAVModifier ?? WeaponAVModifier,
             WeaponSVModifier = selectedWeapon?.WeaponSVModifier ?? InitialData?.WeaponSVModifier ?? 0,
             WeaponDamageClass = selectedWeapon?.WeaponDamageClass ?? InitialData?.WeaponDamageClass ?? 1,

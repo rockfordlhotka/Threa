@@ -58,4 +58,10 @@ public class MeleeWeaponInfo
     /// Short description for tooltip display.
     /// </summary>
     public string Description { get; set; } = "";
+
+    /// <summary>
+    /// Ability Score for the weapon's associated skill (e.g., Sword AS, Hand-to-Hand AS).
+    /// Used by the targeting panel to update the effective AS when the weapon changes.
+    /// </summary>
+    public int SkillAS { get; set; }
 }

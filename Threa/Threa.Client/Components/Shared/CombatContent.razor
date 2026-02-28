@@ -637,11 +637,16 @@
                     weaponDamageModifiers[kv.Key.ToString()] = kv.Value;
             }
 
+            var meleeSkillName = w.Template.RelatedSkill ?? "";
+            var meleeSkillAS = Character?.Skills
+                .FirstOrDefault(s => s.Name.Equals(meleeSkillName, StringComparison.OrdinalIgnoreCase))
+                ?.AbilityScore ?? 0;
             meleeWeaponOptions.Add(new MeleeWeaponInfo
             {
                 TemplateId = w.Template.Id,
                 Name = w.Template.Name,
-                SkillName = w.Template.RelatedSkill ?? "",
+                SkillName = meleeSkillName,
+                SkillAS = meleeSkillAS,
                 WeaponAVModifier = w.Template.AVModifier,
                 WeaponSVModifier = w.Template.SVModifier,
                 WeaponDamageClass = w.Template.DamageClass,
@@ -658,11 +663,16 @@
         var availableUnarmed = WeaponSelector.GetAvailableUnarmedWeapons(virtualWeaponTemplates, equippedItemInfos);
         foreach (var vw in availableUnarmed)
         {
+            var virtualSkillName = vw.RelatedSkill ?? "";
+            var virtualSkillAS = Character?.Skills
+                .FirstOrDefault(s => s.Name.Equals(virtualSkillName, StringComparison.OrdinalIgnoreCase))
+                ?.AbilityScore ?? 0;
             meleeWeaponOptions.Add(new MeleeWeaponInfo
             {
                 TemplateId = vw.Id,
                 Name = vw.Name,
-                SkillName = vw.RelatedSkill ?? "",
+                SkillName = virtualSkillName,
+                SkillAS = virtualSkillAS,
                 WeaponAVModifier = vw.AVModifier,
                 WeaponSVModifier = vw.SVModifier,
                 WeaponDamageClass = vw.DamageClass,
