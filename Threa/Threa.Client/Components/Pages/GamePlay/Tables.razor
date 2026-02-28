@@ -97,6 +97,21 @@ else
                         <input type="text" class="form-control" @bind="newTableName"
                                placeholder="e.g., Saturday Night Campaign" />
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Theme</label>
+                        <div class="d-flex gap-2">
+                            <button type="button"
+                                    class="btn @(newTableTheme == "fantasy" ? "btn-primary" : "btn-outline-primary")"
+                                    @onclick='() => newTableTheme = "fantasy"'>
+                                <i class="bi bi-book me-1"></i> Arcanum (Fantasy)
+                            </button>
+                            <button type="button"
+                                    class="btn @(newTableTheme == "scifi" ? "btn-primary" : "btn-outline-primary")"
+                                    @onclick='() => newTableTheme = "scifi"'>
+                                <i class="bi bi-cpu me-1"></i> Neon Circuit (Sci-Fi)
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseCreateDialog">Cancel</button>
@@ -115,6 +130,7 @@ else
     private string? errorMessage;
     private bool showCreateDialog;
     private string newTableName = "";
+    private string newTableTheme = "fantasy";
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,6 +158,7 @@ else
     private void CreateNewTable()
     {
         newTableName = "";
+        newTableTheme = "fantasy";
         showCreateDialog = true;
     }
 
@@ -156,6 +173,7 @@ else
         {
             var newTable = await tablePortal.CreateAsync();
             newTable.Name = newTableName;
+            newTable.Theme = newTableTheme;
             await tablePortal.UpdateAsync(newTable);
 
             showCreateDialog = false;
