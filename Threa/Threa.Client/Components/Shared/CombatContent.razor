@@ -714,8 +714,10 @@
                 // TODO: Look up loaded ammo template to check for ammo-provided AOE
                 // For now, inherent AOE is supported; ammo AOE will be checked at attack time
 
-                // Fetch loaded ammo special effect from the magazine item if available
+                // Fetch loaded ammo properties (special effect, damage modifier) from the loaded ammo type
                 string? loadedAmmoSpecialEffect = null;
+                int loadedAmmoDamageModifier = 0;
+
                 if (ammoState.LoadedMagazineId.HasValue && CharacterItemDal != null)
                 {
                     try
@@ -725,6 +727,27 @@
                         loadedAmmoSpecialEffect = magProps?.SpecialEffect;
                     }
                     catch { /* Non-fatal — skip ammo effect if lookup fails */ }
+                }
+
+                // Look up the actual ammo template (bullet, not magazine) to get its damage modifier
+                if (!string.IsNullOrEmpty(ammoState.LoadedAmmoType) && ItemTemplateDal != null)
+                {
+                    try
+                    {
+                        var ammoTemplates = await ItemTemplateDal.GetTemplatesByTypeAsync(ItemType.Ammunition);
+                        var ammoTemplate = ammoTemplates.FirstOrDefault(t =>
+                        {
+                            var p = GameMechanics.Combat.AmmunitionProperties.FromJson(t.CustomProperties);
+                            return p != null && !p.IsContainer &&
+                                   string.Equals(p.AmmoType, ammoState.LoadedAmmoType, StringComparison.OrdinalIgnoreCase);
+                        });
+                        if (ammoTemplate != null)
+                        {
+                            var ammoProps = GameMechanics.Combat.AmmunitionProperties.FromJson(ammoTemplate.CustomProperties);
+                            loadedAmmoDamageModifier = ammoProps?.DamageModifier ?? 0;
+                        }
+                    }
+                    catch { /* Non-fatal — skip ammo modifier if lookup fails */ }
                 }
 
                 rangedWeapons.Add(new RangedWeaponInfo
@@ -743,7 +766,7 @@
                     ReloadType = rangedProps?.ReloadType ?? "Magazine",
                     AcceptsLooseAmmo = rangedProps?.AcceptsLooseAmmo ?? false,
                     LoadedMagazineId = ammoState.LoadedMagazineId,
-                    AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
+                    AmmoDamageModifier = loadedAmmoDamageModifier,
                     LoadedAmmoSpecialEffect = loadedAmmoSpecialEffect,
                     IsDodgeable = rangedProps?.IsDodgeable ?? true,
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
