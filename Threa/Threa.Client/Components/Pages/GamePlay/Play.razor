@@ -1518,7 +1518,7 @@ private async Task LoadTableCharactersAsync()
         // Ignore if not our table or disposed
         if (_disposed || table == null || e.TableId != table.Id) return;
 
-        _ = InvokeAsync(() =>
+        _ = InvokeAsync(async () =>
         {
             // If we have this interaction open, update it
             if (currentTargetingInteraction != null && e.InteractionId == currentTargetingInteraction.InteractionId)
@@ -1527,6 +1527,16 @@ private async Task LoadTableCharactersAsync()
                 if (interaction != null)
                 {
                     currentTargetingInteraction = interaction;
+                }
+
+                // Deduct ammo when we're the attacker in a ranged targeting interaction
+                if (isTargetingAttacker &&
+                    currentTargetingInteraction?.AttackerData.ActionType == TargetingActionType.RangedAttack &&
+                    currentTargetingInteraction?.Resolution != null &&
+                    tabCombatRef != null)
+                {
+                    var res = currentTargetingInteraction.Resolution;
+                    await tabCombatRef.HandleTargetedRangedAmmoUpdateAsync(res.WeaponItemId, res.AmmoRemaining);
                 }
             }
 

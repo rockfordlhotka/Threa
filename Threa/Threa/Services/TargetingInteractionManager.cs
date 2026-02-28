@@ -625,6 +625,14 @@ public class TargetingInteractionManager : ITargetingInteractionManager
             defenderDetails += $"\nHit Location: {hitLocation}\nDamage: {fatDamage} FAT, {vitDamage} VIT";
         }
 
+        int ammoConsumed = attackerData.FireMode switch
+        {
+            FireMode.Burst => attackerData.BurstSize,
+            FireMode.Suppression => attackerData.SuppressiveRounds,
+            _ => 1
+        };
+        int ammoRemaining = Math.Max(0, attackerData.CurrentLoadedAmmo - ammoConsumed);
+
         return new TargetingResolutionData
         {
             AttackerAV = av,
@@ -639,7 +647,10 @@ public class TargetingInteractionManager : ITargetingInteractionManager
             AttackerNarrative = attackerNarrative,
             DefenderDetails = defenderDetails,
             AttackBreakdown = attackBreakdown,
-            DefenseBreakdown = defenseBreakdown
+            DefenseBreakdown = defenseBreakdown,
+            WeaponItemId = attackerData.WeaponItemId,
+            AmmoConsumed = ammoConsumed,
+            AmmoRemaining = ammoRemaining
         };
     }
 

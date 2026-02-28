@@ -1321,6 +1321,50 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// Called by Play.razor after a targeted ranged attack resolves to deduct ammo from the weapon.
+    /// Uses the same DB-update logic as OnRangedAttackComplete.
+    /// </summary>
+    public async Task HandleTargetedRangedAmmoUpdateAsync(Guid weaponItemId, int ammoRemaining)
+    {
+        if (weaponItemId == Guid.Empty) return;
+
+        var weapon = rangedWeapons.FirstOrDefault(w => w.ItemId == weaponItemId);
+        if (weapon != null)
+        {
+            weapon.LoadedAmmo = ammoRemaining;
+
+            var item = equippedItems.FirstOrDefault(i => i.Id == weaponItemId);
+            if (item != null)
+            {
+                var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+                var previousAmmo = ammoState.LoadedAmmo;
+                ammoState.LoadedAmmo = ammoRemaining;
+                item.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(item.CustomProperties, ammoState);
+                await CharacterItemDal.UpdateItemAsync(item);
+
+                if (ammoState.LoadedMagazineId.HasValue)
+                {
+                    var magazineItem = await CharacterItemDal.GetItemAsync(ammoState.LoadedMagazineId.Value);
+                    if (magazineItem != null)
+                    {
+                        var magazineState = AmmoContainerState.FromJson(magazineItem.CustomProperties);
+                        var ammoConsumed = previousAmmo - ammoRemaining;
+                        magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - ammoConsumed);
+                        magazineItem.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(magazineItem.CustomProperties, magazineState);
+                        await CharacterItemDal.UpdateItemAsync(magazineItem);
+
+                        var cachedMag = availableAmmoSources.FirstOrDefault(a => a.ItemId == ammoState.LoadedMagazineId.Value);
+                        if (cachedMag != null)
+                            cachedMag.CurrentAmmo = magazineState.LoadedAmmo;
+                    }
+                }
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task OnReloadComplete(ReloadCompleteData data)
     {
         LogActivity(data.Message, ActivityCategory.Combat);
@@ -1680,6 +1724,10 @@
         int weaponTemplateId = 0;
 
         string? ammoSpecialEffect = null;
+        Guid rangedWeaponItemId = Guid.Empty;
+        bool supportsSingle = true;
+        bool supportsBurst = false;
+        bool supportsSuppression = false;
 
         if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
         {
@@ -1693,6 +1741,10 @@
             currentAmmo = weapon.LoadedAmmo;
             weaponTemplateId = weapon.TemplateId;
             ammoSpecialEffect = weapon.LoadedAmmoSpecialEffect;
+            rangedWeaponItemId = weapon.ItemId;
+            supportsSingle = weapon.SupportsSingle;
+            supportsBurst = weapon.SupportsBurst;
+            supportsSuppression = weapon.SupportsSuppression;
         }
         else if (actionType == TargetingActionType.MeleeAttack)
         {
@@ -1737,7 +1789,11 @@
             WeaponTemplateId = weaponTemplateId,
             AttackerCharacterId = Character?.Id ?? 0,
             AmmoSpecialEffect = ammoSpecialEffect,
-            AvailableWeapons = actionType == TargetingActionType.MeleeAttack ? new List<MeleeWeaponInfo>(meleeWeaponOptions) : null
+            AvailableWeapons = actionType == TargetingActionType.MeleeAttack ? new List<MeleeWeaponInfo>(meleeWeaponOptions) : null,
+            WeaponItemId = rangedWeaponItemId,
+            SupportsSingle = supportsSingle,
+            SupportsBurst = supportsBurst,
+            SupportsSuppression = supportsSuppression
         };
     }
 

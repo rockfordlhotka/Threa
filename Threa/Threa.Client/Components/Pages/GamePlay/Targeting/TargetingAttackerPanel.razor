@@ -69,10 +69,21 @@
 
             @if (ActionType == TargetingActionType.RangedAttack)
             {
+                <!-- Weapon name + ammo badge -->
+                @if (InitialData?.WeaponName != null)
+                {
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <strong>@InitialData.WeaponName</strong>
+                        <span class="badge @(InitialData.CurrentLoadedAmmo > 0 ? "bg-success" : "bg-danger")">
+                            @InitialData.CurrentLoadedAmmo ammo
+                        </span>
+                    </div>
+                }
+
                 <!-- Ranged Attack Options -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Range</label>
-                    <select class="form-select form-select-sm" 
+                    <select class="form-select form-select-sm"
                             disabled="@IsReadOnly"
                             @bind="range" @bind:after="OnDataChanged">
                         <option value="@RangeCategory.Short">Short (TV 6)</option>
@@ -86,13 +97,35 @@
                 {
                     <div class="mb-3">
                         <label class="form-label fw-bold">Fire Mode</label>
-                        <select class="form-select form-select-sm" 
-                                disabled="@IsReadOnly"
-                                @bind="fireMode" @bind:after="OnDataChanged">
-                            <option value="@FireMode.Single">Single Shot</option>
-                            <option value="@FireMode.Burst">Burst (3 rounds)</option>
-                            <option value="@FireMode.Suppression">Suppression (10 rounds)</option>
-                        </select>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (InitialData?.SupportsSingle ?? true)
+                            {
+                                <button class="btn btn-sm @(fireMode == FireMode.Single ? "btn-warning" : "btn-outline-secondary")"
+                                        disabled="@IsReadOnly"
+                                        @onclick="() => SetFireMode(FireMode.Single)">
+                                    <i class="bi bi-dot"></i> Single
+                                    <span class="badge bg-dark">1 round</span>
+                                </button>
+                            }
+                            @if (InitialData?.SupportsBurst ?? false)
+                            {
+                                <button class="btn btn-sm @(fireMode == FireMode.Burst ? "btn-warning" : "btn-outline-secondary")"
+                                        disabled="@IsReadOnly"
+                                        @onclick="() => SetFireMode(FireMode.Burst)">
+                                    <i class="bi bi-three-dots"></i> Burst
+                                    <span class="badge bg-dark">@(InitialData?.BurstSize ?? 3) rounds</span>
+                                </button>
+                            }
+                            @if (InitialData?.SupportsSuppression ?? false)
+                            {
+                                <button class="btn btn-sm @(fireMode == FireMode.Suppression ? "btn-warning" : "btn-outline-secondary")"
+                                        disabled="@IsReadOnly"
+                                        @onclick="() => SetFireMode(FireMode.Suppression)">
+                                    <i class="bi bi-arrows-angle-expand"></i> Suppression
+                                    <span class="badge bg-dark">@(InitialData?.SuppressiveRounds ?? 10) rounds</span>
+                                </button>
+                            }
+                        </div>
                     </div>
                 }
             }
@@ -251,7 +284,18 @@
             apBoost = InitialData.APBoost;
             fatBoost = InitialData.FATBoost;
             range = InitialData.Range ?? RangeCategory.Medium;
-            fireMode = InitialData.FireMode ?? FireMode.Single;
+            // Auto-select fire mode based on weapon capabilities when not yet set
+            if (InitialData.FireMode.HasValue)
+            {
+                fireMode = InitialData.FireMode.Value;
+            }
+            else
+            {
+                if (InitialData.SupportsSingle) fireMode = FireMode.Single;
+                else if (InitialData.SupportsBurst) fireMode = FireMode.Burst;
+                else if (InitialData.SupportsSuppression) fireMode = FireMode.Suppression;
+                else fireMode = FireMode.Single;
+            }
             actionCostType = InitialData.ActionCostType;
 
             // Weapons are embedded in InitialData by CombatContent.BuildAttackerData —
@@ -369,7 +413,17 @@
             UsePhysicality = usePhysicality,
             Range = ActionType == TargetingActionType.RangedAttack ? range : null,
             FireMode = ActionType == TargetingActionType.RangedAttack ? fireMode : null,
-            AvailableWeapons = InitialData?.AvailableWeapons
+            AvailableWeapons = InitialData?.AvailableWeapons,
+            WeaponItemId = InitialData?.WeaponItemId ?? Guid.Empty,
+            SupportsSingle = InitialData?.SupportsSingle ?? true,
+            SupportsBurst = InitialData?.SupportsBurst ?? false,
+            SupportsSuppression = InitialData?.SupportsSuppression ?? false
         };
+    }
+
+    private async Task SetFireMode(FireMode mode)
+    {
+        fireMode = mode;
+        await OnDataChanged();
     }
 }
