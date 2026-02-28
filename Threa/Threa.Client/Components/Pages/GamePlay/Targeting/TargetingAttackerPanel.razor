@@ -1,4 +1,5 @@
 @using Threa.Client.Components.Shared
+@using Threa.Client.Components.Pages.GamePlay
 @using GameMechanics.Combat
 @using GameMechanics.Messaging
 @using GameMechanics
@@ -24,18 +25,44 @@
 
             @if (ActionType == TargetingActionType.MeleeAttack)
             {
-                <!-- Melee Attack Info -->
+                <!-- Melee Weapon Selection -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Weapon</label>
-                    <div class="alert alert-info py-2 mb-0">
-                        <strong>@(InitialData?.WeaponName ?? "Unarmed")</strong>
-                        @if (WeaponAVModifier != 0)
-                        {
-                            <span class="ms-2 badge @(WeaponAVModifier >= 0 ? "bg-success" : "bg-danger")">
-                                AV @(WeaponAVModifier >= 0 ? "+" : "")@WeaponAVModifier
-                            </span>
-                        }
-                    </div>
+                    @if (AvailableWeapons?.Count > 1)
+                    {
+                        <select class="form-select form-select-sm"
+                                disabled="@IsReadOnly"
+                                value="@selectedWeaponIndex"
+                                @onchange="OnWeaponSelectionChanged">
+                            @for (int i = 0; i < AvailableWeapons.Count; i++)
+                            {
+                                var w = AvailableWeapons[i];
+                                var idx = i;
+                                <option value="@idx">
+                                    @w.Name
+                                    @if (w.WeaponAVModifier != 0)
+                                    {
+                                        <text> (AV @(w.WeaponAVModifier >= 0 ? "+" : "")@w.WeaponAVModifier)</text>
+                                    }
+                                </option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        var displayWeapon = GetSelectedWeapon();
+                        var displayName = displayWeapon?.Name ?? InitialData?.WeaponName ?? "Unarmed";
+                        var displayAV = displayWeapon?.WeaponAVModifier ?? WeaponAVModifier;
+                        <div class="alert alert-info py-2 mb-0">
+                            <strong>@displayName</strong>
+                            @if (displayAV != 0)
+                            {
+                                <span class="ms-2 badge @(displayAV >= 0 ? "bg-success" : "bg-danger")">
+                                    AV @(displayAV >= 0 ? "+" : "")@displayAV
+                                </span>
+                            }
+                        </div>
+                    }
                     <small class="text-muted">Weapon is selected based on equipped items</small>
                 </div>
             }
@@ -70,43 +97,46 @@
                 }
             }
 
-            <div class="mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="attackerMoving" 
-                           disabled="@IsReadOnly"
-                           @bind="isMoving" @bind:after="OnDataChanged">
-                    <label class="form-check-label" for="attackerMoving">
-                        Moving (-2 AV)
-                    </label>
+            @if (ActionType == TargetingActionType.RangedAttack)
+            {
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="attackerMoving"
+                               disabled="@IsReadOnly"
+                               @bind="isMoving" @bind:after="OnDataChanged">
+                        <label class="form-check-label" for="attackerMoving">
+                            Moving (-2 AV)
+                        </label>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="calledShot" 
-                           disabled="@IsReadOnly"
-                           @bind="isCalledShot" @bind:after="OnDataChanged">
-                    <label class="form-check-label" for="calledShot">
-                        Called Shot (-2 AV)
-                    </label>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="calledShot"
+                               disabled="@IsReadOnly"
+                               @bind="isCalledShot" @bind:after="OnDataChanged">
+                        <label class="form-check-label" for="calledShot">
+                            Called Shot (-2 AV)
+                        </label>
+                    </div>
+                    @if (isCalledShot)
+                    {
+                        <select class="form-select form-select-sm mt-2"
+                                disabled="@IsReadOnly"
+                                @bind="calledShotLocation" @bind:after="OnDataChanged">
+                            <option value="@HitLocation.Head">Head</option>
+                            <option value="@HitLocation.Torso">Torso</option>
+                            <option value="@HitLocation.LeftArm">Left Arm</option>
+                            <option value="@HitLocation.RightArm">Right Arm</option>
+                            <option value="@HitLocation.LeftLeg">Left Leg</option>
+                            <option value="@HitLocation.RightLeg">Right Leg</option>
+                        </select>
+                        <small class="text-info">
+                            <i class="bi bi-info-circle"></i> SV 2+ hits target location; SV 0-1 hits random
+                        </small>
+                    }
                 </div>
-                @if (isCalledShot)
-                {
-                    <select class="form-select form-select-sm mt-2" 
-                            disabled="@IsReadOnly"
-                            @bind="calledShotLocation" @bind:after="OnDataChanged">
-                        <option value="@HitLocation.Head">Head</option>
-                        <option value="@HitLocation.Torso">Torso</option>
-                        <option value="@HitLocation.LeftArm">Left Arm</option>
-                        <option value="@HitLocation.RightArm">Right Arm</option>
-                        <option value="@HitLocation.LeftLeg">Left Leg</option>
-                        <option value="@HitLocation.RightLeg">Right Leg</option>
-                    </select>
-                    <small class="text-info">
-                        <i class="bi bi-info-circle"></i> SV 2+ hits target location; SV 0-1 hits random
-                    </small>
-                }
-            </div>
+            }
 
             @if (ActionType != TargetingActionType.Medical)
             {
@@ -189,6 +219,9 @@
     public TargetingAttackerData? InitialData { get; set; }
 
     [Parameter]
+    public List<MeleeWeaponInfo>? AvailableWeapons { get; set; }
+
+    [Parameter]
     public EventCallback<TargetingAttackerData> OnDataUpdated { get; set; }
 
     [Parameter]
@@ -205,6 +238,7 @@
     private RangeCategory range = RangeCategory.Medium;
     private FireMode fireMode = FireMode.Single;
     private ActionCostType actionCostType = ActionCostType.OneAPOneFat;
+    private int selectedWeaponIndex;
 
     protected override void OnParametersSet()
     {
@@ -219,6 +253,30 @@
             range = InitialData.Range ?? RangeCategory.Medium;
             fireMode = InitialData.FireMode ?? FireMode.Single;
             actionCostType = InitialData.ActionCostType;
+
+            // Weapons are embedded in InitialData by CombatContent.BuildAttackerData —
+            // prefer that over the separately-threaded parameter so the targeting
+            // panel works identically to the anonymous-attack AttackMode.
+            if (InitialData.AvailableWeapons != null)
+                AvailableWeapons = InitialData.AvailableWeapons;
+
+            if (AvailableWeapons != null && InitialData.WeaponName != null)
+            {
+                var idx = AvailableWeapons.FindIndex(w => w.Name == InitialData.WeaponName);
+                selectedWeaponIndex = idx >= 0 ? idx : 0;
+            }
+        }
+    }
+
+    private MeleeWeaponInfo? GetSelectedWeapon() =>
+        AvailableWeapons?.Count > 0 ? AvailableWeapons[selectedWeaponIndex] : null;
+
+    private async Task OnWeaponSelectionChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var idx))
+        {
+            selectedWeaponIndex = idx;
+            await OnDataChanged();
         }
     }
 
@@ -260,7 +318,8 @@
 
     private int GetTotalAVModifier()
     {
-        int modifier = WeaponAVModifier + attackAVBoost;
+        var selectedWeapon = GetSelectedWeapon();
+        int modifier = (selectedWeapon?.WeaponAVModifier ?? WeaponAVModifier) + attackAVBoost;
         if (isMoving) modifier -= 2;
         if (isCalledShot) modifier -= 2;
         return modifier;
@@ -282,11 +341,25 @@
 
     private TargetingAttackerData BuildAttackerData()
     {
+        var selectedWeapon = GetSelectedWeapon();
         return new TargetingAttackerData
         {
             ActionType = ActionType,
+            SkillId = InitialData?.SkillId ?? "",
+            SkillName = InitialData?.SkillName ?? "",
             SkillAS = BaseSkillAS,
-            WeaponAVModifier = WeaponAVModifier,
+            WeaponAVModifier = selectedWeapon?.WeaponAVModifier ?? WeaponAVModifier,
+            WeaponSVModifier = selectedWeapon?.WeaponSVModifier ?? InitialData?.WeaponSVModifier ?? 0,
+            WeaponDamageClass = selectedWeapon?.WeaponDamageClass ?? InitialData?.WeaponDamageClass ?? 1,
+            WeaponName = selectedWeapon?.Name ?? InitialData?.WeaponName,
+            WeaponTemplateId = selectedWeapon?.TemplateId ?? InitialData?.WeaponTemplateId ?? 0,
+            WeaponDamageModifiers = selectedWeapon?.WeaponDamageModifiers ?? InitialData?.WeaponDamageModifiers,
+            DamageType = InitialData?.DamageType ?? DamageType.Bashing,
+            AttackerCharacterId = InitialData?.AttackerCharacterId ?? 0,
+            IsDodgeable = InitialData?.IsDodgeable ?? false,
+            CurrentLoadedAmmo = InitialData?.CurrentLoadedAmmo ?? 0,
+            AmmoDamageModifier = InitialData?.AmmoDamageModifier ?? 0,
+            AmmoSpecialEffect = InitialData?.AmmoSpecialEffect,
             IsMoving = isMoving,
             ActionCostType = actionCostType,
             APBoost = apBoost,
@@ -295,7 +368,8 @@
             CalledShotLocation = isCalledShot ? calledShotLocation : null,
             UsePhysicality = usePhysicality,
             Range = ActionType == TargetingActionType.RangedAttack ? range : null,
-            FireMode = ActionType == TargetingActionType.RangedAttack ? fireMode : null
+            FireMode = ActionType == TargetingActionType.RangedAttack ? fireMode : null,
+            AvailableWeapons = InitialData?.AvailableWeapons
         };
     }
 }

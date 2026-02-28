@@ -199,6 +199,13 @@ public class TargetingAttackerData
     public string? AmmoSpecialEffect { get; init; }
 
     /// <summary>
+    /// Available melee weapons for the attacker to choose from (melee attacks only).
+    /// Populated by CombatContent so the targeting panel can present a weapon selector
+    /// identical to the anonymous-attack AttackMode panel.
+    /// </summary>
+    public List<MeleeWeaponInfo>? AvailableWeapons { get; init; }
+
+    /// <summary>
     /// Gets a WeaponDamageProfile from per-type modifiers or legacy single-type data.
     /// </summary>
     public WeaponDamageProfile? GetWeaponDamageProfile()
