@@ -46,7 +46,7 @@
 
     protected override void OnParametersSet()
     {
-        (year, pentade, week, day, watch) = ConfederateCalendar.DecomposeDateTime(EpochSeconds);
+        (year, pentade, week, day, watch, _) = ConfederateCalendar.DecomposeDateTime(EpochSeconds);
     }
 
     private async Task SetYear(ChangeEventArgs e) { year = ParseLong(e); await Recompose(); }
