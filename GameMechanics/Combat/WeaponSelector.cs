@@ -75,13 +75,6 @@ public static class WeaponSelector
                 continue;
             if (!template.IsVirtual && template.WeaponType != WeaponType.Unarmed)
                 continue;
-
-            // Kicks (AVModifier < 0) are always available - they use legs
-            // Punches (AVModifier >= 0) require at least one empty hand
-            bool isPunchType = template.AVModifier >= 0;
-            if (isPunchType && hasMainHandWeapon)
-                continue;
-
             yield return template;
         }
     }
