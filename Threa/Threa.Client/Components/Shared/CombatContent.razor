@@ -691,7 +691,7 @@
                 TemplateId = 0,
                 Name = "Unarmed",
                 SkillName = "Hand-to-Hand",
-                SkillAS = Character?.Skills
+                SkillAS = Character?.Skills?
                     .FirstOrDefault(s => s.Name.Equals("Hand-to-Hand", StringComparison.OrdinalIgnoreCase))
                     ?.AbilityScore ?? 0,
                 WeaponAVModifier = 0,
