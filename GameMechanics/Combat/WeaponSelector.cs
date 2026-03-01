@@ -14,15 +14,17 @@ public static class WeaponSelector
     /// <summary>
     /// Gets melee weapons from equipped items.
     /// Melee = weapon in MainHand/OffHand/TwoHand with no Range property AND not flagged as ranged in CustomProperties.
+    /// Also includes ranged weapons that have a RelatedSkill set (indicating they can be used as melee weapons).
     /// Also includes implant weapons that are melee.
     /// </summary>
     public static IEnumerable<EquippedItemInfo> GetMeleeWeapons(
         IEnumerable<EquippedItemInfo> equippedItems)
     {
         return equippedItems.Where(i =>
-            (i.Template.ItemType == ItemType.Weapon && IsWeaponSlot(i.Item.EquippedSlot) && !IsRangedWeapon(i)) ||
+            (i.Template.ItemType == ItemType.Weapon && IsWeaponSlot(i.Item.EquippedSlot) &&
+             (!IsRangedWeapon(i) || HasMeleeCapability(i))) ||
             (i.Template.ItemType == ItemType.Implant && IsImplantWeaponSlot(i.Item.EquippedSlot) &&
-             i.Template.WeaponType != WeaponType.None && !IsRangedWeapon(i)));
+             i.Template.WeaponType != WeaponType.None && (!IsRangedWeapon(i) || HasMeleeCapability(i))));
     }
 
     /// <summary>
@@ -37,6 +39,15 @@ public static class WeaponSelector
             (i.Template.ItemType == ItemType.Weapon && IsWeaponSlot(i.Item.EquippedSlot) && IsRangedWeapon(i)) ||
             (i.Template.ItemType == ItemType.Implant && IsImplantWeaponSlot(i.Item.EquippedSlot) &&
              i.Template.WeaponType != WeaponType.None && IsRangedWeapon(i)));
+    }
+
+    /// <summary>
+    /// Checks if a ranged weapon also has melee capability (i.e., has a RelatedSkill set).
+    /// For example, a rifle with a "Hand-to-Hand" melee skill can be used to bash opponents.
+    /// </summary>
+    private static bool HasMeleeCapability(EquippedItemInfo item)
+    {
+        return !string.IsNullOrWhiteSpace(item.Template.RelatedSkill);
     }
 
     /// <summary>
