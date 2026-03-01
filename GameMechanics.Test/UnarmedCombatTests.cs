@@ -514,9 +514,9 @@ public class UnarmedCombatTests : TestBase
     }
 
     [TestMethod]
-    public async Task WeaponSelector_MainHandWeaponEquipped_OnlyKickAvailable()
+    public async Task WeaponSelector_MainHandWeaponEquipped_PunchAndKickAvailable()
     {
-        // When a weapon is in main hand, only Kick should be available (uses legs)
+        // Punch and Kick are always available regardless of equipped weapons
         var provider = InitServices();
         var dal = provider.GetRequiredService<IItemTemplateDal>();
 
@@ -534,16 +534,16 @@ public class UnarmedCombatTests : TestBase
 
         var available = WeaponSelector.GetAvailableUnarmedWeapons(virtualTemplates, equippedItems).ToList();
 
-        Assert.IsFalse(available.Any(w => w.Name == "Punch"),
-            "Punch should NOT be available when main hand has weapon");
+        Assert.IsTrue(available.Any(w => w.Name == "Punch"),
+            "Punch should be available even when main hand has weapon");
         Assert.IsTrue(available.Any(w => w.Name == "Kick"),
-            "Kick should still be available (uses legs)");
+            "Kick should be available");
     }
 
     [TestMethod]
-    public async Task WeaponSelector_TwoHandWeaponEquipped_OnlyKickAvailable()
+    public async Task WeaponSelector_TwoHandWeaponEquipped_PunchAndKickAvailable()
     {
-        // When a two-handed weapon is equipped, only Kick should be available
+        // Punch and Kick are always available regardless of equipped weapons
         var provider = InitServices();
         var dal = provider.GetRequiredService<IItemTemplateDal>();
 
@@ -560,10 +560,10 @@ public class UnarmedCombatTests : TestBase
 
         var available = WeaponSelector.GetAvailableUnarmedWeapons(virtualTemplates, equippedItems).ToList();
 
-        Assert.IsFalse(available.Any(w => w.Name == "Punch"),
-            "Punch should NOT be available with two-handed weapon");
+        Assert.IsTrue(available.Any(w => w.Name == "Punch"),
+            "Punch should be available even with two-handed weapon");
         Assert.IsTrue(available.Any(w => w.Name == "Kick"),
-            "Kick should still be available with two-handed weapon");
+            "Kick should be available");
     }
 
     [TestMethod]
@@ -629,10 +629,10 @@ public class UnarmedCombatTests : TestBase
     }
 
     [TestMethod]
-    public void WeaponSelector_UnarmedWithoutIsVirtual_HandOccupied_OnlyKick()
+    public void WeaponSelector_UnarmedWithoutIsVirtual_HandOccupied_BothAvailable()
     {
-        // With IsVirtual=false but WeaponType=Unarmed, punch should still be blocked
-        // when main hand has a weapon.
+        // With IsVirtual=false but WeaponType=Unarmed, punch and kick are always available
+        // regardless of equipped weapons.
         var templates = new List<ItemTemplate>
         {
             new ItemTemplate
@@ -662,8 +662,9 @@ public class UnarmedCombatTests : TestBase
 
         var available = WeaponSelector.GetAvailableUnarmedWeapons(templates, equippedItems).ToList();
 
-        Assert.AreEqual(1, available.Count, "Only Kick should be available");
-        Assert.AreEqual("Kick", available[0].Name);
+        Assert.AreEqual(2, available.Count, "Both Punch and Kick should be available");
+        Assert.IsTrue(available.Any(w => w.Name == "Punch"), "Punch should be available");
+        Assert.IsTrue(available.Any(w => w.Name == "Kick"), "Kick should be available");
     }
 
     [TestMethod]

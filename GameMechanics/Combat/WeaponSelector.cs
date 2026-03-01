@@ -75,11 +75,6 @@ public static class WeaponSelector
         IEnumerable<ItemTemplate> virtualWeaponTemplates,
         IEnumerable<EquippedItemInfo> equippedItems)
     {
-        var equipped = equippedItems.ToList();
-        bool hasMainHandWeapon = equipped.Any(i =>
-            i.Template.ItemType == ItemType.Weapon &&
-            (i.Item.EquippedSlot == EquipmentSlot.MainHand || i.Item.EquippedSlot == EquipmentSlot.TwoHand));
-
         foreach (var template in virtualWeaponTemplates)
         {
             if (template.ItemType != ItemType.Weapon)
