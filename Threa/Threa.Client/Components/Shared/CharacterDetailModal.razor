@@ -146,7 +146,7 @@
                                           TableId="TableId"
                                           OnCharacterUpdated="OnCharacterUpdated" />
             }
-            else if (activeTab == "Combat")
+            else if (activeTab == "Actions")
             {
                 <!-- Targeting Notification Badge -->
                 @if (pendingTargetingRequests.Any())
@@ -253,7 +253,7 @@
     [Parameter]
     public IEnumerable<TableCharacterInfo> AllCharacters { get; set; } = Enumerable.Empty<TableCharacterInfo>();
 
-    private static readonly string[] tabNames = ["GM Actions", "Combat", "Character Sheet", "Inventory", "Narrative", "Admin"];
+    private static readonly string[] tabNames = ["GM Actions", "Actions", "Character Sheet", "Inventory", "Narrative", "Admin"];
     private string activeTab = tabNames[0];
     private int selectedCharacterId;
     private bool isLoading = true;

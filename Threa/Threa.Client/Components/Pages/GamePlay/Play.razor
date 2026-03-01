@@ -344,7 +344,7 @@ else
         {
             <TabStatus Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
-        else if (activeTab == "Combat")
+        else if (activeTab == "Actions")
         {
             <TabCombat @ref="tabCombatRef"
                         Character="character"
@@ -404,8 +404,8 @@ else
         </div>
     }
 
-    <!-- Activity Log (hidden when Combat tab is active to avoid duplication) -->
-    @if (activeTab != "Combat")
+    <!-- Activity Log (hidden when Actions tab is active to avoid duplication) -->
+    @if (activeTab != "Actions")
     {
         <div class="activity-log mt-3 activity-log-container">
             <h6>Activity Log</h6>
@@ -437,7 +437,7 @@ public int CharacterId { get; set; }
 public Guid TableId { get; set; }
 
 private bool isLoading = true;
-private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory", "Narrative" };
+private static readonly string[] AllTabNames = new[] { "Status", "Actions", "Skills", "Magic", "Inventory", "Narrative" };
 private string[] tabNames => GetTabNamesForTheme();
 private string activeTab = "Status";
 
