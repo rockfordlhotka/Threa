@@ -659,7 +659,7 @@
 
         // Load virtual weapons (unarmed attacks: Punch, Kick) based on equipment state
         var allTemplates = await ItemTemplateDal.GetAllTemplatesAsync();
-        var virtualWeaponTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+        var virtualWeaponTemplates = allTemplates.Where(t => t.IsVirtual || (t.ItemType == ItemType.Weapon && t.WeaponType == WeaponType.Unarmed)).ToList();
         var availableUnarmed = WeaponSelector.GetAvailableUnarmedWeapons(virtualWeaponTemplates, equippedItemInfos);
         foreach (var vw in availableUnarmed)
         {

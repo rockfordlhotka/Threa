@@ -579,9 +579,115 @@ public class UnarmedCombatTests : TestBase
 
         var available = WeaponSelector.GetAvailableUnarmedWeapons(allTemplates, equippedItems).ToList();
 
-        // Should only return virtual weapons
-        Assert.IsTrue(available.All(w => w.IsVirtual), "Only virtual weapons should be returned");
+        // Should only return virtual or unarmed weapons
+        Assert.IsTrue(available.All(w => w.IsVirtual || w.WeaponType == WeaponType.Unarmed),
+            "Only virtual or unarmed weapons should be returned");
         Assert.IsTrue(available.Count >= 2, "Should have at least Punch and Kick");
+    }
+
+    [TestMethod]
+    public void WeaponSelector_UnarmedWithoutIsVirtual_StillReturned()
+    {
+        // Production DB may have Punch/Kick with IsVirtual=false but WeaponType=Unarmed.
+        // GetAvailableUnarmedWeapons should still return them.
+        var templates = new List<ItemTemplate>
+        {
+            new ItemTemplate
+            {
+                Id = 100,
+                Name = "Punch",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed,
+                IsVirtual = false, // Not set in production DB
+                AVModifier = 0,
+                SVModifier = 2,
+                DamageClass = 1,
+                DamageType = "Bludgeoning",
+                RelatedSkill = "Hand-to-Hand"
+            },
+            new ItemTemplate
+            {
+                Id = 101,
+                Name = "Kick",
+                ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed,
+                IsVirtual = false, // Not set in production DB
+                AVModifier = -1,
+                SVModifier = 4,
+                DamageClass = 1,
+                DamageType = "Bludgeoning",
+                RelatedSkill = "Hand-to-Hand"
+            }
+        };
+        var equippedItems = new List<EquippedItemInfo>();
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(templates, equippedItems).ToList();
+
+        Assert.AreEqual(2, available.Count, "Both Punch and Kick should be returned even without IsVirtual");
+        Assert.IsTrue(available.Any(w => w.Name == "Punch"), "Punch should be available");
+        Assert.IsTrue(available.Any(w => w.Name == "Kick"), "Kick should be available");
+    }
+
+    [TestMethod]
+    public void WeaponSelector_UnarmedWithoutIsVirtual_HandOccupied_OnlyKick()
+    {
+        // With IsVirtual=false but WeaponType=Unarmed, punch should still be blocked
+        // when main hand has a weapon.
+        var templates = new List<ItemTemplate>
+        {
+            new ItemTemplate
+            {
+                Id = 100, Name = "Punch", ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed, IsVirtual = false,
+                AVModifier = 0, SVModifier = 2, DamageClass = 1
+            },
+            new ItemTemplate
+            {
+                Id = 101, Name = "Kick", ItemType = ItemType.Weapon,
+                WeaponType = WeaponType.Unarmed, IsVirtual = false,
+                AVModifier = -1, SVModifier = 4, DamageClass = 1
+            }
+        };
+        var swordTemplate = new ItemTemplate
+        {
+            Id = 10, Name = "Sword", ItemType = ItemType.Weapon,
+            WeaponType = WeaponType.Sword, IsVirtual = false
+        };
+        var equippedItems = new List<EquippedItemInfo>
+        {
+            new EquippedItemInfo(
+                new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.MainHand, Template = swordTemplate },
+                swordTemplate)
+        };
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(templates, equippedItems).ToList();
+
+        Assert.AreEqual(1, available.Count, "Only Kick should be available");
+        Assert.AreEqual("Kick", available[0].Name);
+    }
+
+    [TestMethod]
+    public void WeaponSelector_NonWeaponItems_NotReturned()
+    {
+        // Ensure non-weapon items with WeaponType.Unarmed don't sneak through
+        var templates = new List<ItemTemplate>
+        {
+            new ItemTemplate
+            {
+                Id = 200, Name = "Weird Armor", ItemType = ItemType.Armor,
+                WeaponType = WeaponType.Unarmed, IsVirtual = false
+            },
+            new ItemTemplate
+            {
+                Id = 201, Name = "Regular Shield", ItemType = ItemType.Shield,
+                WeaponType = WeaponType.None, IsVirtual = false
+            }
+        };
+        var equippedItems = new List<EquippedItemInfo>();
+
+        var available = WeaponSelector.GetAvailableUnarmedWeapons(templates, equippedItems).ToList();
+
+        Assert.AreEqual(0, available.Count, "Non-weapon items should not be returned");
     }
 
     #endregion

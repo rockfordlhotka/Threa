@@ -71,7 +71,9 @@ public static class WeaponSelector
 
         foreach (var template in virtualWeaponTemplates)
         {
-            if (!template.IsVirtual || template.ItemType != ItemType.Weapon)
+            if (template.ItemType != ItemType.Weapon)
+                continue;
+            if (!template.IsVirtual && template.WeaponType != WeaponType.Unarmed)
                 continue;
 
             // Kicks (AVModifier < 0) are always available - they use legs
