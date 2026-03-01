@@ -682,6 +682,27 @@
             });
         }
 
+        // Ensure at least a default unarmed weapon option so the targeting panel
+        // always shows a weapon dropdown instead of a static "Unarmed" fallback.
+        if (meleeWeaponOptions.Count == 0)
+        {
+            meleeWeaponOptions.Add(new MeleeWeaponInfo
+            {
+                TemplateId = 0,
+                Name = "Unarmed",
+                SkillName = "Hand-to-Hand",
+                SkillAS = Character?.Skills
+                    .FirstOrDefault(s => s.Name.Equals("Hand-to-Hand", StringComparison.OrdinalIgnoreCase))
+                    ?.AbilityScore ?? 0,
+                WeaponAVModifier = 0,
+                WeaponSVModifier = 0,
+                WeaponDamageClass = 1,
+                DamageType = "Bludgeoning",
+                IsVirtual = true,
+                Description = "Unarmed attack"
+            });
+        }
+
         // Set default weapon modifiers from first available option
         var defaultWeapon = meleeWeaponOptions.FirstOrDefault();
         meleeWeaponAVModifier = defaultWeapon?.WeaponAVModifier ?? 0;
