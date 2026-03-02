@@ -18,6 +18,7 @@ public class ImperialCalendar : IGameCalendar
     // Imperial time in seconds
     // 1 bell (Imperial hour) = 62.75 Earth minutes = 3,765 seconds
     // 1 Imperial day = 24 bells = 90,360 seconds (~25.1 Earth hours)
+    private const long SecondsPerMinute = 60;
     private const long SecondsPerBell = 3_765;
     private const long SecondsPerDay = 90_360;
     private const int DaysPerYear = 375;
@@ -130,7 +131,7 @@ public class ImperialCalendar : IGameCalendar
         int bell = (int)(remaining / SecondsPerBell);
         remaining %= SecondsPerBell;
 
-        int minute = (int)(remaining / 60);
+        int minute = (int)(remaining / SecondsPerMinute);
 
         return (year, month, dayInMonth, bell, minute);
     }
