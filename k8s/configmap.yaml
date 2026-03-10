@@ -10,3 +10,5 @@ data:
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:8080
   CONNECTIONSTRINGS__SQLITE: /app/data/threa.db
+  OpenTelemetry__ServiceName: threa
+  OpenTelemetry__OtlpEndpoint: http://alloy.loki.svc.cluster.local:4317

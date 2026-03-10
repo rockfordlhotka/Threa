@@ -4,6 +4,10 @@ using GameMechanics.Messaging;
 using GameMechanics.Messaging.InMemory;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Radzen;
 using Threa.Components;
 using Threa.Dal;
@@ -54,6 +58,29 @@ builder.Services.AddScoped<NpcAutoNamingService>();
 
 // Health checks for Kubernetes probes
 builder.Services.AddHealthChecks();
+
+// OpenTelemetry — exports traces, metrics, and logs to Grafana Alloy via OTLP
+var otelConfig = builder.Configuration.GetSection("OpenTelemetry");
+var serviceName = otelConfig["ServiceName"] ?? "threa";
+var otlpEndpoint = otelConfig["OtlpEndpoint"] ?? "http://localhost:4317";
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService(serviceName))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint)))
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint)));
+
+builder.Logging.AddOpenTelemetry(o =>
+{
+    o.IncludeScopes = true;
+    o.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(otlpEndpoint));
+});
 
 var app = builder.Build();
 
