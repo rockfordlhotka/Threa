@@ -1,6 +1,5 @@
 ﻿@page "/"
 
-@inject Csla.Blazor.State.StateManager StateManager
 
 <PageTitle>Threa</PageTitle>
 
@@ -12,6 +11,5 @@
 {
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
     }
 }

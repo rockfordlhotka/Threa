@@ -8,4 +8,8 @@ public record SkillCheckContext(
     string Name,
     string PrimaryAttribute,
     int AbilityScore,
-    bool IsChipSkill = false);
+    bool IsChipSkill = false,
+    string SkillId = "",
+    int PreUseConcentrationRounds = 0,
+    int PostUseConcentrationRounds = 0,
+    int PostUseInterruptionPenaltyRounds = 0);

@@ -257,6 +257,8 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                     IsFreeAction = s.IsFreeAction,
                     IsPassive = s.IsPassive,
                     ActionDescription = s.ActionDescription,
+                    PostUseConcentrationRounds = s.PostUseConcentrationRounds,
+                    SvBonus = s.SvBonus,
 
                     // CharacterSkill-specific properties
                     Level = s.Level,
@@ -265,10 +267,29 @@ public class NpcSpawner : CommandBase<NpcSpawner>
                 })
                 .ToList();
 
-            // 6. Save the new NPC character (returns character with new Id)
+            // 6. Copy items (equipment and inventory) from the template
+            npc.Items = template.Items
+                .Select(i => new CharacterItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemTemplateId = i.ItemTemplateId,
+                    OwnerCharacterId = 0, // Set by DAL after save
+                    ContainerItemId = null, // Don't preserve container nesting
+                    EquippedSlot = i.EquippedSlot,
+                    EquippedSlots = i.EquippedSlots?.ToList() ?? [],
+                    IsEquipped = i.IsEquipped,
+                    StackSize = i.StackSize,
+                    CurrentDurability = i.CurrentDurability,
+                    CustomName = i.CustomName,
+                    CreatedAt = DateTime.UtcNow,
+                    CustomProperties = i.CustomProperties
+                })
+                .ToList();
+
+            // 7. Save the new NPC character (returns character with new Id)
             var saved = await characterDal.SaveCharacterAsync(npc);
 
-            // 7. Attach to table
+            // 8. Attach to table
             var tableChar = new TableCharacter
             {
                 TableId = TableId,

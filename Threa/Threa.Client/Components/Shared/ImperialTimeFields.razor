@@ -39,7 +39,7 @@
 
     protected override void OnParametersSet()
     {
-        (year, month, day, bell) = ImperialCalendar.DecomposeDateTime(EpochSeconds);
+        (year, month, day, bell, _) = ImperialCalendar.DecomposeDateTime(EpochSeconds);
     }
 
     private async Task SetYear(ChangeEventArgs e) { year = ParseLong(e); await Recompose(); }

@@ -690,13 +690,15 @@
             // Pre-select defense type based on active stance (only on initial load, not after rolling)
             if (!hasRolled)
             {
-                defenseType = ActiveStance switch
-                {
-                    "dodge" when CanPerformActiveDefense() => DefenseTypeOption.Dodge,
-                    "parry" when isInParryMode => DefenseTypeOption.Parry,
-                    "block" when HasShieldEquipped && CanPerformActiveDefense() => DefenseTypeOption.ShieldBlock,
-                    _ => DefenseTypeOption.Passive
-                };
+                if (isInParryMode)
+                    defenseType = DefenseTypeOption.Parry;
+                else
+                    defenseType = ActiveStance switch
+                    {
+                        "dodge" when CanPerformActiveDefense() => DefenseTypeOption.Dodge,
+                        "block" when HasShieldEquipped && CanPerformActiveDefense() => DefenseTypeOption.ShieldBlock,
+                        _ => DefenseTypeOption.Passive
+                    };
             }
 
             await LoadEquippedArmor();

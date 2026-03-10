@@ -939,7 +939,7 @@
         var weapon = GetSelectedWeapon();
         if (weapon == null) return 0;
 
-        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty() + GetEffectModifier() + boostValue;
+        int av = weapon.SkillAS + weapon.WeaponAVModifier + GetMultiActionPenalty() + boostValue;
         if (attackerIsMoving) av -= 2;
         return av;
     }
@@ -1057,7 +1057,7 @@
         // Build request
         var request = new FirearmAttackRequest
         {
-            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty() + GetEffectModifier() + boostValue,
+            AttackerSkillAS = weapon.SkillAS + GetMultiActionPenalty() + boostValue,
             WeaponAVModifier = weapon.WeaponAVModifier,
             FireMode = selectedFireMode,
             BurstSize = weapon.BurstSize,

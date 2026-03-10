@@ -334,7 +334,7 @@
                 else
                 {
                     <div class="inventory-grid">
-                        @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null))
+                        @foreach (var item in inventoryItems.Where(i => i.ContainerItemId == null && !loadedMagazineIds.Contains(i.Id)))
                         {
                             <div class="inventory-tile @(item.IsEquipped ? "equipped" : "") @(selectedItemId == item.Id ? "selected" : "") @(IsContainerItem(item) ? "is-container" : "") @GetContainerFillClass(item)"
                                  title="@GetItemTooltip(item)"
@@ -399,6 +399,28 @@
                         @onclick="OpenUnloadWeaponModal">
                     <i class="bi bi-box-arrow-up"></i> Unload
                 </button>
+            }
+            @{
+                var _selTpl = selectedItem != null ? GetTemplate(selectedItem.ItemTemplateId) : null;
+                var _showEquip = selectedItem != null && !selectedItem.IsEquipped &&
+                                 _selTpl != null && IsEquippableType(_selTpl.ItemType);
+                var _equipDirect = _showEquip &&
+                                   (_selTpl!.OccupiesAllSlots || _selTpl.EquipmentSlots.Count <= 1);
+            }
+            @if (_showEquip)
+            {
+                @if (_equipDirect)
+                {
+                    <button class="btn btn-outline-success ms-2" @onclick="EquipSelectedItemDirect">
+                        <i class="bi bi-shield-check"></i> Equip
+                    </button>
+                }
+                else
+                {
+                    <span class="ms-2 text-success small fst-italic">
+                        <i class="bi bi-arrow-right"></i> Click a highlighted slot to equip
+                    </span>
+                }
             }
             @if (selectedItem != null)
             {
@@ -655,6 +677,7 @@
     public EventCallback OnCharacterChanged { get; set; }
 
     private List<CharacterItem>? inventoryItems;
+    private HashSet<Guid> loadedMagazineIds = new();
     private Dictionary<int, ItemTemplate>? templateCache;
     private bool isLoading = true;
 
@@ -808,6 +831,13 @@
                     item.Template = template;
                 }
             }
+
+            // Collect magazine IDs currently loaded in weapons so they can be hidden from inventory
+            loadedMagazineIds = inventoryItems
+                .Select(i => WeaponAmmoState.FromJson(i.CustomProperties).LoadedMagazineId)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
         }
         finally
         {
@@ -852,7 +882,8 @@
 
     private CharacterItem? GetEquippedItem(EquipmentSlot slot)
     {
-        return inventoryItems?.FirstOrDefault(i => i.IsEquipped && i.EquippedSlot == slot);
+        return inventoryItems?.FirstOrDefault(i => i.IsEquipped &&
+            (i.EquippedSlots.Contains(slot) || i.EquippedSlot == slot));
     }
 
     // Loaded ammo display info
@@ -1026,6 +1057,18 @@
     }
 
     // Equip/Unequip methods
+    private async Task EquipSelectedItemDirect()
+    {
+        if (selectedItem == null) return;
+        var template = GetTemplate(selectedItem.ItemTemplateId);
+        if (template == null) return;
+
+        var slot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+        if (slot == EquipmentSlot.None) return;
+
+        await OnEquipmentSlotClick(slot);
+    }
+
     private async Task OnEquipmentSlotClick(EquipmentSlot slot)
     {
         try
@@ -1071,7 +1114,7 @@
                 return;
             }
 
-            // Check slot compatibility (use template.EquipmentSlot)
+            // Check slot compatibility
             var template = GetTemplate(selectedItem.ItemTemplateId);
             if (template == null)
             {
@@ -1086,29 +1129,56 @@
                 return;
             }
 
-            if (!IsSlotCompatible(template.EquipmentSlot, slot))
+            // Determine target slots: for OccupiesAllSlots items, use all template slots;
+            // otherwise use the single clicked slot (e.g., ring on specific finger).
+            List<EquipmentSlot> targetSlots;
+            if (template.OccupiesAllSlots && template.EquipmentSlots.Count > 0)
             {
-                errorMessage = $"This item (slot: {template.EquipmentSlot}) cannot be equipped in the {slot.GetDisplayName()} slot.";
-                return;
+                // Verify the clicked slot is one of this item's valid slots
+                if (!template.EquipmentSlots.Contains(slot))
+                {
+                    errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
+                    return;
+                }
+                targetSlots = template.EquipmentSlots;
+            }
+            else
+            {
+                // Single-slot or chooseable multi-slot: use the clicked slot
+                var primarySlot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+                if (!IsSlotCompatible(primarySlot, slot))
+                {
+                    errorMessage = $"This item cannot be equipped in the {slot.GetDisplayName()} slot.";
+                    return;
+                }
+                targetSlots = [slot];
             }
 
-            // Check if target slot has a cursed item (auto-swap would fail)
-            var existingItem = GetEquippedItem(slot);
-            if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+            // Check if any target slot has a cursed item (auto-swap would fail)
+            foreach (var targetSlot in targetSlots)
             {
-                errorMessage = $"Cannot swap: {GetItemName(existingItem)} is cursed and cannot be unequipped.";
-                return;
+                var existingItem = GetEquippedItem(targetSlot);
+                if (existingItem != null && !itemService.CanUnequipItem(Character!, existingItem.Id))
+                {
+                    errorMessage = $"Cannot swap: {GetItemName(existingItem)} in {targetSlot.GetDisplayName()} is cursed and cannot be unequipped.";
+                    return;
+                }
             }
 
-            // Equip the item (service handles auto-swap)
-            var result = await itemService.EquipItemAsync(Character!, selectedItem.Id, slot);
+            // Equip the item: pass null chosenSlot for OccupiesAllSlots (service uses all template slots),
+            // or the specific clicked slot for single/chooseable-slot items.
+            var result = await itemService.EquipItemAsync(Character!, selectedItem.Id,
+                template.OccupiesAllSlots ? null : slot);
             if (!result.Success)
             {
                 errorMessage = result.ErrorMessage;
                 return;
             }
 
-            successMessage = $"Equipped {GetItemName(selectedItem)} to {slot.GetDisplayName()}.";
+            var slotLabel = template.OccupiesAllSlots && template.EquipmentSlots.Count > 1
+                ? string.Join("+", targetSlots.Select(s => s.GetDisplayName()))
+                : slot.GetDisplayName();
+            successMessage = $"Equipped {GetItemName(selectedItem)} to {slotLabel}.";
             selectedItem = null;
             selectedItemId = null;
             await LoadItemsAsync();
@@ -1617,7 +1687,18 @@
         }
 
         if (!IsEquippableType(template.ItemType)) return false;
-        return IsSlotCompatible(template.EquipmentSlot, slot);
+
+        // For multi-slot items (OccupiesAllSlots), highlight any slot in the template's list
+        if (template.OccupiesAllSlots && template.EquipmentSlots.Count > 0)
+            return template.EquipmentSlots.Contains(slot);
+
+        // For chooseable multi-slot items, highlight any slot in the list
+        if (template.EquipmentSlots.Count > 1)
+            return template.EquipmentSlots.Contains(slot);
+
+        // Single-slot: use compatibility check against the primary slot
+        var primarySlot = template.EquipmentSlots.Count > 0 ? template.EquipmentSlots[0] : template.EquipmentSlot;
+        return IsSlotCompatible(primarySlot, slot);
     }
 
     private async Task NotifyCharacterChanged()
@@ -2238,6 +2319,9 @@
             // Check if it's a loaded magazine
             else if (itemTemplate.ItemType == ItemType.AmmoContainer)
             {
+                // Skip magazines already loaded in a weapon
+                if (loadedMagazineIds.Contains(item.Id)) continue;
+
                 var containerState = AmmoContainerState.FromJson(item.CustomProperties);
                 if (containerState.LoadedAmmo <= 0)
                     continue; // Empty magazine

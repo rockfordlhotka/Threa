@@ -1,6 +1,7 @@
 @using GameMechanics.Combat
 @using GameMechanics.Messaging
 @using Threa.Services
+@using Threa.Client.Components.Pages.GamePlay
 
 <div class="targeting-modal">
     <div class="modal-header @GetHeaderClass()">
@@ -77,6 +78,7 @@
                                             IsConfirmed="@Interaction.AttackerConfirmed"
                                             IsReadOnly="@(!IsAttacker)"
                                             InitialData="@Interaction.AttackerData"
+                                            AvailableWeapons="@(IsAttacker ? AttackerAvailableWeapons : null)"
                                             OnDataUpdated="UpdateAttackerData"
                                             OnConfirmChanged="ToggleAttackerConfirm" />
                 </div>
@@ -146,6 +148,9 @@
 
     [Parameter]
     public bool defenderCanParry { get; set; }
+
+    [Parameter]
+    public List<MeleeWeaponInfo>? AttackerAvailableWeapons { get; set; }
 
     [Parameter]
     public EventCallback<TargetingAttackerData> OnAttackerDataUpdated { get; set; }

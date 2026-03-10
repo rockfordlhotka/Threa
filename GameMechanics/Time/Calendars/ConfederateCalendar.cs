@@ -17,6 +17,7 @@ public class ConfederateCalendar : IGameCalendar
     long IGameCalendar.SecondsPerYear => SecondsPerYear;
 
     // Confederate time converted to seconds (1 tick = 7.04 seconds)
+    private const long TicksPerWatch = 2_500;
     private const long SecondsPerWatch = 17_600;       // 2,500 ticks (~4.9 hours)
     private const long SecondsPerDay = 88_000;         // 12,500 ticks (civil day, ~24.4 hours)
     private const long SecondsPerWeek = 704_000;       // 100,000 ticks (decamyritick, ~8.1 days)
@@ -70,20 +71,20 @@ public class ConfederateCalendar : IGameCalendar
 
     public string FormatDateTime(long epochSeconds)
     {
-        var (year, pentade, week, day, watch) = DecomposeDateTime(epochSeconds);
-        return $"CSY {year}, {PentadeNames[pentade]} Pentade, Week {week + 1}, Day {day + 1} - {WatchNames[watch]}";
+        var (year, pentade, week, day, watch, tick) = DecomposeDateTime(epochSeconds);
+        return $"CSY {year}, {PentadeNames[pentade]} Pentade, Week {week + 1}, Day {day + 1} - {WatchNames[watch]}, Tick {tick}";
     }
 
     public string FormatDate(long epochSeconds)
     {
-        var (year, pentade, week, day, _) = DecomposeDateTime(epochSeconds);
+        var (year, pentade, week, day, _, _) = DecomposeDateTime(epochSeconds);
         return $"CSY {year}, {PentadeNames[pentade]} Pentade, Week {week + 1}, Day {day + 1}";
     }
 
     public string FormatCompact(long epochSeconds)
     {
-        var (year, pentade, week, day, watch) = DecomposeDateTime(epochSeconds);
-        return $"{year}.{pentade + 1}.{week + 1}/{day + 1} W{watch + 1}";
+        var (year, pentade, week, day, watch, tick) = DecomposeDateTime(epochSeconds);
+        return $"{year}.{pentade + 1}.{week + 1}/{day + 1} W{watch + 1} T{tick}";
     }
 
     public bool TryParse(string input, out long epochSeconds)
@@ -95,8 +96,9 @@ public class ConfederateCalendar : IGameCalendar
     /// <summary>
     /// Decomposes epoch seconds into Confederate calendar fields.
     /// All fields except year are 0-indexed (pentade 0 = First Pentade, etc.).
+    /// Tick is the number of elapsed ticks (each ~7.04 sec) within the current watch (0–2499).
     /// </summary>
-    public static (long year, long pentade, long week, long day, long watch) DecomposeDateTime(long epochSeconds)
+    public static (long year, long pentade, long week, long day, long watch, long tick) DecomposeDateTime(long epochSeconds)
     {
         long remaining = epochSeconds;
 
@@ -114,8 +116,12 @@ public class ConfederateCalendar : IGameCalendar
         remaining %= SecondsPerDay;
 
         long watch = remaining / SecondsPerWatch;
+        remaining %= SecondsPerWatch;
 
-        return (year, pentade, week, day, watch);
+        // 1 tick ≈ 7.04 seconds; 1 watch = 2,500 ticks = 17,600 seconds
+        long tick = remaining * TicksPerWatch / SecondsPerWatch;
+
+        return (year, pentade, week, day, watch, tick);
     }
 
     /// <summary>

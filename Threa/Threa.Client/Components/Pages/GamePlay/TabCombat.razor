@@ -1,6 +1,7 @@
 @using GameMechanics
 @using GameMechanics.GamePlay
 @using GameMechanics.Messaging
+@using GameMechanics.Combat
 @using Threa.Dal
 @using Threa.Client.Components.Shared
 @using Threa.Client.Components.Pages.GamePlay
@@ -10,7 +11,8 @@
 @inject IItemTemplateDal ItemTemplateDal
 @inject IActivityLogService ActivityLog
 
-<CombatContent Character="Character"
+<CombatContent @ref="combatContentRef"
+               Character="Character"
                Table="Table"
                AvailableTargets="AvailableTargets"
                ActivityEntries="ActivityEntries"
@@ -35,7 +37,7 @@
     public List<TargetSelectionModal.TargetInfo>? AvailableTargets { get; set; }
 
     [Parameter]
-    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons)> OnInitiateTargeting { get; set; }
 
     /// <summary>
     /// Activity log entries to display in the combat tab's activity feed.
@@ -49,4 +51,24 @@
     /// </summary>
     [Parameter]
     public Func<ActivityCategory, string>? GetActivityCssClass { get; set; }
+
+    private CombatContent? combatContentRef;
+
+    /// <summary>
+    /// Returns true when a non-default combat mode is active in the combat content.
+    /// </summary>
+    public bool IsInNonDefaultMode => combatContentRef?.IsInNonDefaultMode ?? false;
+
+    /// <summary>
+    /// Resets combat mode to Default. Called by Play.razor when the browser back button
+    /// is pressed while a combat mode is active.
+    /// </summary>
+    public void ResetCombatMode() => combatContentRef?.ResetToDefault();
+
+    /// <summary>
+    /// Forwards ammo-update after a targeted ranged attack to the CombatContent component.
+    /// </summary>
+    public Task HandleTargetedRangedAmmoUpdateAsync(Guid weaponItemId, int ammoRemaining)
+        => combatContentRef?.HandleTargetedRangedAmmoUpdateAsync(weaponItemId, ammoRemaining)
+           ?? Task.CompletedTask;
 }

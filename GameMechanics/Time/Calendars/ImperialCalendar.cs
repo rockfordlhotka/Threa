@@ -18,6 +18,7 @@ public class ImperialCalendar : IGameCalendar
     // Imperial time in seconds
     // 1 bell (Imperial hour) = 62.75 Earth minutes = 3,765 seconds
     // 1 Imperial day = 24 bells = 90,360 seconds (~25.1 Earth hours)
+    private const long SecondsPerMinute = 60;
     private const long SecondsPerBell = 3_765;
     private const long SecondsPerDay = 90_360;
     private const int DaysPerYear = 375;
@@ -76,21 +77,21 @@ public class ImperialCalendar : IGameCalendar
 
     public string FormatDateTime(long epochSeconds)
     {
-        var (year, month, day, bell) = DecomposeDateTime(epochSeconds);
+        var (year, month, day, bell, minute) = DecomposeDateTime(epochSeconds);
         int watch = bell / 6;
-        return $"{day + 1} {MonthNames[month]}, IF {year} - {WatchNames[watch]}, {Ordinal(bell + 1)} Bell";
+        return $"{day + 1} {MonthNames[month]}, IF {year} - {WatchNames[watch]}, {Ordinal(bell + 1)} Bell, {minute} min";
     }
 
     public string FormatDate(long epochSeconds)
     {
-        var (year, month, day, _) = DecomposeDateTime(epochSeconds);
+        var (year, month, day, _, _) = DecomposeDateTime(epochSeconds);
         return $"{day + 1} {MonthNames[month]}, IF {year}";
     }
 
     public string FormatCompact(long epochSeconds)
     {
-        var (year, month, day, bell) = DecomposeDateTime(epochSeconds);
-        return $"IF{year}.{MonthAbbreviations[month]}.{day + 1:D2} {bell + 1}b";
+        var (year, month, day, bell, minute) = DecomposeDateTime(epochSeconds);
+        return $"IF{year}.{MonthAbbreviations[month]}.{day + 1:D2} {bell + 1}b{minute:D2}m";
     }
 
     public bool TryParse(string input, out long epochSeconds)
@@ -101,9 +102,9 @@ public class ImperialCalendar : IGameCalendar
 
     /// <summary>
     /// Decomposes epoch seconds into Imperial calendar fields.
-    /// Month, day, and bell are 0-indexed (month 0 = Nisaren, day 0 = 1st, bell 0 = 1st Bell).
+    /// Month, day, bell, and minute are 0-indexed (month 0 = Nisaren, day 0 = 1st, bell 0 = 1st Bell, minute 0 = 0 min).
     /// </summary>
-    public static (long year, int month, int day, int bell) DecomposeDateTime(long epochSeconds)
+    public static (long year, int month, int day, int bell, int minute) DecomposeDateTime(long epochSeconds)
     {
         long remaining = epochSeconds;
 
@@ -128,8 +129,11 @@ public class ImperialCalendar : IGameCalendar
         }
 
         int bell = (int)(remaining / SecondsPerBell);
+        remaining %= SecondsPerBell;
 
-        return (year, month, dayInMonth, bell);
+        int minute = (int)(remaining / SecondsPerMinute);
+
+        return (year, month, dayInMonth, bell, minute);
     }
 
     /// <summary>

@@ -412,4 +412,142 @@ public class ImplantTests : TestBase
   }
 
   #endregion
+
+  #region Dual-Use Weapons (Ranged with Melee Capability)
+
+  [TestMethod]
+  public void WeaponSelector_GetMeleeWeapons_IncludesRangedWeaponWithMeleeSkill()
+  {
+    // A rifle with a melee skill (e.g., "Hand-to-Hand") should appear in melee weapon list
+    var rangedProps = new RangedWeaponProperties
+    {
+      IsRangedWeapon = true,
+      RangedSkill = "Rifles",
+      ShortRange = 50,
+      MediumRange = 100,
+      LongRange = 200,
+      ExtremeRange = 400
+    };
+
+    var items = new List<EquippedItemInfo>
+    {
+      new(
+        new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.TwoHand },
+        new ItemTemplate
+        {
+          Id = 300,
+          Name = "Combat Rifle",
+          ItemType = ItemType.Weapon,
+          WeaponType = WeaponType.Rifle,
+          RelatedSkill = "Hand-to-Hand",
+          DamageClass = 1,
+          DamageType = "Bashing",
+          CustomProperties = rangedProps.ToJson()
+        })
+    };
+
+    var meleeWeapons = WeaponSelector.GetMeleeWeapons(items).ToList();
+
+    Assert.AreEqual(1, meleeWeapons.Count, "Ranged weapon with melee skill should appear in melee list");
+    Assert.AreEqual("Combat Rifle", meleeWeapons[0].Template.Name);
+    Assert.AreEqual("Hand-to-Hand", meleeWeapons[0].Template.RelatedSkill);
+  }
+
+  [TestMethod]
+  public void WeaponSelector_GetMeleeWeapons_ExcludesRangedWeaponWithoutMeleeSkill()
+  {
+    // A ranged weapon with no RelatedSkill should NOT appear in melee list
+    var rangedProps = new RangedWeaponProperties
+    {
+      IsRangedWeapon = true,
+      RangedSkill = "Rifles",
+      ShortRange = 50,
+      MediumRange = 100,
+      LongRange = 200,
+      ExtremeRange = 400
+    };
+
+    var items = new List<EquippedItemInfo>
+    {
+      new(
+        new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.TwoHand },
+        new ItemTemplate
+        {
+          Id = 301,
+          Name = "Sniper Rifle",
+          ItemType = ItemType.Weapon,
+          WeaponType = WeaponType.Rifle,
+          RelatedSkill = null,
+          CustomProperties = rangedProps.ToJson()
+        })
+    };
+
+    var meleeWeapons = WeaponSelector.GetMeleeWeapons(items).ToList();
+
+    Assert.AreEqual(0, meleeWeapons.Count, "Ranged weapon without melee skill should not appear in melee list");
+  }
+
+  [TestMethod]
+  public void WeaponSelector_GetRangedWeapons_StillIncludesDualUseWeapon()
+  {
+    // A dual-use weapon should still appear in the ranged list too
+    var rangedProps = new RangedWeaponProperties
+    {
+      IsRangedWeapon = true,
+      RangedSkill = "Rifles",
+      ShortRange = 50,
+      MediumRange = 100,
+      LongRange = 200,
+      ExtremeRange = 400
+    };
+
+    var items = new List<EquippedItemInfo>
+    {
+      new(
+        new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.TwoHand },
+        new ItemTemplate
+        {
+          Id = 300,
+          Name = "Combat Rifle",
+          ItemType = ItemType.Weapon,
+          WeaponType = WeaponType.Rifle,
+          RelatedSkill = "Hand-to-Hand",
+          CustomProperties = rangedProps.ToJson()
+        })
+    };
+
+    var rangedWeapons = WeaponSelector.GetRangedWeapons(items).ToList();
+
+    Assert.AreEqual(1, rangedWeapons.Count, "Dual-use weapon should still appear in ranged list");
+    Assert.AreEqual("Combat Rifle", rangedWeapons[0].Template.Name);
+  }
+
+  [TestMethod]
+  public void WeaponSelector_GetMeleeWeapons_IncludesSimpleRangedWeaponWithMeleeSkill()
+  {
+    // A weapon with Range property (simple ranged) but also a RelatedSkill should appear in melee list
+    var items = new List<EquippedItemInfo>
+    {
+      new(
+        new CharacterItem { Id = Guid.NewGuid(), EquippedSlot = EquipmentSlot.MainHand },
+        new ItemTemplate
+        {
+          Id = 302,
+          Name = "Throwing Axe",
+          ItemType = ItemType.Weapon,
+          WeaponType = WeaponType.Axe,
+          RelatedSkill = "Axe",
+          Range = 20,
+          DamageClass = 2,
+          DamageType = "Cutting"
+        })
+    };
+
+    var meleeWeapons = WeaponSelector.GetMeleeWeapons(items).ToList();
+
+    Assert.AreEqual(1, meleeWeapons.Count, "Ranged weapon with Range property and melee skill should appear in melee list");
+    Assert.AreEqual("Throwing Axe", meleeWeapons[0].Template.Name);
+  }
+
+  #endregion
 }

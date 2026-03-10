@@ -9,7 +9,6 @@
 
 @inject IDataPortal<SkillDefinitionEdit> skillPortal
 @inject NavigationManager NavigationManager
-@inject Csla.Blazor.State.StateManager StateManager
 
 <div class="info-box d-flex justify-content-between align-items-center">
     <div>
@@ -85,7 +84,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
 
         try
         {

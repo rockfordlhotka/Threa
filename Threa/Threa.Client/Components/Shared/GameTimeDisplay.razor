@@ -34,6 +34,15 @@
     [Parameter]
     public EventCallback<string> OnDefaultCalendarChanged { get; set; }
 
+    /// <summary>
+    /// When set, clicking the time display invokes this callback instead of showing
+    /// the CalendarModal inline. Use this when the component is nested inside a
+    /// CSS clip-path ancestor (e.g. a scifi-theme card) where position:fixed modals
+    /// would be visually clipped.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnRequestShowModal { get; set; }
+
     private bool showModal;
 
     private string GetDisplayText()
@@ -42,9 +51,12 @@
         return calendar?.FormatCompact(EpochSeconds) ?? EpochSeconds.ToString();
     }
 
-    private void ToggleModal()
+    private async Task ToggleModal()
     {
-        showModal = !showModal;
+        if (OnRequestShowModal.HasDelegate)
+            await OnRequestShowModal.InvokeAsync();
+        else
+            showModal = !showModal;
     }
 
     private void CloseModal()

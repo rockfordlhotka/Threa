@@ -5,6 +5,8 @@ namespace Threa.Client.Components.Shared;
 
 public class ActionCostSelectorBase : ComponentBase
 {
+    protected string groupName = Guid.NewGuid().ToString("N");
+
     [Parameter] public int AP { get; set; }
     [Parameter] public int Fat { get; set; }
     [Parameter] public bool IsReadOnly { get; set; }

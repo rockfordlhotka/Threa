@@ -93,7 +93,7 @@ public class CalendarTests
     {
         var calendar = new ConfederateCalendar();
         // Year 0, Pentade 1, Week 1, Day 1, Watch 1
-        Assert.AreEqual("0.1.1/1 W1", calendar.FormatCompact(0));
+        Assert.AreEqual("0.1.1/1 W1 T0", calendar.FormatCompact(0));
     }
 
     [TestMethod]
@@ -101,7 +101,7 @@ public class CalendarTests
     {
         var calendar = new ConfederateCalendar();
         Assert.AreEqual(
-            "CSY 0, First Pentade, Week 1, Day 1 - First Watch",
+            "CSY 0, First Pentade, Week 1, Day 1 - First Watch, Tick 0",
             calendar.FormatDateTime(0));
     }
 
@@ -120,7 +120,7 @@ public class CalendarTests
         var calendar = new ConfederateCalendar();
         // 1 civil day = 88,000 seconds (12,500 ticks)
         Assert.AreEqual(
-            "CSY 0, First Pentade, Week 1, Day 2 - First Watch",
+            "CSY 0, First Pentade, Week 1, Day 2 - First Watch, Tick 0",
             calendar.FormatDateTime(88_000));
     }
 
@@ -139,7 +139,7 @@ public class CalendarTests
     {
         var calendar = new ConfederateCalendar();
         // 1 decamyritick (week) = 704,000 seconds
-        Assert.AreEqual("0.1.2/1 W1", calendar.FormatCompact(704_000));
+        Assert.AreEqual("0.1.2/1 W1 T0", calendar.FormatCompact(704_000));
     }
 
     [TestMethod]
@@ -157,7 +157,7 @@ public class CalendarTests
     {
         var calendar = new ConfederateCalendar();
         // 1 CSY = 31,680,000 seconds
-        Assert.AreEqual("1.1.1/1 W1", calendar.FormatCompact(31_680_000));
+        Assert.AreEqual("1.1.1/1 W1 T0", calendar.FormatCompact(31_680_000));
     }
 
     [TestMethod]
@@ -165,11 +165,11 @@ public class CalendarTests
     {
         var calendar = new ConfederateCalendar();
         // Each watch = 17,600 seconds
-        Assert.AreEqual("0.1.1/1 W1", calendar.FormatCompact(0));
-        Assert.AreEqual("0.1.1/1 W2", calendar.FormatCompact(17_600));
-        Assert.AreEqual("0.1.1/1 W3", calendar.FormatCompact(35_200));
-        Assert.AreEqual("0.1.1/1 W4", calendar.FormatCompact(52_800));
-        Assert.AreEqual("0.1.1/1 W5", calendar.FormatCompact(70_400));
+        Assert.AreEqual("0.1.1/1 W1 T0", calendar.FormatCompact(0));
+        Assert.AreEqual("0.1.1/1 W2 T0", calendar.FormatCompact(17_600));
+        Assert.AreEqual("0.1.1/1 W3 T0", calendar.FormatCompact(35_200));
+        Assert.AreEqual("0.1.1/1 W4 T0", calendar.FormatCompact(52_800));
+        Assert.AreEqual("0.1.1/1 W5 T0", calendar.FormatCompact(70_400));
     }
 
     [TestMethod]
@@ -209,7 +209,7 @@ public class CalendarTests
     {
         var calendar = new ImperialCalendar();
         // 1 Nisaren, IF 0, 1st Bell
-        Assert.AreEqual("IF0.Nis.01 1b", calendar.FormatCompact(0));
+        Assert.AreEqual("IF0.Nis.01 1b00m", calendar.FormatCompact(0));
     }
 
     [TestMethod]
@@ -217,7 +217,7 @@ public class CalendarTests
     {
         var calendar = new ImperialCalendar();
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Morning Watch, 1st Bell",
+            "1 Nisaren, IF 0 - Morning Watch, 1st Bell, 0 min",
             calendar.FormatDateTime(0));
     }
 
@@ -234,7 +234,7 @@ public class CalendarTests
         var calendar = new ImperialCalendar();
         // 1 Imperial day = 90,360 seconds
         Assert.AreEqual(
-            "2 Nisaren, IF 0 - Morning Watch, 1st Bell",
+            "2 Nisaren, IF 0 - Morning Watch, 1st Bell, 0 min",
             calendar.FormatDateTime(90_360));
     }
 
@@ -245,8 +245,9 @@ public class CalendarTests
         // 86,400 Earth seconds < 90,360 Imperial day
         // Should still be 1 Nisaren, in the Night Watch
         // Bell: 86400 / 3765 = 22 (0-indexed) → 23rd bell
+        // Remaining in bell: 86400 - 22*3765 = 3570 seconds → 3570/60 = 59 min
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Night Watch, 23rd Bell",
+            "1 Nisaren, IF 0 - Night Watch, 23rd Bell, 59 min",
             calendar.FormatDateTime(86_400));
     }
 
@@ -285,7 +286,7 @@ public class CalendarTests
     {
         var calendar = new ImperialCalendar();
         // 1 IF year = 375 * 90,360 = 33,885,000 seconds
-        Assert.AreEqual("IF1.Nis.01 1b", calendar.FormatCompact(33_885_000));
+        Assert.AreEqual("IF1.Nis.01 1b00m", calendar.FormatCompact(33_885_000));
     }
 
     [TestMethod]
@@ -294,16 +295,16 @@ public class CalendarTests
         var calendar = new ImperialCalendar();
         // Each bell = 3,765 seconds. Watch changes every 6 bells.
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Morning Watch, 1st Bell",
+            "1 Nisaren, IF 0 - Morning Watch, 1st Bell, 0 min",
             calendar.FormatDateTime(0));
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Afternoon Watch, 7th Bell",
+            "1 Nisaren, IF 0 - Afternoon Watch, 7th Bell, 0 min",
             calendar.FormatDateTime(3_765 * 6));
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Evening Watch, 13th Bell",
+            "1 Nisaren, IF 0 - Evening Watch, 13th Bell, 0 min",
             calendar.FormatDateTime(3_765 * 12));
         Assert.AreEqual(
-            "1 Nisaren, IF 0 - Night Watch, 19th Bell",
+            "1 Nisaren, IF 0 - Night Watch, 19th Bell, 0 min",
             calendar.FormatDateTime(3_765 * 18));
     }
 
@@ -572,7 +573,7 @@ public class CalendarTests
     [DataRow(63360000L)]
     public void Confederate_Decompose_Compose_Roundtrip(long epochSeconds)
     {
-        var (year, pentade, week, day, watch) = ConfederateCalendar.DecomposeDateTime(epochSeconds);
+        var (year, pentade, week, day, watch, _) = ConfederateCalendar.DecomposeDateTime(epochSeconds);
         var recomposed = ConfederateCalendar.ComposeDateTime(year, pentade, week, day, watch);
         Assert.AreEqual(epochSeconds, recomposed, $"Roundtrip failed for epoch {epochSeconds}");
     }
@@ -595,7 +596,7 @@ public class CalendarTests
     {
         long year = 3, pentade = 4, week = 2, day = 5, watch = 3;
         var epoch = ConfederateCalendar.ComposeDateTime(year, pentade, week, day, watch);
-        var (y, p, w, d, wa) = ConfederateCalendar.DecomposeDateTime(epoch);
+        var (y, p, w, d, wa, _) = ConfederateCalendar.DecomposeDateTime(epoch);
         Assert.AreEqual(year, y);
         Assert.AreEqual(pentade, p);
         Assert.AreEqual(week, w);
@@ -621,7 +622,7 @@ public class CalendarTests
     [DataRow(67770000L)]
     public void Imperial_Decompose_Compose_Roundtrip(long epochSeconds)
     {
-        var (year, month, day, bell) = ImperialCalendar.DecomposeDateTime(epochSeconds);
+        var (year, month, day, bell, _) = ImperialCalendar.DecomposeDateTime(epochSeconds);
         var recomposed = ImperialCalendar.ComposeDateTime(year, month, day, bell);
         Assert.AreEqual(epochSeconds, recomposed, $"Roundtrip failed for epoch {epochSeconds}");
     }
@@ -645,7 +646,7 @@ public class CalendarTests
         long year = 2;
         int month = 7, day = 20, bell = 15;
         var epoch = ImperialCalendar.ComposeDateTime(year, month, day, bell);
-        var (y, m, d, b) = ImperialCalendar.DecomposeDateTime(epoch);
+        var (y, m, d, b, _) = ImperialCalendar.DecomposeDateTime(epoch);
         Assert.AreEqual(year, y);
         Assert.AreEqual(month, m);
         Assert.AreEqual(day, d);
@@ -663,7 +664,7 @@ public class CalendarTests
     {
         // Aburen (month 4) has 32 days. Compose day 31 (0-indexed = 32nd day) and verify it roundtrips.
         var epoch = ImperialCalendar.ComposeDateTime(0, 4, 31, 0);
-        var (y, m, d, b) = ImperialCalendar.DecomposeDateTime(epoch);
+        var (y, m, d, b, _) = ImperialCalendar.DecomposeDateTime(epoch);
         Assert.AreEqual(0L, y);
         Assert.AreEqual(4, m);
         Assert.AreEqual(31, d);
@@ -675,7 +676,7 @@ public class CalendarTests
     {
         // Kislaren (month 8) has 32 days
         var epoch = ImperialCalendar.ComposeDateTime(0, 8, 31, 0);
-        var (y, m, d, b) = ImperialCalendar.DecomposeDateTime(epoch);
+        var (y, m, d, b, _) = ImperialCalendar.DecomposeDateTime(epoch);
         Assert.AreEqual(0L, y);
         Assert.AreEqual(8, m);
         Assert.AreEqual(31, d);
@@ -686,7 +687,7 @@ public class CalendarTests
     {
         // Addaren (month 11) has 32 days - last month of year
         var epoch = ImperialCalendar.ComposeDateTime(0, 11, 31, 0);
-        var (y, m, d, b) = ImperialCalendar.DecomposeDateTime(epoch);
+        var (y, m, d, b, _) = ImperialCalendar.DecomposeDateTime(epoch);
         Assert.AreEqual(0L, y);
         Assert.AreEqual(11, m);
         Assert.AreEqual(31, d);

@@ -502,7 +502,7 @@ public class WoundBehavior : IEffectBehavior
   public static void HealWound(CharacterEdit character, string location)
   {
     var wound = character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && e.Location == location)
+      .Where(e => e.EffectType == EffectType.Wound && e.Location == location && e.IsActive)
       .FirstOrDefault();
 
     if (wound == null)
@@ -541,7 +541,7 @@ public class WoundBehavior : IEffectBehavior
   public static WoundState? GetLocationState(CharacterEdit character, string location)
   {
     var wound = character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && e.Location == location)
+      .Where(e => e.EffectType == EffectType.Wound && e.Location == location && e.IsActive)
       .FirstOrDefault();
 
     if (wound == null)
@@ -556,8 +556,73 @@ public class WoundBehavior : IEffectBehavior
   public static IEnumerable<(string Location, WoundState State)> GetAllWoundStates(CharacterEdit character)
   {
     return character.Effects
-      .Where(e => e.EffectType == EffectType.Wound && !string.IsNullOrEmpty(e.Location))
+      .Where(e => e.EffectType == EffectType.Wound && e.IsActive && !string.IsNullOrEmpty(e.Location))
       .Select(e => (e.Location!, WoundState.Deserialize(e.BehaviorState)));
+  }
+
+  /// <summary>
+  /// Improves the most severe active wound by one severity level and halves the remaining
+  /// healing time. Minor wounds cannot be improved this way — they just need time.
+  /// </summary>
+  /// <param name="character">The character whose wound is being improved.</param>
+  /// <param name="currentGameTimeSeconds">Current game time in epoch seconds.</param>
+  /// <returns>The EffectRecord that was improved, or null if no improvable wound exists.</returns>
+  public static EffectRecord? ImproveWound(CharacterEdit character, long currentGameTimeSeconds)
+  {
+    // Find the most severe wound that is above Minor severity
+    EffectRecord? worstEffect = null;
+    int worstIndex = -1;
+
+    foreach (var effect in character.Effects.Where(e => e.EffectType == EffectType.Wound && e.IsActive))
+    {
+      var s = WoundState.Deserialize(effect.BehaviorState);
+      var effectiveSeverity = s.CurrentSeverity ?? s.Severity ?? "Minor";
+      int idx = WoundState.GetSeverityIndex(effectiveSeverity);
+      if (idx > 0 && idx > worstIndex) // idx 0 = Minor, skip it
+      {
+        worstIndex = idx;
+        worstEffect = effect;
+      }
+    }
+
+    if (worstEffect == null)
+      return null; // No improvable wounds (all Minor or none)
+
+    var state = WoundState.Deserialize(worstEffect.BehaviorState);
+
+    // Drop severity by one step
+    var currentSeverity = state.CurrentSeverity ?? state.Severity ?? "Moderate";
+    var newSeverity = currentSeverity switch
+    {
+      "Critical" => "Severe",
+      "Severe"   => "Moderate",
+      "Moderate" => "Minor",
+      _          => "Minor"
+    };
+
+    // Reset the wound's severity fields so the half-life model restarts from the new level
+    state.OriginalSeverity = newSeverity;
+    state.Severity = newSeverity;
+    state.CurrentSeverity = newSeverity;
+
+    // Halve the remaining healing time
+    long? expiryTime = worstEffect.ExpiresAtEpochSeconds ?? state.ExpiryTimeSeconds;
+    if (expiryTime.HasValue)
+    {
+      long remaining = expiryTime.Value - currentGameTimeSeconds;
+      if (remaining > 0)
+      {
+        long newExpiry = currentGameTimeSeconds + (remaining / 2);
+        worstEffect.ExpiresAtEpochSeconds = newExpiry;
+        // Reset CreatedAt so progress calculations start fresh from the new severity
+        worstEffect.CreatedAtEpochSeconds = currentGameTimeSeconds;
+        // Clear legacy expiry field — it's superseded by ExpiresAtEpochSeconds
+        state.ExpiryTimeSeconds = null;
+      }
+    }
+
+    worstEffect.BehaviorState = state.Serialize();
+    return worstEffect;
   }
 
   /// <summary>

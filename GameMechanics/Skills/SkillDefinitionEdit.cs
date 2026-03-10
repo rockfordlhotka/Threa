@@ -235,6 +235,17 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
         set => SetProperty(PostUseInterruptionPenaltyRoundsProperty, value);
     }
 
+    public static readonly PropertyInfo<int> SvBonusProperty = RegisterProperty<int>(nameof(SvBonus));
+    /// <summary>
+    /// Bonus added to the Success Value after a successful check.
+    /// Used by advanced medical skills (Nursing, Doctor) to represent greater expertise.
+    /// </summary>
+    public int SvBonus
+    {
+        get => GetProperty(SvBonusProperty);
+        set => SetProperty(SvBonusProperty, value);
+    }
+
     // Helper properties for UI
     public bool IsSpell => IsMagic || IsTheology || IsPsionic;
     public bool IsManaSkill => Category == SkillCategory.Mana;
@@ -291,6 +302,7 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             RequiresPostUseConcentration = false;
             PostUseConcentrationRounds = 0;
             PostUseInterruptionPenaltyRounds = 0;
+            SvBonus = 0;
         }
         BusinessRules.CheckRules();
         await Task.CompletedTask;
@@ -340,6 +352,7 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             RequiresPostUseConcentration = data.RequiresPostUseConcentration;
             PostUseConcentrationRounds = data.PostUseConcentrationRounds;
             PostUseInterruptionPenaltyRounds = data.PostUseInterruptionPenaltyRounds;
+            SvBonus = data.SvBonus;
         }
         BusinessRules.CheckRules();
     }
@@ -381,7 +394,8 @@ public class SkillDefinitionEdit : BusinessBase<SkillDefinitionEdit>
             PreUseConcentrationRounds = PreUseConcentrationRounds,
             RequiresPostUseConcentration = RequiresPostUseConcentration,
             PostUseConcentrationRounds = PostUseConcentrationRounds,
-            PostUseInterruptionPenaltyRounds = PostUseInterruptionPenaltyRounds
+            PostUseInterruptionPenaltyRounds = PostUseInterruptionPenaltyRounds,
+            SvBonus = SvBonus
         };
 
         await dal.SaveSkillAsync(dto);

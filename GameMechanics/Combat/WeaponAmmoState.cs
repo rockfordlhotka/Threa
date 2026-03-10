@@ -144,6 +144,8 @@ public class WeaponAmmoState
             existing["loadedAmmoType"] = state.LoadedAmmoType;
         if (state.LoadedMagazineId.HasValue)
             existing["loadedMagazineId"] = state.LoadedMagazineId.Value.ToString();
+        else
+            existing.Remove("loadedMagazineId");
 
         return JsonSerializer.Serialize(existing);
     }

@@ -592,8 +592,8 @@ public class ConcentrationBehavior : IEffectBehavior
         string? ammoType = null,
         string? weaponName = null)
     {
-        // Rate: 3 rounds per game round (1 round per second)
-        int totalRounds = (int)Math.Ceiling(roundsToLoad / 3.0);
+        // Magazine swap is always 1 round; loose ammo rate: 3 rounds per game round (1 round per second)
+        int totalRounds = isLooseAmmo ? (int)Math.Ceiling(roundsToLoad / 3.0) : 1;
 
         var payload = new MagazineReloadPayload
         {

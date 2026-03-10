@@ -33,7 +33,7 @@ builder.Services.AddScoped(typeof(CircuitHandler), typeof(ActiveCircuitHandler))
 
 builder.Services.AddCsla(o => o
     .AddAspNetCore()
-    .AddServerSideBlazor(o => o.UseInMemoryApplicationContextManager = false));
+    .AddServerSideBlazor(o => o.UseInMemoryApplicationContextManager = true));
 
 builder.Services.AddSqlite();
 builder.Services.AddGameMechanics();

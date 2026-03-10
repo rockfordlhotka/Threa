@@ -476,6 +476,22 @@ public class SpellBuffBehavior : IEffectBehavior
   {
     var state = SpellBuffState.Deserialize(effect.BehaviorState);
 
+    // If TotalDurationRounds == 0 and no modifiers, this effect was created with EffectState
+    // format (e.g., via the GM effect form). Use epoch-based expiry and EffectState healing.
+    if (state.TotalDurationRounds == 0 && state.Modifiers.Count == 0)
+    {
+      var effectState = EffectState.Deserialize(effect.BehaviorState);
+      if (effectState.FatHealingPerTick.HasValue && effectState.FatHealingPerTick.Value > 0)
+        character.Fatigue.PendingHealing += effectState.FatHealingPerTick.Value;
+      if (effectState.VitHealingPerTick.HasValue && effectState.VitHealingPerTick.Value > 0)
+        character.Vitality.PendingHealing += effectState.VitHealingPerTick.Value;
+      if (effectState.FatDamagePerTick.HasValue && effectState.FatDamagePerTick.Value > 0)
+        character.Fatigue.PendingDamage += effectState.FatDamagePerTick.Value;
+      if (effectState.VitDamagePerTick.HasValue && effectState.VitDamagePerTick.Value > 0)
+        character.Vitality.PendingDamage += effectState.VitDamagePerTick.Value;
+      return EffectTickResult.Continue();
+    }
+
     state.ElapsedRounds++;
 
     // Check for expiration
@@ -534,6 +550,23 @@ public class SpellBuffBehavior : IEffectBehavior
   {
     var state = SpellBuffState.Deserialize(effect.BehaviorState);
 
+    // Fall back to EffectState modifiers for GM-form-created buffs
+    if (state.TotalDurationRounds == 0 && state.Modifiers.Count == 0)
+    {
+      var effectState = EffectState.Deserialize(effect.BehaviorState);
+      var modifier = effectState.GetAttributeModifier(attributeName);
+      if (modifier != 0)
+      {
+        yield return new EffectModifier
+        {
+          Description = effect.Name,
+          Value = modifier,
+          TargetAttribute = attributeName
+        };
+      }
+      yield break;
+    }
+
     var attributeModifiers = state.Modifiers
       .Where(m => m.Type == BuffModifierType.Attribute &&
                   m.Target.Equals(attributeName, StringComparison.OrdinalIgnoreCase));
@@ -556,6 +589,32 @@ public class SpellBuffBehavior : IEffectBehavior
   public IEnumerable<EffectModifier> GetAbilityScoreModifiers(EffectRecord effect, string skillName, string attributeName, int currentAS)
   {
     var state = SpellBuffState.Deserialize(effect.BehaviorState);
+
+    // Fall back to EffectState modifiers for GM-form-created buffs
+    if (state.TotalDurationRounds == 0 && state.Modifiers.Count == 0)
+    {
+      var effectState = EffectState.Deserialize(effect.BehaviorState);
+      if (effectState.ASModifier.HasValue && effectState.ASModifier.Value != 0)
+      {
+        yield return new EffectModifier
+        {
+          Description = effect.Name,
+          Value = effectState.ASModifier.Value,
+          TargetSkill = skillName
+        };
+      }
+      var skillModifier = effectState.GetSkillModifier(skillName);
+      if (skillModifier != 0)
+      {
+        yield return new EffectModifier
+        {
+          Description = $"{effect.Name} ({skillName})",
+          Value = skillModifier,
+          TargetSkill = skillName
+        };
+      }
+      yield break;
+    }
 
     foreach (var mod in state.Modifiers)
     {

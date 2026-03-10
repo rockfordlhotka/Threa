@@ -230,7 +230,7 @@ else
                     <!-- EQUIPMENT TAB -->
                     <!-- ========================== -->
                     <RadzenTabsItem Text="Equipment">
-                        <TabItems vm="vm" />
+                        <TabItems vm="vm" OnSave="SaveOnly" OnSaveAndClose="SaveData" />
                     </RadzenTabsItem>
                 </Tabs>
             </RadzenTabs>
@@ -279,6 +279,7 @@ else
     private bool IsNewTemplate => Id == "new" || string.IsNullOrEmpty(Id);
     private bool isCloning = false;
     private int selectedTabIndex = 0;
+    private bool _navigateAfterSave = true;
 
     // Species list for dropdown
     private List<SpeciesInfo>? speciesList;
@@ -295,7 +296,11 @@ else
         if (!RenderModeProvider.GetRenderMode(this).ToString().Contains("Interactive"))
             return;
 
-        vm.Saved += () => NavigationManager.NavigateTo("/gamemaster/templates");
+        vm.Saved += () =>
+        {
+            if (_navigateAfterSave)
+                NavigationManager.NavigateTo("/gamemaster/templates");
+        };
         vm.ModelChanged += async () =>
         {
             LoadTags();
@@ -448,12 +453,19 @@ else
         };
     }
 
-    private async Task SaveData()
+    private async Task SaveOnly()
     {
-        // Ensure difficulty is calculated before save
+        _navigateAfterSave = false;
         vm.Model?.CalculateDifficultyRating();
         await vm.SaveAsync();
-        NavigationManager.NavigateTo("/gamemaster/templates");
+        StateHasChanged();
+    }
+
+    private async Task SaveData()
+    {
+        _navigateAfterSave = true;
+        vm.Model?.CalculateDifficultyRating();
+        await vm.SaveAsync();
     }
 
     private void Cancel()

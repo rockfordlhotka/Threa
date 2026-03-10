@@ -189,6 +189,7 @@
     private IEnumerable<ItemTemplate> filteredTemplates =>
         allTemplates?
             .Where(t => t.IsActive)
+            .Where(t => !t.IsVirtual)
             .Where(t => selectedItemType == null || t.ItemType == selectedItemType)
             .Where(t => string.IsNullOrEmpty(itemSearchText) ||
                         t.Name.Contains(itemSearchText, StringComparison.OrdinalIgnoreCase))

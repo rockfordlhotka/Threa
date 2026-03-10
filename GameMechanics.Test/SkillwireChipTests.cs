@@ -271,6 +271,21 @@ public class SkillwireChipTests : TestBase
   }
 
   [TestMethod]
+  public void GetChipSkillLevelBonus_EmptyChipList_ReturnsZeroForLowLevelSkill()
+  {
+    var provider = InitServices();
+    var dp = provider.GetRequiredService<IDataPortal<CharacterEdit>>();
+    var character = dp.Create(42);
+    // SetChipItems called with no items — _chipGrantedSkills = [] (empty, not null)
+    character.SetChipItems([]);
+
+    // Level 2 skill has Bonus = -3; without this fix DefaultIfEmpty(0) returns 0,
+    // and 0 > -3 would incorrectly produce a chip bonus of 3.
+    var bonus = character.GetChipSkillLevelBonus("Awareness", nativeSkillLevel: -3);
+    Assert.AreEqual(0, bonus, "Empty chip list should not grant bonus for low-level skills");
+  }
+
+  [TestMethod]
   public void GetChipSkillLevelBonus_SkillNameCaseInsensitive_ReturnsBonus()
   {
     var provider = InitServices();

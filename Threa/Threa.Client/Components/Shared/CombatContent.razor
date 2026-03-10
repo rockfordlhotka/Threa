@@ -101,11 +101,18 @@
                         {
                             @foreach (var piece in armorPieces)
                             {
+                                var coveredLocations = EquipmentLocationMapper.GetCoveredLocations(piece.EquippedSlot);
                                 <div class="mb-2">
                                     <div class="d-flex justify-content-between small">
                                         <span class="text-muted">@piece.EquippedSlot</span>
                                         <span class="fw-bold">@(piece.Template?.Name ?? "Unknown")</span>
                                     </div>
+                                    @if (coveredLocations.Length > 0)
+                                    {
+                                        <div class="small text-muted mt-1">
+                                            Covers: @string.Join(", ", coveredLocations.Select(FormatHitLocation))
+                                        </div>
+                                    }
                                     @if (piece.CurrentDurability.HasValue && piece.Template?.MaxDurability.HasValue == true)
                                     {
                                         var durPercent = piece.Template.MaxDurability.Value > 0
@@ -290,6 +297,12 @@
                                 <i class="bi bi-heart-pulse"></i>
                                 <span>Medical</span>
                             </button>
+                            <button class="btn combat-tile combat-tile-other"
+                                    @onclick="StartApplyHealing"
+                                    title="Apply healing from a treatment, spell, or other source (enter SV and class)">
+                                <i class="bi bi-bandaid-fill"></i>
+                                <span>Apply Healing</span>
+                            </button>
                             <button class="btn combat-tile combat-tile-other @(!CanRest() && !(Character?.IsPassedOut ?? true) ? "combat-tile-dimmed" : "")"
                                     @onclick="StartRest"
                                     disabled="@(!CanRest())"
@@ -395,6 +408,13 @@
                           ArmorSkillAS="armorSkillAS"
                           OnCancel="ReturnToDefault"
                           OnDamageComplete="OnDamageComplete" />
+    }
+    else if (combatMode == CombatMode.ApplyHealing)
+    {
+        <HealingResolution Character="Character"
+                           Table="Table"
+                           OnCancel="ReturnToDefault"
+                           OnHealingComplete="OnHealingComplete" />
     }
     else if (combatMode == CombatMode.RangedAttack)
     {
@@ -504,7 +524,7 @@
     public List<TargetSelectionModal.TargetInfo>? AvailableTargets { get; set; }
 
     [Parameter]
-    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData)> OnInitiateTargeting { get; set; }
+    public EventCallback<(TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons)> OnInitiateTargeting { get; set; }
 
     /// <summary>
     /// Activity log entries to display in the combat tab's activity feed.
@@ -528,7 +548,7 @@
     [Parameter]
     public IActivityLogService? ActivityLog { get; set; }
 
-    private enum CombatMode { Default, Attack, Defend, TakeDamage, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck, Rest }
+    private enum CombatMode { Default, Attack, Defend, TakeDamage, ApplyHealing, RangedAttack, Reload, Unload, Medical, SelectTarget, ActivateImplant, AnonymousAction, SkillCheck, Rest }
     private CombatMode combatMode = CombatMode.Default;
 
     private List<GameMechanics.SkillEdit> filteredSkills = new();
@@ -617,11 +637,16 @@
                     weaponDamageModifiers[kv.Key.ToString()] = kv.Value;
             }
 
+            var meleeSkillName = w.Template.RelatedSkill ?? "";
+            var meleeSkillAS = Character?.Skills
+                .FirstOrDefault(s => s.Name.Equals(meleeSkillName, StringComparison.OrdinalIgnoreCase))
+                ?.AbilityScore ?? 0;
             meleeWeaponOptions.Add(new MeleeWeaponInfo
             {
                 TemplateId = w.Template.Id,
                 Name = w.Template.Name,
-                SkillName = w.Template.RelatedSkill ?? "",
+                SkillName = meleeSkillName,
+                SkillAS = meleeSkillAS,
                 WeaponAVModifier = w.Template.AVModifier,
                 WeaponSVModifier = w.Template.SVModifier,
                 WeaponDamageClass = w.Template.DamageClass,
@@ -634,21 +659,47 @@
 
         // Load virtual weapons (unarmed attacks: Punch, Kick) based on equipment state
         var allTemplates = await ItemTemplateDal.GetAllTemplatesAsync();
-        var virtualWeaponTemplates = allTemplates.Where(t => t.IsVirtual).ToList();
+        var virtualWeaponTemplates = allTemplates.Where(t => t.IsVirtual || (t.ItemType == ItemType.Weapon && t.WeaponType == WeaponType.Unarmed)).ToList();
         var availableUnarmed = WeaponSelector.GetAvailableUnarmedWeapons(virtualWeaponTemplates, equippedItemInfos);
         foreach (var vw in availableUnarmed)
         {
+            var virtualSkillName = vw.RelatedSkill ?? "";
+            var virtualSkillAS = Character?.Skills
+                .FirstOrDefault(s => s.Name.Equals(virtualSkillName, StringComparison.OrdinalIgnoreCase))
+                ?.AbilityScore ?? 0;
             meleeWeaponOptions.Add(new MeleeWeaponInfo
             {
                 TemplateId = vw.Id,
                 Name = vw.Name,
-                SkillName = vw.RelatedSkill ?? "",
+                SkillName = virtualSkillName,
+                SkillAS = virtualSkillAS,
                 WeaponAVModifier = vw.AVModifier,
                 WeaponSVModifier = vw.SVModifier,
                 WeaponDamageClass = vw.DamageClass,
                 DamageType = vw.DamageType ?? "Bludgeoning",
                 IsVirtual = true,
                 Description = vw.ShortDescription
+            });
+        }
+
+        // Ensure at least a default unarmed weapon option so the targeting panel
+        // always shows a weapon dropdown instead of a static "Unarmed" fallback.
+        if (meleeWeaponOptions.Count == 0)
+        {
+            meleeWeaponOptions.Add(new MeleeWeaponInfo
+            {
+                TemplateId = 0,
+                Name = "Unarmed",
+                SkillName = "Hand-to-Hand",
+                SkillAS = Character?.Skills?
+                    .FirstOrDefault(s => s.Name.Equals("Hand-to-Hand", StringComparison.OrdinalIgnoreCase))
+                    ?.AbilityScore ?? 0,
+                WeaponAVModifier = 0,
+                WeaponSVModifier = 0,
+                WeaponDamageClass = 1,
+                DamageType = "Bludgeoning",
+                IsVirtual = true,
+                Description = "Unarmed attack"
             });
         }
 
@@ -694,8 +745,10 @@
                 // TODO: Look up loaded ammo template to check for ammo-provided AOE
                 // For now, inherent AOE is supported; ammo AOE will be checked at attack time
 
-                // Fetch loaded ammo special effect from the magazine item if available
+                // Fetch loaded ammo properties (special effect, damage modifier) from the loaded ammo type
                 string? loadedAmmoSpecialEffect = null;
+                int loadedAmmoDamageModifier = 0;
+
                 if (ammoState.LoadedMagazineId.HasValue && CharacterItemDal != null)
                 {
                     try
@@ -705,6 +758,27 @@
                         loadedAmmoSpecialEffect = magProps?.SpecialEffect;
                     }
                     catch { /* Non-fatal — skip ammo effect if lookup fails */ }
+                }
+
+                // Look up the actual ammo template (bullet, not magazine) to get its damage modifier
+                if (!string.IsNullOrEmpty(ammoState.LoadedAmmoType) && ItemTemplateDal != null)
+                {
+                    try
+                    {
+                        var ammoTemplates = await ItemTemplateDal.GetTemplatesByTypeAsync(ItemType.Ammunition);
+                        var ammoTemplate = ammoTemplates.FirstOrDefault(t =>
+                        {
+                            var p = GameMechanics.Combat.AmmunitionProperties.FromJson(t.CustomProperties);
+                            return p != null && !p.IsContainer &&
+                                   string.Equals(p.AmmoType, ammoState.LoadedAmmoType, StringComparison.OrdinalIgnoreCase);
+                        });
+                        if (ammoTemplate != null)
+                        {
+                            var ammoProps = GameMechanics.Combat.AmmunitionProperties.FromJson(ammoTemplate.CustomProperties);
+                            loadedAmmoDamageModifier = ammoProps?.DamageModifier ?? 0;
+                        }
+                    }
+                    catch { /* Non-fatal — skip ammo modifier if lookup fails */ }
                 }
 
                 rangedWeapons.Add(new RangedWeaponInfo
@@ -723,7 +797,7 @@
                     ReloadType = rangedProps?.ReloadType ?? "Magazine",
                     AcceptsLooseAmmo = rangedProps?.AcceptsLooseAmmo ?? false,
                     LoadedMagazineId = ammoState.LoadedMagazineId,
-                    AmmoDamageModifier = 0, // Will be calculated from loaded ammo type
+                    AmmoDamageModifier = loadedAmmoDamageModifier,
                     LoadedAmmoSpecialEffect = loadedAmmoSpecialEffect,
                     IsDodgeable = rangedProps?.IsDodgeable ?? true,
                     SupportsSingle = rangedProps?.HasFireMode(FireMode.Single) ?? true,
@@ -849,6 +923,17 @@
         filteredSkills = result;
         await InvokeAsync(StateHasChanged);
     }
+
+    private static string FormatHitLocation(HitLocation location) => location switch
+    {
+        HitLocation.Head => "Head",
+        HitLocation.Torso => "Torso",
+        HitLocation.LeftArm => "Left Arm",
+        HitLocation.RightArm => "Right Arm",
+        HitLocation.LeftLeg => "Left Leg",
+        HitLocation.RightLeg => "Right Leg",
+        _ => location.ToString()
+    };
 
     private string GetSkillCategory(GameMechanics.SkillEdit skill)
     {
@@ -1134,6 +1219,22 @@
         }
     }
 
+    /// <summary>
+    /// Returns true when a non-default combat mode (attack, defend, etc.) is active.
+    /// Used by Play.razor to intercept browser back-button navigation.
+    /// </summary>
+    public bool IsInNonDefaultMode => combatMode != CombatMode.Default;
+
+    /// <summary>
+    /// Resets the combat mode to Default. Called by Play.razor when the browser
+    /// back button is pressed while a combat mode is active.
+    /// </summary>
+    public void ResetToDefault()
+    {
+        ReturnToDefault();
+        StateHasChanged();
+    }
+
     private void ReturnToDefault()
     {
         combatMode = CombatMode.Default;
@@ -1248,6 +1349,50 @@
         }
 
         combatMode = CombatMode.Default;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Called by Play.razor after a targeted ranged attack resolves to deduct ammo from the weapon.
+    /// Uses the same DB-update logic as OnRangedAttackComplete.
+    /// </summary>
+    public async Task HandleTargetedRangedAmmoUpdateAsync(Guid weaponItemId, int ammoRemaining)
+    {
+        if (weaponItemId == Guid.Empty) return;
+
+        var weapon = rangedWeapons.FirstOrDefault(w => w.ItemId == weaponItemId);
+        if (weapon != null)
+        {
+            weapon.LoadedAmmo = ammoRemaining;
+
+            var item = equippedItems.FirstOrDefault(i => i.Id == weaponItemId);
+            if (item != null)
+            {
+                var ammoState = WeaponAmmoState.FromJson(item.CustomProperties);
+                var previousAmmo = ammoState.LoadedAmmo;
+                ammoState.LoadedAmmo = ammoRemaining;
+                item.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(item.CustomProperties, ammoState);
+                await CharacterItemDal.UpdateItemAsync(item);
+
+                if (ammoState.LoadedMagazineId.HasValue)
+                {
+                    var magazineItem = await CharacterItemDal.GetItemAsync(ammoState.LoadedMagazineId.Value);
+                    if (magazineItem != null)
+                    {
+                        var magazineState = AmmoContainerState.FromJson(magazineItem.CustomProperties);
+                        var ammoConsumed = previousAmmo - ammoRemaining;
+                        magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - ammoConsumed);
+                        magazineItem.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(magazineItem.CustomProperties, magazineState);
+                        await CharacterItemDal.UpdateItemAsync(magazineItem);
+
+                        var cachedMag = availableAmmoSources.FirstOrDefault(a => a.ItemId == ammoState.LoadedMagazineId.Value);
+                        if (cachedMag != null)
+                            cachedMag.CurrentAmmo = magazineState.LoadedAmmo;
+                    }
+                }
+            }
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1460,6 +1605,20 @@
         combatMode = CombatMode.TakeDamage;
     }
 
+    private void StartApplyHealing()
+    {
+        combatMode = CombatMode.ApplyHealing;
+    }
+
+    private async Task OnHealingComplete(string resultMessage)
+    {
+        LogActivity(resultMessage, ActivityCategory.Combat);
+        combatMode = CombatMode.Default;
+        if (OnCharacterChanged.HasDelegate)
+            await OnCharacterChanged.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private void ClearPendingDamage()
     {
         pendingDamageSV = null;
@@ -1564,7 +1723,7 @@
         // Initiate targeting through parent
         if (OnInitiateTargeting.HasDelegate)
         {
-            await OnInitiateTargeting.InvokeAsync((pendingTargetingActionType, target.CharacterId, target.CharacterName, attackerData));
+            await OnInitiateTargeting.InvokeAsync((pendingTargetingActionType, target.CharacterId, target.CharacterName, attackerData, pendingTargetingActionType == TargetingActionType.MeleeAttack ? meleeWeaponOptions : null));
         }
 
         // Return to default mode - the targeting modal will be shown by Play.razor
@@ -1596,6 +1755,10 @@
         int weaponTemplateId = 0;
 
         string? ammoSpecialEffect = null;
+        Guid rangedWeaponItemId = Guid.Empty;
+        bool supportsSingle = true;
+        bool supportsBurst = false;
+        bool supportsSuppression = false;
 
         if (actionType == TargetingActionType.RangedAttack && rangedWeapons.Any())
         {
@@ -1609,6 +1772,10 @@
             currentAmmo = weapon.LoadedAmmo;
             weaponTemplateId = weapon.TemplateId;
             ammoSpecialEffect = weapon.LoadedAmmoSpecialEffect;
+            rangedWeaponItemId = weapon.ItemId;
+            supportsSingle = weapon.SupportsSingle;
+            supportsBurst = weapon.SupportsBurst;
+            supportsSuppression = weapon.SupportsSuppression;
         }
         else if (actionType == TargetingActionType.MeleeAttack)
         {
@@ -1652,7 +1819,12 @@
             WeaponDamageModifiers = weaponDmgModifiers,
             WeaponTemplateId = weaponTemplateId,
             AttackerCharacterId = Character?.Id ?? 0,
-            AmmoSpecialEffect = ammoSpecialEffect
+            AmmoSpecialEffect = ammoSpecialEffect,
+            AvailableWeapons = actionType == TargetingActionType.MeleeAttack ? new List<MeleeWeaponInfo>(meleeWeaponOptions) : null,
+            WeaponItemId = rangedWeaponItemId,
+            SupportsSingle = supportsSingle,
+            SupportsBurst = supportsBurst,
+            SupportsSuppression = supportsSuppression
         };
     }
 
@@ -1749,13 +1921,14 @@
         effect.Source = "Combat";
         Character.Effects.AddEffect(effect);
 
-        if (Character is Csla.Core.ISavable savable)
-            await savable.SaveAsync();
-
         LogActivity($"{Character.Name} enters Parry Mode with {weaponSkillName}.", ActivityCategory.Combat);
 
+        // Prefer saving via OnCharacterChanged so the parent can update its reference.
+        // The fallback direct save is for standalone usage without a parent save callback.
         if (OnCharacterChanged.HasDelegate)
             await OnCharacterChanged.InvokeAsync();
+        else if (Character is Csla.Core.ISavable savable)
+            await savable.SaveAsync();
 
         StateHasChanged();
     }

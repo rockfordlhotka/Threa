@@ -240,8 +240,10 @@ else
                         </tr>
                     }
 
+                    <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.SvBonus)" />
+
                     <CheckBoxRow Property="vm.GetPropertyInfo<bool>(() => vm.Model.RequiresPostUseConcentration)" />
-                    
+
                     @if (vm.Model.RequiresPostUseConcentration)
                     {
                         <NumericSelectorRow Property="vm.GetPropertyInfo<int>(() => vm.Model.PostUseConcentrationRounds)" />

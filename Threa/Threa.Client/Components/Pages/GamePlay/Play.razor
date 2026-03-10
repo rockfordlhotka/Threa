@@ -16,7 +16,6 @@
 @using Threa.Client.Components.Pages.GamePlay.Targeting
 @using Radzen
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject ITargetingInteractionManager TargetingManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
@@ -345,9 +344,10 @@ else
         {
             <TabStatus Character="character" Table="table" OnCharacterChanged="SaveCharacterAsync" />
         }
-        else if (activeTab == "Combat")
+        else if (activeTab == "Actions")
         {
-            <TabCombat Character="character"
+            <TabCombat @ref="tabCombatRef"
+                        Character="character"
                         Table="table"
                         OnCharacterChanged="SaveCharacterAsync"
                         AvailableTargets="@GetAvailableTargets()"
@@ -391,6 +391,7 @@ else
                                     defenderIsInParryMode="@GetDefenderIsInParryMode()"
                                     defenderCanActiveDefense="@GetDefenderCanActiveDefense()"
                                     defenderCanParry="@GetDefenderCanParry()"
+                                    AttackerAvailableWeapons="@(isTargetingAttacker ? targetingAttackerWeapons : null)"
                                     OnAttackerDataUpdated="UpdateTargetingAttackerData"
                                     OnDefenderDataUpdated="UpdateTargetingDefenderData"
                                     OnAttackerConfirmChanged="ToggleTargetingAttackerConfirm"
@@ -403,8 +404,8 @@ else
         </div>
     }
 
-    <!-- Activity Log (hidden when Combat tab is active to avoid duplication) -->
-    @if (activeTab != "Combat")
+    <!-- Activity Log (hidden when Actions tab is active to avoid duplication) -->
+    @if (activeTab != "Actions")
     {
         <div class="activity-log mt-3 activity-log-container">
             <h6>Activity Log</h6>
@@ -436,7 +437,7 @@ public int CharacterId { get; set; }
 public Guid TableId { get; set; }
 
 private bool isLoading = true;
-private static readonly string[] AllTabNames = new[] { "Status", "Combat", "Skills", "Magic", "Inventory", "Narrative" };
+private static readonly string[] AllTabNames = new[] { "Status", "Actions", "Skills", "Magic", "Inventory", "Narrative" };
 private string[] tabNames => GetTabNamesForTheme();
 private string activeTab = "Status";
 
@@ -478,19 +479,30 @@ private List<TargetingRequestMessage> pendingTargetingRequests = new();
 private TargetingInteraction? currentTargetingInteraction;
 private bool showTargetingModal;
 private bool isTargetingAttacker;
+private List<MeleeWeaponInfo>? targetingAttackerWeapons;
 private List<GameMechanics.GamePlay.TableCharacterInfo> tableCharacters = new();
 
 // Semaphore to prevent concurrent processing of time skip messages
 private readonly SemaphoreSlim _timeSkipSemaphore = new(1, 1);
 
+// Back button interception: track open Radzen dialogs so the back button dismisses them
+// instead of navigating away from the play page.
+private IDisposable? _locationChangingRegistration;
+private int _openDialogCount = 0;
+private TabCombat? tabCombatRef;
+
 public record ActivityLogEntry(DateTime Timestamp, string Message, string Source, ActivityCategory Category);
 
 protected override async Task OnInitializedAsync()
 {
-    await StateManager.InitializeAsync();
 
     if (RenderModeProvider.GetRenderMode(this).IsInteractive())
     {
+        // Intercept navigation so the browser back button dismisses open dialogs
+        // rather than leaving the play page.
+        DialogService.OnOpen += OnDialogOpened;
+        DialogService.OnClose += OnDialogClosed;
+        _locationChangingRegistration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
         try
         {
             isLoading = true;
@@ -898,9 +910,51 @@ private async Task LoadTableCharactersAsync()
         }
         _disposed = true;
 
+        _locationChangingRegistration?.Dispose();
+        DialogService.OnOpen -= OnDialogOpened;
+        DialogService.OnClose -= OnDialogClosed;
+
         activityLogSubscription?.Dispose();
         await UnsubscribeFromTimeEvents();
         _timeSkipSemaphore?.Dispose();
+    }
+
+    /// <summary>
+    /// Intercepts navigation (e.g. browser back button). When dialogs, the targeting modal,
+    /// or a non-default combat mode are active, closes/resets them and prevents leaving the
+    /// play page.
+    /// </summary>
+    private ValueTask OnLocationChanging(LocationChangingContext context)
+    {
+        if (_openDialogCount > 0 || showTargetingModal || (tabCombatRef?.IsInNonDefaultMode ?? false))
+        {
+            // Snapshot the count before closing to avoid any risk of an infinite loop
+            // if Close() were ever queued rather than synchronously firing OnClose.
+            var count = _openDialogCount;
+            for (int i = 0; i < count; i++)
+            {
+                DialogService.Close(null);
+            }
+            // Close the targeting modal if visible
+            showTargetingModal = false;
+            // Reset any active combat mode (attack, defend, etc.)
+            tabCombatRef?.ResetCombatMode();
+            context.PreventNavigation();
+            _ = InvokeAsync(StateHasChanged);
+        }
+        return ValueTask.CompletedTask;
+    }
+
+    private void OnDialogOpened(string? title, Type type, Dictionary<string, object?> parameters, DialogOptions options)
+    {
+        _openDialogCount++;
+    }
+
+    // 'dynamic' is required to match Radzen's Action<dynamic> OnClose event signature.
+    private void OnDialogClosed(dynamic result)
+    {
+        if (_openDialogCount > 0)
+            _openDialogCount--;
     }
 
     private string GetActivityClass(ActivityCategory category) =>
@@ -1089,21 +1143,32 @@ private async Task LoadTableCharactersAsync()
 
         try
         {
-            // Fetch the weapon item from DAL
             var weapon = await CharacterItemDal.GetItemAsync(payload.WeaponItemId);
             if (weapon != null)
             {
-                // Update LoadedAmmo via WeaponAmmoState pattern
                 var ammoState = GameMechanics.Combat.WeaponAmmoState.FromJson(weapon.CustomProperties);
-                ammoState.LoadedAmmo = payload.RoundsToLoad;
 
-                // Merge ammo state back into CustomProperties
+                if (payload.IsLooseAmmo)
+                {
+                    // Loose ammo: rounds were transferred directly into weapon
+                    ammoState.LoadedAmmo = payload.RoundsToLoad;
+                }
+                else
+                {
+                    // Magazine: link the magazine to the weapon; magazine stays in inventory
+                    var magazine = await CharacterItemDal.GetItemAsync(payload.MagazineItemId);
+                    if (magazine != null)
+                    {
+                        var magazineState = GameMechanics.Combat.AmmoContainerState.FromJson(magazine.CustomProperties);
+                        ammoState.LoadedMagazineId = payload.MagazineItemId;
+                        ammoState.LoadedAmmo = magazineState.LoadedAmmo;
+                        ammoState.LoadedAmmoType = payload.AmmoType;
+                    }
+                }
+
                 weapon.CustomProperties = GameMechanics.Combat.WeaponAmmoState.MergeIntoCustomProperties(
                     weapon.CustomProperties, ammoState);
-
                 await CharacterItemDal.UpdateItemAsync(weapon);
-
-                // Reload equipped items to reflect the change
                 await LoadEquippedItemsAsync();
             }
         }
@@ -1451,7 +1516,7 @@ private async Task LoadTableCharactersAsync()
         // Ignore if not our table or disposed
         if (_disposed || table == null || e.TableId != table.Id) return;
 
-        _ = InvokeAsync(() =>
+        _ = InvokeAsync(async () =>
         {
             // If we have this interaction open, update it
             if (currentTargetingInteraction != null && e.InteractionId == currentTargetingInteraction.InteractionId)
@@ -1460,6 +1525,16 @@ private async Task LoadTableCharactersAsync()
                 if (interaction != null)
                 {
                     currentTargetingInteraction = interaction;
+                }
+
+                // Deduct ammo when we're the attacker in a ranged targeting interaction
+                if (isTargetingAttacker &&
+                    currentTargetingInteraction?.AttackerData.ActionType == TargetingActionType.RangedAttack &&
+                    currentTargetingInteraction?.Resolution != null &&
+                    tabCombatRef != null)
+                {
+                    var res = currentTargetingInteraction.Resolution;
+                    await tabCombatRef.HandleTargetedRangedAmmoUpdateAsync(res.WeaponItemId, res.AmmoRemaining);
                 }
             }
 
@@ -1598,6 +1673,44 @@ private async Task LoadTableCharactersAsync()
     private async Task CancelTargeting()
     {
         if (currentTargetingInteraction == null) return;
+
+        // Refund AP/FAT if attacker already confirmed (costs were charged on confirm)
+        if (isTargetingAttacker && currentTargetingInteraction.AttackerConfirmed && character != null)
+        {
+            var data = currentTargetingInteraction.AttackerData;
+            int baseAPCost = data.ActionCostType == ActionCostType.TwoAP ? 2 : 1;
+            int baseFATCost = data.ActionCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+            character.ActionPoints.Available += baseAPCost + data.APBoost;
+            character.ActionPoints.ActionsTakenThisRound -= 1;
+            character.Fatigue.Value += baseFATCost + data.FATBoost;
+
+            if (character is Csla.Core.ISavable savable)
+                await savable.SaveAsync();
+        }
+
+        // Refund AP/FAT if defender already confirmed an active defense (costs were charged on confirm)
+        if (!isTargetingAttacker && currentTargetingInteraction.DefenderConfirmed &&
+            currentTargetingInteraction.DefenderData != null && character != null)
+        {
+            var data = currentTargetingInteraction.DefenderData;
+            bool isActiveDefense = data.DefenseType == DefenseType.Dodge ||
+                                   data.DefenseType == DefenseType.ShieldBlock ||
+                                   (data.DefenseType == DefenseType.Parry && !data.IsInParryMode);
+            if (isActiveDefense)
+            {
+                int baseAPCost = data.DefenseCostType == ActionCostType.TwoAP ? 2 : 1;
+                int baseFATCost = data.DefenseCostType == ActionCostType.OneAPOneFat ? 1 : 0;
+
+                character.ActionPoints.Available += baseAPCost + data.APBoost;
+                character.ActionPoints.ActionsTakenThisRound -= 1;
+                character.Fatigue.Value += baseFATCost + data.FATBoost;
+
+                if (character is Csla.Core.ISavable savable)
+                    await savable.SaveAsync();
+            }
+        }
+
         await TargetingManager.CancelAsync(currentTargetingInteraction.InteractionId, "Cancelled by attacker");
         showTargetingModal = false;
         currentTargetingInteraction = null;
@@ -1797,8 +1910,9 @@ private async Task LoadTableCharactersAsync()
     /// <summary>
     /// Handles the targeting initiation callback from TabCombat.
     /// </summary>
-    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData) args)
+    private async Task HandleInitiateTargeting((TargetingActionType ActionType, int TargetId, string TargetName, TargetingAttackerData AttackerData, List<MeleeWeaponInfo>? AvailableWeapons) args)
     {
+        targetingAttackerWeapons = args.AvailableWeapons;
         await InitiateTargeting(args.ActionType, args.TargetId, args.TargetName, args.AttackerData);
     }
 

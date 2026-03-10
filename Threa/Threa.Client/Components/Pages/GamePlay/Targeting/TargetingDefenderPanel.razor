@@ -235,6 +235,11 @@
             fatBoost = InitialData.FATBoost;
             defenseCostType = InitialData.DefenseCostType;
         }
+
+        // Default to Parry when in parry mode (overrides InitialData default of Passive).
+        // Only applies when no explicit non-passive choice has been made.
+        if (IsInParryMode && defenseType == DefenseType.Passive && !IsRangedAttack)
+            defenseType = DefenseType.Parry;
     }
 
     private int GetAvailableAPForBoost()

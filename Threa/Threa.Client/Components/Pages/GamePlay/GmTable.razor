@@ -19,7 +19,6 @@
 @using Threa.Dal.Dto
 @using System.Security.Claims
 
-@inject Csla.Blazor.State.StateManager StateManager
 @inject RenderModeProvider RenderModeProvider
 @inject NavigationManager NavigationManager
 @inject IDataPortal<GameMechanics.GamePlay.TableEdit> tablePortal
@@ -60,9 +59,6 @@ else
             <span class="badge @GetStatusBadgeClass()">@table.StatusDisplay</span>
         </div>
         <div class="d-flex gap-2 align-items-center">
-            <ThemeSwitcher CurrentTheme="@table.Theme"
-                           CanEdit="true"
-                           OnThemeChanged="ChangeTheme" />
             <div class="text-end me-3">
                 <small class="d-block text-muted">Game Time</small>
                 <span class="fw-bold">
@@ -529,7 +525,8 @@ else
                                              Theme="@table.Theme"
                                              DefaultCalendarId="@table.DefaultCalendarId"
                                              IsGm="true"
-                                             OnDefaultCalendarChanged="ChangeDefaultCalendar" />
+                                             OnDefaultCalendarChanged="ChangeDefaultCalendar"
+                                             OnRequestShowModal="ToggleBodyCalendarModal" />
                         </div>
                     </div>
 
@@ -649,6 +646,18 @@ else
     </div>
 }
 
+@* Calendar detail modal for the body time display - rendered at page level to avoid
+   clip-path containment from the scifi-theme card that surrounds the time controls *@
+@if (showBodyCalendarModal && table != null)
+{
+    <CalendarModal EpochSeconds="table.CurrentTimeSeconds"
+                   Theme="@table.Theme"
+                   DefaultCalendarId="@table.DefaultCalendarId"
+                   IsGm="true"
+                   OnDefaultChanged="ChangeDefaultCalendar"
+                   OnClose="() => showBodyCalendarModal = false" />
+}
+
 @* NPC Targeting Modal - GM acts as defender for incoming PC attacks on NPCs *@
 @if (showNpcTargetingModal && currentNpcTargetingInteraction != null)
 {
@@ -661,7 +670,7 @@ else
                                 maxFATBoost="@GetNpcMaxFATBoost()"
                                 defenderDodgeAS="@GetNpcDodgeAS()"
                                 defenderParryAS="@GetNpcParryAS()"
-                                defenderIsInParryMode="false"
+                                defenderIsInParryMode="@GetNpcIsInParryMode()"
                                 defenderCanActiveDefense="@GetNpcCanActiveDefense()"
                                 defenderCanParry="@GetNpcCanParry()"
                                 OnAttackerDataUpdated="UpdateNpcAttackerData"
@@ -738,6 +747,10 @@ else
     // Set Time modal state
     private bool showSetTimeModal = false;
 
+    // Calendar modal state for the body time display (rendered at page level to avoid clip-path containment)
+    private bool showBodyCalendarModal = false;
+    private void ToggleBodyCalendarModal() => showBodyCalendarModal = !showBodyCalendarModal;
+
     // Selection state for batch operations
     private HashSet<int> selectedCharacterIds = new();
 
@@ -751,7 +764,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await StateManager.InitializeAsync();
 
         if (RenderModeProvider.GetRenderMode(this).IsInteractive())
         {
@@ -1153,6 +1165,10 @@ else
     {
         if (table == null) return;
 
+        // Capture time BEFORE advancing so ProcessTimeSkipAsync can sync lagging characters
+        // to the pre-advance time, then advance by the correct amount (not double-advance).
+        var preAdvanceTableTime = table.CurrentTimeSeconds;
+
         table.AdvanceTime(seconds);
         await SaveTable();
 
@@ -1179,7 +1195,7 @@ else
             table.Id,
             timeEventType,
             count,
-            currentTableTimeSeconds: table.CurrentTimeSeconds);
+            currentTableTimeSeconds: preAdvanceTableTime);
 
         if (!result.Success)
         {
@@ -1270,7 +1286,7 @@ else
                 table.Id,
                 timeEventType,
                 Math.Max(count, 1),
-                currentTableTimeSeconds: table.CurrentTimeSeconds);
+                currentTableTimeSeconds: oldTime);
 
             if (!result.Success)
             {
@@ -1830,7 +1846,13 @@ else
                 targetedNpc.ActionPoints.Available >= 2);
     }
 
-    private bool GetNpcCanParry() => GetNpcCanActiveDefense();
+    private bool GetNpcIsInParryMode()
+    {
+        if (targetedNpc == null) return false;
+        return GameMechanics.Effects.Behaviors.CombatStanceBehavior.IsInParryMode(targetedNpc);
+    }
+
+    private bool GetNpcCanParry() => GetNpcCanActiveDefense() || GetNpcIsInParryMode();
 
     private async Task UpdateNpcAttackerData(TargetingAttackerData data)
     {

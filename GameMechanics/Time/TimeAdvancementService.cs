@@ -156,7 +156,7 @@ public class TimeAdvancementService
                         // Pass loadedCharacters so linked effects can be removed from other characters
                         if (character.LastConcentrationResult != null)
                         {
-                            var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
+                            var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters, currentTableTimeSeconds);
                             if (!string.IsNullOrEmpty(concentrationMessage))
                             {
                                 result.Messages.Add(concentrationMessage);
@@ -251,7 +251,7 @@ public class TimeAdvancementService
                     // Pass loadedCharacters so linked effects can be removed from other characters
                     if (character.LastConcentrationResult != null)
                     {
-                        var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters);
+                        var concentrationMessage = await ProcessConcentrationResultAsync(character, loadedCharacters, currentTableTimeSeconds);
                         if (!string.IsNullOrEmpty(concentrationMessage))
                         {
                             result.Messages.Add(concentrationMessage);
@@ -323,7 +323,8 @@ public class TimeAdvancementService
     /// <returns>A message describing what happened, or null if nothing to process.</returns>
     private async Task<string?> ProcessConcentrationResultAsync(
         CharacterEdit character,
-        Dictionary<int, CharacterEdit> loadedCharacters)
+        Dictionary<int, CharacterEdit> loadedCharacters,
+        long currentTableTimeSeconds)
     {
         var result = character.LastConcentrationResult;
         if (result == null) return null;
@@ -367,7 +368,7 @@ public class TimeAdvancementService
                 case "MedicalHealing":
                     if (result.Success)
                     {
-                        await ExecuteMedicalHealingAsync(result.Payload);
+                        await ExecuteMedicalHealingAsync(result.Payload, loadedCharacters, currentTableTimeSeconds);
                         return result.Message;
                     }
                     break;
@@ -409,38 +410,44 @@ public class TimeAdvancementService
         var payload = MagazineReloadPayload.FromJson(payloadJson);
         if (payload == null) return;
 
-        // Update weapon ammo state
-        var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
-        if (weapon != null)
-        {
-            var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
-            weaponState.LoadedAmmo += payload.RoundsToLoad;
-            weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
-                weapon.CustomProperties, weaponState);
-            await _itemDal.UpdateItemAsync(weapon);
-        }
-
-        // Reduce ammo source
         var ammoSource = await _itemDal.GetItemAsync(payload.MagazineItemId);
-        if (ammoSource != null)
+
+        if (payload.IsLooseAmmo)
         {
-            if (payload.IsLooseAmmo)
+            // Loose ammo: transfer rounds into weapon, reduce stack
+            var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null)
             {
-                // Loose ammo: reduce stack size
+                var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+                weaponState.LoadedAmmo += payload.RoundsToLoad;
+                weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, weaponState);
+                await _itemDal.UpdateItemAsync(weapon);
+            }
+
+            if (ammoSource != null)
+            {
                 ammoSource.StackSize -= payload.RoundsToLoad;
                 if (ammoSource.StackSize <= 0)
                     await _itemDal.DeleteItemAsync(payload.MagazineItemId);
                 else
                     await _itemDal.UpdateItemAsync(ammoSource);
             }
-            else
+        }
+        else
+        {
+            // Magazine: link the magazine to the weapon; magazine stays in inventory untouched
+            var weapon = await _itemDal.GetItemAsync(payload.WeaponItemId);
+            if (weapon != null && ammoSource != null)
             {
-                // Magazine: reduce container state
                 var magazineState = AmmoContainerState.FromJson(ammoSource.CustomProperties);
-                magazineState.LoadedAmmo = Math.Max(0, magazineState.LoadedAmmo - payload.RoundsToLoad);
-                ammoSource.CustomProperties = AmmoContainerState.MergeIntoCustomProperties(
-                    ammoSource.CustomProperties, magazineState);
-                await _itemDal.UpdateItemAsync(ammoSource);
+                var weaponState = WeaponAmmoState.FromJson(weapon.CustomProperties);
+                weaponState.LoadedMagazineId = payload.MagazineItemId;
+                weaponState.LoadedAmmo = magazineState.LoadedAmmo;
+                weaponState.LoadedAmmoType = payload.AmmoType;
+                weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                    weapon.CustomProperties, weaponState);
+                await _itemDal.UpdateItemAsync(weapon);
             }
         }
     }
@@ -606,7 +613,19 @@ public class TimeAdvancementService
         // Get ammo type from weapon state if not specified
         var ammoType = payload.AmmoType ?? weaponState.LoadedAmmoType;
 
-        // Reduce weapon ammo
+        // If the weapon has a linked magazine, unloading just detaches the magazine — it stays in inventory
+        if (weaponState.LoadedMagazineId.HasValue)
+        {
+            weaponState.LoadedAmmo = 0;
+            weaponState.LoadedMagazineId = null;
+            weaponState.LoadedAmmoType = null;
+            weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
+                weapon.CustomProperties, weaponState);
+            await _itemDal.UpdateItemAsync(weapon);
+            return;
+        }
+
+        // Loose ammo: reduce weapon ammo and return rounds to inventory
         weaponState.LoadedAmmo -= roundsToUnload;
         weapon.CustomProperties = WeaponAmmoState.MergeIntoCustomProperties(
             weapon.CustomProperties, weaponState);
@@ -783,8 +802,15 @@ public class TimeAdvancementService
     /// <summary>
     /// Executes the medical healing by applying FAT/VIT healing to the target character.
     /// Healing amount is determined by the SV stored in the payload.
+    /// Uses the pre-loaded character instance from <paramref name="loadedCharacters"/> when
+    /// available so that the outer loop's save (not a separate save here) persists all changes
+    /// together — preventing the stale loadedCharacters copy from overwriting the healing.
+    /// Falls back to a fresh fetch+save for characters not present at the table.
     /// </summary>
-    private async Task ExecuteMedicalHealingAsync(string? payloadJson)
+    private async Task ExecuteMedicalHealingAsync(
+        string? payloadJson,
+        Dictionary<int, CharacterEdit> loadedCharacters,
+        long currentTableTimeSeconds)
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
@@ -804,9 +830,22 @@ public class TimeAdvancementService
 
         int healingAmount = healingResult.EffectValue;
 
-        // Load the target character
-        var targetCharacter = await _characterPortal.FetchAsync(payload.TargetCharacterId);
+        // Prefer the already-loaded instance so the outer loop's save persists everything.
+        // If the target isn't at this table, fall back to fetching independently.
+        bool targetIsLoaded = loadedCharacters.TryGetValue(payload.TargetCharacterId, out var targetCharacter);
+        if (!targetIsLoaded || targetCharacter == null)
+        {
+            targetCharacter = await _characterPortal.FetchAsync(payload.TargetCharacterId);
+        }
         if (targetCharacter == null) return;
+
+        // Ensure the target's game time is current before epoch-based calculations
+        if (currentTableTimeSeconds > 0 &&
+            (targetCharacter.CurrentGameTimeSeconds == 0 ||
+             targetCharacter.CurrentGameTimeSeconds < currentTableTimeSeconds))
+        {
+            targetCharacter.CurrentGameTimeSeconds = currentTableTimeSeconds;
+        }
 
         // Apply healing to both FAT and VIT pools (player chooses how to distribute later,
         // but for now we apply evenly - prioritize FAT first since it's typically depleted first)
@@ -825,7 +864,17 @@ public class TimeAdvancementService
             targetCharacter.Vitality.PendingHealing += vitHealing;
         }
 
-        // Save the target character
-        await _characterPortal.UpdateAsync(targetCharacter);
+        // Medical healing also improves the most severe wound by one severity level
+        // and halves its remaining healing time. Minor wounds cannot be improved this
+        // way — only time heals them fully.
+        WoundBehavior.ImproveWound(targetCharacter, targetCharacter.CurrentGameTimeSeconds);
+
+        // Only save here when the target was not in loadedCharacters (not at this table).
+        // When the target IS in loadedCharacters, the outer loop's UpdateAsync call handles saving,
+        // which prevents this independent save from being overwritten by the stale loaded instance.
+        if (!targetIsLoaded)
+        {
+            await _characterPortal.UpdateAsync(targetCharacter);
+        }
     }
 }
