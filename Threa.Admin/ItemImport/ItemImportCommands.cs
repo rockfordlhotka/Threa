@@ -28,10 +28,10 @@ public class ImportItemsCommand : AsyncCommand<ImportItemSettings>
 
     public ImportItemsCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var items = CsvImportHelper.ReadCsv<ItemTemplate, BaseItemCsvMap>(settings.FilePath);
         if (items == null) return 1;
@@ -64,10 +64,10 @@ public class ImportWeaponsCommand : AsyncCommand<ImportItemSettings>
 
     public ImportWeaponsCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var items = CsvImportHelper.ReadCsv<ItemTemplate, WeaponCsvMap>(settings.FilePath);
         if (items == null) return 1;
@@ -108,10 +108,10 @@ public class ImportArmorCommand : AsyncCommand<ImportItemSettings>
 
     public ImportArmorCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var rows = CsvImportHelper.ReadCsv<ArmorImportRow, ArmorImportCsvMap>(settings.FilePath);
         if (rows == null) return 1;
@@ -175,10 +175,10 @@ public class ImportRangedWeaponsCommand : AsyncCommand<ImportItemSettings>
 
     public ImportRangedWeaponsCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var rows = CsvImportHelper.ReadCsv<RangedWeaponImportRow, RangedWeaponImportCsvMap>(settings.FilePath);
         if (rows == null) return 1;
@@ -303,10 +303,10 @@ public class ImportAmmoCommand : AsyncCommand<ImportItemSettings>
 
     public ImportAmmoCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var rows = CsvImportHelper.ReadCsv<AmmoImportRow, AmmoImportCsvMap>(settings.FilePath);
         if (rows == null) return 1;
@@ -375,10 +375,10 @@ public class ImportAmmoContainersCommand : AsyncCommand<ImportItemSettings>
 
     public ImportAmmoContainersCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ImportItemSettings settings)
         => ImportValidation.ValidateFilePath(settings.FilePath);
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ImportItemSettings settings, CancellationToken cancellationToken)
     {
         var rows = CsvImportHelper.ReadCsv<AmmoContainerImportRow, AmmoContainerImportCsvMap>(settings.FilePath);
         if (rows == null) return 1;
