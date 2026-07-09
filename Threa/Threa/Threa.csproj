@@ -45,15 +45,15 @@
     <ProjectReference Include="..\..\Threa.Dal.SqlLite\Threa.Dal.Sqlite.csproj" />
     <ProjectReference Include="..\..\Threa.Dal\Threa.Dal.csproj" />
     <ProjectReference Include="..\Threa.Client\Threa.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />
-    <PackageReference Include="Csla.AspNetCore" Version="9.1.0" />
-    <PackageReference Include="Csla.Blazor" Version="9.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.9" />
+    <PackageReference Include="Csla.AspNetCore" Version="9.1.1" />
+    <PackageReference Include="Csla.Blazor" Version="9.1.1" />
     <PackageReference Include="Radzen.Blazor" Version="8.4.2" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
   </ItemGroup>
 
   <ItemGroup>
