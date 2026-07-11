@@ -1,8 +1,9 @@
 using System;
-using System.Threading.Tasks;
+using Csla.Configuration;
+using Csla.Serialization;
+using Csla.Serialization.Mobile;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Csla;
-using GameMechanics;
 using Threa.Dal.Dto;
 
 namespace GameMechanics.Test;
@@ -10,26 +11,36 @@ namespace GameMechanics.Test;
 [TestClass]
 public class EffectTemplateSerializationTests
 {
+    /// <summary>
+    /// Builds a minimal CSLA service provider and returns the configured
+    /// serialization formatter (MobileFormatter by default). CSLA 10 no longer
+    /// allows constructing <see cref="SerializationInfo"/> directly, so tests
+    /// must round-trip objects through the real formatter.
+    /// </summary>
+    private static ISerializationFormatter CreateFormatter(out ServiceProvider provider)
+    {
+        var services = new ServiceCollection();
+        services.AddCsla();
+        provider = services.BuildServiceProvider();
+        return provider.GetRequiredService<ISerializationFormatter>();
+    }
+
     [TestMethod]
     public void EffectTemplateDto_ImplementsIMobileObject()
     {
-        // Arrange
         var dto = new EffectTemplateDto();
 
-        // Assert - Check that it's an IMobileObject by trying to use its methods
-        var info = new Csla.Serialization.Mobile.SerializationInfo();
-
-        // This will throw if IMobileObject is not properly implemented
-        dto.GetState(info);
-
-        // Success - the DTO implements IMobileObject
-        Assert.IsTrue(true, "EffectTemplateDto properly implements IMobileObject");
+        Assert.IsInstanceOfType<IMobileObject>(dto,
+            "EffectTemplateDto must implement IMobileObject to be serialized by MobileFormatter.");
     }
 
     [TestMethod]
     public void EffectTemplateDto_CanSerializeAndDeserialize()
     {
         // Arrange
+        var formatter = CreateFormatter(out var provider);
+        using var _ = provider;
+
         var original = new EffectTemplateDto
         {
             Id = 123,
@@ -48,12 +59,9 @@ public class EffectTemplateSerializationTests
             UpdatedAt = new DateTime(2026, 1, 15, 14, 30, 0, DateTimeKind.Utc)
         };
 
-        // Act - Manually serialize and deserialize
-        var info = new Csla.Serialization.Mobile.SerializationInfo();
-        original.GetState(info);
-
-        var deserialized = new EffectTemplateDto();
-        deserialized.SetState(info);
+        // Act - round-trip through the configured MobileFormatter
+        var data = formatter.Serialize(original);
+        var deserialized = (EffectTemplateDto)formatter.Deserialize(data)!;
 
         // Assert - All properties should match
         Assert.AreEqual(original.Id, deserialized.Id);
@@ -70,7 +78,5 @@ public class EffectTemplateSerializationTests
         Assert.AreEqual(original.IsActive, deserialized.IsActive);
         Assert.AreEqual(original.CreatedAt, deserialized.CreatedAt);
         Assert.AreEqual(original.UpdatedAt, deserialized.UpdatedAt);
-
-        Console.WriteLine("SUCCESS: All properties correctly serialized and deserialized!");
     }
 }

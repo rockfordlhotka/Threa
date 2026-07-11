@@ -98,7 +98,7 @@ private set => LoadProperty(AttributeListProperty, value);
 private async Task FetchAsync(int id, [Inject] ICharacterDal dal, ...) { ... }
 ```
 
-**Use the CSLA MCP server** (`csla-framework-developer` agent) for guidance on CSLA-specific patterns and best practices. This project uses CSLA version 9.
+**Use the CSLA MCP server** (`csla-framework-developer` agent) for guidance on CSLA-specific patterns and best practices. This project uses CSLA version 10 (query the MCP server with `version: 10`). The v9-style manual `GetProperty`/`SetProperty` property pattern remains fully supported; the v10 `[CslaImplementProperties]` partial-property code generation is optional.
 
 ## Code Conventions
 
@@ -124,9 +124,9 @@ private async Task FetchAsync(int id, [Inject] ICharacterDal dal, ...) { ... }
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `Csla` | 9.1.0 | Core business object framework |
-| `Csla.AspNetCore` | 9.1.0 | ASP.NET Core integration |
-| `Csla.Blazor` | 9.1.0 | Blazor integration |
+| `Csla` | 10.1.0 | Core business object framework |
+| `Csla.AspNetCore` | 10.1.0 | ASP.NET Core integration |
+| `Csla.Blazor` | 10.1.0 | Blazor integration |
 | `Radzen.Blazor` | 8.4.2 | UI component library |
 
 **Important**: When updating CSLA packages, update all CSLA packages together to maintain version compatibility.

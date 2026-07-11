@@ -19,7 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Csla" Version="9.1.1" />
+    <PackageReference Include="Csla" Version="10.1.0" />
   </ItemGroup>
 
   <ItemGroup>
