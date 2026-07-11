@@ -36,7 +36,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
 
     public ExportItemsCommand(IItemTemplateDal dal) => _dal = dal;
 
-    public override ValidationResult Validate(CommandContext context, ExportItemSettings settings)
+    protected override ValidationResult Validate(CommandContext context, ExportItemSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.OutputDirectory))
             return ValidationResult.Error("Output directory is required");
@@ -44,7 +44,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ExportItemSettings settings)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ExportItemSettings settings, CancellationToken cancellationToken)
     {
         // Ensure directory exists
         if (!Directory.Exists(settings.OutputDirectory))
