@@ -17,13 +17,16 @@ public static class CsvImportHelper
 
     /// <summary>
     /// Reader options for import files: separator from the extension, values trimmed,
-    /// invariant culture, and line numbers tracked for error messages.
+    /// invariant culture, and line numbers tracked for error messages. Malformed quoting
+    /// is rejected rather than recovered, since an unclosed quote would otherwise run to
+    /// the end of the file and silently swallow the rows after it.
     /// </summary>
     public static CsvReaderOptions CreateReaderOptions(string filePath, Func<CsvRecordError, bool>? onRecordError = null) => new()
     {
         Separator = GetSeparator(filePath),
         TrimWhitespace = true,
         TrackLineNumbers = true,
+        MalformedData = CsvMalformedDataHandling.Throw,
         MissingField = CsvMissingFieldHandling.ReturnEmpty,
         FormatProvider = CultureInfo.InvariantCulture,
         OnRecordError = onRecordError
