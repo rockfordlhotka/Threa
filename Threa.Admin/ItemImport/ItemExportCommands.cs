@@ -1,7 +1,4 @@
-using System.Globalization;
 using System.Text.Json;
-using CsvHelper;
-using CsvHelper.Configuration;
 using GameMechanics.Combat;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -36,7 +33,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
 
     public ExportItemsCommand(IItemTemplateDal dal) => _dal = dal;
 
-    protected override ValidationResult Validate(CommandContext context, ExportItemSettings settings)
+    public override ValidationResult Validate(CommandContext context, ExportItemSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.OutputDirectory))
             return ValidationResult.Error("Output directory is required");
@@ -44,7 +41,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         return ValidationResult.Success();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ExportItemSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ExportItemSettings settings, CancellationToken cancellationToken)
     {
         // Ensure directory exists
         if (!Directory.Exists(settings.OutputDirectory))
@@ -114,7 +111,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         }
 
         var extension = settings.UseTsv ? ".tsv" : ".csv";
-        var delimiter = settings.UseTsv ? "\t" : ",";
+        var separator = settings.UseTsv ? '\t' : ',';
         int totalExported = 0;
 
         // Show category counts
@@ -131,42 +128,42 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         AnsiConsole.MarkupLine("[grey]Exporting files:[/]");
 
         var itemsPath = Path.Combine(settings.OutputDirectory, $"items{extension}");
-        ExportBasicItems(itemsPath, basicItems, delimiter);
+        ExportBasicItems(itemsPath, basicItems, separator);
         AnsiConsole.MarkupLine(basicItems.Count > 0
             ? $"  [green]items{extension}[/]: {basicItems.Count} basic items"
             : $"  [yellow]items{extension}[/]: headers only (no data)");
         totalExported += basicItems.Count;
 
         var weaponsPath = Path.Combine(settings.OutputDirectory, $"weapons{extension}");
-        ExportMeleeWeapons(weaponsPath, meleeWeapons, delimiter);
+        ExportMeleeWeapons(weaponsPath, meleeWeapons, separator);
         AnsiConsole.MarkupLine(meleeWeapons.Count > 0
             ? $"  [green]weapons{extension}[/]: {meleeWeapons.Count} melee weapons"
             : $"  [yellow]weapons{extension}[/]: headers only (no data)");
         totalExported += meleeWeapons.Count;
 
         var rangedPath = Path.Combine(settings.OutputDirectory, $"ranged-weapons{extension}");
-        ExportRangedWeapons(rangedPath, rangedWeapons, delimiter);
+        ExportRangedWeapons(rangedPath, rangedWeapons, separator);
         AnsiConsole.MarkupLine(rangedWeapons.Count > 0
             ? $"  [green]ranged-weapons{extension}[/]: {rangedWeapons.Count} ranged weapons"
             : $"  [yellow]ranged-weapons{extension}[/]: headers only (no data)");
         totalExported += rangedWeapons.Count;
 
         var armorPath = Path.Combine(settings.OutputDirectory, $"armor{extension}");
-        ExportArmor(armorPath, armor, delimiter);
+        ExportArmor(armorPath, armor, separator);
         AnsiConsole.MarkupLine(armor.Count > 0
             ? $"  [green]armor{extension}[/]: {armor.Count} armor items"
             : $"  [yellow]armor{extension}[/]: headers only (no data)");
         totalExported += armor.Count;
 
         var ammoPath = Path.Combine(settings.OutputDirectory, $"ammo{extension}");
-        ExportAmmunition(ammoPath, ammunition, delimiter);
+        ExportAmmunition(ammoPath, ammunition, separator);
         AnsiConsole.MarkupLine(ammunition.Count > 0
             ? $"  [green]ammo{extension}[/]: {ammunition.Count} ammunition items"
             : $"  [yellow]ammo{extension}[/]: headers only (no data)");
         totalExported += ammunition.Count;
 
         var ammoContainerPath = Path.Combine(settings.OutputDirectory, $"ammo-containers{extension}");
-        ExportAmmoContainers(ammoContainerPath, ammoContainers, delimiter);
+        ExportAmmoContainers(ammoContainerPath, ammoContainers, separator);
         AnsiConsole.MarkupLine(ammoContainers.Count > 0
             ? $"  [green]ammo-containers{extension}[/]: {ammoContainers.Count} ammo container items"
             : $"  [yellow]ammo-containers{extension}[/]: headers only (no data)");
@@ -242,11 +239,9 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         AnsiConsole.Write(new Rule().LeftJustified());
     }
 
-    private void ExportBasicItems(string path, List<ItemTemplate> items, string delimiter)
+    private void ExportBasicItems(string path, List<ItemTemplate> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -260,7 +255,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("IsStackable");
         csv.WriteField("MaxStackSize");
         csv.WriteField("EquipmentSlot");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var item in items)
         {
@@ -275,15 +270,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(item.IsStackable);
             csv.WriteField(item.MaxStackSize);
             csv.WriteField(item.EquipmentSlot.ToString());
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 
-    private void ExportMeleeWeapons(string path, List<ItemTemplate> items, string delimiter)
+    private void ExportMeleeWeapons(string path, List<ItemTemplate> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -301,7 +294,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("AVModifier");
         csv.WriteField("EquipmentSlot");
         csv.WriteField("MinSkillLevel");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var item in items)
         {
@@ -320,15 +313,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(item.AVModifier);
             csv.WriteField(item.EquipmentSlot.ToString());
             csv.WriteField(item.MinSkillLevel);
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 
-    private void ExportRangedWeapons(string path, List<(ItemTemplate Item, RangedWeaponProperties Props)> items, string delimiter)
+    private void ExportRangedWeapons(string path, List<(ItemTemplate Item, RangedWeaponProperties Props)> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -362,7 +353,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("IsInherentAOE");
         csv.WriteField("DefaultBlastRadius");
         csv.WriteField("DefaultBlastFalloff");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var (item, props) in items)
         {
@@ -401,15 +392,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(props.IsInherentAOE);
             csv.WriteField(props.DefaultBlastRadius);
             csv.WriteField(props.DefaultBlastFalloff ?? "");
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 
-    private void ExportArmor(string path, List<ItemTemplate> items, string delimiter)
+    private void ExportArmor(string path, List<ItemTemplate> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -427,7 +416,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("AbsorbPiercing");
         csv.WriteField("AbsorbProjectile");
         csv.WriteField("AbsorbEnergy");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var item in items)
         {
@@ -449,15 +438,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(absorption.GetValueOrDefault("Piercing", 0));
             csv.WriteField(absorption.GetValueOrDefault("Projectile", 0));
             csv.WriteField(absorption.GetValueOrDefault("Energy", 0));
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 
-    private void ExportAmmunition(string path, List<(ItemTemplate Item, AmmunitionProperties? Props)> items, string delimiter)
+    private void ExportAmmunition(string path, List<(ItemTemplate Item, AmmunitionProperties? Props)> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -479,7 +466,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("BlastRadius");
         csv.WriteField("BlastFalloff");
         csv.WriteField("DirectHitBonus");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var (item, props) in items)
         {
@@ -502,15 +489,13 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(props?.BlastRadius ?? 0);
             csv.WriteField(props?.BlastFalloff ?? "");
             csv.WriteField(props?.DirectHitBonus ?? 0);
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 
-    private void ExportAmmoContainers(string path, List<(ItemTemplate Item, AmmoContainerProperties? Props)> items, string delimiter)
+    private void ExportAmmoContainers(string path, List<(ItemTemplate Item, AmmoContainerProperties? Props)> items, char separator)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture) { Delimiter = delimiter };
-        using var writer = new StreamWriter(path);
-        using var csv = new CsvWriter(writer, config);
+        using var csv = CsvImportHelper.CreateWriter(path, separator);
 
         // Write header
         csv.WriteField("Name");
@@ -524,7 +509,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
         csv.WriteField("Capacity");
         csv.WriteField("ContainerType");
         csv.WriteField("AllowedAmmoTypes");
-        csv.NextRecord();
+        csv.EndRecord();
 
         foreach (var (item, props) in items)
         {
@@ -539,7 +524,7 @@ public class ExportItemsCommand : AsyncCommand<ExportItemSettings>
             csv.WriteField(props?.Capacity ?? 0);
             csv.WriteField(props?.ContainerType ?? "Magazine");
             csv.WriteField(props?.AllowedAmmoTypes ?? "");
-            csv.NextRecord();
+            csv.EndRecord();
         }
     }
 

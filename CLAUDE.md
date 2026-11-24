@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Threa is a **TTRPG (tabletop role-playing game) Character Sheet Assistant** that helps players manage and play their characters, and helps GMs manage games including time flow, spell effects, combat, and more. Built with .NET 10, CSLA.NET 9.1 business objects, and Blazor Web App (SSR + InteractiveServer).
+Threa is a **TTRPG (tabletop role-playing game) Character Sheet Assistant** that helps players manage and play their characters, and helps GMs manage games including time flow, spell effects, combat, and more. Built with .NET 10, CSLA.NET 10 business objects, and Blazor Web App (SSR + InteractiveServer).
 
 ## Architecture
 
@@ -124,10 +124,10 @@ private async Task FetchAsync(int id, [Inject] ICharacterDal dal, ...) { ... }
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `Csla` | 10.1.0 | Core business object framework |
-| `Csla.AspNetCore` | 10.1.0 | ASP.NET Core integration |
-| `Csla.Blazor` | 10.1.0 | Blazor integration |
-| `Radzen.Blazor` | 8.4.2 | UI component library |
+| `Csla` | 10.2.0 | Core business object framework |
+| `Csla.AspNetCore` | 10.2.0 | ASP.NET Core integration |
+| `Csla.Blazor` | 10.2.0 | Blazor integration |
+| `Radzen.Blazor` | 13.2.1 | UI component library |
 
 **Important**: When updating CSLA packages, update all CSLA packages together to maintain version compatibility.
 
