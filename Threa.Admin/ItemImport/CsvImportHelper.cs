@@ -1,118 +1,118 @@
 using System.Globalization;
 using CsvHelper;
-using CsvHelper.Configuration;
-using CsvHelper.TypeConversion;
 using Spectre.Console;
 
 namespace Threa.Admin.ItemImport;
 
 /// <summary>
-/// Shared helper for reading CSV/TSV files with clear error messages.
+/// Shared helper for reading and writing CSV/TSV files with clear error messages.
 /// </summary>
 public static class CsvImportHelper
 {
     /// <summary>
+    /// The field separator for a file: tab for .tsv, comma otherwise.
+    /// </summary>
+    public static char GetSeparator(string filePath)
+        => Path.GetExtension(filePath).Equals(".tsv", StringComparison.OrdinalIgnoreCase) ? '\t' : ',';
+
+    /// <summary>
+    /// Reader options for import files: separator from the extension, values trimmed,
+    /// invariant culture, and line numbers tracked for error messages. Malformed quoting
+    /// is rejected rather than recovered, since an unclosed quote would otherwise run to
+    /// the end of the file and silently swallow the rows after it.
+    /// </summary>
+    public static CsvReaderOptions CreateReaderOptions(string filePath, Func<CsvRecordError, bool>? onRecordError = null) => new()
+    {
+        Separator = GetSeparator(filePath),
+        TrimWhitespace = true,
+        TrackLineNumbers = true,
+        MalformedData = CsvMalformedDataHandling.Throw,
+        MissingField = CsvMissingFieldHandling.ReturnEmpty,
+        FormatProvider = CultureInfo.InvariantCulture,
+        OnRecordError = onRecordError
+    };
+
+    /// <summary>
+    /// Creates (or overwrites) an export file: invariant culture, and fields quoted when
+    /// they need it or have whitespace at either end, so values round-trip through import.
+    /// </summary>
+    public static CsvWriter CreateWriter(string filePath, char separator)
+        => CsvWriter.ToFile(filePath, new CsvWriterOptions
+        {
+            Separator = separator,
+            Quoting = CsvQuoting.WhenNeededOrWhitespace,
+            FormatProvider = CultureInfo.InvariantCulture
+        });
+
+    /// <summary>
     /// Reads a CSV or TSV file and returns the parsed records.
     /// Returns null if there was a parsing error (error is printed to console).
     /// </summary>
-    public static List<T>? ReadCsv<T, TMap>(string filePath) where TMap : ClassMap<T>
+    public static List<T>? ReadCsv<T>(string filePath)
     {
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        var delimiter = ext == ".tsv" ? "\t" : ",";
+        CsvReader? csv = null;
+        string? rawRecord = null;
+        string? fieldValue = null;
+        var options = CreateReaderOptions(filePath, error =>
+        {
+            // Capture the record while the reader is still on it; returning false rethrows.
+            rawRecord = error.RawRecord;
+            if (csv != null && error.Exception is CsvFormatException { FieldIndex: >= 0 } fe)
+                fieldValue = fe.FieldIndex < csv.FieldCount ? csv.GetString(fe.FieldIndex) : string.Empty;
+            return false;
+        });
 
         try
         {
-            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            using (csv = CsvReader.FromFile(filePath, options))
+                return csv.GetRecords<T>().ToList();
+        }
+        catch (CsvFormatException ex)
+        {
+            PrintCsvError(ex, typeof(T), rawRecord, fieldValue);
+            return null;
+        }
+    }
+
+    private static void PrintCsvError(CsvFormatException ex, Type recordType, string? rawRecord, string? fieldValue)
+    {
+        // Member is "Type.Property"; the row types name their properties after the columns.
+        var columnName = ex.Member?[(ex.Member.LastIndexOf('.') + 1)..];
+        var memberType = columnName == null ? null : recordType.GetProperty(columnName)?.PropertyType;
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[red]CSV Parse Error:[/]");
+
+        if (ex.LineNumber > 0)
+            AnsiConsole.MarkupLine($"  [yellow]Row:[/] {ex.LineNumber}");
+
+        if (columnName != null)
+        {
+            var actualValue = fieldValue ?? "(empty)";
+            AnsiConsole.MarkupLine($"  [yellow]Column:[/] {Markup.Escape(columnName)} (index {ex.FieldIndex})");
+            AnsiConsole.MarkupLine($"  [yellow]Expected:[/] {Markup.Escape(GetFriendlyTypeName(memberType))}");
+            AnsiConsole.MarkupLine($"  [yellow]Found:[/] '{Markup.Escape(actualValue)}'");
+            AnsiConsole.WriteLine();
+
+            // Provide helpful suggestions based on the type
+            var suggestion = GetTypeSuggestion(memberType, fieldValue ?? string.Empty);
+            if (!string.IsNullOrEmpty(suggestion))
             {
-                Delimiter = delimiter,
-                HeaderValidated = null,
-                MissingFieldFound = null,
-                TrimOptions = TrimOptions.Trim
-            };
-
-            using var reader = new StreamReader(filePath);
-            using var csv = new CsvReader(reader, config);
-            csv.Context.RegisterClassMap<TMap>();
-            return csv.GetRecords<T>().ToList();
+                AnsiConsole.MarkupLine($"[grey]Suggestion:[/] {Markup.Escape(suggestion)}");
+                AnsiConsole.WriteLine();
+            }
         }
-        catch (TypeConverterException ex)
+        else
         {
-            PrintTypeConversionError(ex);
-            return null;
-        }
-        catch (ReaderException ex) when (ex.InnerException is TypeConverterException tce)
-        {
-            PrintTypeConversionError(tce);
-            return null;
-        }
-        catch (CsvHelperException ex)
-        {
-            PrintGenericCsvError(ex);
-            return null;
-        }
-    }
-
-    private static void PrintTypeConversionError(TypeConverterException ex)
-    {
-        var context = ex.Context;
-        var row = context?.Parser?.RawRow ?? 0;
-        var columnName = ex.MemberMapData?.Member?.Name ?? "Unknown";
-        var columnIndex = ex.MemberMapData?.Index ?? -1;
-        var expectedType = GetFriendlyTypeName(ex.MemberMapData?.Member?.MemberType());
-        var actualValue = ex.Text ?? "(empty)";
-
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[red]CSV Parse Error:[/]");
-        AnsiConsole.MarkupLine($"  [yellow]Row:[/] {row}");
-        AnsiConsole.MarkupLine($"  [yellow]Column:[/] {columnName} (index {columnIndex})");
-        AnsiConsole.MarkupLine($"  [yellow]Expected:[/] {expectedType}");
-        AnsiConsole.MarkupLine($"  [yellow]Found:[/] '{Markup.Escape(actualValue)}'");
-        AnsiConsole.WriteLine();
-
-        // Provide helpful suggestions based on the type
-        var suggestion = GetTypeSuggestion(ex.MemberMapData?.Member?.MemberType(), actualValue);
-        if (!string.IsNullOrEmpty(suggestion))
-        {
-            AnsiConsole.MarkupLine($"[grey]Suggestion:[/] {suggestion}");
+            AnsiConsole.MarkupLine($"  [yellow]Error:[/] {Markup.Escape(ex.Message)}");
             AnsiConsole.WriteLine();
         }
 
         // Show the problematic row data if available
-        if (context?.Parser?.RawRecord != null)
+        if (rawRecord != null)
         {
             AnsiConsole.MarkupLine("[grey]Raw row data:[/]");
-            AnsiConsole.MarkupLine($"  {Markup.Escape(context.Parser.RawRecord.TrimEnd())}");
-            AnsiConsole.WriteLine();
-        }
-    }
-
-    private static void PrintGenericCsvError(CsvHelperException ex)
-    {
-        var context = ex.Context;
-        var row = context?.Parser?.RawRow ?? 0;
-
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[red]CSV Parse Error:[/]");
-
-        if (row > 0)
-            AnsiConsole.MarkupLine($"  [yellow]Row:[/] {row}");
-
-        // Try to extract useful info from the message
-        var message = ex.Message;
-
-        // Remove the verbose state dump that CsvHelper adds
-        var stateIndex = message.IndexOf("IReader state:", StringComparison.Ordinal);
-        if (stateIndex > 0)
-            message = message.Substring(0, stateIndex).Trim();
-
-        AnsiConsole.MarkupLine($"  [yellow]Error:[/] {Markup.Escape(message)}");
-        AnsiConsole.WriteLine();
-
-        // Show the problematic row data if available
-        if (context?.Parser?.RawRecord != null)
-        {
-            AnsiConsole.MarkupLine("[grey]Raw row data:[/]");
-            AnsiConsole.MarkupLine($"  {Markup.Escape(context.Parser.RawRecord.TrimEnd())}");
+            AnsiConsole.MarkupLine($"  {Markup.Escape(rawRecord.TrimEnd())}");
             AnsiConsole.WriteLine();
         }
     }

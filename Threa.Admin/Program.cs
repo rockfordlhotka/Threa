@@ -3,9 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
-using System.Globalization;
 using CsvHelper;
-using CsvHelper.Configuration;
 using Threa.Dal;
 using Threa.Dal.Dto;
 using GameMechanics.Player;
@@ -187,7 +185,7 @@ public class CreateCommand : AsyncCommand<CreateSettings>
 
     public CreateCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, CreateSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, CreateSettings settings, CancellationToken cancellationToken)
     {
         // Check if user already exists
         var existing = await _dal.GetPlayerByEmailAsync(settings.Email);
@@ -237,7 +235,7 @@ public class ListCommand : AsyncCommand<CommonSettings>
 
     public ListCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, CommonSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, CommonSettings settings, CancellationToken cancellationToken)
     {
         var players = await _dal.GetAllPlayersAsync();
 
@@ -285,7 +283,7 @@ public class RolesCommand : AsyncCommand<EmailSettings>
 
     public RolesCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -330,7 +328,7 @@ public class GrantCommand : AsyncCommand<RoleSettings>
 
     public GrantCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override ValidationResult Validate(CommandContext context, RoleSettings settings)
+    public override ValidationResult Validate(CommandContext context, RoleSettings settings)
     {
         if (!IsValidRole(settings.Role))
         {
@@ -339,7 +337,7 @@ public class GrantCommand : AsyncCommand<RoleSettings>
         return ValidationResult.Success();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, RoleSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, RoleSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -397,7 +395,7 @@ public class RevokeCommand : AsyncCommand<RoleSettings>
 
     public RevokeCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, RoleSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, RoleSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -453,7 +451,7 @@ public class EnableCommand : AsyncCommand<EmailSettings>
 
     public EnableCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -483,7 +481,7 @@ public class DisableCommand : AsyncCommand<EmailSettings>
 
     public DisableCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -518,7 +516,7 @@ public class DeleteCommand : AsyncCommand<EmailSettings>
         _characterDal = characterDal;
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, EmailSettings settings, CancellationToken cancellationToken)
     {
         var player = await _playerDal.GetPlayerByEmailAsync(settings.Email);
         if (player == null)
@@ -561,7 +559,7 @@ public class SetPasswordCommand : AsyncCommand<PasswordSettings>
 
     public SetPasswordCommand(IPlayerDal dal) => _dal = dal;
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, PasswordSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, PasswordSettings settings, CancellationToken cancellationToken)
     {
         var player = await _dal.GetPlayerByEmailAsync(settings.Email);
 
@@ -622,7 +620,7 @@ public class ImportSkillsCommand : AsyncCommand<ImportSkillsSettings>
 
     public ImportSkillsCommand(ISkillDal dal) => _dal = dal;
 
-    protected override ValidationResult Validate(CommandContext context, ImportSkillsSettings settings)
+    public override ValidationResult Validate(CommandContext context, ImportSkillsSettings settings)
     {
         if (!File.Exists(settings.FilePath))
         {
@@ -638,30 +636,16 @@ public class ImportSkillsCommand : AsyncCommand<ImportSkillsSettings>
         return ValidationResult.Success();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ImportSkillsSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, ImportSkillsSettings settings, CancellationToken cancellationToken)
     {
-        var ext = Path.GetExtension(settings.FilePath).ToLowerInvariant();
-        var delimiter = ext == ".tsv" ? "\t" : ",";
-
         // Read and parse the file
         List<Skill> skills;
         try
         {
-            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                Delimiter = delimiter,
-                HeaderValidated = null,
-                MissingFieldFound = null,
-                TrimOptions = TrimOptions.Trim
-            };
-
-            using var reader = new StreamReader(settings.FilePath);
-            using var csv = new CsvReader(reader, config);
-            csv.Context.RegisterClassMap<SkillCsvMap>();
-
-            skills = csv.GetRecords<Skill>().ToList();
+            using var csv = CsvReader.FromFile(settings.FilePath, CsvImportHelper.CreateReaderOptions(settings.FilePath));
+            skills = csv.GetRecords<SkillCsvRow>().Select(row => row.ToSkill()).ToList();
         }
-        catch (CsvHelperException ex)
+        catch (CsvFormatException ex)
         {
             AnsiConsole.MarkupLine($"[red]Error parsing file:[/] {Markup.Escape(ex.Message)}");
             return 1;
@@ -735,7 +719,7 @@ public class ExportSkillsCommand : AsyncCommand<FileSettings>
 
     public ExportSkillsCommand(ISkillDal dal) => _dal = dal;
 
-    protected override ValidationResult Validate(CommandContext context, FileSettings settings)
+    public override ValidationResult Validate(CommandContext context, FileSettings settings)
     {
         var ext = Path.GetExtension(settings.FilePath).ToLowerInvariant();
         if (ext != ".csv" && ext != ".tsv")
@@ -752,32 +736,18 @@ public class ExportSkillsCommand : AsyncCommand<FileSettings>
         return ValidationResult.Success();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, FileSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, FileSettings settings, CancellationToken cancellationToken)
     {
-        var ext = Path.GetExtension(settings.FilePath).ToLowerInvariant();
-        var delimiter = ext == ".tsv" ? "\t" : ",";
-
         // Fetch existing skills from database
         var skills = await _dal.GetAllSkillsAsync();
 
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        // Write the header and all skills (the header is written even when there are none)
+        await using (var csv = CsvImportHelper.CreateWriter(settings.FilePath, CsvImportHelper.GetSeparator(settings.FilePath)))
         {
-            Delimiter = delimiter
-        };
-
-        using var writer = new StreamWriter(settings.FilePath);
-        using var csv = new CsvWriter(writer, config);
-        csv.Context.RegisterClassMap<SkillCsvMap>();
-
-        // Write header
-        csv.WriteHeader<Skill>();
-        await csv.NextRecordAsync();
-
-        // Write all skills
-        foreach (var skill in skills.OrderBy(s => s.Category).ThenBy(s => s.Name))
-        {
-            csv.WriteRecord(skill);
-            await csv.NextRecordAsync();
+            await csv.WriteRecordsAsync(skills
+                .OrderBy(s => s.Category)
+                .ThenBy(s => s.Name)
+                .Select(SkillCsvRow.FromSkill), cancellationToken);
         }
 
         if (skills.Count > 0)
